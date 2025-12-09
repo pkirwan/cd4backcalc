@@ -1,0 +1,7 @@
+*.o
+*.so
+*.dll
+*.h
+*.cc
+Makevars
+Makevars.win

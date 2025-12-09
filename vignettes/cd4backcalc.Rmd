@@ -1,0 +1,63 @@
+---
+title: "cd4backcalc"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{cd4backcalc}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+This vignette demonstrates how to use the `cd4backcalc` package to simulate HIV diagnosis data and fit a CD4-staged back-calculation model.
+
+```{r setup}
+library(cd4backcalc)
+```
+
+## Simulate data
+
+To demonstrate the process of fitting a back-calculation model we need to first simulate some diagnosis data. Data are simulated by propagating a number of HIV infections through the back-calculation model to generate diagnoses over time.
+
+We can define a simulation configuration using the `define_sim_config` function. This function allows us to specify whether to include migration status, RITA status, and/or age groups in the simulation, as well as varying the patterns for each of the model parameters, e.g. `h_pattern` which controls the pattern of HIV incidence over time can be set to "constant", "linear", or "quadratic". 
+
+The `simulate_diagnoses` function then uses this configuration to simulate HIV diagnoses over time.
+
+```{r simulate-data}
+## simulate data
+sim_config <- define_sim_config(seed = 123, migration = FALSE, rita = FALSE, age = FALSE)
+sim_diags <- simulate_diagnoses(sim_config)
+```
+
+## Model configuration
+
+After simulating diagnosis data, we can define the model configuration using the `stan_model_config` function. This function allows us to specify the type of incidence and diagnosis models to use (e.g. spline-based, random walk, or Gaussian process models).
+
+This function optionally takes in the simulation configuration used to generate the data, so that the model structure matches the data structure (e.g. including migration, RITA, or age groups if these were included in the simulation). In case real data are being used, then the simulation step can be skipped, and these parameters (migration, rita, and age) can be passed directly to the `stan_model_config` function.
+
+```{r model-config}
+config <- stan_model_config(
+  inf_model = 1, # 1 spline, 2 random walk, 3 gp
+  diag_model = 1, # 1 spline, 2 random walk
+  sim_config = sim_config
+)
+```
+
+## Fit model
+
+Finally, the `fit_backcalc` function is used to fit the back-calculation model to the simulated diagnosis data using the specified model configuration. Additional options can be passed to control the MCMC sampling process (e.g. number of iterations, number of chains, etc).
+
+```{r fit-model, eval=FALSE}
+## fit model
+fit <- fit_backcalc(sim_diags$stan_data, config)
+```
+
+## References
+
+- Birrell PJ, Chadborn TR, Gill ON, Delpech VC, et al. (2012). Estimating trends in incidence, time-to-diagnosis and undiagnosed prevalence using a CD4-based Bayesian back-calculation. _Stat. Commun. Infect. Dis._ 4(1). doi: [10.1515/1948-4690.1055](https://doi.org/10.1515/1948-4690.1055).
+- Brizzi F, Birrell PJ, Plummer MT, Kirwan PD, et al. (2019). Extending Bayesian back-calculation to estimate age and time specific HIV incidence. _Lifetime Data Anal._ 25(4), pp.757-780. doi: [10.1007/s10985-019-09465-1](https://doi.org/10.1007/s10985-019-09465-1).
