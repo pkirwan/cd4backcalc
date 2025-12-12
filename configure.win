@@ -7,3 +7,6 @@
 # Add configuration needed for RcppArmadillo
 echo "PKG_CXXFLAGS += \$(SHLIB_OPENMP_CXXFLAGS)" >> ./src/Makevars.win
 echo "PKG_LIBS += \$(SHLIB_OPENMP_CXXFLAGS) \$(LAPACK_LIBS) \$(BLAS_LIBS) \$(FLIBS)" >> ./src/Makevars.win
+
+# If building locally, add configuration needed for big object files
+# echo "PKG_CXXFLAGS += -Wa,-mbig-obj" >> ./src/Makevars.win

@@ -4,7 +4,7 @@
 \alias{postproc}
 \title{Post-processing model fit}
 \usage{
-postproc(fit, stan_data, config, start_yr, nworkers, chain = FALSE)
+postproc(fit, stan_data, config, start_yr = 0, nworkers = 1, chain = FALSE)
 }
 \arguments{
 \item{fit}{Fitted stan model object.}

@@ -4,7 +4,7 @@
 \alias{postproc_ad}
 \title{Post-process the age-dependent model fit}
 \usage{
-postproc_ad(fit, stan_data, config, start_yr, nworkers, chain = FALSE)
+postproc_ad(fit, stan_data, config, start_yr = 0, nworkers = 1, chain = FALSE)
 }
 \arguments{
 \item{fit}{Fitted stan model object.}

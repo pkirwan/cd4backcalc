@@ -9,7 +9,7 @@ postproc_ai(
   stan_data,
   config,
   start_yr = 1995,
-  nworkers = 4,
+  nworkers = 1,
   chain = FALSE
 )
 }
