@@ -1,6 +1,7 @@
 ## usethis namespace: start
 #' @import methods
 #' @import Rcpp
+#' @importFrom rlang .data
 #' @importFrom Rcpp sourceCpp
 #' @importFrom RcppParallel RcppParallelLibs
 #' @importFrom rstan sampling

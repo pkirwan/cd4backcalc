@@ -34,7 +34,7 @@ stan_model_config <- function(
   }
   if (inf_model != 1 || diag_model != 1 & (migration || rita || age)) {
     stop(
-      "Only spline model configurations are supported for the migration, rita, or age-specific model"
+      "The migration, rita, or age-specific models only support spline model configurations. Please use inf_model = 1 and diag_model = 1."
     )
   }
   if (is.null(seed)) {
@@ -65,12 +65,12 @@ stan_model_config <- function(
 #' @examples
 #' # Define a simple stan_data list for demonstration
 #' config <- define_sim_config(seed = 123)
-#' sim_data <- simulate_diagnoses(config)
-#' stan_data <- sim_data$stan_data
+#' sim_diags <- simulate_diagnoses(config)
+#' stan_data <- sim_diags$stan_data
 #' # Run back-calculation model
 #' config <- define_sim_config(seed = 123)
-#' sim_data <- simulate_diagnoses(config)
-#' stan_data <- sim_data$stan_data
+#' sim_diags <- simulate_diagnoses(config)
+#' stan_data <- sim_diags$stan_data
 #' fit <- fit_backcalc(stan_data, config, iter = 5, chains = 1, refresh = 0, messages = FALSE)
 #' @export
 fit_backcalc <- function(
@@ -92,7 +92,9 @@ fit_backcalc <- function(
   model <- load_stan_model(config)
 
   # Prepare spline basis and augment stan_data
-  stan_data <- model_type_prep(stan_data, config)
+  if (is.null(stan_data$X) & is.null(stan_data$X_inf)) {
+    stan_data <- model_type_prep(stan_data, config)
+  }
 
   # Make pars_save
   pars_save <- make_pars_save(config)
@@ -129,6 +131,11 @@ fit_backcalc <- function(
 #' @param knots Number of knots for the spline (default is 10).
 #' @param penalty Order of the penalty for the spline (default is 2).
 #' @return The augmented stan_data list with spline design matrices and prior information.
+#' @examples
+#' config <- define_sim_config(seed = 123)
+#' sim_diags <- simulate_diagnoses(config)
+#' stan_data <- model_type_prep(sim_diags$stan_data, config)
+#' @export
 model_type_prep <- function(
   stan_data,
   config,

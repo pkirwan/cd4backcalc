@@ -43,7 +43,7 @@ Models are fitted within a Bayesian framework (using rstan), with suitable prior
     % Nodes
     \node[] (m0) at (0,0) {};
     
-    \node[rstate, align=center] (e1) [right = 20mm of m0] {CD4$\geq$500\\($e_{1,j}$)};
+    \node[rstate, align=center] (e1) [right = 11mm of m0] {CD4$\geq$500\\($e_{1,j}$)};
     \node[rstate, align=center] (e2) [right = 11mm of e1] {CD4 350-499\\($e_{2,j}$)};
     \node[rstate, align=center] (e3) [right = 11mm of e2] {CD4 200-349\\($e_{3,j}$)};
     \node[rstate, align=center] (e4) [right = 11mm of e3] {CD4$<$200\\($e_{4,j}$)};
@@ -79,6 +79,11 @@ You can install the development version of cd4backcalc from [GitHub](https://git
 pak::pak("pkirwan/cd4backcalc")
 ```
 
+### System requirements for installation
+
+- Windows users will require Rtools to compile the Stan models, see https://cran.r-project.org/bin/windows/Rtools/.
+- MacOS users will require the correct GNU Fortran compiler, see https://mac.r-project.org/tools/.
+
 ## Supported models
 
 The cd4backcalc package includes several pre-compiled models which can be used to fit the back-calculation model to real or simulated diagnosis data under different scenarios:
@@ -101,6 +106,9 @@ library(cd4backcalc)
 sim_config <- define_sim_config(seed = 123, migration = FALSE, rita = FALSE, age = FALSE)
 sim_diags <- simulate_diagnoses(sim_config)
 
+## prepare stan data with spline basis
+stan_data <- model_type_prep(sim_diags$stan_data, sim_config)
+
 ## fit model
-fit <- fit_backcalc(sim_diags$stan_data, sim_config)
+fit <- fit_backcalc(stan_data, sim_config)
 ```

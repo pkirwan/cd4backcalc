@@ -46,15 +46,43 @@ config <- stan_model_config(
   diag_model = 1, # 1 spline, 2 random walk
   sim_config = sim_config
 )
+stan_data <- model_type_prep(sim_diags$stan_data, config)
 ```
 
 ## Fit model
 
-Finally, the `fit_backcalc` function is used to fit the back-calculation model to the simulated diagnosis data using the specified model configuration. Additional options can be passed to control the MCMC sampling process (e.g. number of iterations, number of chains, etc).
+Next, the `fit_backcalc` function is used to fit the back-calculation model to the simulated diagnosis data using the specified model configuration. The model fitting uses the rstan package and additional options can be passed to control the MCMC sampling process (e.g. number of iterations, number of chains, etc).
 
 ```{r fit-model, eval=FALSE}
 ## fit model
-fit <- fit_backcalc(sim_diags$stan_data, config)
+fit <- fit_backcalc(stan_data, config)
+```
+
+## Post-processing
+
+After the model fitting has run the results need to be post-processed to obtain posterior predictive distributions of HIV incidence and undiagnosed HIV prevalence. This step is run outside of Stan to improve modelling efficiency, however the processing can still be distributed across multiple workers (if available) via the `future.apply` package. The `postproc` function performs the postprocessing, which can either be for all chains together, or chain-by-chain (to identify divergent chains).
+
+```{r post-processing, eval = FALSE}
+## post-process model fit
+hiv_list <- postproc(fit, stan_data, sim_config, nworkers = 4, chain = FALSE)
+```
+
+## Assessing goodness of fit
+
+The `hiv_list` object returned from the postprocessing can now be compared to the simulated data using goodness of fit tests. This step can be omitted if models were not fitted to simulated data.
+
+```{r goodness-of-fit, eval = FALSE}
+## assess goodness of fit to the simulated data
+
+```
+
+## Model estimates
+
+A selection of pre-written plotting functions are available to plot the results. These functions use `ggplot2` so the plots are modified by adding additional options.
+
+```{r model-estimates, eval = FALSE}
+## plot model estimates
+
 ```
 
 ## References

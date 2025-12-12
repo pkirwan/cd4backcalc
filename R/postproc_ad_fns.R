@@ -1,8 +1,8 @@
-#' Function to produce consistent output for each scenario
+#' Function to get quantiles
 #'
 #' @param x Numeric vector
 #' @return A named numeric vector with 2.5%, 50%, mean, and 97.5% quantiles
-summary.fct <- function(x) {
+get_quantiles <- function(x) {
   ## gives 95% credible intervals
   ## median and mode
   out <- rep(NA, 4)
@@ -11,7 +11,7 @@ summary.fct <- function(x) {
   out[3] <- mean(x)
   out[4] <- stats::quantile(x, probs = 0.975)
   names(out) <- c("2.5%", "50%", "mean", "97.5%")
-  out
+  return(out)
 }
 
 #' Function to get posterior functions of incidence
@@ -54,7 +54,7 @@ infs.fct <- function(
     call <- "colSums(matrix(x, nr=nt)[,a1:a2])"
   }
   x <- t(apply(exp(infs), 1, function(x) eval(parse(text = call))))
-  apply(x, 2, summary.fct)
+  return(apply(x, 2, get_quantiles))
 }
 
 #' Function to get posterior functions of incidence
@@ -79,7 +79,7 @@ infs.fct.qt <- function(infs, age.st, age.end, nt, qt.flag = FALSE) {
   }
   call <- "rowSums(matrix(x, nr=nt)[,a1:a2])"
   x <- t(apply(exp(infs), 1, function(x) eval(parse(text = call))))
-  apply(x, 2, summary.fct)
+  return(apply(x, 2, get_quantiles))
 }
 
 #' Function to get posterior functions of incidence rate
@@ -131,7 +131,7 @@ inc.fct <- function(infs, age.cl, last.yr, nt, qt.flag = FALSE, totals) {
   }
 
   x <- t(apply(exp(infs), 1, function(x) eval(parse(text = call))))
-  apply(x, 2, summary.fct)
+  return(apply(x, 2, get_quantiles))
 }
 
 #' Function to identify the peak in infection in the last x years
@@ -161,7 +161,7 @@ peak.fct <- function(infs, age.st, age.end, nt, last.yr = 10, qt.flag = FALSE) {
   }
   x <- t(apply(exp(infs), 1, function(x) eval(parse(text = call))))
   ### yields maximum in the last years
-  apply(x, 1, which.max)
+  return(apply(x, 1, which.max))
 }
 
 #' Function for the shape of incidence curve
@@ -220,7 +220,7 @@ trend.fct <- function(infs, age.st, age.end, nt, last.yr = 3, qt.flag = FALSE) {
     call <- "tapply(rowSums(matrix(x, nr=nt)[ind,a1:a2]), qt.indx, sum)"
   }
   x <- t(apply(exp(infs), 1, function(x) eval(parse(text = call))))
-  apply(x, 1, shape.fct)
+  return(apply(x, 1, shape.fct))
 }
 
 #' Function to get posterior functions of goodness of fit
@@ -273,7 +273,7 @@ gof.fct <- function(
   if (qt.flag) {
     y <- t(apply(y, 1, function(x) tapply(x, qt.indx, sum)))
   }
-  apply(y, 2, summary.fct)
+  return(apply(y, 2, get_quantiles))
 }
 
 #' Function to get posterior functions of prevalence
@@ -314,12 +314,11 @@ prev.fct <- function(prev.arr, state, age.st, age.end, rita.flag) {
   }
 
   x <- t(apply(prev[, a1:a2, ], 3, rowSums))
-  apply(x, 2, summary.fct)
+  return(apply(x, 2, get_quantiles))
 }
 
 #' Function to get diagnosis matrix per iteration
 #'
-#' @param fit A fitted model object containing diagnosis data.
 #' @param fit.mat A matrix of posterior samples from the fitted model.
 #' @param iter The iteration number to extract data for.
 #' @param age.dx.flag Logical flag indicating if age-specific diagnoses are considered.
@@ -330,7 +329,6 @@ prev.fct <- function(prev.arr, state, age.st, age.end, rita.flag) {
 #' @param ind_list A list of indices for diagnosis data extraction.
 #' @return A diagnosis matrix for the specified iteration.
 d.mat.iter <- function(
-  fit,
   fit.mat,
   iter,
   age.dx.flag,
@@ -342,37 +340,37 @@ d.mat.iter <- function(
 ) {
   if (!age.dx.flag) {
     d.mat <- matrix(NA, nrow = 4, ncol = nt)
-    d.mat[1, ] <- fit[iter, ind_list$d1.ind]
-    d.mat[2, ] <- fit[iter, ind_list$d2.ind]
-    d.mat[3, ] <- fit[iter, ind_list$d3.ind]
-    d.mat[4, ] <- fit[iter, ind_list$d4.ind]
+    d.mat[1, ] <- fit.mat[iter, ind_list$d1.ind]
+    d.mat[2, ] <- fit.mat[iter, ind_list$d2.ind]
+    d.mat[3, ] <- fit.mat[iter, ind_list$d3.ind]
+    d.mat[4, ] <- fit.mat[iter, ind_list$d4.ind]
   } else {
     if (!age.dx.spl.flag) {
       if (rita.flag) {
         d.mat <- array(NA, dim = c(5, nt, 4))
-        d.mat[5, , 1] <- fit[iter, ind_list$d5.ind.y]
-        d.mat[5, , 2] <- fit[iter, ind_list$d5.ind.my]
-        d.mat[5, , 3] <- fit[iter, ind_list$d5.ind.mo]
-        d.mat[5, , 4] <- fit[iter, ind_list$d5.ind.o]
+        d.mat[5, , 1] <- fit.mat[iter, ind_list$d5.ind.y]
+        d.mat[5, , 2] <- fit.mat[iter, ind_list$d5.ind.my]
+        d.mat[5, , 3] <- fit.mat[iter, ind_list$d5.ind.mo]
+        d.mat[5, , 4] <- fit.mat[iter, ind_list$d5.ind.o]
       } else {
         d.mat <- array(NA, dim = c(4, nt, 4)) ## array to be consistent with gof_iter_fct in stancppfcts_simpleperv_agediag.cpp
       }
-      d.mat[1, , 1] <- fit[iter, ind_list$d1.ind.y]
-      d.mat[2, , 1] <- fit[iter, ind_list$d2.ind.y]
-      d.mat[3, , 1] <- fit[iter, ind_list$d3.ind.y]
-      d.mat[4, , 1] <- fit[iter, ind_list$d4.ind.y]
-      d.mat[1, , 2] <- fit[iter, ind_list$d1.ind.my]
-      d.mat[2, , 2] <- fit[iter, ind_list$d2.ind.my]
-      d.mat[3, , 2] <- fit[iter, ind_list$d3.ind.my]
-      d.mat[4, , 2] <- fit[iter, ind_list$d4.ind.my]
-      d.mat[1, , 3] <- fit[iter, ind_list$d1.ind.mo]
-      d.mat[2, , 3] <- fit[iter, ind_list$d2.ind.mo]
-      d.mat[3, , 3] <- fit[iter, ind_list$d3.ind.mo]
-      d.mat[4, , 3] <- fit[iter, ind_list$d4.ind.mo]
-      d.mat[1, , 4] <- fit[iter, ind_list$d1.ind.o]
-      d.mat[2, , 4] <- fit[iter, ind_list$d2.ind.o]
-      d.mat[3, , 4] <- fit[iter, ind_list$d3.ind.o]
-      d.mat[4, , 4] <- fit[iter, ind_list$d4.ind.o]
+      d.mat[1, , 1] <- fit.mat[iter, ind_list$d1.ind.y]
+      d.mat[2, , 1] <- fit.mat[iter, ind_list$d2.ind.y]
+      d.mat[3, , 1] <- fit.mat[iter, ind_list$d3.ind.y]
+      d.mat[4, , 1] <- fit.mat[iter, ind_list$d4.ind.y]
+      d.mat[1, , 2] <- fit.mat[iter, ind_list$d1.ind.my]
+      d.mat[2, , 2] <- fit.mat[iter, ind_list$d2.ind.my]
+      d.mat[3, , 2] <- fit.mat[iter, ind_list$d3.ind.my]
+      d.mat[4, , 2] <- fit.mat[iter, ind_list$d4.ind.my]
+      d.mat[1, , 3] <- fit.mat[iter, ind_list$d1.ind.mo]
+      d.mat[2, , 3] <- fit.mat[iter, ind_list$d2.ind.mo]
+      d.mat[3, , 3] <- fit.mat[iter, ind_list$d3.ind.mo]
+      d.mat[4, , 3] <- fit.mat[iter, ind_list$d4.ind.mo]
+      d.mat[1, , 4] <- fit.mat[iter, ind_list$d1.ind.o]
+      d.mat[2, , 4] <- fit.mat[iter, ind_list$d2.ind.o]
+      d.mat[3, , 4] <- fit.mat[iter, ind_list$d3.ind.o]
+      d.mat[4, , 4] <- fit.mat[iter, ind_list$d4.ind.o]
     } else {
       d.mat <- array(NA, dim = c(4, nt, nage))
       d.mat[1, , ] <- matrix(fit.mat[iter, ind_list$d1.ind], nrow = nt)
@@ -382,7 +380,7 @@ d.mat.iter <- function(
     }
   }
 
-  d.mat
+  return(d.mat)
 }
 
 #' Function to deal with under-reporting of AIDS diagnoses
@@ -407,5 +405,5 @@ urep.fct <- function(urep, AIDS, urep.flag, qt.flag, nt) {
   } else {
     out <- AIDS
   }
-  out
+  return(out)
 }
