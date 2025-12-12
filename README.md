@@ -93,4 +93,7 @@ stan_data <- model_type_prep(sim_diags$stan_data, sim_config)
 
 ## fit model
 fit <- fit_backcalc(stan_data, sim_config)
+
+## post-processing
+post <- post_process(fit, stan_data, sim_config)
 ```

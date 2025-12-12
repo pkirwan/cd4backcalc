@@ -14,8 +14,8 @@ postproc_ad <- function(
   fit,
   stan_data,
   config,
-  start_yr,
-  nworkers,
+  start_yr = 0,
+  nworkers = 1,
   chain = FALSE
 ) {
   out <- list()

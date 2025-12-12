@@ -28,8 +28,8 @@ postproc <- function(
   fit,
   stan_data,
   config,
-  start_yr,
-  nworkers,
+  start_yr = 0,
+  nworkers = 1,
   chain = FALSE
 ) {
   if (config$age) {
@@ -54,7 +54,7 @@ postproc_ai <- function(
   stan_data,
   config,
   start_yr = 1995,
-  nworkers = 4,
+  nworkers = 1,
   chain = FALSE
 ) {
   ## Setup for running in parallel
