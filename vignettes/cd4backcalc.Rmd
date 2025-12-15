@@ -82,8 +82,8 @@ The `hiv_list` object returned from the post-processing can now be compared to t
 
 ```{r goodness-of-fit, eval = FALSE}
 ## generate bias and MSE plots
-mse_plot(hiv_list, sim_diags, sim_config, quantity = "incidence")
 bias_plot(hiv_list, sim_diags, sim_config, quantity = "incidence")
+mse_plot(hiv_list, sim_diags, sim_config, quantity = "incidence")
 ```
 
 ## Model estimates
@@ -92,10 +92,10 @@ A selection of pre-written plotting functions are available to plot the model es
 
 ```{r model-estimates, eval = FALSE}
 ## plot incidence estimates compared to simulated values
-plot_estimates(hiv_list, "incidence", sim_diags, sim_config)
+plot_estimates(hiv_list, sim_diags, sim_config, quantity = "incidence")
 
 ## plot undiagnosed prevalence estimates compared to simulated values
-plot_estimates(hiv_list, "undiag_prev", sim_diags, sim_config)
+plot_estimates(hiv_list, sim_diags, sim_config, quantity = "undiag_prev")
 ```
 
 ## References

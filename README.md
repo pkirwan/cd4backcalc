@@ -79,7 +79,8 @@ age-dependent dual-biomarker model.
 ## Usage
 
 A basic workflow to simulate diagnosis data and fit the CD4-staged
-back-calculation model is shown in the example below.
+back-calculation model, check convergence and goodness of fit to the
+simulated data, and plot model estimates is shown in the example below.
 
 ``` r
 library(cd4backcalc)
@@ -94,6 +95,17 @@ stan_data <- model_type_prep(sim_diags$stan_data, sim_config)
 ## fit model
 fit <- fit_backcalc(stan_data, sim_config)
 
+## check convergence
+plot_diagnostics(fit)
+
 ## post-processing
-post <- post_process(fit, stan_data, sim_config)
+hiv_list <- postproc(fit, stan_data, sim_config)
+
+## generate bias and MSE plots
+mse_plot(hiv_list, sim_diags, sim_config, quantity = "incidence")
+bias_plot(hiv_list, sim_diags, sim_config, quantity = "incidence")
+
+## plot estimates compared to simulated values
+plot_estimates(hiv_list, sim_diags, sim_config, quantity = "incidence")
+plot_estimates(hiv_list, sim_diags, sim_config, quantity = "undiag_prev")
 ```
