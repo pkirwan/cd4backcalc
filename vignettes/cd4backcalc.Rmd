@@ -58,9 +58,18 @@ Next, the `fit_backcalc` function is used to fit the back-calculation model to t
 fit <- fit_backcalc(stan_data, config)
 ```
 
+## Assessing convergence
+
+Convergence of the MCMC chains can be assessed using the `rstan` package functions such as `traceplot` and `stan_rhat`. Additionally, the `cd4backcalc` package provides a convenience function `plot_diagnostics` to plot key diagnostics for the fitted model.
+
+```{r convergence, eval = FALSE}
+## plot diagnostics
+plot_diagnostics(fit)
+```
+
 ## Post-processing
 
-After the model fitting has run the results need to be post-processed to obtain posterior predictive distributions of HIV incidence and undiagnosed HIV prevalence. This step is run outside of Stan to improve modelling efficiency, however the processing can still be distributed across multiple workers (if available) via the `future.apply` package. The `postproc` function performs the postprocessing, which can either be for all chains together, or chain-by-chain (to identify divergent chains).
+After the model fitting has run the results need to be post-processed to obtain posterior predictive distributions of HIV incidence and undiagnosed HIV prevalence. This step is run outside of Stan to improve modelling efficiency, however the processing can still be distributed across multiple workers (if available) via the `future.apply` package. The `postproc` function performs the post-processing, which can either be for all chains together, or chain-by-chain (to identify divergent chains).
 
 ```{r post-processing, eval = FALSE}
 ## post-process model fit
@@ -69,20 +78,24 @@ hiv_list <- postproc(fit, stan_data, sim_config, nworkers = 4, chain = FALSE)
 
 ## Assessing goodness of fit
 
-The `hiv_list` object returned from the postprocessing can now be compared to the simulated data using goodness of fit tests. This step can be omitted if models were not fitted to simulated data.
+The `hiv_list` object returned from the post-processing can now be compared to the simulated data using goodness of fit tests such as bias and mean squared error (MSE). This step can be omitted if models were not fitted to simulated data.
 
 ```{r goodness-of-fit, eval = FALSE}
-## assess goodness of fit to the simulated data
-
+## generate bias and MSE plots
+mse_plot(hiv_list, sim_diags, sim_config, quantity = "incidence")
+bias_plot(hiv_list, sim_diags, sim_config, quantity = "incidence")
 ```
 
 ## Model estimates
 
-A selection of pre-written plotting functions are available to plot the results. These functions use `ggplot2` so the plots are modified by adding additional options.
+A selection of pre-written plotting functions are available to plot the model estimates. These functions use `ggplot2` so the plots may be modified by adding additional options.
 
 ```{r model-estimates, eval = FALSE}
-## plot model estimates
+## plot incidence estimates compared to simulated values
+plot_estimates(hiv_list, "incidence", sim_diags, sim_config)
 
+## plot undiagnosed prevalence estimates compared to simulated values
+plot_estimates(hiv_list, "undiag_prev", sim_diags, sim_config)
 ```
 
 ## References

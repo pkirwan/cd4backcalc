@@ -97,7 +97,7 @@ extract_simulated_quantities <- function(sim_diags, config) {
   ) |>
     dplyr::mutate(
       strata = factor(
-        strata,
+        .data$strata,
         levels = c("CD4<200", "CD4 200-350", "CD4 350-500", "CD4>500")
       )
     )
@@ -133,7 +133,7 @@ extract_simulated_quantities <- function(sim_diags, config) {
   ) |>
     dplyr::mutate(
       strata = factor(
-        strata,
+        .data$strata,
         levels = c(
           "CD4<200",
           "CD4 200-350",
@@ -318,12 +318,32 @@ make_mse_list <- function(
 
 #' Box plots of mean squared error (MSE).
 #'
-#' @param data A data frame containing MSE values.
+#' @param hiv_list A list returned from the `postproc` function containing model estimates.
+#' @param sim_diags An optional data frame of simulated diagnoses to overlay on the plot
+#' @param sim_config An optional configuration list used to generate simulated estimates.
+#' @param quantity The quantity to plot MSE for (default is "incidence", other options are "migration", "prop_uk", and "mp").
+#' @param group_name The name of the group for labeling.
 #' @param offset The offset for text labels.
 #' @param lab A logical indicating whether to add labels.
 #' @return A ggplot object of the MSE box plot.
 #' @export
-mse_plot <- function(data, offset = 0.1, lab = TRUE) {
+mse_plot <- function(
+  hiv_list,
+  sim_diags,
+  sim_config,
+  quantity = "incidence",
+  group_name = "Test group",
+  offset = 0.1,
+  lab = TRUE
+) {
+  data <- make_mse_list(
+    hiv_list,
+    sim_diags,
+    sim_config,
+    group_name
+  )[[paste0(quantity, "_mse")]]
+
+  # create box plot
   p1 <- data |>
     ggplot2::ggplot() +
     ggplot2::aes(x = .data$group, y = .data$mse) +
@@ -383,12 +403,31 @@ mse_plot <- function(data, offset = 0.1, lab = TRUE) {
 
 #' Box plots of bias.
 #'
-#' @param data A data frame containing bias values.
+#' @param hiv_list A list returned from the `postproc` function containing model estimates.
+#' @param sim_diags An optional data frame of simulated diagnoses to overlay on the plot
+#' @param sim_config An optional configuration list used to generate simulated estimates.
+#' @param quantity The quantity to plot bias for (default is "incidence", other options are "migration", "prop_uk", and "mp").
+#' @param group_name The name of the group for labeling.
 #' @param offset The offset for text labels.
 #' @param lab A logical indicating whether to add labels.
 #' @return A ggplot object of the bias box plot.
 #' @export
-bias_plot <- function(data, offset = 0.1, lab = TRUE) {
+bias_plot <- function(
+  hiv_list,
+  sim_diags,
+  sim_config,
+  quantity = "incidence",
+  group_name = "Test group",
+  offset = 0.1,
+  lab = TRUE
+) {
+  data <- make_mse_list(
+    hiv_list,
+    sim_diags,
+    sim_config,
+    group_name
+  )[[paste0(quantity, "_bias")]]
+
   p1 <- data |>
     ggplot2::ggplot() +
     ggplot2::aes(x = .data$group, y = .data$bias) +

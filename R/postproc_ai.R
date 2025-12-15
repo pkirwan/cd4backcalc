@@ -915,7 +915,7 @@ incidence.df <- function(
     )
     df <- as.data.frame(t(q.infections.total))
     df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 0.25)
-    df <- df |> tidyr::pivot_longer(-.data$year, names_to = "quartile")
+    df <- df |> tidyr::pivot_longer(-"year", names_to = "quartile")
   } else {
     infections.years <- apply(infections.total, 2, function(x) {
       tapply(x, rep(1:(stan_data$nquar / 4), each = 4), sum)
@@ -928,7 +928,7 @@ incidence.df <- function(
     )
     df <- as.data.frame(t(q.infections.years))
     df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 1)
-    df <- df |> tidyr::pivot_longer(-.data$year, names_to = "quartile")
+    df <- df |> tidyr::pivot_longer(-"year", names_to = "quartile")
   }
   return(df)
 }
@@ -961,7 +961,7 @@ migration.df <- function(
     )
     df <- as.data.frame(t(q.migration.total))
     df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 0.25)
-    df <- df |> tidyr::pivot_longer(-.data$year, names_to = "quartile")
+    df <- df |> tidyr::pivot_longer(-"year", names_to = "quartile")
   } else {
     migration.years <- apply(migration.total, 2, function(x) {
       tapply(x, rep(1:(stan_data$nquar / 4), each = 4), sum)
@@ -974,7 +974,7 @@ migration.df <- function(
     )
     df <- as.data.frame(t(q.migration.years))
     df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 1)
-    df <- df |> tidyr::pivot_longer(-.data$year, names_to = "quartile")
+    df <- df |> tidyr::pivot_longer(-"year", names_to = "quartile")
   }
   return(df)
 }
@@ -1007,7 +1007,7 @@ transfers.df <- function(
     )
     df <- as.data.frame(t(q.transfers))
     df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 0.25)
-    df <- df |> tidyr::pivot_longer(-.data$year, names_to = "quartile")
+    df <- df |> tidyr::pivot_longer(-"year", names_to = "quartile")
   } else {
     transfers.years <- apply(transfers, 2, function(x) {
       tapply(x, rep(1:(stan_data$nquar / 4), each = 4), sum)
@@ -1020,7 +1020,7 @@ transfers.df <- function(
     )
     df <- as.data.frame(t(q.transfers.years))
     df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 1)
-    df <- df |> tidyr::pivot_longer(-.data$year, names_to = "quartile")
+    df <- df |> tidyr::pivot_longer(-"year", names_to = "quartile")
   }
   return(df)
 }
@@ -1074,7 +1074,7 @@ undiag.prev.df <- function(
   )[, 1:(stan_data$nquar)]
   df <- as.data.frame(t(q.undiagnosed.prevalence))
   df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 0.25)
-  df <- df |> tidyr::pivot_longer(-.data$year, names_to = "quartile")
+  df <- df |> tidyr::pivot_longer(-"year", names_to = "quartile")
 
   if (annual == TRUE) {
     df <- df |>
@@ -1137,41 +1137,41 @@ diag.prob.df <- function(stan_data, fit_mat, start.yr = 1978, config) {
     d1.q <- t(d1.q) |>
       as.data.frame() |>
       cbind(year, strata = "Recently acquired") |>
-      tidyr::pivot_longer(c(-.data$year, -.data$strata), names_to = "quartile")
+      tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
     d2.q <- t(d2.q) |>
       as.data.frame() |>
       cbind(year, strata = "CD4>500") |>
-      tidyr::pivot_longer(c(-.data$year, -.data$strata), names_to = "quartile")
+      tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
     d3.q <- t(d3.q) |>
       as.data.frame() |>
       cbind(year, strata = "CD4 350-500") |>
-      tidyr::pivot_longer(c(-.data$year, -.data$strata), names_to = "quartile")
+      tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
     d4.q <- t(d4.q) |>
       as.data.frame() |>
       cbind(year, strata = "CD4 200-350") |>
-      tidyr::pivot_longer(c(-.data$year, -.data$strata), names_to = "quartile")
+      tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
     d5.q <- t(d5.q) |>
       as.data.frame() |>
       cbind(year, strata = "CD4<200") |>
-      tidyr::pivot_longer(c(-.data$year, -.data$strata), names_to = "quartile")
+      tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
     df <- rbind(d1.q, d2.q, d3.q, d4.q, d5.q)
   } else {
     d1.q <- t(d1.q) |>
       as.data.frame() |>
       cbind(year, strata = "CD4>500") |>
-      tidyr::pivot_longer(c(-.data$year, -.data$strata), names_to = "quartile")
+      tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
     d2.q <- t(d2.q) |>
       as.data.frame() |>
       cbind(year, strata = "CD4 350-500") |>
-      tidyr::pivot_longer(c(-.data$year, -.data$strata), names_to = "quartile")
+      tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
     d3.q <- t(d3.q) |>
       as.data.frame() |>
       cbind(year, strata = "CD4 200-350") |>
-      tidyr::pivot_longer(c(-.data$year, -.data$strata), names_to = "quartile")
+      tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
     d4.q <- t(d4.q) |>
       as.data.frame() |>
       cbind(year, strata = "CD4<200") |>
-      tidyr::pivot_longer(c(-.data$year, -.data$strata), names_to = "quartile")
+      tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
     df <- rbind(d1.q, d2.q, d3.q, d4.q)
   }
   return(df)
@@ -1210,7 +1210,7 @@ diagnoses.df <- function(
   )[, 1:(stan_data$nquar)]
   df <- as.data.frame(t(q.diagnosed))
   df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 0.25)
-  df <- df |> tidyr::pivot_longer(-.data$year, names_to = "quartile")
+  df <- df |> tidyr::pivot_longer(-"year", names_to = "quartile")
 
   if (annual == TRUE) {
     df <- df |>
@@ -1274,23 +1274,23 @@ migration.prob.df <- function(stan_data, fit_mat, start.yr = 1978) {
   m1.q <- t(m1.q) |>
     as.data.frame() |>
     cbind(year, strata = "CD4>500") |>
-    tidyr::pivot_longer(c(-.data$year, -.data$strata), names_to = "quartile")
+    tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
   m2.q <- t(m2.q) |>
     as.data.frame() |>
     cbind(year, strata = "CD4 350-500") |>
-    tidyr::pivot_longer(c(-.data$year, -.data$strata), names_to = "quartile")
+    tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
   m3.q <- t(m3.q) |>
     as.data.frame() |>
     cbind(year, strata = "CD4 200-350") |>
-    tidyr::pivot_longer(c(-.data$year, -.data$strata), names_to = "quartile")
+    tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
   m4.q <- t(m4.q) |>
     as.data.frame() |>
     cbind(year, strata = "CD4<200") |>
-    tidyr::pivot_longer(c(-.data$year, -.data$strata), names_to = "quartile")
+    tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
   m5.q <- t(m5.q) |>
     as.data.frame() |>
     cbind(year, strata = "Transfers of care") |>
-    tidyr::pivot_longer(c(-.data$year, -.data$strata), names_to = "quartile")
+    tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
   df <- rbind(m1.q, m2.q, m3.q, m4.q, m5.q)
   return(df)
 }
@@ -1325,7 +1325,7 @@ prop_uk.df <- function(stan_data, fit_mat, start.yr = 1978) {
   df <- t(puk.q) |>
     as.data.frame() |>
     cbind(year) |>
-    tidyr::pivot_longer(-.data$year, names_to = "quartile")
+    tidyr::pivot_longer(-"year", names_to = "quartile")
 
   return(df)
 }
@@ -1360,7 +1360,7 @@ detect.prob.df <- function(stan_data, fit_mat, start.yr = 1978) {
   df <- t(detect.q) |>
     as.data.frame() |>
     cbind(year) |>
-    tidyr::pivot_longer(-.data$year, names_to = "quartile")
+    tidyr::pivot_longer(-"year", names_to = "quartile")
 
   return(df)
 }
