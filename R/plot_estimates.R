@@ -109,7 +109,7 @@ plot_diagnostics <- function(fit, ntraces = 6) {
   # log posterior density
   p2 <- rstan::traceplot(fit, pars = "lp__")
 
-  if (any(grepl("migration", names(fit)))) {
+  if (any(grepl("gamma", names(fit)))) {
     # detection probabilities
     p3 <- rstan::traceplot(
       fit,

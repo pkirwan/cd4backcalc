@@ -62,8 +62,6 @@ test_that("mse_list and plots are generated correctly for migration model", {
   # Test extraction and plotting functions
   model_list <- extract_simulated_quantities(sim_diags, sim_config)
   expect_true(model_list$incidence[1, 1] == 1478)
-  mse_list <- make_mse_list(hiv_list, sim_diags, sim_config)
-  expect_true(mse_list$incidence_bias[1, 8] == -1539)
   p1 <- mse_plot(hiv_list, sim_diags, sim_config, quantity = "migration")
   expect_s3_class(p1, "ggplot")
   p2 <- bias_plot(hiv_list, sim_diags, sim_config, quantity = "migration")

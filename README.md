@@ -55,9 +55,9 @@ pak::pak("pkirwan/cd4backcalc")
 
 ### System requirements for installation
 
-- Windows users will require Rtools to compile the Stan models, see
+- Windows users will require Rtools to compile the Stan models, see:
   <https://cran.r-project.org/bin/windows/Rtools/>.
-- MacOS users will require the correct GNU Fortran compiler, see
+- MacOS users will require the correct GNU Fortran compiler, see:
   <https://mac.r-project.org/tools/>.
 
 ## Supported models
@@ -85,27 +85,27 @@ simulated data, and plot model estimates is shown in the example below.
 ``` r
 library(cd4backcalc)
 
-## simulate data
+# simulate data
 sim_config <- define_sim_config(seed = 123, migration = FALSE, rita = FALSE, age = FALSE)
 sim_diags <- simulate_diagnoses(sim_config)
 
-## prepare stan data with spline basis
+# prepare stan data with spline basis
 stan_data <- model_type_prep(sim_diags$stan_data, sim_config)
 
-## fit model
+# fit model
 fit <- fit_backcalc(stan_data, sim_config)
 
-## check convergence
+# check convergence
 plot_diagnostics(fit)
 
-## post-processing
+# post-processing
 hiv_list <- postproc(fit, stan_data, sim_config)
 
-## generate bias and MSE plots
-mse_plot(hiv_list, sim_diags, sim_config, quantity = "incidence")
+# generate bias and MSE plots
 bias_plot(hiv_list, sim_diags, sim_config, quantity = "incidence")
+mse_plot(hiv_list, sim_diags, sim_config, quantity = "incidence")
 
-## plot estimates compared to simulated values
+# plot estimates compared to simulated values
 plot_estimates(hiv_list, sim_diags, sim_config, quantity = "incidence")
 plot_estimates(hiv_list, sim_diags, sim_config, quantity = "undiag_prev")
 ```
