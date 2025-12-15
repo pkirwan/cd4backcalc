@@ -7,6 +7,11 @@
 #' @return A data frame of simulation results for plotting.
 #' @export
 get_sims <- function(sim_list, var, var2, plot_years = 29.75) {
+  # make sim_list a list of lists if not already
+  if (!("stan_data" %in% names(sim_list[[1]]))) {
+    sim_list <- list(sim_list)
+  }
+  # extract estimates
   estimates <- purrr::map_dfr(seq_along(sim_list), function(i) {
     x <- sim_list[[i]]
     x[[var]][[var2]] |>
@@ -26,6 +31,11 @@ get_sims <- function(sim_list, var, var2, plot_years = 29.75) {
 #' @return A data frame of model estimates for plotting.
 #' @export
 get_estimates <- function(hiv_list, var) {
+  # make hiv_list a list of lists if not already
+  if (!("incidence" %in% names(hiv_list[[1]]))) {
+    hiv_list <- list(hiv_list)
+  }
+  # extract estimates
   estimates <- purrr::map_dfr(seq_along(hiv_list), function(i) {
     x <- hiv_list[[i]]
     x[[var]] |>
@@ -36,13 +46,13 @@ get_estimates <- function(hiv_list, var) {
   return(estimates)
 }
 
-#' Run HIV model estimates based on the provided configuration.
+#' Extract simulated quantities based on the provided configuration.
 #'
-#' @param sim_diags The simulation diagnostics containing stan_data and sim_data.
+#' @param sim_diags The simulated diagnosis data containing stan_data and sim_data.
 #' @param config The configuration for the HIV model.
 #' @return A list of model estimates including undiagnosed prevalence, incidence, migration, diagnosis probabilities, diagnoses, migration probabilities, proportion of UK-acquired infections that are migrants, transfers of care, and CD4 strata.
 #' @export
-run_model_estimates <- function(sim_diags, config) {
+extract_simulated_quantities <- function(sim_diags, config) {
   stan_data <- sim_diags$stan_data
   sim_data <- sim_diags$sim_data
 
@@ -195,9 +205,14 @@ run_model_estimates <- function(sim_diags, config) {
 #' @param hiv_list A list of HIV model results.
 #' @param model_estimates The model estimates for comparison.
 #' @param type The variable type to calculate bias for.
+#' @param group_name The name of the group for labeling.
 #' @return A data frame of bias values.
-#' @export
-get_bias <- function(hiv_list, model_estimates, type) {
+get_bias <- function(
+  hiv_list,
+  model_estimates,
+  type,
+  group_name = "Test group"
+) {
   bias <- dplyr::left_join(
     get_estimates(hiv_list, type),
     model_estimates[[type]],
@@ -206,7 +221,8 @@ get_bias <- function(hiv_list, model_estimates, type) {
     dplyr::filter(.data$year > 0) |>
     dplyr::mutate(
       bias = .data$`50%` - .data$value
-    )
+    ) |>
+    dplyr::mutate(group = group_name)
 }
 
 #' Get bias between HIV model estimates and simulation results for strata.
@@ -214,9 +230,14 @@ get_bias <- function(hiv_list, model_estimates, type) {
 #' @param hiv_list A list of HIV model results.
 #' @param model_estimates The model estimates for comparison.
 #' @param type The variable type to calculate bias for.
+#' @param group_name The name of the group for labeling.
 #' @return A data frame of bias values for strata.
-#' @export
-get_bias_strata <- function(hiv_list, model_estimates, type) {
+get_bias_strata <- function(
+  hiv_list,
+  model_estimates,
+  type,
+  group_name = "Test group"
+) {
   bias <- dplyr::left_join(
     get_estimates(hiv_list, type),
     model_estimates[[type]],
@@ -225,59 +246,74 @@ get_bias_strata <- function(hiv_list, model_estimates, type) {
     dplyr::filter(.data$year > 0) |>
     dplyr::mutate(
       bias = .data$`50%` - .data$value
-    )
+    ) |>
+    dplyr::mutate(group = group_name)
+}
+
+#' Get mean squared error (MSE) list for HIV model estimates.
+#'
+#' @param bias_df A data frame of bias values.
+#' @param group_name The name of the group for labeling.
+#' @return A data frame of MSE values.
+get_mse <- function(bias_df, group_name = "Test group") {
+  bias_df |>
+    dplyr::group_by(.data$group.x) |>
+    dplyr::summarise(mse = mean(.data$bias^2)) |>
+    dplyr::ungroup() |>
+    dplyr::mutate(group = group_name)
 }
 
 #' Make a list of mean squared error (MSE) values for HIV model estimates.
 #'
 #' @param hiv_list A list of HIV model results.
-#' @param group_name The name of the group for labeling.
+#' @param sim_diags The simulated diagnosis data containing stan_data and sim_data.
 #' @param config The configuration for the simulation.
+#' @param group_name The name of the group for labeling.
 #' @return A list of bias and MSE values for incidence, migration, proportion of UK-acquired infections that are migrants, and migration probabilities.
 #' @export
-make_mse_list <- function(hiv_list, group_name, config) {
-  model_estimates <- run_model_estimates(config)
+make_mse_list <- function(
+  hiv_list,
+  sim_diags,
+  config,
+  group_name = "Test group"
+) {
+  simulated_quantities <- extract_simulated_quantities(sim_diags, config)
 
-  incidence_bias <- get_bias(hiv_list, model_estimates, "incidence") |>
-    dplyr::mutate(group = group_name)
-  migration_bias <- get_bias(hiv_list, model_estimates, "migration") |>
-    dplyr::mutate(group = group_name)
-  prop_uk_bias <- get_bias(hiv_list, model_estimates, "prop_uk") |>
-    dplyr::mutate(group = group_name)
-  mp_bias <- get_bias_strata(hiv_list, model_estimates, "migration_prob") |>
-    dplyr::mutate(group = group_name)
+  out <- list()
 
-  incidence_mse <- incidence_bias |>
-    dplyr::group_by(.data$group.x) |>
-    dplyr::summarise(mse = mean(.data$bias^2)) |>
-    dplyr::ungroup() |>
-    dplyr::mutate(group = group_name)
-  migration_mse <- migration_bias |>
-    dplyr::group_by(.data$group.x) |>
-    dplyr::summarise(mse = mean(.data$bias^2)) |>
-    dplyr::ungroup() |>
-    dplyr::mutate(group = group_name)
-  prop_uk_mse <- prop_uk_bias |>
-    dplyr::group_by(.data$group.x) |>
-    dplyr::summarise(mse = mean(.data$bias^2)) |>
-    dplyr::ungroup() |>
-    dplyr::mutate(group = group_name)
-  mp_mse <- mp_bias |>
-    dplyr::group_by(.data$group.x, .data$strata) |>
-    dplyr::summarise(mse = mean(.data$bias^2)) |>
-    dplyr::ungroup() |>
-    dplyr::mutate(group = group_name)
+  out$incidence_bias <- get_bias(
+    hiv_list,
+    simulated_quantities,
+    "incidence",
+    group_name
+  )
+  out$incidence_mse <- get_mse(out$incidence_bias, group_name)
 
-  return(list(
-    incidence_bias = incidence_bias,
-    migration_bias = migration_bias,
-    prop_uk_bias = prop_uk_bias,
-    mp_bias = mp_bias,
-    incidence_mse = incidence_mse,
-    migration_mse = migration_mse,
-    prop_uk_mse = prop_uk_mse,
-    mp_mse = mp_mse
-  ))
+  if (config$migration) {
+    out$migration_bias <- get_bias(
+      hiv_list,
+      simulated_quantities,
+      "migration",
+      group_name
+    )
+    out$prop_uk_bias <- get_bias(
+      hiv_list,
+      simulated_quantities,
+      "prop_uk",
+      group_name
+    )
+    out$mp_bias <- get_bias_strata(
+      hiv_list,
+      simulated_quantities,
+      "migration_prob",
+      group_name
+    )
+
+    out$migration_mse <- get_mse(out$migration_bias, group_name)
+    out$prop_uk_mse <- get_mse(out$prop_uk_bias, group_name)
+    out$mp_mse <- get_mse(out$mp_bias, group_name)
+  }
+  return(out)
 }
 
 #' Box plots of mean squared error (MSE).
@@ -287,7 +323,7 @@ make_mse_list <- function(hiv_list, group_name, config) {
 #' @param lab A logical indicating whether to add labels.
 #' @return A ggplot object of the MSE box plot.
 #' @export
-mse_plot <- function(data, offset, lab = TRUE) {
+mse_plot <- function(data, offset = 0.1, lab = TRUE) {
   p1 <- data |>
     ggplot2::ggplot() +
     ggplot2::aes(x = .data$group, y = .data$mse) +
@@ -352,7 +388,7 @@ mse_plot <- function(data, offset, lab = TRUE) {
 #' @param lab A logical indicating whether to add labels.
 #' @return A ggplot object of the bias box plot.
 #' @export
-bias_plot <- function(data, offset, lab = TRUE) {
+bias_plot <- function(data, offset = 0.1, lab = TRUE) {
   p1 <- data |>
     ggplot2::ggplot() +
     ggplot2::aes(x = .data$group, y = .data$bias) +
