@@ -88,8 +88,8 @@ library(cd4backcalc)
 # simulate data
 sim_diags <- simulate_diagnoses(migration = FALSE, rita = FALSE, age = FALSE)
 
-# run back-calculation model
-hiv_list <- run_backcalc(stan_data)
+# run back-calculation model on simulated data
+hiv_list <- run_backcalc(sim_diags)
 
 # check convergence
 plot_diagnostics(hiv_list)
