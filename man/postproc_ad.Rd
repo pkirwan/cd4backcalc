@@ -4,20 +4,18 @@
 \alias{postproc_ad}
 \title{Post-process the age-dependent model fit}
 \usage{
-postproc_ad(fit, stan_data, config, start_yr = 0, nworkers = 1, chain = FALSE)
+postproc_ad(fit, stan_data, start_yr = 0, nworkers = 1, chain_results = FALSE)
 }
 \arguments{
 \item{fit}{Fitted stan model object.}
 
 \item{stan_data}{Data list used in stan model fitting.}
 
-\item{config}{Configuration list.}
-
 \item{start_yr}{Starting year for posterior predictive quantities.}
 
 \item{nworkers}{Number of workers for parallel processing.}
 
-\item{chain}{Logical indicating if chain-specific results are required.}
+\item{chain_results}{Logical indicating if chain-specific results are required.}
 }
 \value{
 List of post-processed results including summaries and diagnostics.

@@ -4,10 +4,72 @@
 \alias{simulate_diagnoses}
 \title{Simulate HIV Epidemic Data}
 \usage{
-simulate_diagnoses(config)
+simulate_diagnoses(
+  h_pattern = "constant",
+  o_pattern = "constant",
+  d_pattern = "constant",
+  p_pattern = "constant",
+  m_pattern = "constant",
+  r_pattern = "constant",
+  a_pattern = "constant",
+  seed = NULL,
+  dist = TRUE,
+  migration = FALSE,
+  rita = FALSE,
+  age = FALSE,
+  nquar = 120,
+  nage = 52,
+  q = c(0.0976, 0.115, 0.116, 0.148),
+  target_inf = 90000,
+  target_mig = 12000,
+  init_props = c(7, 3.5, 1.75, 0.5),
+  init_props_abroad = c(1.75, 2.25, 2.25, 1.25),
+  abroad_prop = 0.2,
+  cd4_completeness = 1
+)
 }
 \arguments{
-\item{config}{Configuration list defining simulation parameters and patterns.}
+\item{h_pattern}{Pattern type for infections ("constant", "increasing", "varying").}
+
+\item{o_pattern}{Pattern type for omega ("constant", "increasing", "step_change", "none").}
+
+\item{d_pattern}{Pattern type for diagnosis probabilities ("constant", "varying").}
+
+\item{p_pattern}{Pattern type for proportion UK ("constant", "increasing").}
+
+\item{m_pattern}{Pattern type for mu ("constant", "differing", "varying").}
+
+\item{r_pattern}{Pattern type for RITA data ("constant", "increasing", "none").}
+
+\item{a_pattern}{Pattern type for age-based data ("constant", "wedge", "varying_wedge").}
+
+\item{seed}{Random seed for reproducibility. If NULL, a random seed is generated.}
+
+\item{dist}{Logical indicating whether to add stochastic variation.}
+
+\item{migration}{Logical indicating whether to include migration effects.}
+
+\item{rita}{Logical indicating whether to simulate RITA (Recent Infection Testing Algorithm) data.}
+
+\item{age}{Logical indicating whether to simulate age-stratified data.}
+
+\item{nquar}{Number of time quarters.}
+
+\item{nage}{Number of age groups.}
+
+\item{q}{Vector of progression probabilities.}
+
+\item{target_inf}{Target total number of HIV acquisitions.}
+
+\item{target_mig}{Target total number of migrations.}
+
+\item{init_props}{Initial state proportions.}
+
+\item{init_props_abroad}{Initial state proportions for infections acquired abroad.}
+
+\item{abroad_prop}{Proportion of infections acquired abroad at the outset.}
+
+\item{cd4_completeness}{CD4 completeness.}
 }
 \value{
 List containing simulated epidemic data.
@@ -16,6 +78,5 @@ List containing simulated epidemic data.
 Simulates HIV epidemic data based on the provided configuration.
 }
 \examples{
-config <- define_sim_config()
-simulate_diagnoses(config)
+simulate_diagnoses()
 }

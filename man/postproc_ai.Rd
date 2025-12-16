@@ -7,10 +7,9 @@
 postproc_ai(
   fit,
   stan_data,
-  config,
   start_yr = 1995,
   nworkers = 1,
-  chain = FALSE
+  chain_results = FALSE
 )
 }
 \arguments{
@@ -18,13 +17,11 @@ postproc_ai(
 
 \item{stan_data}{Data list used in stan model fitting.}
 
-\item{config}{Configuration list.}
-
 \item{start_yr}{Starting year for posterior predictive quantities.}
 
 \item{nworkers}{Number of parallel workers to use.}
 
-\item{chain}{Logical indicating whether to return results by chain.}
+\item{chain_results}{Logical indicating whether to return results by chain.}
 }
 \value{
 List of posterior predictive quantities.

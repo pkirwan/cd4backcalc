@@ -3,23 +3,19 @@
 #' Generate a ggplot2 object plotting estimated quantities over time, optionally compared to the simulated values.
 #'
 #' @param hiv_list A list returned from the `postproc` function containing model estimates.
-#' @param sim_diags An optional data frame of simulated diagnoses to overlay on the plot.
-#' @param sim_config An optional configuration list used to generate simulated estimates.
 #' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "prop_uk", and "detect_prob".
-#' @param chain A logical indicating whether to plot chain-by-chain estimates (default is FALSE).
+#' @param chain_results A logical indicating whether to plot chain-by-chain estimates (default is FALSE).
 #' @return A ggplot2 object.
 #' @export
 plot_estimates <- function(
   hiv_list,
-  sim_diags = NULL,
-  sim_config = NULL,
   quantity,
-  chain = FALSE
+  chain_results = FALSE
 ) {
   plot_title <- get_plot_title(quantity)
 
   # chain-by-chain plotting if requested
-  if (chain) {
+  if (chain_results) {
     hiv_list <- dplyr::bind_rows(
       get_estimates(hiv_list, paste0(quantity, "_1")) |>
         dplyr::mutate(chain = "Chain 1"),
@@ -32,10 +28,10 @@ plot_estimates <- function(
     ) |>
       dplyr::mutate(group = paste0(.data$group, ", ", .data$chain))
   } else {
-    hiv_list <- get_estimates(hiv_list, quantity)
+    quantiles <- get_estimates(hiv_list, quantity)
   }
 
-  p1 <- hiv_list |>
+  p1 <- quantiles |>
     ggplot2::ggplot() +
     ggplot2::aes(.data$year, .data$value, group = .data$group) +
     ggplot2::scale_linetype_manual(values = c(2, 1, 2)) +
@@ -57,9 +53,9 @@ plot_estimates <- function(
     ) +
     ggplot2::theme_bw()
 
-  # add simulated values if provided
-  if (!is.null(sim_diags)) {
-    sim_estimates <- extract_simulated_quantities(sim_diags, sim_config)
+  # add simulated values if data were simulated
+  if ("sim_data" %in% names(hiv_list$stan_data)) {
+    sim_estimates <- extract_simulated_quantities(hiv_list$stan_data)
     p1 <- p1 +
       ggplot2::geom_point(size = 0.4, data = sim_estimates[[quantity]])
   }
@@ -95,11 +91,17 @@ plot_estimates <- function(
 #'
 #' Generate diagnostic plots for a fitted back-calculation model.
 #'
-#' @param fit A fitted model object returned from the `fit_backcalc` function.
+#' @param fit A fitted model object returned from the `fit_stan_model` or `run_backcalc` function.
 #' @param ntraces Number of parameter traces to plot for each diagnostic.
 #' @return A ggplot2 object containing diagnostic plots.
 #' @export
 plot_diagnostics <- function(fit, ntraces = 6) {
+
+  # check if hiv_list has been provided
+  if ("fit" %in% names(fit)) {
+    fit <- fit$fit
+  }
+
   # log incidence
   p1 <- rstan::traceplot(
     fit,

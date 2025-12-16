@@ -4,20 +4,18 @@
 \alias{postproc}
 \title{Post-processing model fit}
 \usage{
-postproc(fit, stan_data, config, start_yr = 0, nworkers = 1, chain = FALSE)
+postproc(fit, stan_data, start_yr = 0, nworkers = 1, chain_results = FALSE)
 }
 \arguments{
 \item{fit}{Fitted stan model object.}
 
 \item{stan_data}{Data list used in stan model fitting.}
 
-\item{config}{Configuration list.}
-
 \item{start_yr}{Starting year for posterior predictive quantities.}
 
 \item{nworkers}{Number of parallel workers to use.}
 
-\item{chain}{Logical indicating whether to return results by chain.}
+\item{chain_results}{Logical indicating whether to return results by chain.}
 }
 \value{
 List of posterior predictive quantities.
@@ -27,16 +25,13 @@ This function decides which post-processing routine needs to be run
 and passes the relevant data and arguments.
 }
 \examples{
-sim_config <- define_sim_config(seed = 123)
-sim_diags <- simulate_diagnoses(sim_config)
-stan_data <- model_type_prep(sim_diags$stan_data, sim_config)
-fit <- fit_backcalc(
+sim_diags <- simulate_diagnoses(seed = 123)
+fit <- fit_stan_model(
    stan_data,
-   sim_config,
    iter = 10,
    chains = 1,
    refresh = 0,
    messages = FALSE
 )
-hiv_list <- postproc(fit, stan_data, sim_config, start_yr = 0, nworkers = 1)
+hiv_list <- postproc(fit, stan_data, start_yr = 0, nworkers = 1)
 }

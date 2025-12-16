@@ -5,22 +5,21 @@
 #'
 #' @param fit Fitted stan model object.
 #' @param stan_data Data list used in stan model fitting.
-#' @param config Configuration list.
 #' @param start_yr Starting year for posterior predictive quantities.
 #' @param nworkers Number of workers for parallel processing.
-#' @param chain Logical indicating if chain-specific results are required.
+#' @param chain_results Logical indicating if chain-specific results are required.
 #' @return List of post-processed results including summaries and diagnostics.
 postproc_ad <- function(
   fit,
   stan_data,
-  config,
   start_yr = 0,
   nworkers = 1,
-  chain = FALSE
+  chain_results = FALSE
 ) {
   out <- list()
 
   ## Useful constants
+  config <- stan_data$config
 
   ## nt is the the number of period considered
   ## i.e. nquar if model quarterly

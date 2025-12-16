@@ -49,15 +49,14 @@ get_estimates <- function(hiv_list, var) {
 #' Extract simulated quantities based on the provided configuration.
 #'
 #' @param sim_diags The simulated diagnosis data containing stan_data and sim_data.
-#' @param config The configuration for the HIV model.
 #' @return A list of model estimates including undiagnosed prevalence, incidence, migration, diagnosis probabilities, diagnoses, migration probabilities, proportion of UK-acquired infections that are migrants, transfers of care, and CD4 strata.
 #' @export
-extract_simulated_quantities <- function(sim_diags, config) {
+extract_simulated_quantities <- function(sim_diags) {
   stan_data <- sim_diags$stan_data
   sim_data <- sim_diags$sim_data
 
   plot_years <- stan_data$nquar / 4 - 0.25
-  undiag_prev <- if (config$migration) {
+  undiag_prev <- if (stan_data$config$migration) {
     tibble::tibble(
       value = rowSums(sim_data$epi_uk$lat) +
         rowSums(sim_data$epi_uk_abroad$lat) +
@@ -102,7 +101,7 @@ extract_simulated_quantities <- function(sim_diags, config) {
       )
     )
 
-  diagnoses <- if (config$migration) {
+  diagnoses <- if (stan_data$config$migration) {
     tibble::tibble(
       value = rowSums(stan_data$HIV) + rowSums(stan_data$AIDS),
       year = seq(0, plot_years, by = 0.25),
@@ -156,7 +155,7 @@ extract_simulated_quantities <- function(sim_diags, config) {
     group = "Simulated values"
   )
 
-  cd4_strata <- if (config$migration) {
+  cd4_strata <- if (stan_data$config$migration) {
     tibble::tibble(
       `CD4>500` = rowSums(stan_data$CD4[,, 1]),
       `CD4 350-500` = rowSums(stan_data$CD4[,, 2]),
@@ -266,18 +265,14 @@ get_mse <- function(bias_df, group_name = "Test group") {
 #' Make a list of mean squared error (MSE) values for HIV model estimates.
 #'
 #' @param hiv_list A list of HIV model results.
-#' @param sim_diags The simulated diagnosis data containing stan_data and sim_data.
-#' @param config The configuration for the simulation.
 #' @param group_name The name of the group for labeling.
 #' @return A list of bias and MSE values for incidence, migration, proportion of UK-acquired infections that are migrants, and migration probabilities.
 #' @export
 make_mse_list <- function(
   hiv_list,
-  sim_diags,
-  config,
   group_name = "Test group"
 ) {
-  simulated_quantities <- extract_simulated_quantities(sim_diags, config)
+  simulated_quantities <- extract_simulated_quantities(hiv_list$stan_data)
 
   out <- list()
 
@@ -289,7 +284,7 @@ make_mse_list <- function(
   )
   out$incidence_mse <- get_mse(out$incidence_bias, group_name)
 
-  if (config$migration) {
+  if (hiv_list$stan_data$stan_data$config$migration) {
     out$migration_bias <- get_bias(
       hiv_list,
       simulated_quantities,
@@ -319,8 +314,6 @@ make_mse_list <- function(
 #' Box plots of mean squared error (MSE).
 #'
 #' @param hiv_list A list returned from the `postproc` function containing model estimates.
-#' @param sim_diags An optional data frame of simulated diagnoses to overlay on the plot
-#' @param sim_config An optional configuration list used to generate simulated estimates.
 #' @param quantity The quantity to plot MSE for (default is "incidence", other options are "migration", "prop_uk", and "mp").
 #' @param group_name The name of the group for labeling.
 #' @param offset The offset for text labels.
@@ -329,8 +322,6 @@ make_mse_list <- function(
 #' @export
 mse_plot <- function(
   hiv_list,
-  sim_diags,
-  sim_config,
   quantity = "incidence",
   group_name = "Test group",
   offset = 0.1,
@@ -338,8 +329,6 @@ mse_plot <- function(
 ) {
   data <- make_mse_list(
     hiv_list,
-    sim_diags,
-    sim_config,
     group_name
   )[[paste0(quantity, "_mse")]]
 
@@ -404,8 +393,6 @@ mse_plot <- function(
 #' Box plots of bias.
 #'
 #' @param hiv_list A list returned from the `postproc` function containing model estimates.
-#' @param sim_diags An optional data frame of simulated diagnoses to overlay on the plot
-#' @param sim_config An optional configuration list used to generate simulated estimates.
 #' @param quantity The quantity to plot bias for (default is "incidence", other options are "migration", "prop_uk", and "mp").
 #' @param group_name The name of the group for labeling.
 #' @param offset The offset for text labels.
@@ -414,8 +401,6 @@ mse_plot <- function(
 #' @export
 bias_plot <- function(
   hiv_list,
-  sim_diags,
-  sim_config,
   quantity = "incidence",
   group_name = "Test group",
   offset = 0.1,
@@ -423,8 +408,6 @@ bias_plot <- function(
 ) {
   data <- make_mse_list(
     hiv_list,
-    sim_diags,
-    sim_config,
     group_name
   )[[paste0(quantity, "_bias")]]
 

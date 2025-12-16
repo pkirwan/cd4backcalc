@@ -4,14 +4,10 @@
 \alias{make_mse_list}
 \title{Make a list of mean squared error (MSE) values for HIV model estimates.}
 \usage{
-make_mse_list(hiv_list, sim_diags, config, group_name = "Test group")
+make_mse_list(hiv_list, group_name = "Test group")
 }
 \arguments{
 \item{hiv_list}{A list of HIV model results.}
-
-\item{sim_diags}{The simulated diagnosis data containing stan_data and sim_data.}
-
-\item{config}{The configuration for the simulation.}
 
 \item{group_name}{The name of the group for labeling.}
 }

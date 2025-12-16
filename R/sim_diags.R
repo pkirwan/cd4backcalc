@@ -444,13 +444,76 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #'
 #' Simulates HIV epidemic data based on the provided configuration.
 #'
-#' @param config Configuration list defining simulation parameters and patterns.
+#' @param h_pattern Pattern type for infections ("constant", "increasing", "varying").
+#' @param o_pattern Pattern type for omega ("constant", "increasing", "step_change", "none").
+#' @param d_pattern Pattern type for diagnosis probabilities ("constant", "varying").
+#' @param p_pattern Pattern type for proportion UK ("constant", "increasing").
+#' @param m_pattern Pattern type for mu ("constant", "differing", "varying").
+#' @param r_pattern Pattern type for RITA data ("constant", "increasing", "none").
+#' @param a_pattern Pattern type for age-based data ("constant", "wedge", "varying_wedge").
+#' @param seed Random seed for reproducibility. If NULL, a random seed is generated.
+#' @param dist Logical indicating whether to add stochastic variation.
+#' @param migration Logical indicating whether to include migration effects.
+#' @param rita Logical indicating whether to simulate RITA (Recent Infection Testing Algorithm) data.
+#' @param age Logical indicating whether to simulate age-stratified data.
+#' @param nquar Number of time quarters.
+#' @param nage Number of age groups.
+#' @param q Vector of progression probabilities.
+#' @param target_inf Target total number of HIV acquisitions.
+#' @param target_mig Target total number of migrations.
+#' @param init_props Initial state proportions.
+#' @param init_props_abroad Initial state proportions for infections acquired abroad.
+#' @param abroad_prop Proportion of infections acquired abroad at the outset.
+#' @param cd4_completeness CD4 completeness.
 #' @return List containing simulated epidemic data.
 #' @examples
-#' config <- define_sim_config()
-#' simulate_diagnoses(config)
+#' simulate_diagnoses()
 #' @export
-simulate_diagnoses <- function(config) {
+simulate_diagnoses <- function(
+  h_pattern = "constant",
+  o_pattern = "constant",
+  d_pattern = "constant",
+  p_pattern = "constant",
+  m_pattern = "constant",
+  r_pattern = "constant",
+  a_pattern = "constant",
+  seed = NULL,
+  dist = TRUE,
+  migration = FALSE,
+  rita = FALSE,
+  age = FALSE,
+  nquar = 120, # number of quarters
+  nage = 52, # number of age groups
+  q = c(0.0976, 0.115, 0.116, 0.148), # progression probabilities
+  target_inf = 90000, # target total number of HIV acquisitions
+  target_mig = 12000, # target total number of migrations
+  init_props = c(7, 3.5, 1.75, 0.5), # initial state proportions
+  init_props_abroad = c(1.75, 2.25, 2.25, 1.25), # initial state proportions abroad
+  abroad_prop = 0.2, # proportion acquired abroad at outset
+  cd4_completeness = 1 # CD4 completeness
+) {
+  config <- define_sim_config(h_pattern,
+    o_pattern,
+    d_pattern,
+    p_pattern,
+    m_pattern,
+    r_pattern,
+    a_pattern,
+    seed,
+    dist,
+    migration,
+    rita,
+    age,
+    nquar,
+    nage,
+    q,
+    target_inf,
+    target_mig,
+    init_props,
+    init_props_abroad,
+    abroad_prop,
+    cd4_completeness
+  )
   set.seed(config$seed)
 
   # Generate model components
@@ -704,7 +767,8 @@ simulate_diagnoses <- function(config) {
     # log(p) is the appropriate transformation for the eta parameter in the migration model
     "eta_mean" = log(sim_data$prop_uk),
     # vague prior sd for eta
-    "eta_sd" = 0.5
+    "eta_sd" = 0.5,
+    "config" = config
   )
 
   # Perform validation checks

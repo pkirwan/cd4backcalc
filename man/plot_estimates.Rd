@@ -4,24 +4,14 @@
 \alias{plot_estimates}
 \title{Plot estimated model quantities}
 \usage{
-plot_estimates(
-  hiv_list,
-  sim_diags = NULL,
-  sim_config = NULL,
-  quantity,
-  chain = FALSE
-)
+plot_estimates(hiv_list, quantity, chain_results = FALSE)
 }
 \arguments{
 \item{hiv_list}{A list returned from the \code{postproc} function containing model estimates.}
 
-\item{sim_diags}{An optional data frame of simulated diagnoses to overlay on the plot.}
-
-\item{sim_config}{An optional configuration list used to generate simulated estimates.}
-
 \item{quantity}{A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "prop_uk", and "detect_prob".}
 
-\item{chain}{A logical indicating whether to plot chain-by-chain estimates (default is FALSE).}
+\item{chain_results}{A logical indicating whether to plot chain-by-chain estimates (default is FALSE).}
 }
 \value{
 A ggplot2 object.

@@ -4,12 +4,10 @@
 \alias{extract_simulated_quantities}
 \title{Extract simulated quantities based on the provided configuration.}
 \usage{
-extract_simulated_quantities(sim_diags, config)
+extract_simulated_quantities(sim_diags)
 }
 \arguments{
 \item{sim_diags}{The simulated diagnosis data containing stan_data and sim_data.}
-
-\item{config}{The configuration for the HIV model.}
 }
 \value{
 A list of model estimates including undiagnosed prevalence, incidence, migration, diagnosis probabilities, diagnoses, migration probabilities, proportion of UK-acquired infections that are migrants, transfers of care, and CD4 strata.

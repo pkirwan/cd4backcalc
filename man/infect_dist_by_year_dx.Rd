@@ -4,7 +4,7 @@
 \alias{infect_dist_by_year_dx}
 \title{Infection distribution by year of diagnosis}
 \usage{
-infect_dist_by_year_dx(stan_data, fit_mat, i, seed = 1707, config)
+infect_dist_by_year_dx(stan_data, fit_mat, i)
 }
 \arguments{
 \item{stan_data}{Data list used in stan model fitting.}
@@ -12,10 +12,6 @@ infect_dist_by_year_dx(stan_data, fit_mat, i, seed = 1707, config)
 \item{fit_mat}{Matrix of posterior samples from stan model.}
 
 \item{i}{Index of the posterior sample to process.}
-
-\item{seed}{Random seed for reproducibility.}
-
-\item{config}{Configuration list.}
 }
 \value{
 List containing HIV and AIDS diagnosis infection distributions.

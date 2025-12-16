@@ -6,8 +6,6 @@
 \usage{
 bias_plot(
   hiv_list,
-  sim_diags,
-  sim_config,
   quantity = "incidence",
   group_name = "Test group",
   offset = 0.1,
@@ -16,10 +14,6 @@ bias_plot(
 }
 \arguments{
 \item{hiv_list}{A list returned from the \code{postproc} function containing model estimates.}
-
-\item{sim_diags}{An optional data frame of simulated diagnoses to overlay on the plot}
-
-\item{sim_config}{An optional configuration list used to generate simulated estimates.}
 
 \item{quantity}{The quantity to plot bias for (default is "incidence", other options are "migration", "prop_uk", and "mp").}
 

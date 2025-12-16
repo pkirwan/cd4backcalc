@@ -30,8 +30,7 @@ The `simulate_diagnoses` function then uses this configuration to simulate HIV d
 
 ```{r simulate-data}
 ## simulate data
-sim_config <- define_sim_config(seed = 123, migration = FALSE, rita = FALSE, age = FALSE)
-sim_diags <- simulate_diagnoses(sim_config)
+sim_diags <- simulate_diagnoses(seed = 123, migration = FALSE, rita = FALSE, age = FALSE)
 ```
 
 ## Model configuration
@@ -41,21 +40,19 @@ After simulating diagnosis data, we can define the model configuration using the
 This function optionally takes in the simulation configuration used to generate the data, so that the model structure matches the data structure (e.g. including migration, RITA, or age groups if these were included in the simulation). In case real data are being used, then the simulation step can be skipped, and these parameters (migration, rita, and age) can be passed directly to the `stan_model_config` function.
 
 ```{r model-config}
-config <- stan_model_config(
+stan_data <- stan_model_config(
   inf_model = 1, # 1 spline, 2 random walk, 3 gp
-  diag_model = 1, # 1 spline, 2 random walk
-  sim_config = sim_config
+  diag_model = 1 # 1 spline, 2 random walk
 )
-stan_data <- model_type_prep(sim_diags$stan_data, config)
 ```
 
 ## Fit model
 
-Next, the `fit_backcalc` function is used to fit the back-calculation model to the simulated diagnosis data using the specified model configuration. The model fitting uses the rstan package and additional options can be passed to control the MCMC sampling process (e.g. number of iterations, number of chains, etc).
+Next, the `run_backcalc` function is used to fit the back-calculation model to the simulated diagnosis data using the specified model configuration. The model fitting uses the rstan package and additional options can be passed to control the MCMC sampling process (e.g. number of iterations, number of chains, etc).
 
 ```{r fit-model, eval=FALSE}
 ## fit model
-fit <- fit_backcalc(stan_data, config)
+hiv_list <- run_backcalc(stan_data)
 ```
 
 ## Assessing convergence
@@ -64,26 +61,16 @@ Convergence of the MCMC chains can be assessed using the `rstan` package functio
 
 ```{r convergence, eval = FALSE}
 ## plot diagnostics
-plot_diagnostics(fit)
-```
-
-## Post-processing
-
-After the model fitting has run the results need to be post-processed to obtain posterior predictive distributions of HIV incidence and undiagnosed HIV prevalence. This step is run outside of Stan to improve modelling efficiency, however the processing can still be distributed across multiple workers (if available) via the `future.apply` package. The `postproc` function performs the post-processing, which can either be for all chains together, or chain-by-chain (to identify divergent chains).
-
-```{r post-processing, eval = FALSE}
-## post-process model fit
-hiv_list <- postproc(fit, stan_data, sim_config, nworkers = 4, chain = FALSE)
+plot_diagnostics(hiv_list)
 ```
 
 ## Assessing goodness of fit
 
-The `hiv_list` object returned from the post-processing can now be compared to the simulated data using goodness of fit tests such as bias and mean squared error (MSE). This step can be omitted if models were not fitted to simulated data.
+The `hiv_list` object returned from the post-processing can now be compared to the simulated data using goodness of fit tests such as bias. When multiple models have been fitted a complementary mean squared error (MSE) plot can be used. This step can be omitted if models were not fitted to simulated data.
 
 ```{r goodness-of-fit, eval = FALSE}
 ## generate bias and MSE plots
-bias_plot(hiv_list, sim_diags, sim_config, quantity = "incidence")
-mse_plot(hiv_list, sim_diags, sim_config, quantity = "incidence")
+bias_plot(hiv_list, quantity = "incidence")
 ```
 
 ## Model estimates
@@ -92,10 +79,10 @@ A selection of pre-written plotting functions are available to plot the model es
 
 ```{r model-estimates, eval = FALSE}
 ## plot incidence estimates compared to simulated values
-plot_estimates(hiv_list, sim_diags, sim_config, quantity = "incidence")
+plot_estimates(hiv_list, quantity = "incidence")
 
 ## plot undiagnosed prevalence estimates compared to simulated values
-plot_estimates(hiv_list, sim_diags, sim_config, quantity = "undiag_prev")
+plot_estimates(hiv_list, quantity = "undiag_prev")
 ```
 
 ## References
