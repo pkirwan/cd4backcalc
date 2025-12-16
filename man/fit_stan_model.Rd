@@ -34,5 +34,6 @@ This function runs the CD4 back-calculation model using Stan and runs the post-p
 }
 \examples{
 sim_diags <- simulate_diagnoses(seed = 123)
-fit <- fit_stan_model(sim_diags, iter = 5, chains = 1, refresh = 0, messages = FALSE)
+stan_data <- model_type_prep(sim_diags)
+fit <- fit_stan_model(stan_data, iter = 10, chains = 1, refresh = 0, messages = FALSE)
 }
