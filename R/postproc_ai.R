@@ -3,7 +3,7 @@
 #' This function decides which post-processing routine needs to be run
 #' and passes the relevant data and arguments.
 #'
-#' @param fit Fitted stan model object.
+#' @param fit Fitted stan model object and stan_data list.
 #' @param stan_data Data list used in stan model fitting.
 #' @param start_yr Starting year for posterior predictive quantities.
 #' @param nworkers Number of parallel workers to use.
@@ -27,25 +27,12 @@ postproc <- function(
   nworkers = 1,
   chain_results = FALSE
 ) {
-
-  stan_list <- stan_data
-
-  # Check if sim_diags object has been provided
-  if ("stan_data" %in% names(stan_data)) {
-    stan_data <- stan_data$stan_data
-  }
-
   # Run the appropriate post-processing routine
   if (stan_data$config$age) {
-    hiv_list <- postproc_ad(fit, stan_data, start_yr, nworkers, chain_results)
+    postproc_ad(fit, stan_data, start_yr, nworkers, chain_results)
   } else {
-    hiv_list <- postproc_ai(fit, stan_data, start_yr, nworkers, chain_results)
+    postproc_ai(fit, stan_data, start_yr, nworkers, chain_results)
   }
-
-  # add stan_data to hiv_list
-  hiv_list$stan_data <- stan_list
-
-  return(hiv_list)
 }
 
 #' Post-process age-independent model fit
@@ -266,13 +253,15 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i) {
   if (i %% 10 == 0) {
     cat("Iteration Number = ", i, "\n")
   }
-  set.seed(stan_data$config$seed)
+  config <- stan_data$config
+
+  set.seed(config$seed)
   output <- list()
 
   # Extract dimensions and initialize variables
   n_CD4 <- nrow(stan_data$CD4)
   nquar <- stan_data$nquar
-  if (stan_data$config$migration) {
+  if (config$migration) {
     N_sample_uk <- rowSums(stan_data$CD4[, 1, ])
     N_sample_abroad <- rowSums(stan_data$CD4[, 2, ])
   } else {
@@ -281,13 +270,13 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i) {
 
   # Get initial prevalence
   init_prev <- if (!exists("init_prev", where = stan_data)) {
-    rep(0, stan_data$config$nlatst)
+    rep(0, config$nlatst)
   } else {
     stan_data$init_prev
   }
 
   init_prev_m <- if (!exists("init_prev_m", where = stan_data)) {
-    rep(0, stan_data$config$nlatst)
+    rep(0, config$nlatst)
   } else {
     stan_data$init_prev_m
   }
@@ -300,7 +289,7 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i) {
 
   # Get infections and migrations
   temp_h <- exp(fit_mat[i, grep("lambda", colnames(fit_mat))])
-  if (stan_data$config$migration) {
+  if (config$migration) {
     temp_omega <- exp(fit_mat[i, grep("gamma", colnames(fit_mat))])
     temp_p <- fit_mat[i, grep("^p\\[", colnames(fit_mat))]
     temp_m <- matrix(
@@ -312,7 +301,7 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i) {
   }
 
   # Calculate diagnoses
-  if (stan_data$config$rita) {
+  if (config$rita) {
     d5 <- fit_mat[i, grep("^d\\[5,", colnames(fit_mat))]
     diagnoses <- forward_calculate_rita(
       init_prev,
@@ -334,7 +323,7 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i) {
       d4 = d4,
       q = stan_data$q
     )
-    if (stan_data$config$migration) {
+    if (config$migration) {
       diagnoses_b <- forward_calculate(
         init_prev_m / 2,
         temp_h * temp_p,
@@ -387,7 +376,7 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i) {
   }
 
   # Calculate distributions
-  if (stan_data$config$migration) {
+  if (config$migration) {
     temp_HIV_dx_uk <- temp_diags_fun(diagnoses_combined_uk)
     d_to_i_HIV_uk <- diag_to_infec_wrap(temp_HIV_dx_uk)
     d_to_i_AIDS_uk <- normalize_mat(t(diagnoses_combined_uk$AIDS))
@@ -409,7 +398,7 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i) {
     under.report <- rep(0, nquar)
   }
 
-  if (stan_data$config$migration) {
+  if (config$migration) {
     unreported.AIDS <- stats::rpois(
       nquar,
       under.report * diagnoses_combined_uk$AIDS[1, ]
@@ -431,7 +420,7 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i) {
   }
 
   # Number of HIV diagnoses with no CD4
-  if (stan_data$config$migration) {
+  if (config$migration) {
     Dx.no.CD4.uk <- stan_data$HIV[, 1] - c(rep(0, nquar - n_CD4), N_sample_uk)
     Dx.no.CD4.abroad <- stan_data$HIV[, 2] -
       c(rep(0, nquar - n_CD4), N_sample_abroad)
@@ -450,7 +439,7 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i) {
           d_to_i_HIV_uk[,, x]
         )
       } else {
-        matrix(0, nrow = nquar * (stan_data$config$ndiagst - 1), ncol = 1)
+        matrix(0, nrow = nquar * (config$ndiagst - 1), ncol = 1)
       }
     })
 
@@ -458,13 +447,13 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i) {
       if (Dx.no.CD4.m[x] > 0 && sum(d_to_i_HIV_abroad[,, x]) > 0) {
         stats::rmultinom(1, Dx.no.CD4.m[x], d_to_i_HIV_abroad[,, x])
       } else {
-        matrix(0, nrow = nquar * (stan_data$config$ndiagst - 1), ncol = 1)
+        matrix(0, nrow = nquar * (config$ndiagst - 1), ncol = 1)
       }
     })
 
     temp <- array(
-      c(matrix(0, stan_data$config$ndiagst - 1, nquar), temp_uk + temp_abroad),
-      dim = c(stan_data$config$ndiagst - 1, nquar, nquar)
+      c(matrix(0, config$ndiagst - 1, nquar), temp_uk + temp_abroad),
+      dim = c(config$ndiagst - 1, nquar, nquar)
     )
   } else {
     Dx.no.CD4 <- stan_data$HIV - c(rep(0, nquar - n_CD4), N_sample)
@@ -473,14 +462,14 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i) {
       stats::rmultinom(1, Dx.no.CD4[x], d_to_i_HIV[,, x])
     })
     temp <- array(
-      c(matrix(0, stan_data$config$ndiagst - 1, nquar), temp),
-      dim = c(stan_data$config$ndiagst - 1, nquar, nquar)
+      c(matrix(0, config$ndiagst - 1, nquar), temp),
+      dim = c(config$ndiagst - 1, nquar, nquar)
     )
   }
   output$HIV.Dx.Infect.Dist <- temp
 
   # Simulating AIDS diagnoses
-  tempvec <- if (stan_data$config$migration) {
+  tempvec <- if (config$migration) {
     sapply(5:nquar, function(x) {
       if (sum(stan_data$AIDS[x, ]) > 0 && sum(d_to_i_AIDS_uk[x, ]) > 0) {
         stats::rmultinom(1, sum(stan_data$AIDS[x, ]), d_to_i_AIDS_uk[x, ])
@@ -496,7 +485,7 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i) {
 
   output$AIDS.Dx.Infect.Dist <- cbind(0, 0, 0, 0, tempvec) + unreported.AIDS
 
-  if (stan_data$config$rita) {
+  if (config$rita) {
     collapsed_s1 <- colSums(diagnoses$prevalence[, 1:3, ])
     dist_s1 <- t(collapsed_s1) / colSums(collapsed_s1)
 
@@ -519,7 +508,7 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i) {
         cbind(matrix(0, nquar, nquar - ncol(tempvec1)), tempvec1)
     }
 
-    for (state in 4:stan_data$config$nlatst) {
+    for (state in 4:config$nlatst) {
       d_to_i_temp <- diag_to_infec_wrap1(diagnoses$prevalence, state)
 
       HIV.diags <- c(
@@ -537,14 +526,14 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i) {
         cbind(matrix(0, nquar, nquar - ncol(tempvec1)), tempvec1)
     }
   } else {
-    for (state in 1:(stan_data$config$ndiagst - 1)) {
-      d_to_i_temp <- if (stan_data$config$migration) {
+    for (state in 1:(config$ndiagst - 1)) {
+      d_to_i_temp <- if (config$migration) {
         diag_to_infec_wrap1(diagnoses_combined$prevalence, state)
       } else {
         diag_to_infec_wrap1(diagnoses$prevalence, state)
       }
 
-      HIV.diags <- if (stan_data$config$migration) {
+      HIV.diags <- if (config$migration) {
         c(rep(0, nquar - n_CD4), rowSums(stan_data$CD4[,, state]))
       } else {
         c(rep(0, nquar - n_CD4), stan_data$CD4[, state])
@@ -577,7 +566,9 @@ prev_by_year_infection <- function(stan_data, fit_mat, i) {
   if (i %% 10 == 0) {
     cat("Iteration Number = ", i, "\n")
   }
-  set.seed(stan_data$config$seed)
+  config <- stan_data$config
+
+  set.seed(config$seed)
   output <- list()
 
   n_CD4 <- nrow(stan_data$CD4)
@@ -586,13 +577,13 @@ prev_by_year_infection <- function(stan_data, fit_mat, i) {
 
   # Get initial prevalence
   init_prev <- if (!exists("init_prev", where = stan_data)) {
-    rep(0, stan_data$config$nlatst) ### Allows modification for initial prevalence
+    rep(0, config$nlatst) ### Allows modification for initial prevalence
   } else {
     stan_data$init_prev
   }
 
   init_prev_m <- if (!exists("init_prev_m", where = stan_data)) {
-    rep(0, stan_data$config$nlatst)
+    rep(0, config$nlatst)
   } else {
     stan_data$init_prev_m
   }
@@ -606,7 +597,7 @@ prev_by_year_infection <- function(stan_data, fit_mat, i) {
   # Get infections and migrations
   temp_h <- exp(fit_mat[i, grep("lambda", colnames(fit_mat))])
 
-  if (stan_data$config$migration) {
+  if (config$migration) {
     temp_omega <- exp(fit_mat[i, grep("gamma", colnames(fit_mat))])
     temp_p <- fit_mat[i, grep("^p\\[", colnames(fit_mat))]
     temp_m <- matrix(
@@ -618,7 +609,7 @@ prev_by_year_infection <- function(stan_data, fit_mat, i) {
   }
 
   # Calculate diagnoses
-  if (stan_data$config$rita) {
+  if (config$rita) {
     d5 <- fit_mat[i, grep("^d\\[5,", colnames(fit_mat))]
     diagnoses <- forward_calculate_rita(
       init_prev,
@@ -640,7 +631,7 @@ prev_by_year_infection <- function(stan_data, fit_mat, i) {
       d4 = d4,
       q = stan_data$q
     )
-    if (stan_data$config$migration) {
+    if (config$migration) {
       diagnoses_b <- forward_calculate(
         init_prev_m,
         temp_h * temp_p,
@@ -692,7 +683,7 @@ prev_by_year_infection <- function(stan_data, fit_mat, i) {
     }
   }
 
-  if (!stan_data$config$migration) {
+  if (!config$migration) {
     diagnoses_combined <- diagnoses
   }
 
@@ -712,7 +703,7 @@ prev_by_year_infection <- function(stan_data, fit_mat, i) {
     nquar
   )
 
-  if (stan_data$config$migration) {
+  if (config$migration) {
     output$total.migration <- stats::rpois(length(temp_omega), temp_omega)
     output$undx.migration <- stats::rpois(length(temp_omega), colSums(temp_om))
     output$transfers <- stats::rpois(
@@ -722,7 +713,7 @@ prev_by_year_infection <- function(stan_data, fit_mat, i) {
   }
   # output$expected.p <- matrix(rpois(length(diagnoses$expected.p),diagnoses$expected.p),4,nquar,nquar)
   # Calculate distributions
-  if (stan_data$config$migration) {
+  if (config$migration) {
     temp_HIV_dx_uk <- temp_diags_fun(diagnoses_combined_uk)
     d_to_i_HIV_uk <- diag_to_infec_wrap(temp_HIV_dx_uk)
     d_to_i_AIDS_uk <- normalize_mat(t(diagnoses_combined_uk$AIDS))
@@ -761,15 +752,15 @@ prev_by_year_infection <- function(stan_data, fit_mat, i) {
     stats::rpois(
       n = prod(dim(diagnoses_combined$prevalence[
         nquar,
-        1:stan_data$config$nlatst,
+        1:config$nlatst,
       ])),
-      lambda = diagnoses_combined$prevalence[nquar, 1:stan_data$config$nlatst, ]
+      lambda = diagnoses_combined$prevalence[nquar, 1:config$nlatst, ]
     ),
-    nrow = stan_data$config$nlatst
+    nrow = config$nlatst
   )
 
   # Number of HIV diagnoses with no CD4
-  Dx.no.CD4 <- if (stan_data$config$migration) {
+  Dx.no.CD4 <- if (config$migration) {
     rowSums(stan_data$HIV) - c(rep(0, nquar - n_CD4), N_sample)
   } else {
     stan_data$HIV - c(rep(0, nquar - n_CD4), N_sample)
@@ -779,19 +770,19 @@ prev_by_year_infection <- function(stan_data, fit_mat, i) {
     if (Dx.no.CD4[x] > 0 && sum(d_to_i_HIV[,, x]) > 0) {
       stats::rmultinom(1, Dx.no.CD4[x], d_to_i_HIV[,, x])
     } else {
-      matrix(0, nrow = nquar * (stan_data$config$ndiagst - 1), ncol = 1)
+      matrix(0, nrow = nquar * (config$ndiagst - 1), ncol = 1)
     }
   })
   temp <- array(
-    c(matrix(0, stan_data$config$ndiagst - 1, nquar), temp),
-    dim = c(stan_data$config$ndiagst - 1, nquar, nquar)
+    c(matrix(0, config$ndiagst - 1, nquar), temp),
+    dim = c(config$ndiagst - 1, nquar, nquar)
   )
 
   output$HIV.Dx.no.CD4 <- apply(temp, 1:2, sum)
-  output$HIV.Dx.CD4 <- matrix(0, stan_data$config$ndiagst - 1, nquar) ## Initialization needed later
+  output$HIV.Dx.CD4 <- matrix(0, config$ndiagst - 1, nquar) ## Initialization needed later
 
   # Simulating AIDS diagnoses
-  tempvec <- if (stan_data$config$migration) {
+  tempvec <- if (config$migration) {
     sapply(5:nquar, function(x) {
       if (sum(stan_data$AIDS[x, ]) > 0 && sum(d_to_i_AIDS_uk[x, ]) > 0) {
         stats::rmultinom(1, sum(stan_data$AIDS[x, ]), d_to_i_AIDS_uk[x, ])
@@ -807,7 +798,7 @@ prev_by_year_infection <- function(stan_data, fit_mat, i) {
 
   output$reported.AIDS <- rowSums(tempvec)
 
-  if (stan_data$config$rita) {
+  if (config$rita) {
     collapsed_s1 <- colSums(diagnoses$prevalence[, 1:3, ])
     dist_s1 <- t(collapsed_s1) / colSums(collapsed_s1)
 
@@ -829,7 +820,7 @@ prev_by_year_infection <- function(stan_data, fit_mat, i) {
       output$HIV.Dx.CD4[1, ] <- output$HIV.Dx.CD4[1, ] + rowSums(tempvec1)
     }
 
-    for (state in 4:stan_data$config$nlatst) {
+    for (state in 4:config$nlatst) {
       d_to_i_temp <- diag_to_infec_wrap1(diagnoses$prevalence, state)
 
       HIV.diags <- c(
@@ -843,9 +834,9 @@ prev_by_year_infection <- function(stan_data, fit_mat, i) {
       output$HIV.Dx.CD4[state - 2, ] <- rowSums(tempvec1)
     }
   } else {
-    for (state in 1:(stan_data$config$ndiagst - 1)) {
+    for (state in 1:(config$ndiagst - 1)) {
       d_to_i_temp <- diag_to_infec_wrap1(diagnoses_combined$prevalence, state)
-      HIV.diags <- if (stan_data$config$migration) {
+      HIV.diags <- if (config$migration) {
         c(
           rep(0, nquar - n_CD4),
           rowSums(stan_data$CD4[,, state])

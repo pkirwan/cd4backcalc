@@ -25,6 +25,7 @@ get_quantiles <- function(x) {
 #' @param nt Total number of time points (quarters).
 #' @param type Type of incidence calculation, either "time" or "age".
 #' @param qt.flag Logical flag indicating whether to aggregate quarterly infections into yearly.
+#' @param nage Number of age groups.
 #' @return A matrix with summary statistics (2.5%, 50%, mean, 97.5%) for each time point or age group.
 infs.fct <- function(
   infs,
@@ -32,7 +33,8 @@ infs.fct <- function(
   age.end,
   nt,
   type = "time",
-  qt.flag = FALSE
+  qt.flag = FALSE,
+  nage = 52
 ) {
   ## infs is a matrix with quarterly log-infections for each posterior sample in each row
   ## qt.flag=TRUE aggregates quarterly infections and makes them yearly
@@ -46,12 +48,12 @@ infs.fct <- function(
   }
   if (type == "time") {
     if (!qt.flag) {
-      call <- "rowSums(matrix(x, nr=nt)[,a1:a2])"
+      call <- "rowSums(matrix(x, nrow = nt, ncol = nage)[,a1:a2])"
     } else {
-      call <- "tapply(rowSums(matrix(x, nr=nt)[,a1:a2]), qt.indx, sum)"
+      call <- "tapply(rowSums(matrix(x, nrow = nt, ncol = nage)[,a1:a2]), qt.indx, sum)"
     }
   } else {
-    call <- "colSums(matrix(x, nr=nt)[,a1:a2])"
+    call <- "colSums(matrix(x, nrow = nt, ncol = nage)[,a1:a2])"
   }
   x <- t(apply(exp(infs), 1, function(x) eval(parse(text = call))))
   return(apply(x, 2, get_quantiles))
@@ -67,8 +69,9 @@ infs.fct <- function(
 #' @param age.end Ending age for incidence calculation.
 #' @param nt Total number of time points (quarters).
 #' @param qt.flag Logical flag indicating whether to aggregate quarterly infections into yearly.
+#' @param nage Number of age groups.
 #' @return A matrix with summary statistics (2.5%, 50%, mean, 97.5%) for each time point.
-infs.fct.qt <- function(infs, age.st, age.end, nt, qt.flag = FALSE) {
+infs.fct.qt <- function(infs, age.st, age.end, nt, qt.flag = FALSE, nage = 52) {
   ## infs is a matrix with quarterly log-infections for each posterior sample in each row
   ## qt.flag=TRUE aggregates quarterly infections and makes them yearly
   a1 <- age.st - 14
@@ -77,7 +80,7 @@ infs.fct.qt <- function(infs, age.st, age.end, nt, qt.flag = FALSE) {
     infs <- infs[, rep(1:ncol(infs), each = 4)] / 4 ## making yearly infs constant in quarters
     nt <- nt * 4 ## nt is quarter also for yearly model
   }
-  call <- "rowSums(matrix(x, nr=nt)[,a1:a2])"
+  call <- "rowSums(matrix(x, nrow = nt, ncol = nage)[,a1:a2])"
   x <- t(apply(exp(infs), 1, function(x) eval(parse(text = call))))
   return(apply(x, 2, get_quantiles))
 }
@@ -93,8 +96,9 @@ infs.fct.qt <- function(infs, age.st, age.end, nt, qt.flag = FALSE) {
 #' @param nt Total number of time points (quarters).
 #' @param qt.flag Logical flag indicating whether to aggregate quarterly infections into yearly.
 #' @param totals A list containing total population counts for different age classes.
+#' @param nage Number of age groups.
 #' @return A matrix with summary statistics (2.5%, 50%, mean, 97.5%) for each time point.
-inc.fct <- function(infs, age.cl, last.yr, nt, qt.flag = FALSE, totals) {
+inc.fct <- function(infs, age.cl, last.yr, nt, qt.flag = FALSE, totals, nage = 52) {
   ## infs is a matrix with quarterly log-infections for each posterior sample in each row
   ## qt.flag=TRUE aggregates quarterly infections and makes them yearly
   if (!age.cl %in% c("Tot", "15-34", "35-44", "45+")) {
@@ -123,11 +127,11 @@ inc.fct <- function(infs, age.cl, last.yr, nt, qt.flag = FALSE, totals) {
 
   if (!qt.flag) {
     ind <- (nt - last.yr + 1):nt
-    call <- "rowSums(matrix(x, nr=nt)[ind,a1:a2]) / den "
+    call <- "rowSums(matrix(x, nrow = nt, ncol = nage)[ind,a1:a2]) / den "
   } else {
     qt.indx <- rep(1:last.yr, each = 4)
     ind <- (nt - 4 * last.yr + 1):nt
-    call <- "tapply(rowSums(matrix(x, nr=nt)[ind,a1:a2]), qt.indx, sum) / den"
+    call <- "tapply(rowSums(matrix(x, nrow = nt, ncol = nage)[ind,a1:a2]), qt.indx, sum) / den"
   }
 
   x <- t(apply(exp(infs), 1, function(x) eval(parse(text = call))))
@@ -142,8 +146,9 @@ inc.fct <- function(infs, age.cl, last.yr, nt, qt.flag = FALSE, totals) {
 #' @param nt Total number of time points (quarters).
 #' @param last.yr Number of last years to consider for peak identification.
 #' @param qt.flag Logical flag indicating whether to aggregate quarterly infections into yearly.
+#' @param nage Number of age groups.
 #' @return A numeric vector indicating the peak position for each posterior sample.
-peak.fct <- function(infs, age.st, age.end, nt, last.yr = 10, qt.flag = FALSE) {
+peak.fct <- function(infs, age.st, age.end, nt, last.yr = 10, qt.flag = FALSE, nage = 52) {
   ## infs is a matrix with quarterly log-infections for each posterior sample in each row
   ## qt.flag=TRUE aggregates quarterly infections and makes them yearly
   if (last.yr > (nt / 4)) {
@@ -153,11 +158,11 @@ peak.fct <- function(infs, age.st, age.end, nt, last.yr = 10, qt.flag = FALSE) {
   a2 <- age.end - 14
   if (!qt.flag) {
     ind <- (nt - last.yr + 1):nt
-    call <- "rowSums(matrix(x, nr=nt)[ind,a1:a2])"
+    call <- "rowSums(matrix(x, nrow = nt, ncol = nage)[ind,a1:a2])"
   } else {
     qt.indx <- rep(1:last.yr, each = 4)
     ind <- (nt - 4 * last.yr + 1):nt
-    call <- "tapply(rowSums(matrix(x, nr=nt)[ind,a1:a2]), qt.indx, sum)"
+    call <- "tapply(rowSums(matrix(x, nrow = nt, ncol = nage)[ind,a1:a2]), qt.indx, sum)"
   }
   x <- t(apply(exp(infs), 1, function(x) eval(parse(text = call))))
   ### yields maximum in the last years
@@ -204,8 +209,9 @@ shape.fct <- function(x) {
 #' @param nt Total number of time points (quarters).
 #' @param last.yr Number of last years to consider for trend identification.
 #' @param qt.flag Logical flag indicating whether to aggregate quarterly infections into yearly.
+#' @param nage Number of age groups.
 #' @return A character vector indicating the trend for each posterior sample.
-trend.fct <- function(infs, age.st, age.end, nt, last.yr = 3, qt.flag = FALSE) {
+trend.fct <- function(infs, age.st, age.end, nt, last.yr = 3, qt.flag = FALSE, nage = 52) {
   if (last.yr > (nt / 4)) {
     stop("Specified last year is too large")
   }
@@ -213,11 +219,11 @@ trend.fct <- function(infs, age.st, age.end, nt, last.yr = 3, qt.flag = FALSE) {
   a2 <- age.end - 14
   if (!qt.flag) {
     ind <- (nt - last.yr + 1):nt
-    call <- "rowSums(matrix(x, nr=nt)[ind,a1:a2])"
+    call <- "rowSums(matrix(x, nrow = nt, ncol = nage)[ind,a1:a2])"
   } else {
     qt.indx <- rep(1:last.yr, each = 4)
     ind <- (nt - 4 * last.yr + 1):nt
-    call <- "tapply(rowSums(matrix(x, nr=nt)[ind,a1:a2]), qt.indx, sum)"
+    call <- "tapply(rowSums(matrix(x, nrow = nt, ncol = nage)[ind,a1:a2]), qt.indx, sum)"
   }
   x <- t(apply(exp(infs), 1, function(x) eval(parse(text = call))))
   return(apply(x, 1, shape.fct))
@@ -373,10 +379,10 @@ d.mat.iter <- function(
       d.mat[4, , 4] <- fit.mat[iter, ind_list$d4.ind.o]
     } else {
       d.mat <- array(NA, dim = c(4, nt, nage))
-      d.mat[1, , ] <- matrix(fit.mat[iter, ind_list$d1.ind], nrow = nt)
-      d.mat[2, , ] <- matrix(fit.mat[iter, ind_list$d2.ind], nrow = nt)
-      d.mat[3, , ] <- matrix(fit.mat[iter, ind_list$d3.ind], nrow = nt)
-      d.mat[4, , ] <- matrix(fit.mat[iter, ind_list$d4.ind], nrow = nt)
+      d.mat[1, , ] <- matrix(fit.mat[iter, ind_list$d1.ind], nrow = nt, ncol = nage)
+      d.mat[2, , ] <- matrix(fit.mat[iter, ind_list$d2.ind], nrow = nt, ncol = nage)
+      d.mat[3, , ] <- matrix(fit.mat[iter, ind_list$d3.ind], nrow = nt, ncol = nage)
+      d.mat[4, , ] <- matrix(fit.mat[iter, ind_list$d4.ind], nrow = nt, ncol = nage)
     }
   }
 

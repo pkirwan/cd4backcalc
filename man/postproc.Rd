@@ -7,7 +7,7 @@
 postproc(fit, stan_data, start_yr = 0, nworkers = 1, chain_results = FALSE)
 }
 \arguments{
-\item{fit}{Fitted stan model object.}
+\item{fit}{Fitted stan model object and stan_data list.}
 
 \item{stan_data}{Data list used in stan model fitting.}
 
@@ -25,7 +25,7 @@ This function decides which post-processing routine needs to be run
 and passes the relevant data and arguments.
 }
 \examples{
-sim_diags <- simulate_diagnoses(seed = 123)
+stan_data <- simulate_diagnoses(seed = 123)
 fit <- fit_stan_model(
    stan_data,
    iter = 10,

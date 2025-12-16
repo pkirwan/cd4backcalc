@@ -6,11 +6,6 @@
 \usage{
 fit_stan_model(
   stan_data,
-  migration = FALSE,
-  rita = FALSE,
-  age = FALSE,
-  inf_model = 1,
-  diag_model = 1,
   seed = NULL,
   iter = 2000,
   chains = 4,
@@ -20,16 +15,6 @@ fit_stan_model(
 }
 \arguments{
 \item{stan_data}{A list of data formatted for Stan.}
-
-\item{migration}{Logical indicating whether to include migration in the model.}
-
-\item{rita}{Logical indicating whether to include RITA data in the model.}
-
-\item{age}{Logical indicating whether to include age-specific data in the model.}
-
-\item{inf_model}{Infection model type (1 = spline, 2 = random walk, 3 = GP).}
-
-\item{diag_model}{Diagnosis model type (1 = spline, 2 = random walk).}
 
 \item{seed}{Random seed for reproducibility.}
 

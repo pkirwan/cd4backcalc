@@ -20,11 +20,11 @@ generate_infections <- function(
   ann_inf <- target_inf / nquar
   infs <- dplyr::case_when(
     pattern == "varying" ~ c(
-      seq(1.2, 2, length.out = nquar * 0.1),
-      seq(2, 1.4, length.out = nquar * 4 / 15),
-      seq(1.4, 1, length.out = nquar * 0.2),
-      seq(1, 0.3, length.out = nquar * 2 / 15),
-      seq(0.3, 0.1, length.out = nquar * 0.3)
+      seq(1.2, 2, length.out = round(nquar * 0.1)),
+      seq(2, 1.4, length.out = round(nquar * 4 / 15)),
+      seq(1.4, 1, length.out = round(nquar * 0.2)),
+      seq(1, 0.3, length.out = round(nquar * 2 / 15)),
+      seq(0.3, 0.1, length.out = round(nquar * 0.3))
     ) *
       ann_inf,
     pattern == "constant" ~ rep(ann_inf, nquar),
@@ -55,11 +55,11 @@ generate_omega <- function(nquar, pattern, target_mig = 12000, dist = TRUE) {
     pattern == "constant" ~ rep(ann_mig, nquar),
     pattern == "increasing" ~ seq(0.5, 1.5, length.out = nquar) * ann_mig,
     pattern == "step_change" ~ c(
-      seq(0.4, 0.4, length.out = nquar * 0.1),
-      seq(0.4, 1.2, length.out = nquar * 0.1),
-      seq(1.2, 0.4, length.out = nquar * 0.1),
-      seq(0.4, 1.3, length.out = nquar * 0.6),
-      seq(1.3, 4.5, length.out = nquar * 0.1)
+      seq(0.4, 0.4, length.out = round(nquar * 0.1)),
+      seq(0.4, 1.2, length.out = round(nquar * 0.1)),
+      seq(1.2, 0.4, length.out = round(nquar * 0.1)),
+      seq(0.4, 1.3, length.out = round(nquar * 0.6)),
+      seq(1.3, 4.5, length.out = round(nquar * 0.1))
     ) *
       ann_mig,
     pattern == "none" ~ rep(0, nquar)

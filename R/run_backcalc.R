@@ -39,27 +39,37 @@ run_backcalc <- function(
   chain_results = FALSE,
   return_fit = TRUE
 ) {
+  # Check if sim_diags object has been provided
+  if ("stan_data" %in% names(stan_data)) {
+    sim_data <- stan_data$sim_data
+    stan_data <- stan_data$stan_data
+  } else {
+    sim_data <- NULL
+  }
+
+  # Prepare spline basis and augment stan_data
+  stan_data <- model_type_prep(stan_data, migration, rita, age, inf_model, diag_model, seed)
+
   # fit model
   fit <- fit_stan_model(
     stan_data,
-    migration,
-    rita,
-    age,
-    inf_model,
-    diag_model,
     seed,
     iter,
     chains,
     refresh,
     messages
   )
-
+  
+  gc() # clean up memory before post-processing
+  
   # post-process
   hiv_list <- postproc(fit, stan_data, start_yr, nworkers, chain_results)
-
+  
   if (return_fit) {
     hiv_list$fit <- fit
   }
+  hiv_list$stan_data <- stan_data
+  hiv_list$sim_data <- sim_data
 
   return(hiv_list)
 }
@@ -69,11 +79,6 @@ run_backcalc <- function(
 #' This function runs the CD4 back-calculation model using Stan and runs the post-processing.
 #'
 #' @param stan_data A list of data formatted for Stan.
-#' @param migration Logical indicating whether to include migration in the model.
-#' @param rita Logical indicating whether to include RITA data in the model.
-#' @param age Logical indicating whether to include age-specific data in the model.
-#' @param inf_model Infection model type (1 = spline, 2 = random walk, 3 = GP).
-#' @param diag_model Diagnosis model type (1 = spline, 2 = random walk).
 #' @param seed Random seed for reproducibility.
 #' @param iter Number of iterations for Stan sampling.
 #' @param chains Number of chains for Stan sampling.
@@ -86,11 +91,6 @@ run_backcalc <- function(
 #' @export
 fit_stan_model <- function(
   stan_data,
-  migration = FALSE,
-  rita = FALSE,
-  age = FALSE,
-  inf_model = 1,
-  diag_model = 1,
   seed = NULL,
   iter = 2000,
   chains = 4,
@@ -101,27 +101,11 @@ fit_stan_model <- function(
   options(mc.cores = parallel::detectCores())
   rstan::rstan_options(auto_write = TRUE)
 
-  # Check if sim_diags object has been provided
-  if ("stan_data" %in% names(stan_data)) {
-    stan_data <- stan_data$stan_data
-  }
-
-  # Create stan_data$config if it doesn't exist
-  if (is.null(stan_data$config)) {
-    stan_data$config <- stan_model_config(migration, rita, age)
-  } else {
-    stan_data$config$inf_model <- inf_model
-    stan_data$config$diag_model <- diag_model
-  }
-
   # Check stan_data validity
   confirm_stan_data(stan_data)
 
   # Load appropriate model
   model <- load_stan_model(stan_data$config)
-
-  # Prepare spline basis and augment stan_data
-  stan_data <- model_type_prep(stan_data)
 
   # Make pars_save
   pars_save <- make_pars_save(stan_data$config)
@@ -257,16 +241,50 @@ load_stan_model <- function(config) {
 #' with the design matrices for the back-calculation model.
 #'
 #' @param stan_data A list of data formatted for Stan.
+#' @param migration Logical indicating whether to include migration in the model.
+#' @param rita Logical indicating whether to include RITA data in the model.
+#' @param age Logical indicating whether to include age-specific data in the model.
+#' @param inf_model Infection model type (1 = spline, 2 = random walk, 3 = GP).
+#' @param diag_model Diagnosis model type (1 = spline, 2 = random walk).
+#' @param seed Random seed for reproducibility.
 #' @param basis Basis type for the spline (default is "ts" for thin plate regression spline).
 #' @param knots Number of knots for the spline (default is 10).
 #' @param penalty Order of the penalty for the spline (default is 2).
 #' @return The augmented stan_data list with spline design matrices and prior information.
+#' @export
 model_type_prep <- function(
   stan_data,
+  migration = FALSE,
+  rita = FALSE,
+  age = FALSE,
+  inf_model = 1,
+  diag_model = 1,
+  seed = NULL,
   basis = "ts",
   knots = 10,
   penalty = 2
 ) {
+  # Check if sim_diags object has been provided
+  if ("stan_data" %in% names(stan_data)) {
+    sim_diags <- stan_data$sim_diags
+    stan_data <- stan_data$stan_data
+  }
+
+  # Create stan_data$config if it doesn't exist
+  if (is.null(stan_data$config)) {
+    stan_data$config <- stan_model_config(
+      migration,
+      rita,
+      age,
+      inf_model,
+      diag_model,
+      seed
+    )
+  } else {
+    stan_data$config$inf_model <- inf_model
+    stan_data$config$diag_model <- diag_model
+  }
+
   if (stan_data$config$age) {
     # Generate fake data for jagam to create the spline basis
     jags_data <- list(

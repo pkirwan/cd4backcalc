@@ -1,6 +1,6 @@
 test_that("cd4-only back-calculation produces a stanfit object", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(seed = 123, nquar = 30)
+  stan_data <- simulate_diagnoses(seed = 123)
   # Test run_backcalc
   suppressWarnings({
     hiv_list <- run_backcalc(
@@ -53,12 +53,12 @@ test_that("rita back-calculation produces a stanfit object", {
 })
 
 test_that("age-specific back-calculation runs without error", {
-  stan_data <- simulate_diagnoses(seed = 123, age = TRUE)
+  stan_data <- simulate_diagnoses(seed = 123, nquar = 40, age = TRUE)
   # Test run_backcalc
   suppressWarnings({
     hiv_list <- run_backcalc(
       stan_data,
-      iter = 2,
+      iter = 10,
       chains = 1,
       refresh = 0,
       messages = FALSE,
@@ -66,16 +66,21 @@ test_that("age-specific back-calculation runs without error", {
     )
   })
   expect_s4_class(hiv_list$fit, "stanfit")
-  expect_true("diag_prob" %in% names(hiv_list))
+  expect_true("d1.q.y" %in% names(hiv_list))
 })
 
 test_that("age-specific rita back-calculation runs without error", {
-  stan_data <- simulate_diagnoses(seed = 123, age = TRUE, rita = TRUE)
+  stan_data <- simulate_diagnoses(
+    seed = 123,
+    nquar = 40,
+    age = TRUE,
+    rita = TRUE
+  )
   # Test run_backcalc
   suppressWarnings({
     hiv_list <- run_backcalc(
       stan_data,
-      iter = 2,
+      iter = 10,
       chains = 1,
       refresh = 0,
       messages = FALSE,
@@ -83,5 +88,5 @@ test_that("age-specific rita back-calculation runs without error", {
     )
   })
   expect_s4_class(hiv_list$fit, "stanfit")
-  expect_true("diag_prob" %in% names(hiv_list))
+  expect_true("d1.q.y" %in% names(hiv_list))
 })

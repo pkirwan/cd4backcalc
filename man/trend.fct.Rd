@@ -4,7 +4,7 @@
 \alias{trend.fct}
 \title{Function to identify the trend in infection in the last x years}
 \usage{
-trend.fct(infs, age.st, age.end, nt, last.yr = 3, qt.flag = FALSE)
+trend.fct(infs, age.st, age.end, nt, last.yr = 3, qt.flag = FALSE, nage = 52)
 }
 \arguments{
 \item{infs}{A matrix with quarterly log-infections for each posterior sample in each row.}
@@ -18,6 +18,8 @@ trend.fct(infs, age.st, age.end, nt, last.yr = 3, qt.flag = FALSE)
 \item{last.yr}{Number of last years to consider for trend identification.}
 
 \item{qt.flag}{Logical flag indicating whether to aggregate quarterly infections into yearly.}
+
+\item{nage}{Number of age groups.}
 }
 \value{
 A character vector indicating the trend for each posterior sample.

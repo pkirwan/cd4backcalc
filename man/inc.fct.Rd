@@ -4,7 +4,7 @@
 \alias{inc.fct}
 \title{Function to get posterior functions of incidence rate}
 \usage{
-inc.fct(infs, age.cl, last.yr, nt, qt.flag = FALSE, totals)
+inc.fct(infs, age.cl, last.yr, nt, qt.flag = FALSE, totals, nage = 52)
 }
 \arguments{
 \item{infs}{A matrix with quarterly log-infections for each posterior sample in each row.}
@@ -18,6 +18,8 @@ inc.fct(infs, age.cl, last.yr, nt, qt.flag = FALSE, totals)
 \item{qt.flag}{Logical flag indicating whether to aggregate quarterly infections into yearly.}
 
 \item{totals}{A list containing total population counts for different age classes.}
+
+\item{nage}{Number of age groups.}
 }
 \value{
 A matrix with summary statistics (2.5\%, 50\%, mean, 97.5\%) for each time point.

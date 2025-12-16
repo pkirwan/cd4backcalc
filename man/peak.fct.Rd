@@ -4,7 +4,7 @@
 \alias{peak.fct}
 \title{Function to identify the peak in infection in the last x years}
 \usage{
-peak.fct(infs, age.st, age.end, nt, last.yr = 10, qt.flag = FALSE)
+peak.fct(infs, age.st, age.end, nt, last.yr = 10, qt.flag = FALSE, nage = 52)
 }
 \arguments{
 \item{infs}{A matrix with quarterly log-infections for each posterior sample in each row.}
@@ -18,6 +18,8 @@ peak.fct(infs, age.st, age.end, nt, last.yr = 10, qt.flag = FALSE)
 \item{last.yr}{Number of last years to consider for peak identification.}
 
 \item{qt.flag}{Logical flag indicating whether to aggregate quarterly infections into yearly.}
+
+\item{nage}{Number of age groups.}
 }
 \value{
 A numeric vector indicating the peak position for each posterior sample.

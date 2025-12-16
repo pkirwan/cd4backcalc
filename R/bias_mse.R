@@ -272,7 +272,7 @@ make_mse_list <- function(
   hiv_list,
   group_name = "Test group"
 ) {
-  simulated_quantities <- extract_simulated_quantities(hiv_list$stan_data)
+  simulated_quantities <- extract_simulated_quantities(hiv_list)
 
   out <- list()
 
@@ -284,7 +284,7 @@ make_mse_list <- function(
   )
   out$incidence_mse <- get_mse(out$incidence_bias, group_name)
 
-  if (hiv_list$stan_data$stan_data$config$migration) {
+  if (hiv_list$stan_data$config$migration) {
     out$migration_bias <- get_bias(
       hiv_list,
       simulated_quantities,

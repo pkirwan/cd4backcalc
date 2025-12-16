@@ -54,8 +54,8 @@ plot_estimates <- function(
     ggplot2::theme_bw()
 
   # add simulated values if data were simulated
-  if ("sim_data" %in% names(hiv_list$stan_data)) {
-    sim_estimates <- extract_simulated_quantities(hiv_list$stan_data)
+  if ("sim_data" %in% names(hiv_list)) {
+    sim_estimates <- extract_simulated_quantities(hiv_list)
     p1 <- p1 +
       ggplot2::geom_point(size = 0.4, data = sim_estimates[[quantity]])
   }

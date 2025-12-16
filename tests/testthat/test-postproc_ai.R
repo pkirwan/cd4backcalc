@@ -1,6 +1,7 @@
 test_that("cd4-only post-processing works", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 60, seed = 123)
+  sim_diags <- simulate_diagnoses(nquar = 60, seed = 123)
+  stan_data <- model_type_prep(sim_diags)
   # Fit back-calculation model
   suppressWarnings({
     fit <- fit_stan_model(
@@ -25,7 +26,8 @@ test_that("cd4-only post-processing works", {
 
 test_that("migration post-processing works", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 60, migration = TRUE, seed = 123)
+  sim_diags <- simulate_diagnoses(nquar = 60, migration = TRUE, seed = 123)
+  stan_data <- model_type_prep(sim_diags)
   # Fit back-calculation model
   suppressWarnings({
     fit <- fit_stan_model(
@@ -50,7 +52,8 @@ test_that("migration post-processing works", {
 
 test_that("rita post-processing works", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 60, rita = TRUE, seed = 123)
+  sim_diags <- simulate_diagnoses(nquar = 60, rita = TRUE, seed = 123)
+  stan_data <- model_type_prep(sim_diags)
   # Fit back-calculation model
   suppressWarnings({
     fit <- fit_stan_model(
@@ -74,12 +77,13 @@ test_that("rita post-processing works", {
 })
 
 test_that("age-specific post-processing works", {
-  stan_data <- simulate_diagnoses(seed = 123, nquar = 60, age = TRUE)
+  sim_diags <- simulate_diagnoses(seed = 123, nquar = 40, age = TRUE)
+  stan_data <- model_type_prep(sim_diags)
   # Fit back-calculation model
   suppressWarnings({
     fit <- fit_stan_model(
       stan_data,
-      iter = 2,
+      iter = 10,
       chains = 1,
       refresh = 0,
       messages = FALSE
@@ -98,12 +102,13 @@ test_that("age-specific post-processing works", {
 })
 
 test_that("age-specific rita back-calculation runs without error", {
-  stan_data <- simulate_diagnoses(
+  sim_diags <- simulate_diagnoses(
     seed = 123,
-    nquar = 60,
+    nquar = 40,
     age = TRUE,
     rita = TRUE
   )
+  stan_data <- model_type_prep(sim_diags)
   # Fit back-calculation model
   suppressWarnings({
     fit <- fit_stan_model(

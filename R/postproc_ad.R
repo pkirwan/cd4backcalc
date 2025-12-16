@@ -112,14 +112,23 @@ postproc_ad <- function(
 
   # Time profile and age-specific time profile
   # yearly
-  out$infs <- infs.fct(infs, 15, 66, nt, type = "time", qt.flag = quar.flag)
+  out$infs <- infs.fct(
+    infs,
+    15,
+    66,
+    nt,
+    type = "time",
+    qt.flag = quar.flag,
+    nage = nage
+  )
   out$infs.1524 <- infs.fct(
     infs,
     15,
     24,
     nt,
     type = "time",
-    qt.flag = quar.flag
+    qt.flag = quar.flag,
+    nage = nage
   )
   out$infs.2534 <- infs.fct(
     infs,
@@ -127,7 +136,8 @@ postproc_ad <- function(
     34,
     nt,
     type = "time",
-    qt.flag = quar.flag
+    qt.flag = quar.flag,
+    nage = nage
   )
   out$infs.3544 <- infs.fct(
     infs,
@@ -135,17 +145,53 @@ postproc_ad <- function(
     44,
     nt,
     type = "time",
-    qt.flag = quar.flag
+    qt.flag = quar.flag,
+    nage = nage
   )
-  out$infs.45 <- infs.fct(infs, 45, 66, nt, type = "time", qt.flag = quar.flag)
+  out$infs.45 <- infs.fct(
+    infs,
+    45,
+    66,
+    nt,
+    type = "time",
+    qt.flag = quar.flag,
+    nage = nage
+  )
 
   # quarterly
-  out$infs.qt <- infs.fct.qt(infs, 15, 66, nt, qt.flag = quar.flag)
-  out$infs.qt.1524 <- infs.fct.qt(infs, 15, 24, nt, qt.flag = quar.flag)
-  out$infs.qt.2534 <- infs.fct.qt(infs, 25, 34, nt, qt.flag = quar.flag)
-  out$infs.qt.3544 <- infs.fct.qt(infs, 35, 44, nt, qt.flag = quar.flag)
-  out$infs.qt.45 <- infs.fct.qt(infs, 45, 66, nt, qt.flag = quar.flag)
-
+  out$infs.qt <- infs.fct.qt(infs, 15, 66, nt, qt.flag = quar.flag, nage = nage)
+  out$infs.qt.1524 <- infs.fct.qt(
+    infs,
+    15,
+    24,
+    nt,
+    qt.flag = quar.flag,
+    nage = nage
+  )
+  out$infs.qt.2534 <- infs.fct.qt(
+    infs,
+    25,
+    34,
+    nt,
+    qt.flag = quar.flag,
+    nage = nage
+  )
+  out$infs.qt.3544 <- infs.fct.qt(
+    infs,
+    35,
+    44,
+    nt,
+    qt.flag = quar.flag,
+    nage = nage
+  )
+  out$infs.qt.45 <- infs.fct.qt(
+    infs,
+    45,
+    66,
+    nt,
+    qt.flag = quar.flag,
+    nage = nage
+  )
   ## ## incidence
   ## environment(inc.fct) <- environment()
 
@@ -155,21 +201,69 @@ postproc_ad <- function(
   ## out$inc.45 <- inc.fct(infs,"45+", l.msmdata+1, nt, qt.flag = quar.flag)
 
   ## peaks in infections...
-  out$peak <- peak.fct(infs, 15, 66, nt, last.yr = 10, qt.flag = quar.flag)
-  out$peak.1524 <- peak.fct(infs, 15, 24, nt, last.yr = 10, qt.flag = quar.flag)
-  out$peak.2534 <- peak.fct(infs, 25, 34, nt, last.yr = 10, qt.flag = quar.flag)
-  out$peak.3544 <- peak.fct(infs, 35, 44, nt, last.yr = 10, qt.flag = quar.flag)
-  out$peak.45 <- peak.fct(infs, 45, 66, nt, last.yr = 10, qt.flag = quar.flag)
-
+  out$peak <- peak.fct(
+    infs,
+    15,
+    66,
+    nt,
+    last.yr = 10,
+    qt.flag = quar.flag,
+    nage = nage
+  )
+  out$peak.1524 <- peak.fct(
+    infs,
+    15,
+    24,
+    nt,
+    last.yr = 10,
+    qt.flag = quar.flag,
+    nage = nage
+  )
+  out$peak.2534 <- peak.fct(
+    infs,
+    25,
+    34,
+    nt,
+    last.yr = 10,
+    qt.flag = quar.flag,
+    nage = nage
+  )
+  out$peak.3544 <- peak.fct(
+    infs,
+    35,
+    44,
+    nt,
+    last.yr = 10,
+    qt.flag = quar.flag,
+    nage = nage
+  )
+  out$peak.45 <- peak.fct(
+    infs,
+    45,
+    66,
+    nt,
+    last.yr = 10,
+    qt.flag = quar.flag,
+    nage = nage
+  )
   ### trends in incidence in the last two years
-  out$trend.2 <- trend.fct(infs, 15, 66, nt, last.yr = 2, qt.flag = quar.flag)
+  out$trend.2 <- trend.fct(
+    infs,
+    15,
+    66,
+    nt,
+    last.yr = 2,
+    qt.flag = quar.flag,
+    nage = nage
+  )
   out$trend.2.1524 <- trend.fct(
     infs,
     15,
     24,
     nt,
     last.yr = 2,
-    qt.flag = quar.flag
+    qt.flag = quar.flag,
+    nage = nage
   )
   out$trend.2.2534 <- trend.fct(
     infs,
@@ -177,7 +271,8 @@ postproc_ad <- function(
     34,
     nt,
     last.yr = 2,
-    qt.flag = quar.flag
+    qt.flag = quar.flag,
+    nage = nage
   )
   out$trend.2.3544 <- trend.fct(
     infs,
@@ -185,7 +280,8 @@ postproc_ad <- function(
     44,
     nt,
     last.yr = 2,
-    qt.flag = quar.flag
+    qt.flag = quar.flag,
+    nage = nage
   )
   out$trend.2.45 <- trend.fct(
     infs,
@@ -193,18 +289,28 @@ postproc_ad <- function(
     66,
     nt,
     last.yr = 2,
-    qt.flag = quar.flag
+    qt.flag = quar.flag,
+    nage = nage
   )
 
   ### trends in incidence in the last three years
-  out$trend.3 <- trend.fct(infs, 15, 66, nt, last.yr = 3, qt.flag = quar.flag)
+  out$trend.3 <- trend.fct(
+    infs,
+    15,
+    66,
+    nt,
+    last.yr = 3,
+    qt.flag = quar.flag,
+    nage = nage
+  )
   out$trend.3.1524 <- trend.fct(
     infs,
     15,
     24,
     nt,
     last.yr = 3,
-    qt.flag = quar.flag
+    qt.flag = quar.flag,
+    nage = nage
   )
   out$trend.3.2534 <- trend.fct(
     infs,
@@ -212,7 +318,8 @@ postproc_ad <- function(
     34,
     nt,
     last.yr = 3,
-    qt.flag = quar.flag
+    qt.flag = quar.flag,
+    nage = nage
   )
   out$trend.3.3544 <- trend.fct(
     infs,
@@ -220,7 +327,8 @@ postproc_ad <- function(
     44,
     nt,
     last.yr = 3,
-    qt.flag = quar.flag
+    qt.flag = quar.flag,
+    nage = nage
   )
   out$trend.3.45 <- trend.fct(
     infs,
@@ -228,7 +336,8 @@ postproc_ad <- function(
     66,
     nt,
     last.yr = 3,
-    qt.flag = quar.flag
+    qt.flag = quar.flag,
+    nage = nage
   )
 
   ### Diagnoses probabilities
@@ -364,7 +473,11 @@ postproc_ad <- function(
 
   # convert q and init_prev to matrices for easier handling in Cpp
   q_mat <- matrix(stan_data$q_age, nrow = 4, ncol = nage)
-  prev_mat <- matrix(stan_data$init_prev_age, nrow = nrow(stan_data$init_prev_age), ncol = nage)
+  prev_mat <- matrix(
+    stan_data$init_prev_age,
+    nrow = nrow(stan_data$init_prev_age),
+    ncol = nage
+  )
 
   exp.diags <- lapply(1:nrow(fit.mat), function(i) {
     g.fct(
@@ -1136,12 +1249,10 @@ postproc_ad <- function(
 
   HIV.m <- apply(HIV, c(1, 2), mean)
 
-  set.seed(407)
   HIV.p <- apply(HIV.m, c(1, 2), function(x) stats::rpois(N.Poiss, lambda = x))
 
   AIDS.m <- apply(AIDS, c(1, 2), mean)
 
-  set.seed(407)
   AIDS.p <- apply(AIDS.m, c(1, 2), function(x) {
     stats::rpois(N.Poiss, lambda = x)
   })
@@ -1247,7 +1358,6 @@ postproc_ad <- function(
     ### as anyway nCD4[,1] = 0 then ignore and put 0
     for (t in 1:nt) {
       for (a in 2:nage) {
-        set.seed(407)
         CD4.Poiss[t, a, , ] <- stats::rmultinom(
           N.Poiss,
           size = nCD4[t, a],
@@ -1258,7 +1368,6 @@ postproc_ad <- function(
   } else if (quar.flag) {
     for (t in 1:nt) {
       for (a in 2:nage) {
-        set.seed(407)
         CD4.Poiss[t, a, , ] <- stats::rmultinom(
           N.Poiss,
           size = nCD4[t, a],
@@ -1269,7 +1378,6 @@ postproc_ad <- function(
   } else {
     for (t in 1:nt) {
       for (a in 1:nage) {
-        set.seed(407)
         CD4.Poiss[t, a, , ] <- stats::rmultinom(
           N.Poiss,
           size = nCD4[t, a],

@@ -4,10 +4,33 @@
 \alias{model_type_prep}
 \title{Prepare spline basis for back-calculation model}
 \usage{
-model_type_prep(stan_data, basis = "ts", knots = 10, penalty = 2)
+model_type_prep(
+  stan_data,
+  migration = FALSE,
+  rita = FALSE,
+  age = FALSE,
+  inf_model = 1,
+  diag_model = 1,
+  seed = NULL,
+  basis = "ts",
+  knots = 10,
+  penalty = 2
+)
 }
 \arguments{
 \item{stan_data}{A list of data formatted for Stan.}
+
+\item{migration}{Logical indicating whether to include migration in the model.}
+
+\item{rita}{Logical indicating whether to include RITA data in the model.}
+
+\item{age}{Logical indicating whether to include age-specific data in the model.}
+
+\item{inf_model}{Infection model type (1 = spline, 2 = random walk, 3 = GP).}
+
+\item{diag_model}{Diagnosis model type (1 = spline, 2 = random walk).}
+
+\item{seed}{Random seed for reproducibility.}
 
 \item{basis}{Basis type for the spline (default is "ts" for thin plate regression spline).}
 
