@@ -10,7 +10,8 @@
 #' @param chain_results Logical indicating whether to return results by chain.
 #' @return List of posterior predictive quantities.
 #' @examples
-#' stan_data <- simulate_diagnoses(seed = 123)
+#' sim_diags <- simulate_diagnoses(seed = 123)
+#' stan_data <- model_type_prep(sim_diags)
 #' fit <- fit_stan_model(
 #'    stan_data,
 #'    iter = 10,
