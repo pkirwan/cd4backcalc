@@ -30,26 +30,6 @@ functions {
     return Q;
   }
   
-  int age_fct(int a0, int t, int t0, int nquar, int nage) {
-    // Assume individuals age at quarters 5,9,13...
-    // So when modulus(t,4) == 1
-    real rem;
-    int a; // current age
-    int addyr;
-    
-    a = a0; // at t0, current age =a0
-    for (t1 in min(t0 + 1, nquar) : t) {
-      rem = t1 % 4;
-      if (rem == 1) 
-        addyr = 1;
-      else 
-        addyr = 0;
-      a = a + addyr;
-    }
-    
-    return min(a, nage);
-  }
-  
   // Links age to age group
   // age 1-10 -> ag1
   // age 11-10 -> ag2
@@ -70,29 +50,23 @@ functions {
   }
   
   array[,] matrix diag_arr_fct(array[,] matrix diag_arr, matrix e_m,
-                               int nquar, int nage) {
+                               int nquar, int nage, array[,,] int age_lookup) {
     array[nquar, nage] matrix[nquar, 5] diag_arr1;
-    array[nquar, nage] row_vector[5] out;
-    row_vector[5] x;
     int a;
     
-    // Setting all entries of diag_arr1 to 0
-    // (default: no new arrival)
-    // Needed: if not get nan
+    // Initialize all entries to 0
     for (t0 in 1 : nquar) {
       for (a0 in 1 : nage) {
         diag_arr1[t0, a0] = e_m;
       }
     }
     
-    // Specific t0,a0,t for which new arrivals
-    // are non zero
+    // Accumulate diagnoses at correct ages - using lookup
     for (t0 in 1 : nquar) {
       for (a0 in 1 : nage) {
         for (t in t0 : nquar) {
-          a = age_fct(a0, t, t0, nquar, nage);
-          x = diag_arr1[t, a, t0,  : ]; // To deal with last cumulative age
-          diag_arr1[t, a, t0,  : ] = x + diag_arr[t, a0, t0,  : ];
+          a = age_lookup[a0, t0, t];
+          diag_arr1[t, a, t0,  : ] += diag_arr[t, a0, t0,  : ];
         }
       }
     }
@@ -120,6 +94,32 @@ transformed data {
   matrix[nquar, 5] empty_mat = rep_matrix(0, nquar, 5);
   vector[npars_inf - 1] zero_vec = rep_vector(0, npars_inf - 1);
   int nagroup = 4; // number of age groups
+  
+  // NEW: PRE-COMPUTE AGE MAPPINGS
+  array[nage, nquar, nquar] int age_lookup;
+  array[nage] int age_group_lookup;
+  
+  // Pre-compute all age transitions
+  for (a0 in 1 : nage) {
+    age_group_lookup[a0] = age_to_agroup(a0);
+    
+    for (t0 in 1 : nquar) {
+      for (t in 1 : nquar) {
+        if (t < t0) {
+          age_lookup[a0, t0, t] = a0; // dummy value
+        } else {
+          // Compute age at time t given infection at t0 at age a0
+          int a = a0;
+          for (t1 in (t0 + 1) : t) {
+            if (t1 % 4 == 1) {
+              a = a + 1;
+            }
+          }
+          age_lookup[a0, t0, t] = min(a, nage);
+        }
+      }
+    }
+  }
 }
 parameters {
   // Infection parameters
@@ -171,9 +171,6 @@ transformed parameters {
            + S1[1 : (npars_inf - 1), npars_inf : (2 * npars_inf - 2)]
              * lambda[2];
   
-  // INCIDENCE
-  H = exp(X * beta); // These are log infection...
-  
   // DIAGNOSES
   
   // Initializing delta
@@ -192,16 +189,25 @@ transformed parameters {
   
   // diag probs are inv logit of delta
   // so that are normalised btwn 0 and 1
-  // inv logit not vectorized -> use loop
   // Age-specific additive term, interpreted as a linear time trend (for a given state)
   // which has an age and time specific gradient
   for (ag in 1 : nagroup) {
-    for (i in 1 : nquar) {
-      d[ag, 1, i] = inv_logit(delta_1[i] + alpha[(ag - 1) * nagroup + 1]);
-      d[ag, 2, i] = inv_logit(delta_2[i] + alpha[(ag - 1) * nagroup + 2]);
-      d[ag, 3, i] = inv_logit(delta_3[i] + alpha[(ag - 1) * nagroup + 3]);
-      d[ag, 4, i] = inv_logit(delta_4[i] + alpha[(ag - 1) * nagroup + 4]);
-    }
+    d[ag, 1,  : ] = to_row_vector(
+                                  inv_logit(
+                                            delta_1
+                                            + alpha[(ag - 1) * nagroup + 1]));
+    d[ag, 2,  : ] = to_row_vector(
+                                  inv_logit(
+                                            delta_2
+                                            + alpha[(ag - 1) * nagroup + 2]));
+    d[ag, 3,  : ] = to_row_vector(
+                                  inv_logit(
+                                            delta_3
+                                            + alpha[(ag - 1) * nagroup + 3]));
+    d[ag, 4,  : ] = to_row_vector(
+                                  inv_logit(
+                                            delta_4
+                                            + alpha[(ag - 1) * nagroup + 4]));
   }
   
   // NOW NEED TO CREATE THE TRANSITION MATRICES
@@ -232,7 +238,7 @@ transformed parameters {
       diag_p = empty_vec1;
       
       if (t0 == 1) {
-        int ag0 = age_to_agroup(a0);
+        int ag0 = age_group_lookup[a0];
         lat_p = (PA[1, a0, ag0,  : ]' * init_prev_age[ : , a0]);
         diag_p[1] = init_prev_age[1, a0] * d[ag0, 1, 1];
         diag_p[2] = init_prev_age[2, a0] * d[ag0, 2, 1];
@@ -246,12 +252,12 @@ transformed parameters {
       
       for (t in (t0 + 1) : nquar) {
         // might worry if t = nquar, but in STAN loops in (nquar+1):nquar are not evaluated (unlike R, like JAGS) --- saving an if loop
-        int a = age_fct(a0, t, t0, nquar, nage);
-        int ag = age_to_agroup(a);
+        int a = age_lookup[a0, t0, t];
+        int ag = age_group_lookup[a];
         
         temp = lat_arr[t - 1,  : ];
         lat_arr[t,  : ] = (PA[t, a0, ag,  : ]' * temp);
-        // mapping a0,t and t0 to corresponding current age via age_fct
+        // mapping a0,t and t0 to corresponding current age via age_lookup
         diag_arr[t, a0, t0, 1] = temp[1] * d[ag, 1, t];
         diag_arr[t, a0, t0, 2] = temp[2] * d[ag, 2, t];
         diag_arr[t, a0, t0, 3] = temp[3] * d[ag, 3, t];
@@ -261,14 +267,14 @@ transformed parameters {
     }
   }
   
-  diag_arr1 = diag_arr_fct(diag_arr, empty_mat, nquar, nage);
+  diag_arr1 = diag_arr_fct(diag_arr, empty_mat, nquar, nage, age_lookup);
   
   for (t in 1 : nquar) {
     for (a in 1 : nage) {
       exp_diag[t, a,  : ] = col_sums(diag_arr1[t, a,  : ,  : ]);
       // expected HIV_age diagnoses
       exp_HIV_dx[t, a] = exp_diag[t, a, 1] + exp_diag[t, a, 2]
-                          + exp_diag[t, a, 3] + exp_diag[t, a, 4];
+                         + exp_diag[t, a, 3] + exp_diag[t, a, 4];
       // Expected AIDS_age diagnoses
       exp_AIDS_dx[t, a] = exp_diag[t, a, 5];
     }
@@ -281,19 +287,18 @@ transformed parameters {
   // Fixing a=1 to get a valid simplex
   for (t in 1 : nquar) {
     exp_p[t, 1, 1] = 1;
-    exp_p[t, 1, 2] = 0;
-    exp_p[t, 1, 3] = 0;
-    exp_p[t, 1, 4] = 0;
+    exp_p[t, 1, 2 : 4] = rep_vector(0, 3);
   }
   
   for (t in 1 : nquar) {
     for (a in 2 : nage) {
       // Now we want the proportion of CD4_age that
       // is diangosed with HIV_age in state k at time t and age a (p_kta)
-      exp_p[t, a, 1] = exp_diag[t, a, 1] / exp_HIV_dx[t, a];
-      exp_p[t, a, 2] = exp_diag[t, a, 2] / exp_HIV_dx[t, a];
-      exp_p[t, a, 3] = exp_diag[t, a, 3] / exp_HIV_dx[t, a];
-      exp_p[t, a, 4] = exp_diag[t, a, 4] / exp_HIV_dx[t, a];
+      real inv_total = 1.0 / exp_HIV_dx[t, a];
+      exp_p[t, a, 1] = exp_diag[t, a, 1] * inv_total;
+      exp_p[t, a, 2] = exp_diag[t, a, 2] * inv_total;
+      exp_p[t, a, 3] = exp_diag[t, a, 3] * inv_total;
+      exp_p[t, a, 4] = exp_diag[t, a, 4] * inv_total;
     }
   }
 }

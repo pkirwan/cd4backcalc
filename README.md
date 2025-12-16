@@ -86,7 +86,7 @@ simulated data, and plot model estimates is shown in the example below.
 library(cd4backcalc)
 
 # simulate data
-sim_diags <- simulate_diagnoses(seed = 123, migration = FALSE, rita = FALSE, age = FALSE)
+sim_diags <- simulate_diagnoses(migration = FALSE, rita = FALSE, age = FALSE)
 
 # run back-calculation model
 hiv_list <- run_backcalc(stan_data)
