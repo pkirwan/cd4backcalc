@@ -3,8 +3,13 @@
 
 functions {
   // Function to create transition matrices
-  matrix tmat_fct(int t, vector q, matrix d, vector ones) {
-    matrix[9, 9] Lambda = diag_matrix(ones); // Setting diagonal entries to one
+  matrix tmat_fct(int t, vector q, matrix d) {
+    matrix[9, 9] Lambda = rep_matrix(0, 9, 9);
+    
+    // Setting diagonal entries to one
+    for (i in 5 : 9) {
+      Lambda[i, i] = 1;
+    }
     
     Lambda[1, 1] = (1 - q[1]) * (1 - d[1, t]);
     Lambda[1, 2] = q[1] * (1 - d[1, t]);
@@ -48,7 +53,6 @@ data {
   real<lower=0> sigma_sq; // Arbitrary noise of GP
 }
 transformed data {
-  vector[9] ones = rep_vector(1, 9);
   vector[8] zeroes = rep_vector(0, 8);
   vector[nquar] mu = rep_vector(0, nquar);
 }
@@ -106,7 +110,6 @@ transformed parameters {
   // Epidemic state variables
   array[nquar] vector<lower=0>[9] cum_diags = rep_array(rep_vector(0, 9),
                                                         nquar);
-  array[nquar] matrix<lower=0, upper=1>[9, 9] PA;
   
   // Expected observations
   row_vector<lower=0>[nquar] exp_HIV_dx;
@@ -148,8 +151,7 @@ transformed parameters {
     delta_2 = alpha_diag_2 + 0.5 * (X_diag * beta_diag_2);
     delta_3 = alpha_diag_3 + 0.5 * (X_diag * beta_diag_3);
     delta_4 = alpha_diag_4 + 0.7 * (X_diag * beta_diag_4);
-  }
-  if (diag_model == 2) {
+  } else if (diag_model == 2) {
     // Random walk for diagnoses
     delta_1[1] = -3.2 + 0.2 * delta_raw_1[1];
     delta_2[1] = -3.2 + 0.2 * delta_raw_2[1];
@@ -169,20 +171,21 @@ transformed parameters {
     d[ : , t] = inv_logit([delta_1[t], delta_2[t], delta_3[t], delta_4[t]]');
   }
   
-  // Evolution of epidemic
-  for (t in 1 : nquar) {
-    PA[t,  : ,  : ] = tmat_fct(t, q, d, ones);
-  }
-  
   // Initial time period (t=1, y=1)
-  init_vec = append_row(h[1], zeroes);
+  init_vec = rep_vector(0, 9);
+  init_vec[1] = h[1];
+  
   tmpvec = append_row(init_prev, zeroes[1 : 5]);
-  cum_diags[1,  : ] = PA[1,  : ,  : ]' * tmpvec + init_vec;
+  
+  matrix[9, 9] Lambda1 = tmat_fct(1, q, d);
+  cum_diags[1] = Lambda1' * tmpvec + init_vec;
   
   // Evolution over time
   for (t in 2 : nquar) {
-    cum_diags[t,  : ] = PA[t,  : ,  : ]' * cum_diags[t - 1,  : ]
-                        + append_row(h[t], zeroes);
+    vector[9] inflow = rep_vector(0, 9);
+    inflow[1] = h[t];
+    matrix[9, 9] Lambda_t = tmat_fct(t, q, d);
+    cum_diags[t] = Lambda_t' * cum_diags[t - 1] + inflow;
   }
   
   // Calculate incidences
@@ -195,15 +198,16 @@ transformed parameters {
   
   // Subsequent periods
   for (t in 2 : nquar) {
-    incidence_state_5[t] = fmax(0, cum_diags[t, 5] - cum_diags[t - 1, 5]);
-    incidence_state_6[t] = fmax(0, cum_diags[t, 6] - cum_diags[t - 1, 6]);
-    incidence_state_7[t] = fmax(0, cum_diags[t, 7] - cum_diags[t - 1, 7]);
-    incidence_state_8[t] = fmax(0, cum_diags[t, 8] - cum_diags[t - 1, 8]);
-    incidence_state_9[t] = fmax(0, cum_diags[t, 9] - cum_diags[t - 1, 9]);
+    incidence_state_5[t] = cum_diags[t, 5] - cum_diags[t - 1, 5];
+    incidence_state_6[t] = cum_diags[t, 6] - cum_diags[t - 1, 6];
+    incidence_state_7[t] = cum_diags[t, 7] - cum_diags[t - 1, 7];
+    incidence_state_8[t] = cum_diags[t, 8] - cum_diags[t - 1, 8];
+    incidence_state_9[t] = cum_diags[t, 9] - cum_diags[t - 1, 9];
   }
   
-  // Prevalence matrix
-  prev_mat = cum_diags[ : , 1 : 4];
+  for (t in 1 : nquar) {
+    prev_mat[t] = cum_diags[t, 1 : 4];
+  }
   
   // Expected diagnoses
   exp_HIV_dx = incidence_state_6 + incidence_state_7 + incidence_state_8
@@ -212,10 +216,12 @@ transformed parameters {
   
   // Including CD4 counts
   for (t in 1 : nquar) {
-    exp_p[t, 1] = incidence_state_6[t] / exp_HIV_dx[t];
-    exp_p[t, 2] = incidence_state_7[t] / exp_HIV_dx[t];
-    exp_p[t, 3] = incidence_state_8[t] / exp_HIV_dx[t];
-    exp_p[t, 4] = incidence_state_9[t] / exp_HIV_dx[t];
+    if (exp_HIV_dx[t] > 0) {
+      exp_p[t, 1] = incidence_state_6[t] / exp_HIV_dx[t];
+      exp_p[t, 2] = incidence_state_7[t] / exp_HIV_dx[t];
+      exp_p[t, 3] = incidence_state_8[t] / exp_HIV_dx[t];
+      exp_p[t, 4] = incidence_state_9[t] / exp_HIV_dx[t];
+    }
   }
 }
 model {
@@ -226,14 +232,31 @@ model {
     beta_inf[1] ~ normal(5, 1.5); // Vaguely informative priors: corresponds to quarter inf in (exp(2),exp(8)) = (8,4390)
     beta_inf[2 : npars_inf] ~ normal(0, sigma_inf);
     log_sigma_inf ~ normal(-2, 0.5);
+    
+    // weak priors for inactive infection params
+    gamma ~ normal(0, 5);
+    var1 ~ gamma(2, 2);
+    eta ~ normal(0, 2);
+    rho ~ lognormal(0, 1);
   } else if (inf_model == 2) {
     gamma[1] ~ normal(5.521461, 0.2938935);
     var1 ~ gamma(1, 32);
     tail(gamma, nquar - 1) ~ normal(head(gamma, nquar - 1), sqrt(var1));
+    
+    // weak priors for inactive infection params
+    beta_inf ~ normal(0, 5);
+    log_sigma_inf ~ normal(-2, 1);
+    eta ~ normal(0, 2);
+    rho ~ lognormal(0, 1);
   } else if (inf_model == 3) {
     rho ~ student_t(4, 0, 1);
     eta ~ normal(4, 1);
     gamma ~ multi_normal_cholesky(mu, L);
+    
+    // weak priors for inactive infection params
+    beta_inf ~ normal(0, 5);
+    log_sigma_inf ~ normal(-2, 1);
+    var1 ~ gamma(2, 2);
   }
   
   // Diagnosis probability priors
@@ -254,12 +277,33 @@ model {
     sigma_diag_2 ~ gamma(2, 64);
     sigma_diag_3 ~ gamma(2, 64);
     sigma_diag_4 ~ gamma(2, 64);
+    
+    // weak priors for inactive RW diag params
+    delta_raw_1 ~ normal(0, 1);
+    delta_raw_2 ~ normal(0, 1);
+    delta_raw_3 ~ normal(0, 1);
+    delta_raw_4 ~ normal(0, 1);
+    vardelta ~ gamma(2, 2);
   } else if (diag_model == 2) {
     delta_raw_1 ~ normal(0, 1);
     delta_raw_2 ~ normal(0, 1);
     delta_raw_3 ~ normal(0, 1);
     delta_raw_4 ~ normal(0, 1);
     vardelta ~ gamma(1, 32);
+    
+    // weak priors for inactive spline diag params
+    alpha_diag_1 ~ normal(0, 2);
+    alpha_diag_2 ~ normal(0, 2);
+    alpha_diag_3 ~ normal(0, 2);
+    alpha_diag_4 ~ normal(0, 2);
+    beta_diag_1 ~ normal(0, 2);
+    beta_diag_2 ~ normal(0, 2);
+    beta_diag_3 ~ normal(0, 2);
+    beta_diag_4 ~ normal(0, 2);
+    sigma_diag_1 ~ gamma(2, 2);
+    sigma_diag_2 ~ gamma(2, 2);
+    sigma_diag_3 ~ gamma(2, 2);
+    sigma_diag_4 ~ gamma(2, 2);
   }
   
   // Likelihood

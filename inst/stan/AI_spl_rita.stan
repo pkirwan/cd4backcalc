@@ -2,8 +2,13 @@
 
 functions {
   // Function to create transition matrices
-  matrix tmat_fct(int t, vector q, matrix d, vector ones) {
-    matrix[13, 13] Lambda = diag_matrix(ones); // Setting diagonal entries to one
+  matrix tmat_fct(int t, vector q, matrix d) {
+    matrix[13, 13] Lambda = rep_matrix(0, 13, 13);
+    
+    // Setting diagonal entries to one
+    for (i in 8 : 13) {
+      Lambda[i, i] = 1;
+    }
     
     Lambda[1, 1] = 0;
     Lambda[1, 2] = (1 - q[1]) * (1 - d[1, t]);
@@ -54,7 +59,6 @@ data {
   matrix[nquar, npars_diag] X_diag;
 }
 transformed data {
-  vector[13] ones = rep_vector(1, 13);
   vector[12] zeroes = rep_vector(0, 12);
 }
 parameters {
@@ -103,7 +107,6 @@ transformed parameters {
   // Epidemic state variables
   array[nquar] vector<lower=0>[13] cum_diags = rep_array(rep_vector(0, 13),
                                                          nquar);
-  array[nquar] matrix<lower=0, upper=1>[13, 13] PA; // transition matrices
   
   // Expected observations
   row_vector<lower=0>[nquar] exp_HIV_dx;
@@ -119,24 +122,21 @@ transformed parameters {
   row_vector<lower=0>[nquar] incidence_state_13;
   array[nquar] vector<lower=0>[7] prev_mat;
   
-  // Temporary variables
-  vector[13] tmpvec;
-  vector[13] init_vec;
-  
-  // Evolution of epidemic
-  for (t in 1 : nquar) {
-    PA[t,  : ,  : ] = tmat_fct(t, q, d, ones);
-  }
-  
   // Initial time period (t=1, y=1)
-  init_vec = append_row(h[1], zeroes);
-  tmpvec = append_row(init_prev, zeroes[1 : 6]);
-  cum_diags[1,  : ] = PA[1,  : ,  : ]' * tmpvec + init_vec;
+  vector[13] init_vec = rep_vector(0, 13);
+  init_vec[1] = h[1];
+  
+  vector[13] tmpvec = append_row(init_prev, zeroes[1 : 6]);
+  
+  matrix[13, 13] Lambda1 = tmat_fct(1, q, d);
+  cum_diags[1] = Lambda1' * tmpvec + init_vec;
   
   // Evolution over time
   for (t in 2 : nquar) {
-    cum_diags[t,  : ] = PA[t,  : ,  : ]' * cum_diags[t - 1,  : ]
-                        + append_row(h[t], zeroes);
+    vector[13] inflow = rep_vector(0, 13);
+    inflow[1] = h[t];
+    matrix[13, 13] Lambda_t = tmat_fct(t, q, d);
+    cum_diags[t] = Lambda_t' * cum_diags[t - 1] + inflow;
   }
   
   // Calculate incidences
@@ -159,7 +159,9 @@ transformed parameters {
   }
   
   // Prevalence matrix
-  prev_mat = cum_diags[ : , 1 : 7];
+  for (t in 1 : nquar) {
+    prev_mat[t] = cum_diags[t, 1 : 7];
+  }
   
   // Expected diagnoses
   exp_HIV_dx = incidence_state_9 + incidence_state_10 + incidence_state_11
@@ -168,11 +170,13 @@ transformed parameters {
   
   // Including CD4 counts
   for (t in 1 : nquar) {
-    exp_p[t, 1] = incidence_state_9[t] / exp_HIV_dx[t];
-    exp_p[t, 2] = incidence_state_10[t] / exp_HIV_dx[t];
-    exp_p[t, 3] = incidence_state_11[t] / exp_HIV_dx[t];
-    exp_p[t, 4] = incidence_state_12[t] / exp_HIV_dx[t];
-    exp_p[t, 5] = incidence_state_13[t] / exp_HIV_dx[t];
+    if (exp_HIV_dx[t] > 0) {
+      exp_p[t, 1] = incidence_state_9[t] / exp_HIV_dx[t];
+      exp_p[t, 2] = incidence_state_10[t] / exp_HIV_dx[t];
+      exp_p[t, 3] = incidence_state_11[t] / exp_HIV_dx[t];
+      exp_p[t, 4] = incidence_state_12[t] / exp_HIV_dx[t];
+      exp_p[t, 5] = incidence_state_13[t] / exp_HIV_dx[t];
+    }
   }
 }
 model {

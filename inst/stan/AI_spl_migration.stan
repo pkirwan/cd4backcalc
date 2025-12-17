@@ -2,8 +2,13 @@
 
 functions {
   // Function to create transition matrices
-  matrix tmat_fct(int t, vector q, matrix d, vector ones) {
-    matrix[9, 9] Lambda = diag_matrix(ones); // Setting diagonal entries to one
+  matrix tmat_fct(int t, vector q, matrix d) {
+    matrix[9, 9] Lambda = rep_matrix(0, 9, 9); // Setting diagonal entries to one
+    
+    // Setting diagonal entries to one
+    for (i in 5 : 9) {
+      Lambda[i, i] = 1;
+    }
     
     Lambda[1, 1] = (1 - q[1]) * (1 - d[1, t]);
     Lambda[1, 2] = q[1] * (1 - d[1, t]);
@@ -51,7 +56,6 @@ data {
   real<lower=0> eta_sd;
 }
 transformed data {
-  vector[9] ones = rep_vector(1, 9);
   vector[8] zeroes = rep_vector(0, 8);
 }
 parameters {
@@ -148,9 +152,8 @@ transformed parameters {
   }
   
   // Epidemic state variables
-  array[nquar, 2] vector<lower=0>[9] cum_diags = rep_array(rep_vector(
-                                                           0, 9), nquar, 2);
-  array[nquar] matrix<lower=0, upper=1>[9, 9] PA; // transition matrices
+  array[nquar, 2] vector<lower=0>[9] cum_diags = rep_array(rep_vector
+                                                           (0, 9), nquar, 2);
   
   // Expected observations
   matrix<lower=0>[nquar, 2] exp_HIV_dx;
@@ -181,41 +184,42 @@ transformed parameters {
   
   // Temporary variables
   vector[9] tmpvec;
-  vector[9] init_vec;
   vector[9] uk_acquired;
   vector[9] ab_acquired;
   
-  // Evolution of epidemic
-  for (t in 1 : nquar) {
-    PA[t,  : ,  : ] = tmat_fct(t, q, d, ones);
-  }
-  
   // Initial time period (t=1, y=1)
-  init_vec = append_row(h[1], zeroes);
-  tmpvec = append_row(init_prev, zeroes[1 : 5]);
-  cum_diags[1, 1,  : ] = PA[1,  : ,  : ]' * tmpvec + init_vec;
+  vector[9] init_vec = rep_vector(0, 9);
+  init_vec[1] = h[1];
   
-  // Evolution for native group
-  for (t in 2 : nquar) {
-    cum_diags[t, 1,  : ] = PA[t,  : ,  : ]' * cum_diags[t - 1, 1,  : ]
-                           + append_row(h[t], zeroes);
-  }
+  tmpvec = append_row(init_prev, zeroes[1 : 5]);
+  
+  matrix[9, 9] Lambda1 = tmat_fct(1, q, d);
+  cum_diags[1, 1,  : ] = Lambda1' * tmpvec + init_vec;
   
   // Initial migrant group
   p[1] = exp(eta[1]);
-  uk_acquired = append_row(h[1] * p[1], zeroes);
+  uk_acquired = rep_vector(0, 9);
+  uk_acquired[1] = h[1] * p[1];
   ab_acquired = append_row(omega[1] * m[1 : 4, 1], zeroes[1 : 5]);
-  tmpvec = append_row(init_prev_abroad, zeroes[1 : 5]);
-  cum_diags[1, 2,  : ] = PA[1,  : ,  : ]' * tmpvec + uk_acquired
-                         + ab_acquired;
   
-  // Evolution for migrant group
+  tmpvec = append_row(init_prev_abroad, zeroes[1 : 5]);
+  cum_diags[1, 2,  : ] = Lambda1' * tmpvec + uk_acquired + ab_acquired;
+  
   for (t in 2 : nquar) {
+    matrix[9, 9] Lambda_t = tmat_fct(t, q, d);
+    
+    // Evolution for native group
+    vector[9] inflow = rep_vector(0, 9);
+    inflow[1] = h[t];
+    cum_diags[t, 1,  : ] = Lambda_t' * cum_diags[t - 1, 1,  : ] + inflow;
+    
+    // Evolution for migrant group
     p[t] = exp(eta[t]);
-    uk_acquired = append_row(h[t] * p[t], zeroes);
+    uk_acquired = rep_vector(0, 9);
+    uk_acquired[1] = h[t] * p[t];
     ab_acquired = append_row(omega[t] * m[1 : 4, t], zeroes[1 : 5]);
-    cum_diags[t, 2,  : ] = PA[t,  : ,  : ]' * cum_diags[t - 1, 2,  : ]
-                           + uk_acquired + ab_acquired;
+    cum_diags[t, 2,  : ] = Lambda_t' * cum_diags[t - 1, 2,  : ] + uk_acquired
+                           + ab_acquired;
   }
   
   // Calculate incidences
@@ -229,26 +233,20 @@ transformed parameters {
     
     // Subsequent periods
     for (t in 2 : nquar) {
-      incidence_state_5[t, y] = fmax(0,
-                                     cum_diags[t, y, 5]
-                                     - cum_diags[t - 1, y, 5]);
-      incidence_state_6[t, y] = fmax(0,
-                                     cum_diags[t, y, 6]
-                                     - cum_diags[t - 1, y, 6]);
-      incidence_state_7[t, y] = fmax(0,
-                                     cum_diags[t, y, 7]
-                                     - cum_diags[t - 1, y, 7]);
-      incidence_state_8[t, y] = fmax(0,
-                                     cum_diags[t, y, 8]
-                                     - cum_diags[t - 1, y, 8]);
-      incidence_state_9[t, y] = fmax(0,
-                                     cum_diags[t, y, 9]
-                                     - cum_diags[t - 1, y, 9]);
+      incidence_state_5[t, y] = cum_diags[t, y, 5] - cum_diags[t - 1, y, 5];
+      incidence_state_6[t, y] = cum_diags[t, y, 6] - cum_diags[t - 1, y, 6];
+      incidence_state_7[t, y] = cum_diags[t, y, 7] - cum_diags[t - 1, y, 7];
+      incidence_state_8[t, y] = cum_diags[t, y, 8] - cum_diags[t - 1, y, 8];
+      incidence_state_9[t, y] = cum_diags[t, y, 9] - cum_diags[t - 1, y, 9];
     }
   }
   
   // Prevalence matrix
-  prev_mat = cum_diags[ : ,  : , 1 : 4];
+  for (t in 1 : nquar) {
+    for (y in 1 : 2) {
+      prev_mat[t, y] = cum_diags[t, y, 1 : 4];
+    }
+  }
   
   // Expected diagnoses
   exp_HIV_dx = incidence_state_6 + incidence_state_7 + incidence_state_8
@@ -258,19 +256,20 @@ transformed parameters {
   // Including CD4 counts
   for (t in 1 : nquar) {
     // Native population (y=1)
-    exp_p[t, 1, 1] = incidence_state_6[t, 1] / exp_HIV_dx[t, 1];
-    exp_p[t, 1, 2] = incidence_state_7[t, 1] / exp_HIV_dx[t, 1];
-    exp_p[t, 1, 3] = incidence_state_8[t, 1] / exp_HIV_dx[t, 1];
-    exp_p[t, 1, 4] = incidence_state_9[t, 1] / exp_HIV_dx[t, 1];
-    
-    exp_p[t, 2, 1] = incidence_state_6[t, 2]
-                     / (exp_HIV_dx[t, 2] - misclassified_dx[t, 2]);
-    exp_p[t, 2, 2] = incidence_state_7[t, 2]
-                     / (exp_HIV_dx[t, 2] - misclassified_dx[t, 2]);
-    exp_p[t, 2, 3] = incidence_state_8[t, 2]
-                     / (exp_HIV_dx[t, 2] - misclassified_dx[t, 2]);
-    exp_p[t, 2, 4] = incidence_state_9[t, 2]
-                     / (exp_HIV_dx[t, 2] - misclassified_dx[t, 2]);
+    if (exp_HIV_dx[t, 1] > 0) {
+      exp_p[t, 1, 1] = incidence_state_6[t, 1] / exp_HIV_dx[t, 1];
+      exp_p[t, 1, 2] = incidence_state_7[t, 1] / exp_HIV_dx[t, 1];
+      exp_p[t, 1, 3] = incidence_state_8[t, 1] / exp_HIV_dx[t, 1];
+      exp_p[t, 1, 4] = incidence_state_9[t, 1] / exp_HIV_dx[t, 1];
+    }
+    // Migrant population (y=2)
+    real denom = exp_HIV_dx[t, 2] - misclassified_dx[t, 2];
+    if (denom > 0) {
+      exp_p[t, 2, 1] = incidence_state_6[t, 2] / denom;
+      exp_p[t, 2, 2] = incidence_state_7[t, 2] / denom;
+      exp_p[t, 2, 3] = incidence_state_8[t, 2] / denom;
+      exp_p[t, 2, 4] = incidence_state_9[t, 2] / denom;
+    }
   }
 }
 model {
@@ -312,7 +311,8 @@ model {
   
   // Approximate melding for proportion UK-acquired - AR(1)
   eta_mean[1] ~ normal(eta[1], eta_sd);
-  eta_mean[2 : nquar] ~ normal(eta[2 : nquar]
+  eta_mean[2 : nquar] ~ normal(
+                               eta[2 : nquar]
                                + rho_eta
                                  * (eta_mean[1 : (nquar - 1)]
                                     - eta[1 : (nquar - 1)]),
@@ -355,11 +355,14 @@ generated quantities {
   // Log-lik calculations to get WAIC / LOO/ DIC
   matrix[nquar, 2] log_lik;
   for (t in 1 : nquar) {
+    // ABROAD is not indexed by y, so include it once per t
+    real abroad_ll = poisson_lpmf(ABROAD[t] | exp_ABROAD_dx[t]);
+    
     for (y in 1 : 2) {
       log_lik[t, y] = poisson_lpmf(HIV[t, y] | exp_HIV_dx[t, y])
                       + poisson_lpmf(AIDS[t, y] | exp_AIDS_dx[t, y])
-                      + poisson_lpmf(ABROAD[t] | exp_ABROAD_dx[t])
-                      + multinomial_lpmf(CD4[t, y,  : ] | exp_p[t, y,  : ]);
+                      + multinomial_lpmf(CD4[t, y,  : ] | exp_p[t, y,  : ])
+                      + abroad_ll;
     }
   }
 }
