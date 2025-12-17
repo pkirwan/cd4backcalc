@@ -99,7 +99,7 @@ fit_stan_model <- function(
   messages = TRUE
 ) {
   # rstan options
-  options(mc.cores = parallel::detectCores())
+  options(mc.cores = parallelly::availableCores())
   rstan::rstan_options(auto_write = TRUE)
 
   # Check stan_data validity
