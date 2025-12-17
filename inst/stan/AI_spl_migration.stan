@@ -354,15 +354,14 @@ model {
 generated quantities {
   // Log-lik calculations to get WAIC / LOO/ DIC
   matrix[nquar, 2] log_lik;
+  vector[nquar] log_lik_abroad;
   for (t in 1 : nquar) {
-    // ABROAD is not indexed by y, so include it once per t
-    real abroad_ll = poisson_lpmf(ABROAD[t] | exp_ABROAD_dx[t]);
+    log_lik_abroad[t] = poisson_lpmf(ABROAD[t] | exp_ABROAD_dx[t]);
     
     for (y in 1 : 2) {
       log_lik[t, y] = poisson_lpmf(HIV[t, y] | exp_HIV_dx[t, y])
                       + poisson_lpmf(AIDS[t, y] | exp_AIDS_dx[t, y])
-                      + multinomial_lpmf(CD4[t, y,  : ] | exp_p[t, y,  : ])
-                      + abroad_ll;
+                      + multinomial_lpmf(CD4[t, y,  : ] | exp_p[t, y,  : ]);
     }
   }
 }
