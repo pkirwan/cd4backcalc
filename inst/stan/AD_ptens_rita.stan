@@ -17,26 +17,29 @@ functions {
   // Assume diagnosis occurs first and if not then progression
   matrix Q_fct(matrix d, matrix q, int t, int a) {
     matrix[7, 7] Q = rep_matrix(0, 7, 7);
+    real d1t = 1 - d[1, t];
+    real d2t = 1 - d[2, t];
+    real d3t = 1 - d[3, t];
+    real d4t = 1 - d[4, t];
+    real d5t = 1 - d[5, t];
+    real q1a = 1 - q[1, a];
+    real q2a = 1 - q[2, a];
+    real q3a = 1 - q[3, a];
+    real q4a = 1 - q[4, a];
     
-    Q[1, 2] = (1 - d[1, t]) * (1 - q[1, a]);
-    Q[1, 3] = (1 - d[1, t]) * q[1, a];
-    
-    Q[2, 4] = (1 - d[1, t]) * (1 - q[1, a]);
-    Q[2, 5] = (1 - d[1, t]) * q[1, a];
-    
-    Q[3, 5] = (1 - d[1, t]) * (1 - q[2, a]);
-    Q[3, 6] = (1 - d[1, t]) * q[2, a];
-    
-    Q[4, 4] = (1 - d[2, t]) * (1 - q[1, a]);
-    Q[4, 5] = (1 - d[2, t]) * q[1, a];
-    
-    Q[5, 5] = (1 - d[3, t]) * (1 - q[2, a]);
-    Q[5, 6] = (1 - d[3, t]) * q[2, a];
-    
-    Q[6, 6] = (1 - d[4, t]) * (1 - q[3, a]);
-    Q[6, 7] = (1 - d[4, t]) * q[3, a];
-    
-    Q[7, 7] = (1 - d[5, t]) * (1 - q[4, a]);
+    Q[1, 2] = d1t * q1a;
+    Q[1, 3] = d1t * q[1, a];
+    Q[2, 4] = d1t * q1a;
+    Q[2, 5] = d1t * q[1, a];
+    Q[3, 5] = d1t * q2a;
+    Q[3, 6] = d1t * q[2, a];
+    Q[4, 4] = d2t * q1a;
+    Q[4, 5] = d2t * q[1, a];
+    Q[5, 5] = d3t * q2a;
+    Q[5, 6] = d3t * q[2, a];
+    Q[6, 6] = d4t * q3a;
+    Q[6, 7] = d4t * q[3, a];
+    Q[7, 7] = d5t * q4a;
     
     return Q;
   }
@@ -159,9 +162,6 @@ transformed parameters {
   vector<lower=0>[7] temp; // expected number of diag at time t age a state k
   array[nquar, nage] row_vector<lower=0>[6] exp_diag; // expected number of diag at time t age a state k
   
-  // Epidemic state variables
-  array[nquar, nage, nagroup] matrix<lower=0, upper=1>[7, 7] PA; // transition matrices
-  
   // Expected observations
   matrix[nquar, nage] exp_HIV_dx; // expected number of HIV_age diag at time t age a
   matrix[nquar, nage] exp_AIDS_dx; // expected number of HIV_age diag at time t age a
@@ -207,38 +207,15 @@ transformed parameters {
   // Age-specific additive term, interpreted as a linear time trend (for a given state)
   // which has an age and time specific gradient
   for (ag in 1 : nagroup) {
-    d[ag, 1,  : ] = to_row_vector(
-                                  inv_logit(
-                                            delta_1 + alpha[(ag - 1) * 5 + 1]));
-    d[ag, 2,  : ] = to_row_vector(
-                                  inv_logit(
-                                            delta_2 + alpha[(ag - 1) * 5 + 2]));
-    d[ag, 3,  : ] = to_row_vector(
-                                  inv_logit(
-                                            delta_3 + alpha[(ag - 1) * 5 + 3]));
-    d[ag, 4,  : ] = to_row_vector(
-                                  inv_logit(
-                                            delta_4 + alpha[(ag - 1) * 5 + 4]));
-    d[ag, 5,  : ] = to_row_vector(
-                                  inv_logit(
-                                            delta_5 + alpha[(ag - 1) * 5 + 5]));
+    int ag_offset = (ag - 1) * 5;
+    d[ag, 1,  : ] = to_row_vector(inv_logit(delta_1 + alpha[ag_offset + 1]));
+    d[ag, 2,  : ] = to_row_vector(inv_logit(delta_2 + alpha[ag_offset + 2]));
+    d[ag, 3,  : ] = to_row_vector(inv_logit(delta_3 + alpha[ag_offset + 3]));
+    d[ag, 4,  : ] = to_row_vector(inv_logit(delta_4 + alpha[ag_offset + 4]));
+    d[ag, 5,  : ] = to_row_vector(inv_logit(delta_5 + alpha[ag_offset + 5]));
   }
   
-  // NOW NEED TO CREATE THE TRANSITION MATRICES
-  
-  // Useful to define a zero-matrix
-  // For later calculations
-  
-  // Looping over t and a to get trans mat
-  // for all ages and times
-  for (t in 1 : nquar) {
-    for (a in 1 : nage) {
-      for (ag in 1 : nagroup) {
-        //QUARTERLY progression probabilities to observed states
-        PA[t, a, ag,  : ,  : ] = Q_fct(d[ag,  : ,  : ], q_age, t, a);
-      }
-    }
-  }
+  // NOW NEED TO CREATE THE TRANSITION MATRICES AND CALCULATE EXPECTED DIAGNOSES
   
   for (t0 in 1 : nquar) {
     for (a0 in 1 : nage) {
@@ -253,7 +230,8 @@ transformed parameters {
       
       if (t0 == 1) {
         int ag0 = age_group_lookup[a0];
-        lat_p = (PA[1, a0, ag0,  : ]' * init_prev_age[ : , a0]);
+        matrix[7, 7] PA_current = Q_fct(d[ag0,  : ,  : ], q_age, t0, a0);
+        lat_p = (PA_current' * init_prev_age[ : , a0]);
         diag_p[1] = (init_prev_age[1, a0] * d[ag0, 1, 1])
                     + (init_prev_age[2, a0] * d[ag0, 1, 1])
                     + (init_prev_age[3, a0] * d[ag0, 1, 1]);
@@ -272,8 +250,10 @@ transformed parameters {
         int a = age_lookup[a0, t0, t];
         int ag = age_group_lookup[a];
         
+        matrix[7, 7] PA_current = Q_fct(d[ag,  : ,  : ], q_age, t, a);
         temp = lat_arr[t - 1,  : ];
-        lat_arr[t,  : ] = (PA[t, a0, ag,  : ]' * temp);
+        
+        lat_arr[t,  : ] = (PA_current' * temp);
         // mapping a0,t and t0 to corresponding current age via age_lookup
         diag_arr[t, a0, t0, 1] = (temp[1] * d[ag, 1, t])
                                  + (temp[2] * d[ag, 1, t])
@@ -293,9 +273,7 @@ transformed parameters {
     for (a in 1 : nage) {
       exp_diag[t, a,  : ] = col_sums(diag_arr1[t, a,  : ,  : ]);
       // expected HIV diagnoses
-      exp_HIV_dx[t, a] = exp_diag[t, a, 1] + exp_diag[t, a, 2]
-                         + exp_diag[t, a, 3] + exp_diag[t, a, 4]
-                         + exp_diag[t, a, 5];
+      exp_HIV_dx[t, a] = sum(exp_diag[t, a, 1 : 5]);
       // Expected AIDS diagnoses
       exp_AIDS_dx[t, a] = exp_diag[t, a, 6];
     }
@@ -315,7 +293,7 @@ transformed parameters {
     for (a in 2 : nage) {
       // Now we want the proportion of CD4_age that
       // is diangosed with HIV_age in state k at time t and age a (p_kta)
-      real inv_total = 1.0 / exp_HIV_dx[t, a];
+      real inv_total = inv(exp_HIV_dx[t, a]);
       exp_p[t, a, 1] = exp_diag[t, a, 1] * inv_total;
       exp_p[t, a, 2] = exp_diag[t, a, 2] * inv_total;
       exp_p[t, a, 3] = exp_diag[t, a, 3] * inv_total;
@@ -353,9 +331,9 @@ model {
     // So if individuals inf at t=5 at age=1
     // Cannot be dx at t=5 at age age=1 (dx t > 6)
     // remove age = 1 from likelihood
+    HIV_age[t, 2 : nage] ~ poisson(exp_HIV_dx[t, 2 : nage]);
+    AIDS_age[t, 2 : nage] ~ poisson(exp_AIDS_dx[t, 2 : nage]);
     for (a in 2 : nage) {
-      HIV_age[t, a] ~ poisson(exp_HIV_dx[t, a]);
-      AIDS_age[t, a] ~ poisson(exp_AIDS_dx[t, a]);
       CD4_age[t, a,  : ] ~ multinomial(exp_p[t, a,  : ]);
     }
   }
