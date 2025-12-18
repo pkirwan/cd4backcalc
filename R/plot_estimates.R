@@ -16,7 +16,7 @@ plot_estimates <- function(
 
   # chain-by-chain plotting if requested
   if (chain_results) {
-    hiv_list <- dplyr::bind_rows(
+    quantiles <- dplyr::bind_rows(
       get_estimates(hiv_list, paste0(quantity, "_1")) |>
         dplyr::mutate(chain = "Chain 1"),
       get_estimates(hiv_list, paste0(quantity, "_2")) |>
@@ -54,8 +54,9 @@ plot_estimates <- function(
     ggplot2::theme_bw()
 
   # add simulated values if data were simulated
-  if ("sim_data" %in% names(hiv_list)) {
-    sim_estimates <- extract_simulated_quantities(hiv_list)
+  # simulated values are the same for all iterations, so just use first
+  if ("sim_data" %in% names(hiv_list[[1]])) {
+    sim_estimates <- extract_simulated_quantities(hiv_list[[1]])
     p1 <- p1 +
       ggplot2::geom_point(size = 0.4, data = sim_estimates[[quantity]])
   }
@@ -91,15 +92,21 @@ plot_estimates <- function(
 #'
 #' Generate diagnostic plots for a fitted back-calculation model.
 #'
-#' @param fit A fitted model object returned from the `fit_stan_model` or `run_backcalc` function.
+#' @param hiv_list A list returned from the `run_backcalc` function containing model estimates and fit objects.
 #' @param ntraces Number of parameter traces to plot for each diagnostic.
 #' @return A ggplot2 object containing diagnostic plots.
 #' @export
-plot_diagnostics <- function(fit, ntraces = 6) {
-
-  # check if hiv_list has been provided
-  if ("fit" %in% names(fit)) {
-    fit <- fit$fit
+plot_diagnostics <- function(hiv_list, ntraces = 6) {
+  # check if hiv_list is a list of results or a single result
+  if ("fit" %in% names(hiv_list[[1]])) {
+    fit <- hiv_list[[1]]$fit
+    message(
+      "Traceplots will be shown for the first iteration of the list, for other iterations please provide the appropriate fit object."
+    )
+  } else if ("fit" %in% names(hiv_list)) {
+    fit <- hiv_list$fit
+  } else {
+    stop("No fitted model found in hiv_list.")
   }
 
   # log incidence

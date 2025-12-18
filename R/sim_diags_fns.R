@@ -50,7 +50,7 @@ generate_infections <- function(
 generate_omega <- function(nquar, pattern, target_mig = 12000, dist = TRUE) {
   # check pattern
   stopifnot(pattern %in% c("constant", "increasing", "step_change", "none"))
-  ann_mig = target_mig / 120
+  ann_mig = target_mig / nquar
   omega <- dplyr::case_when(
     pattern == "constant" ~ rep(ann_mig, nquar),
     pattern == "increasing" ~ seq(0.5, 1.5, length.out = nquar) * ann_mig,

@@ -6,7 +6,7 @@
 \usage{
 fit_stan_model(
   stan_data,
-  seed = NULL,
+  model_seed = NULL,
   iter = 2000,
   chains = 4,
   refresh = 100,
@@ -16,7 +16,7 @@ fit_stan_model(
 \arguments{
 \item{stan_data}{A list of data formatted for Stan.}
 
-\item{seed}{Random seed for reproducibility.}
+\item{model_seed}{Seed for model fitting (will be set to stan_data$config$model_seed if NULL).}
 
 \item{iter}{Number of iterations for Stan sampling.}
 
@@ -33,7 +33,7 @@ A stanfit object containing the results of the model fitting.
 This function runs the CD4 back-calculation model using Stan and runs the post-processing.
 }
 \examples{
-sim_diags <- simulate_diagnoses(seed = 123)
+sim_diags <- simulate_diagnoses(sim_seed = 123)
 stan_data <- model_type_prep(sim_diags)
 fit <- fit_stan_model(stan_data, iter = 10, chains = 1, refresh = 0, messages = FALSE)
 }

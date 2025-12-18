@@ -1,10 +1,11 @@
 test_that("mse_list and plots are generated correctly", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 60, seed = 123)
+  stan_data <- simulate_diagnoses(nquar = 60, sim_seed = 123)
   # Fit back-calculation model
   suppressWarnings({
     hiv_list <- run_backcalc(
       stan_data,
+      model_seed = 123,
       iter = 20,
       chains = 1,
       refresh = 0,
@@ -23,11 +24,12 @@ test_that("mse_list and plots are generated correctly", {
 
 test_that("mse_list and plots are generated correctly for migration model", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 60, seed = 123, migration = TRUE)
+  stan_data <- simulate_diagnoses(nquar = 60, sim_seed = 123, migration = TRUE)
   # Fit back-calculation model
   suppressWarnings({
     hiv_list <- run_backcalc(
       stan_data,
+      model_seed = 123,
       iter = 20,
       chains = 1,
       refresh = 0,

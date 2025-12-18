@@ -4,10 +4,10 @@
 \alias{plot_diagnostics}
 \title{Plot diagnostics for fitted model}
 \usage{
-plot_diagnostics(fit, ntraces = 6)
+plot_diagnostics(hiv_list, ntraces = 6)
 }
 \arguments{
-\item{fit}{A fitted model object returned from the \code{fit_stan_model} or \code{run_backcalc} function.}
+\item{hiv_list}{A list returned from the \code{run_backcalc} function containing model estimates and fit objects.}
 
 \item{ntraces}{Number of parameter traces to plot for each diagnostic.}
 }

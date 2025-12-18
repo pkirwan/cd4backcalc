@@ -10,8 +10,8 @@
 #' @param chain_results Logical indicating whether to return results by chain.
 #' @return List of posterior predictive quantities.
 #' @examples
-#' sim_diags <- simulate_diagnoses(seed = 123)
-#' stan_data <- model_type_prep(sim_diags)
+#' sim_diags <- simulate_diagnoses(sim_seed = 123)
+#' stan_data <- model_type_prep(sim_diags, model_seed = 123)
 #' fit <- fit_stan_model(
 #'    stan_data,
 #'    iter = 10,
@@ -52,11 +52,13 @@ postproc_ai <- function(
   nworkers = 1,
   chain_results = FALSE
 ) {
-  ## Setup for running in parallel
-  # plan(multicore) # may not be able to allocate enough memory so only use 4 workers
-  # https://cran.r-project.org/web/packages/future/vignettes/future-4-non-exportable-objects.html
-  # plan(multisession) and plan(callr) are no good with RCpp functions
-  future::plan(future::multicore, workers = nworkers)
+  # Use multisession on Windows (multicore is not supported)
+  if (.Platform$OS.type == "windows") {
+    future::plan(future::multisession, workers = nworkers)
+  } else {
+    future::plan(future::multicore, workers = nworkers)
+  }
+  on.exit(future::plan(future::sequential), add = TRUE)
 
   # generate matrix object
   fit_mat <- as.matrix(fit)
@@ -64,23 +66,29 @@ postproc_ai <- function(
   # increase memory limit
   options(future.globals.maxSize = 3000 * 1024^2)
 
+  # make fit indices
+  idx <- make_fit_indices(fit_mat, stan_data$config, stan_data$nquar)
+
   # Generate infection and prevalence distributions then calculate
   # the posterior predictive quantities (returned in hiv_list)
   if (chain_results) {
+    hiv_list <- list()
     for (i in 1:4) {
       start_idx <- (nrow(fit_mat) / 4 * (i - 1)) + 1
       end_idx <- nrow(fit_mat) / 4 * i
+
       inf_dist <- future.apply::future_sapply(
         start_idx:end_idx,
         function(i) {
           infect_dist_by_year_dx(
             stan_data,
             fit_mat,
-            i
+            i,
+            idx
           )
         },
         future.seed = TRUE,
-        future.globals = c("stan_data", "fit_mat")
+        future.globals = c("stan_data", "fit_mat", "idx")
       )
       prev_dist <- future.apply::future_sapply(
         start_idx:end_idx,
@@ -88,14 +96,14 @@ postproc_ai <- function(
           prev_by_year_infection(
             stan_data,
             fit_mat,
-            i
+            i,
+            idx
           )
         },
         future.seed = TRUE,
-        future.globals = c("stan_data", "fit_mat")
+        future.globals = c("stan_data", "fit_mat", "idx")
       )
 
-      hiv_list <- list()
       hiv_list[[paste0("incidence_", i)]] <- incidence.df(
         stan_data,
         prev_dist,
@@ -158,11 +166,12 @@ postproc_ai <- function(
         infect_dist_by_year_dx(
           stan_data,
           fit_mat,
-          i
+          i,
+          idx
         )
       },
       future.seed = TRUE,
-      future.globals = c("stan_data", "fit_mat")
+      future.globals = c("stan_data", "fit_mat", "idx")
     )
     prev_dist <- future.apply::future_sapply(
       1:nrow(fit_mat),
@@ -170,11 +179,12 @@ postproc_ai <- function(
         prev_by_year_infection(
           stan_data,
           fit_mat,
-          i
+          i,
+          idx
         )
       },
       future.seed = TRUE,
-      future.globals = c("stan_data", "fit_mat")
+      future.globals = c("stan_data", "fit_mat", "idx")
     )
     if (stan_data$config$migration) {
       hiv_list <- list(
@@ -249,14 +259,14 @@ postproc_ai <- function(
 #' @param stan_data Data list used in stan model fitting.
 #' @param fit_mat Matrix of posterior samples from stan model.
 #' @param i Index of the posterior sample to process.
+#' @param idx Additional index parameter for processing.
 #' @return List containing HIV and AIDS diagnosis infection distributions.
-infect_dist_by_year_dx <- function(stan_data, fit_mat, i) {
+infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
   if (i %% 10 == 0) {
     cat("Iteration Number = ", i, "\n")
   }
   config <- stan_data$config
 
-  set.seed(config$seed)
   output <- list()
 
   # Extract dimensions and initialize variables
@@ -270,31 +280,31 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i) {
   }
 
   # Get initial prevalence
-  init_prev <- if (!exists("init_prev", where = stan_data)) {
+  init_prev <- if (!("init_prev" %in% names(stan_data))) {
     rep(0, config$nlatst)
   } else {
     stan_data$init_prev
   }
 
-  init_prev_m <- if (!exists("init_prev_m", where = stan_data)) {
+  init_prev_m <- if (!("init_prev_m" %in% names(stan_data))) {
     rep(0, config$nlatst)
   } else {
     stan_data$init_prev_m
   }
 
   # Get diagnosis probabilities
-  d1 <- fit_mat[i, grep("^d\\[1,", colnames(fit_mat))]
-  d2 <- fit_mat[i, grep("^d\\[2,", colnames(fit_mat))]
-  d3 <- fit_mat[i, grep("^d\\[3,", colnames(fit_mat))]
-  d4 <- fit_mat[i, grep("^d\\[4,", colnames(fit_mat))]
+  d1 <- fit_mat[i, idx$d1]
+  d2 <- fit_mat[i, idx$d2]
+  d3 <- fit_mat[i, idx$d3]
+  d4 <- fit_mat[i, idx$d4]
 
   # Get infections and migrations
-  temp_h <- exp(fit_mat[i, grep("lambda", colnames(fit_mat))])
+  temp_h <- exp(fit_mat[i, idx$lambda])
   if (config$migration) {
-    temp_omega <- exp(fit_mat[i, grep("gamma", colnames(fit_mat))])
-    temp_p <- fit_mat[i, grep("^p\\[", colnames(fit_mat))]
+    temp_omega <- exp(fit_mat[i, idx$gamma])
+    temp_p <- fit_mat[i, idx$p]
     temp_m <- matrix(
-      fit_mat[i, grep("^m\\[", colnames(fit_mat))],
+      fit_mat[i, idx$m],
       nrow = nquar,
       byrow = TRUE
     )
@@ -303,7 +313,7 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i) {
 
   # Calculate diagnoses
   if (config$rita) {
-    d5 <- fit_mat[i, grep("^d\\[5,", colnames(fit_mat))]
+    d5 <- fit_mat[i, idx$d5]
     diagnoses <- forward_calculate_rita(
       init_prev,
       temp_h,
@@ -392,8 +402,8 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i) {
   }
 
   # Calculate unreported AIDS
-  if ("under_rep" %in% colnames(fit_mat)) {
-    under.report <- 1 - fit_mat[i, "under_rep"]
+  if (!is.na(idx$under_rep)) {
+    under.report <- 1 - fit_mat[i, idx$under_rep]
     under.report <- c(rep(0, 88), rep(under.report, nquar - 88))
   } else {
     under.report <- rep(0, nquar)
@@ -562,14 +572,14 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i) {
 #' @param stan_data Data list used in stan model fitting.
 #' @param fit_mat Matrix of posterior samples from stan model.
 #' @param i Index of the posterior sample to process.
+#' @param idx Additional index parameter for processing.
 #' @return List containing posterior predictive quantities.
-prev_by_year_infection <- function(stan_data, fit_mat, i) {
+prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
   if (i %% 10 == 0) {
     cat("Iteration Number = ", i, "\n")
   }
   config <- stan_data$config
 
-  set.seed(config$seed)
   output <- list()
 
   n_CD4 <- nrow(stan_data$CD4)
@@ -577,32 +587,32 @@ prev_by_year_infection <- function(stan_data, fit_mat, i) {
   N_sample <- rowSums(stan_data$CD4)
 
   # Get initial prevalence
-  init_prev <- if (!exists("init_prev", where = stan_data)) {
+  init_prev <- if (!("init_prev" %in% names(stan_data))) {
     rep(0, config$nlatst) ### Allows modification for initial prevalence
   } else {
     stan_data$init_prev
   }
 
-  init_prev_m <- if (!exists("init_prev_m", where = stan_data)) {
+  init_prev_m <- if (!("init_prev_m" %in% names(stan_data))) {
     rep(0, config$nlatst)
   } else {
     stan_data$init_prev_m
   }
 
   # Get diagnosis probabilities
-  d1 <- fit_mat[i, grep("^d\\[1,", colnames(fit_mat))]
-  d2 <- fit_mat[i, grep("^d\\[2,", colnames(fit_mat))]
-  d3 <- fit_mat[i, grep("^d\\[3,", colnames(fit_mat))]
-  d4 <- fit_mat[i, grep("^d\\[4,", colnames(fit_mat))]
+  d1 <- fit_mat[i, idx$d1]
+  d2 <- fit_mat[i, idx$d2]
+  d3 <- fit_mat[i, idx$d3]
+  d4 <- fit_mat[i, idx$d4]
 
   # Get infections and migrations
-  temp_h <- exp(fit_mat[i, grep("lambda", colnames(fit_mat))])
+  temp_h <- exp(fit_mat[i, idx$lambda])
 
   if (config$migration) {
-    temp_omega <- exp(fit_mat[i, grep("gamma", colnames(fit_mat))])
-    temp_p <- fit_mat[i, grep("^p\\[", colnames(fit_mat))]
+    temp_omega <- exp(fit_mat[i, idx$gamma])
+    temp_p <- fit_mat[i, idx$p]
     temp_m <- matrix(
-      fit_mat[i, grep("^m\\[", colnames(fit_mat))],
+      fit_mat[i, idx$m],
       nrow = nquar,
       byrow = TRUE
     )
@@ -611,7 +621,7 @@ prev_by_year_infection <- function(stan_data, fit_mat, i) {
 
   # Calculate diagnoses
   if (config$rita) {
-    d5 <- fit_mat[i, grep("^d\\[5,", colnames(fit_mat))]
+    d5 <- fit_mat[i, idx$d5]
     diagnoses <- forward_calculate_rita(
       init_prev,
       temp_h,
@@ -729,8 +739,8 @@ prev_by_year_infection <- function(stan_data, fit_mat, i) {
   }
 
   # Calculate unreported AIDS
-  if ("under_rep" %in% colnames(fit_mat)) {
-    under.report <- 1 - fit_mat[i, "under_rep"]
+  if (!is.na(idx$under_rep)) {
+    under.report <- 1 - fit_mat[i, idx$under_rep]
     under.report <- c(rep(0, 88), rep(under.report, nquar - 88))
   } else {
     under.report <- rep(0, nquar)
@@ -856,6 +866,57 @@ prev_by_year_infection <- function(stan_data, fit_mat, i) {
     }
   }
   return(output)
+}
+
+#' Make fit indices
+#'
+#' Creates a list of indices for extracting parameters from the fit matrix.
+#'
+#' @param fit_mat Matrix of posterior samples from stan model.
+#' @param config Configuration list used in stan model fitting.
+#' @param nquar Number of quarters in the model.
+#' @return List of indices for various parameters in the fit matrix.
+make_fit_indices <- function(fit_mat, config, nquar) {
+  cn <- colnames(fit_mat)
+
+  idx <- list(
+    d1 = grep("^d\\[1,", cn),
+    d2 = grep("^d\\[2,", cn),
+    d3 = grep("^d\\[3,", cn),
+    d4 = grep("^d\\[4,", cn),
+    d5 = grep("^d\\[5,", cn),
+    lambda = grep("^lambda\\[", cn),
+    gamma = grep("^gamma\\[", cn),
+    p = grep("^p\\[", cn),
+    m = grep("^m\\[", cn),
+    under_rep = match("under_rep", cn)
+  )
+
+  if (
+    any(c(length(idx$d1), length(idx$d2), length(idx$d3), length(idx$d4)) == 0L)
+  ) {
+    stop("Could not find d[1..4,] in fit matrix column names.")
+  }
+  if (config$rita && length(idx$d5) == 0L) {
+    stop(
+      "config$rita=TRUE but could not find d[5,] in fit matrix column names."
+    )
+  }
+  if (length(idx$lambda) == 0L) {
+    stop("Could not find lambda[...] in fit matrix column names.")
+  }
+
+  if (config$migration) {
+    if (length(idx$gamma) == 0L) {
+      stop("config$migration=TRUE but gamma[...] not found.")
+    }
+    if (length(idx$p) == 0L) {
+      stop("config$migration=TRUE but p[...] not found.")
+    }
+    if (length(idx$m) == 0L) stop("config$migration=TRUE but m[...] not found.")
+  }
+
+  idx
 }
 
 #' Incidence dataframe
@@ -1083,9 +1144,8 @@ undiag.prev.df <- function(
 #' @param stan_data Data list used in stan model fitting.
 #' @param fit_mat Matrix of posterior samples from stan model.
 #' @param start.yr Starting year for the dataframe.
-#' @param config Configuration list.
 #' @return Dataframe of diagnosis probabilities estimates.
-diag.prob.df <- function(stan_data, fit_mat, start.yr = 1978, config) {
+diag.prob.df <- function(stan_data, fit_mat, start.yr = 1978) {
   nyr <- stan_data$nquar / 4
 
   ### Quantiles of diagnosis

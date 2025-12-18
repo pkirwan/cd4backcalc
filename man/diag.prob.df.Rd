@@ -4,7 +4,7 @@
 \alias{diag.prob.df}
 \title{Diagnosis probabilities dataframe}
 \usage{
-diag.prob.df(stan_data, fit_mat, start.yr = 1978, config)
+diag.prob.df(stan_data, fit_mat, start.yr = 1978)
 }
 \arguments{
 \item{stan_data}{Data list used in stan model fitting.}
@@ -12,8 +12,6 @@ diag.prob.df(stan_data, fit_mat, start.yr = 1978, config)
 \item{fit_mat}{Matrix of posterior samples from stan model.}
 
 \item{start.yr}{Starting year for the dataframe.}
-
-\item{config}{Configuration list.}
 }
 \value{
 Dataframe of diagnosis probabilities estimates.

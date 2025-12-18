@@ -116,7 +116,12 @@ extract_simulated_quantities <- function(sim_diags) {
   }
 
   migration_prob <- tibble::tibble(
-    value = as.vector(sim_data$m / sim_data$omega),
+    value = as.vector(sweep(
+      sim_data$m,
+      1,
+      ifelse(sim_data$omega == 0, NA_real_, sim_data$omega),
+      "/"
+    )),
     year = rep(seq(0, plot_years, by = 0.25), 5),
     strata = rep(
       c(
@@ -131,6 +136,7 @@ extract_simulated_quantities <- function(sim_diags) {
     group = "Simulated values"
   ) |>
     dplyr::mutate(
+      value = dplyr::if_else(is.na(.data$value), 0, .data$value),
       strata = factor(
         .data$strata,
         levels = c(
@@ -257,8 +263,7 @@ get_bias_strata <- function(
 get_mse <- function(bias_df, group_name = "Test group") {
   bias_df |>
     dplyr::group_by(.data$group.x) |>
-    dplyr::summarise(mse = mean(.data$bias^2)) |>
-    dplyr::ungroup() |>
+    dplyr::summarise(mse = mean(.data$bias^2), groups = "drop") |>
     dplyr::mutate(group = group_name)
 }
 
@@ -438,7 +443,7 @@ bias_plot <- function(
           dplyr::group_by(.data$group) |>
           dplyr::summarise(
             meanbias = mean(.data$bias),
-            pos = stats::quantile(.data$meanbias, 0.75) + offset,
+            pos = stats::quantile(.data$bias, 0.75) + offset,
             # Format bias based on its magnitude
             formatted_bias = dplyr::case_when(
               abs(.data$meanbias) >= 1000 ~ format(

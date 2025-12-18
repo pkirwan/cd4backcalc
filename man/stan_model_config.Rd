@@ -10,7 +10,7 @@ stan_model_config(
   age = FALSE,
   inf_model = 1,
   diag_model = 1,
-  seed = NULL
+  model_seed = NULL
 )
 }
 \arguments{
@@ -24,7 +24,7 @@ stan_model_config(
 
 \item{diag_model}{Diagnosis model type (1 = spline, 2 = random walk).}
 
-\item{seed}{Random seed for reproducibility.}
+\item{model_seed}{Seed for model fitting.}
 }
 \value{
 A list containing configuration settings for model fitting.

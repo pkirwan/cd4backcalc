@@ -3,15 +3,67 @@
 #' @param x Numeric vector
 #' @return A named numeric vector with 2.5%, 50%, mean, and 97.5% quantiles
 get_quantiles <- function(x) {
-  ## gives 95% credible intervals
-  ## median and mode
-  out <- rep(NA, 4)
-  out[1] <- stats::quantile(x, probs = 0.025)
-  out[2] <- stats::quantile(x, probs = 0.5)
-  out[3] <- mean(x)
-  out[4] <- stats::quantile(x, probs = 0.975)
+  x <- as.numeric(x)
+  qs <- stats::quantile(
+    x,
+    probs = c(0.025, 0.5, 0.975),
+    na.rm = TRUE,
+    names = FALSE,
+    type = 7
+  )
+  out <- c(qs[1], qs[2], mean(x, na.rm = TRUE), qs[3])
   names(out) <- c("2.5%", "50%", "mean", "97.5%")
-  return(out)
+  out
+}
+
+.validate_infs_dims <- function(infs, nt, nage) {
+  if (!is.matrix(infs)) {
+    stop("infs must be a matrix (draws x (nt*nage)).")
+  }
+  if (length(nt) != 1 || is.na(nt) || nt <= 0) {
+    stop("nt must be a positive scalar.")
+  }
+  if (length(nage) != 1 || is.na(nage) || nage <= 0) {
+    stop("nage must be a positive scalar.")
+  }
+  if (ncol(infs) != nt * nage) {
+    stop(sprintf(
+      "Expected ncol(infs) == nt*nage (%d), got %d.",
+      nt * nage,
+      ncol(infs)
+    ))
+  }
+  invisible(TRUE)
+}
+
+.age_to_idx <- function(age.st, age.end, nage, offset = 14) {
+  if (length(age.st) != 1 || length(age.end) != 1) {
+    stop("age.st and age.end must be scalars.")
+  }
+  if (age.end < age.st) {
+    stop("age.end must be >= age.st.")
+  }
+  a1 <- age.st - offset
+  a2 <- age.end - offset
+  if (a1 < 1 || a2 > nage) {
+    stop(sprintf(
+      "Age range [%d,%d] maps to indices [%d,%d] outside 1:%d.",
+      age.st,
+      age.end,
+      a1,
+      a2,
+      nage
+    ))
+  }
+  a1:a2
+}
+
+.aggregate_quarters_to_years <- function(x, nt) {
+  if (nt %% 4 != 0) {
+    stop("nt must be divisible by 4 when aggregating quarters to years.")
+  }
+  grp <- rep(seq_len(nt / 4), each = 4)
+  as.numeric(rowsum(x, grp, reorder = FALSE))
 }
 
 #' Function to get posterior functions of incidence
@@ -36,27 +88,28 @@ infs.fct <- function(
   qt.flag = FALSE,
   nage = 52
 ) {
-  ## infs is a matrix with quarterly log-infections for each posterior sample in each row
-  ## qt.flag=TRUE aggregates quarterly infections and makes them yearly
   if (!type %in% c("time", "age")) {
-    stop("Type can only be 'time' or 'age'")
+    stop("type can only be 'time' or 'age'.")
   }
-  a1 <- age.st - 14
-  a2 <- age.end - 14
-  if (qt.flag) {
-    qt.indx <- rep(1:(nt / 4), each = 4)
-  }
+  .validate_infs_dims(infs, nt, nage)
+  age_idx <- .age_to_idx(age.st, age.end, nage = nage)
+
+  exp_infs <- exp(infs)
+
   if (type == "time") {
-    if (!qt.flag) {
-      call <- "rowSums(matrix(x, nrow = nt, ncol = nage)[,a1:a2])"
-    } else {
-      call <- "tapply(rowSums(matrix(x, nrow = nt, ncol = nage)[,a1:a2]), qt.indx, sum)"
-    }
+    x <- t(apply(exp_infs, 1, function(v) {
+      mat <- matrix(v, nrow = nt, ncol = nage)
+      ts <- rowSums(mat[, age_idx, drop = FALSE])
+      if (qt.flag) .aggregate_quarters_to_years(ts, nt) else ts
+    }))
   } else {
-    call <- "colSums(matrix(x, nrow = nt, ncol = nage)[,a1:a2])"
+    x <- t(apply(exp_infs, 1, function(v) {
+      mat <- matrix(v, nrow = nt, ncol = nage)
+      colSums(mat[, age_idx, drop = FALSE])
+    }))
   }
-  x <- t(apply(exp(infs), 1, function(x) eval(parse(text = call))))
-  return(apply(x, 2, get_quantiles))
+
+  apply(x, 2, get_quantiles)
 }
 
 #' Function to get posterior functions of incidence
@@ -72,17 +125,24 @@ infs.fct <- function(
 #' @param nage Number of age groups.
 #' @return A matrix with summary statistics (2.5%, 50%, mean, 97.5%) for each time point.
 infs.fct.qt <- function(infs, age.st, age.end, nt, qt.flag = FALSE, nage = 52) {
-  ## infs is a matrix with quarterly log-infections for each posterior sample in each row
-  ## qt.flag=TRUE aggregates quarterly infections and makes them yearly
-  a1 <- age.st - 14
-  a2 <- age.end - 14
+  age_idx <- .age_to_idx(age.st, age.end, nage = nage)
+
   if (!qt.flag) {
-    infs <- infs[, rep(1:ncol(infs), each = 4)] / 4 ## making yearly infs constant in quarters
-    nt <- nt * 4 ## nt is quarter also for yearly model
+    # infs is on log scale; to split yearly total into 4 equal quarters:
+    # log(I/4) = log(I) - log(4)
+    infs <- infs[, rep(seq_len(ncol(infs)), each = 4), drop = FALSE] - log(4)
+    nt <- nt * 4
   }
-  call <- "rowSums(matrix(x, nrow = nt, ncol = nage)[,a1:a2])"
-  x <- t(apply(exp(infs), 1, function(x) eval(parse(text = call))))
-  return(apply(x, 2, get_quantiles))
+
+  .validate_infs_dims(infs, nt, nage)
+  exp_infs <- exp(infs)
+
+  x <- t(apply(exp_infs, 1, function(v) {
+    mat <- matrix(v, nrow = nt, ncol = nage)
+    rowSums(mat[, age_idx, drop = FALSE])
+  }))
+
+  apply(x, 2, get_quantiles)
 }
 
 #' Function to get posterior functions of incidence rate
@@ -98,12 +158,22 @@ infs.fct.qt <- function(infs, age.st, age.end, nt, qt.flag = FALSE, nage = 52) {
 #' @param totals A list containing total population counts for different age classes.
 #' @param nage Number of age groups.
 #' @return A matrix with summary statistics (2.5%, 50%, mean, 97.5%) for each time point.
-inc.fct <- function(infs, age.cl, last.yr, nt, qt.flag = FALSE, totals, nage = 52) {
+inc.fct <- function(
+  infs,
+  age.cl,
+  last.yr,
+  nt,
+  qt.flag = FALSE,
+  totals,
+  nage = 52
+) {
   ## infs is a matrix with quarterly log-infections for each posterior sample in each row
   ## qt.flag=TRUE aggregates quarterly infections and makes them yearly
   if (!age.cl %in% c("Tot", "15-34", "35-44", "45+")) {
     stop("age.cl can only be 'Tot','15-34', '35-44','45+' ")
   }
+  .validate_infs_dims(infs, nt, nage)
+
   if (age.cl == "Tot") {
     a1 <- 1
     a2 <- 52
@@ -125,17 +195,39 @@ inc.fct <- function(infs, age.cl, last.yr, nt, qt.flag = FALSE, totals, nage = 5
     den <- totals$N.msm.45
   }
 
-  if (!qt.flag) {
-    ind <- (nt - last.yr + 1):nt
-    call <- "rowSums(matrix(x, nrow = nt, ncol = nage)[ind,a1:a2]) / den "
-  } else {
-    qt.indx <- rep(1:last.yr, each = 4)
-    ind <- (nt - 4 * last.yr + 1):nt
-    call <- "tapply(rowSums(matrix(x, nrow = nt, ncol = nage)[ind,a1:a2]), qt.indx, sum) / den"
+  if (length(den) != 1 || is.na(den) || den <= 0) {
+    stop("Population denominator must be a positive scalar.")
   }
 
-  x <- t(apply(exp(infs), 1, function(x) eval(parse(text = call))))
-  return(apply(x, 2, get_quantiles))
+  exp_infs <- exp(infs)
+
+  if (!qt.flag) {
+    if (last.yr > nt) {
+      stop("last.yr cannot exceed nt when qt.flag=FALSE.")
+    }
+    ind <- (nt - last.yr + 1):nt
+    x <- t(apply(exp_infs, 1, function(v) {
+      mat <- matrix(v, nrow = nt, ncol = nage)
+      rowSums(mat[ind, a1:a2, drop = FALSE]) / den
+    }))
+  } else {
+    if (nt %% 4 != 0) {
+      stop("nt must be divisible by 4 when qt.flag=TRUE.")
+    }
+    if (last.yr > (nt / 4)) {
+      stop("Specified last.yr is too large for quarterly nt.")
+    }
+    ind <- (nt - 4 * last.yr + 1):nt
+    grp <- rep(seq_len(last.yr), each = 4)
+
+    x <- t(apply(exp_infs, 1, function(v) {
+      mat <- matrix(v, nrow = nt, ncol = nage)
+      ts <- rowSums(mat[ind, a1:a2, drop = FALSE])
+      as.numeric(rowsum(ts, grp, reorder = FALSE)) / den
+    }))
+  }
+
+  apply(x, 2, get_quantiles)
 }
 
 #' Function to identify the peak in infection in the last x years
@@ -148,25 +240,47 @@ inc.fct <- function(infs, age.cl, last.yr, nt, qt.flag = FALSE, totals, nage = 5
 #' @param qt.flag Logical flag indicating whether to aggregate quarterly infections into yearly.
 #' @param nage Number of age groups.
 #' @return A numeric vector indicating the peak position for each posterior sample.
-peak.fct <- function(infs, age.st, age.end, nt, last.yr = 10, qt.flag = FALSE, nage = 52) {
-  ## infs is a matrix with quarterly log-infections for each posterior sample in each row
-  ## qt.flag=TRUE aggregates quarterly infections and makes them yearly
-  if (last.yr > (nt / 4)) {
-    stop("Specified last year is too large")
-  }
-  a1 <- age.st - 14
-  a2 <- age.end - 14
+peak.fct <- function(
+  infs,
+  age.st,
+  age.end,
+  nt,
+  last.yr = 10,
+  qt.flag = FALSE,
+  nage = 52
+) {
+  .validate_infs_dims(infs, nt, nage)
+  age_idx <- .age_to_idx(age.st, age.end, nage = nage)
+
+  exp_infs <- exp(infs)
+
   if (!qt.flag) {
+    if (last.yr > nt) {
+      stop("Specified last.yr is too large")
+    }
     ind <- (nt - last.yr + 1):nt
-    call <- "rowSums(matrix(x, nrow = nt, ncol = nage)[ind,a1:a2])"
+    x <- t(apply(exp_infs, 1, function(v) {
+      mat <- matrix(v, nrow = nt, ncol = nage)
+      rowSums(mat[ind, age_idx, drop = FALSE])
+    }))
   } else {
-    qt.indx <- rep(1:last.yr, each = 4)
+    if (nt %% 4 != 0) {
+      stop("nt must be divisible by 4 when qt.flag=TRUE.")
+    }
+    if (last.yr > (nt / 4)) {
+      stop("Specified last.yr is too large")
+    }
     ind <- (nt - 4 * last.yr + 1):nt
-    call <- "tapply(rowSums(matrix(x, nrow = nt, ncol = nage)[ind,a1:a2]), qt.indx, sum)"
+    grp <- rep(seq_len(last.yr), each = 4)
+
+    x <- t(apply(exp_infs, 1, function(v) {
+      mat <- matrix(v, nrow = nt, ncol = nage)
+      ts <- rowSums(mat[ind, age_idx, drop = FALSE])
+      as.numeric(rowsum(ts, grp, reorder = FALSE))
+    }))
   }
-  x <- t(apply(exp(infs), 1, function(x) eval(parse(text = call))))
-  ### yields maximum in the last years
-  return(apply(x, 1, which.max))
+
+  apply(x, 1, which.max)
 }
 
 #' Function for the shape of incidence curve
@@ -211,22 +325,47 @@ shape.fct <- function(x) {
 #' @param qt.flag Logical flag indicating whether to aggregate quarterly infections into yearly.
 #' @param nage Number of age groups.
 #' @return A character vector indicating the trend for each posterior sample.
-trend.fct <- function(infs, age.st, age.end, nt, last.yr = 3, qt.flag = FALSE, nage = 52) {
-  if (last.yr > (nt / 4)) {
-    stop("Specified last year is too large")
-  }
-  a1 <- age.st - 14
-  a2 <- age.end - 14
+trend.fct <- function(
+  infs,
+  age.st,
+  age.end,
+  nt,
+  last.yr = 3,
+  qt.flag = FALSE,
+  nage = 52
+) {
+  .validate_infs_dims(infs, nt, nage)
+  age_idx <- .age_to_idx(age.st, age.end, nage = nage)
+
+  exp_infs <- exp(infs)
+
   if (!qt.flag) {
+    if (last.yr > nt) {
+      stop("Specified last.yr is too large")
+    }
     ind <- (nt - last.yr + 1):nt
-    call <- "rowSums(matrix(x, nrow = nt, ncol = nage)[ind,a1:a2])"
+    x <- t(apply(exp_infs, 1, function(v) {
+      mat <- matrix(v, nrow = nt, ncol = nage)
+      rowSums(mat[ind, age_idx, drop = FALSE])
+    }))
   } else {
-    qt.indx <- rep(1:last.yr, each = 4)
+    if (nt %% 4 != 0) {
+      stop("nt must be divisible by 4 when qt.flag=TRUE.")
+    }
+    if (last.yr > (nt / 4)) {
+      stop("Specified last.yr is too large")
+    }
     ind <- (nt - 4 * last.yr + 1):nt
-    call <- "tapply(rowSums(matrix(x, nrow = nt, ncol = nage)[ind,a1:a2]), qt.indx, sum)"
+    grp <- rep(seq_len(last.yr), each = 4)
+
+    x <- t(apply(exp_infs, 1, function(v) {
+      mat <- matrix(v, nrow = nt, ncol = nage)
+      ts <- rowSums(mat[ind, age_idx, drop = FALSE])
+      as.numeric(rowsum(ts, grp, reorder = FALSE))
+    }))
   }
-  x <- t(apply(exp(infs), 1, function(x) eval(parse(text = call))))
-  return(apply(x, 1, shape.fct))
+
+  apply(x, 1, shape.fct)
 }
 
 #' Function to get posterior functions of goodness of fit
@@ -260,7 +399,6 @@ gof.fct <- function(
   nt,
   qt.flag
 ) {
-  ## infs is a matrix with log-infections for each posterior sample in each row
   if (
     !type %in%
       c("HIV", "AIDS", "CD4.st1", "CD4.st2", "CD4.st3", "CD4.st4", "CD4.st5")
@@ -269,17 +407,39 @@ gof.fct <- function(
       "Type can only be 'HIV','AIDS','CD4.st1','CD4.st2','CD4.st3','CD4.st4','CD4.st5'"
     )
   }
-  a1 <- age.st - 14
-  a2 <- age.end - 14
-  if (qt.flag) {
-    qt.indx <- rep(1:(nt / 4), each = 4)
+
+  arr <- switch(
+    type,
+    HIV = HIV,
+    AIDS = AIDS,
+    CD4.st1 = CD4.st1,
+    CD4.st2 = CD4.st2,
+    CD4.st3 = CD4.st3,
+    CD4.st4 = CD4.st4,
+    CD4.st5 = CD4.st5
+  )
+  if (is.null(arr)) {
+    stop(sprintf("Requested type '%s' is NULL.", type))
   }
-  call <- paste(type, "[,a1:a2,]", sep = "")
-  y <- t(apply(eval(parse(text = call)), 3, rowSums))
+
+  # Expect arr dims: (t, age, draw)
+  nage <- dim(arr)[2]
+  age_idx <- .age_to_idx(age.st, age.end, nage = nage)
+
+  arr_sub <- arr[, age_idx, , drop = FALSE]
+
+  # Sum over age -> matrix (t, draw), then transpose -> (draw, t)
+  y <- t(apply(arr_sub, c(1, 3), sum))
+
   if (qt.flag) {
-    y <- t(apply(y, 1, function(x) tapply(x, qt.indx, sum)))
+    if (nt %% 4 != 0) {
+      stop("nt must be divisible by 4 when qt.flag=TRUE.")
+    }
+    grp <- rep(seq_len(nt / 4), each = 4)
+    y <- t(apply(y, 1, function(v) as.numeric(rowsum(v, grp, reorder = FALSE))))
   }
-  return(apply(y, 2, get_quantiles))
+
+  apply(y, 2, get_quantiles)
 }
 
 #' Function to get posterior functions of prevalence
@@ -293,34 +453,25 @@ gof.fct <- function(
 #' @param rita.flag Logical flag indicating if RITA diagnoses are considered.
 #' @return A matrix with summary statistics (2.5%, 50%, mean, 97.5%) for each time point.
 prev.fct <- function(prev.arr, state, age.st, age.end, rita.flag) {
-  ## infs is a matrix with log-infections for each posterior sample in each row
   if (!state %in% c("all", 1:7)) {
     stop("State can only be 'all' or 1:7")
   }
-  a1 <- age.st - 14
-  a2 <- age.end - 14
 
-  if (state == "all") {
-    if (rita.flag) {
-      prev <- prev.arr[,, 1, ] +
-        prev.arr[,, 2, ] +
-        prev.arr[,, 3, ] +
-        prev.arr[,, 4, ] +
-        prev.arr[,, 5, ] +
-        prev.arr[,, 6, ] +
-        prev.arr[,, 7, ]
-    } else {
-      prev <- prev.arr[,, 1, ] +
-        prev.arr[,, 2, ] +
-        prev.arr[,, 3, ] +
-        prev.arr[,, 4, ]
-    }
+  nage <- dim(prev.arr)[2]
+  age_idx <- .age_to_idx(age.st, age.end, nage = nage)
+
+  states <- if (identical(state, "all")) {
+    if (rita.flag) 1:7 else 1:4
   } else {
-    prev <- prev.arr[,, state, ]
+    state
   }
 
-  x <- t(apply(prev[, a1:a2, ], 3, rowSums))
-  return(apply(x, 2, get_quantiles))
+  # prev.arr dims expected: (t, age, state, draw)
+  prev_sub <- prev.arr[,, states, , drop = FALSE]
+  prev <- apply(prev_sub, c(1, 2, 4), sum) # (t, age, draw)
+
+  x <- t(apply(prev[, age_idx, , drop = FALSE], c(1, 3), sum)) # (draw, t)
+  apply(x, 2, get_quantiles)
 }
 
 #' Function to get diagnosis matrix per iteration
@@ -379,10 +530,26 @@ d.mat.iter <- function(
       d.mat[4, , 4] <- fit.mat[iter, ind_list$d4.ind.o]
     } else {
       d.mat <- array(NA, dim = c(4, nt, nage))
-      d.mat[1, , ] <- matrix(fit.mat[iter, ind_list$d1.ind], nrow = nt, ncol = nage)
-      d.mat[2, , ] <- matrix(fit.mat[iter, ind_list$d2.ind], nrow = nt, ncol = nage)
-      d.mat[3, , ] <- matrix(fit.mat[iter, ind_list$d3.ind], nrow = nt, ncol = nage)
-      d.mat[4, , ] <- matrix(fit.mat[iter, ind_list$d4.ind], nrow = nt, ncol = nage)
+      d.mat[1, , ] <- matrix(
+        fit.mat[iter, ind_list$d1.ind],
+        nrow = nt,
+        ncol = nage
+      )
+      d.mat[2, , ] <- matrix(
+        fit.mat[iter, ind_list$d2.ind],
+        nrow = nt,
+        ncol = nage
+      )
+      d.mat[3, , ] <- matrix(
+        fit.mat[iter, ind_list$d3.ind],
+        nrow = nt,
+        ncol = nage
+      )
+      d.mat[4, , ] <- matrix(
+        fit.mat[iter, ind_list$d4.ind],
+        nrow = nt,
+        ncol = nage
+      )
     }
   }
 
@@ -398,18 +565,22 @@ d.mat.iter <- function(
 #' @param nt Total number of time points.
 #' @return A matrix of AIDS diagnoses adjusted for under-reporting if applicable.
 urep.fct <- function(urep, AIDS, urep.flag, qt.flag, nt) {
-  ### including under-reporting in expected AIDS, for each iter
-  out <- matrix(NA, nrow = nrow(AIDS), ncol = ncol(AIDS))
-  ### Under-reporting starts from year 2000
-  ### which is year 5 (qt.flag=FALSE)
-  ### or quarter 20 (qt.flag=FALSE)
-  urep.start <- ifelse(qt.flag == TRUE, 20, 5)
+  out <- matrix(NA_real_, nrow = nrow(AIDS), ncol = ncol(AIDS))
+
+  # Under-reporting starts from year 2000:
+  # yearly model: year index 5 (if start is 1996-like), quarterly model: quarter 20
+  urep.start <- if (qt.flag) 20 else 5
+  urep.start <- min(urep.start, nt)
 
   if (urep.flag) {
-    out[1:urep.start, ] <- AIDS[1:urep.start, ] ### non under-reporting years
-    out[(urep.start + 1):nt, ] <- urep * AIDS[(urep.start + 1):nt, ] ### under-reporting years
+    out[1:urep.start, ] <- AIDS[1:urep.start, , drop = FALSE]
+    if (urep.start < nt) {
+      out[(urep.start + 1):nt, ] <- urep *
+        AIDS[(urep.start + 1):nt, , drop = FALSE]
+    }
   } else {
     out <- AIDS
   }
-  return(out)
+
+  out
 }

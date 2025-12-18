@@ -11,7 +11,7 @@ model_type_prep(
   age = FALSE,
   inf_model = 1,
   diag_model = 1,
-  seed = NULL,
+  model_seed = NULL,
   basis = "ts",
   knots = 10,
   penalty = 2
@@ -30,7 +30,7 @@ model_type_prep(
 
 \item{diag_model}{Diagnosis model type (1 = spline, 2 = random walk).}
 
-\item{seed}{Random seed for reproducibility.}
+\item{model_seed}{Seed for model fitting.}
 
 \item{basis}{Basis type for the spline (default is "ts" for thin plate regression spline).}
 

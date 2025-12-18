@@ -1,7 +1,7 @@
 test_that("cd4-only post-processing works", {
   # Simulate diagnoses
-  sim_diags <- simulate_diagnoses(nquar = 60, seed = 123)
-  stan_data <- model_type_prep(sim_diags)
+  sim_diags <- simulate_diagnoses(nquar = 60, sim_seed = 123)
+  stan_data <- model_type_prep(sim_diags, model_seed = 123)
   # Fit back-calculation model
   suppressWarnings({
     fit <- fit_stan_model(
@@ -26,8 +26,8 @@ test_that("cd4-only post-processing works", {
 
 test_that("migration post-processing works", {
   # Simulate diagnoses
-  sim_diags <- simulate_diagnoses(nquar = 60, migration = TRUE, seed = 123)
-  stan_data <- model_type_prep(sim_diags)
+  sim_diags <- simulate_diagnoses(nquar = 60, migration = TRUE, sim_seed = 123)
+  stan_data <- model_type_prep(sim_diags, model_seed = 123)
   # Fit back-calculation model
   suppressWarnings({
     fit <- fit_stan_model(
@@ -52,8 +52,8 @@ test_that("migration post-processing works", {
 
 test_that("rita post-processing works", {
   # Simulate diagnoses
-  sim_diags <- simulate_diagnoses(nquar = 60, rita = TRUE, seed = 123)
-  stan_data <- model_type_prep(sim_diags)
+  sim_diags <- simulate_diagnoses(nquar = 60, rita = TRUE, sim_seed = 123)
+  stan_data <- model_type_prep(sim_diags, model_seed = 123)
   # Fit back-calculation model
   suppressWarnings({
     fit <- fit_stan_model(
@@ -77,8 +77,8 @@ test_that("rita post-processing works", {
 })
 
 test_that("age-specific post-processing works", {
-  sim_diags <- simulate_diagnoses(seed = 123, nquar = 40, age = TRUE)
-  stan_data <- model_type_prep(sim_diags)
+  sim_diags <- simulate_diagnoses(sim_seed = 123, nquar = 40, age = TRUE)
+  stan_data <- model_type_prep(sim_diags, model_seed = 123)
   # Fit back-calculation model
   suppressWarnings({
     fit <- fit_stan_model(
@@ -101,14 +101,14 @@ test_that("age-specific post-processing works", {
   expect_true("infs.qt" %in% names(hiv_list))
 })
 
-test_that("age-specific rita back-calculation runs without error", {
+test_that("age-specific rita post-processing works", {
   sim_diags <- simulate_diagnoses(
-    seed = 123,
+    sim_seed = 123,
     nquar = 40,
     age = TRUE,
     rita = TRUE
   )
-  stan_data <- model_type_prep(sim_diags)
+  stan_data <- model_type_prep(sim_diags, model_seed = 123)
   # Fit back-calculation model
   suppressWarnings({
     fit <- fit_stan_model(
@@ -129,4 +129,25 @@ test_that("age-specific rita back-calculation runs without error", {
     nworkers = 1
   )
   expect_true("infs.qt" %in% names(hiv_list))
+})
+
+test_that("age-specific migration model fit works", {
+  sim_diags <- simulate_diagnoses(
+    sim_seed = 123,
+    nquar = 40,
+    age = TRUE,
+    migration = TRUE
+  )
+  stan_data <- model_type_prep(sim_diags, model_seed = 123)
+  # Fit back-calculation model
+  suppressWarnings({
+    fit <- fit_stan_model(
+      stan_data,
+      iter = 10,
+      chains = 1,
+      refresh = 0,
+      messages = FALSE
+    )
+  })
+  expect_s4_class(fit, "stanfit")
 })

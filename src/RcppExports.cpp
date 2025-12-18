@@ -349,6 +349,7 @@ END_RCPP
 }
 
 RcppExport SEXP _rcpp_module_boot_stan_fit4AD_ptens_mod();
+RcppExport SEXP _rcpp_module_boot_stan_fit4AD_ptens_migration_mod();
 RcppExport SEXP _rcpp_module_boot_stan_fit4AD_ptens_rita_mod();
 RcppExport SEXP _rcpp_module_boot_stan_fit4AI_spl_migration_mod();
 RcppExport SEXP _rcpp_module_boot_stan_fit4AI_spl_rita_mod();
@@ -380,6 +381,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cd4backcalc_prev_t_rita", (DL_FUNC) &_cd4backcalc_prev_t_rita, 4},
     {"_cd4backcalc_forward_calculate_rita", (DL_FUNC) &_cd4backcalc_forward_calculate_rita, 8},
     {"_rcpp_module_boot_stan_fit4AD_ptens_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4AD_ptens_mod, 0},
+    {"_rcpp_module_boot_stan_fit4AD_ptens_migration_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4AD_ptens_migration_mod, 0},
     {"_rcpp_module_boot_stan_fit4AD_ptens_rita_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4AD_ptens_rita_mod, 0},
     {"_rcpp_module_boot_stan_fit4AI_spl_migration_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4AI_spl_migration_mod, 0},
     {"_rcpp_module_boot_stan_fit4AI_spl_rita_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4AI_spl_rita_mod, 0},

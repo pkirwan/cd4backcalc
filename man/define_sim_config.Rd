@@ -12,7 +12,7 @@ define_sim_config(
   m_pattern = "constant",
   r_pattern = "constant",
   a_pattern = "constant",
-  seed = NULL,
+  sim_seed = NULL,
   dist = TRUE,
   migration = FALSE,
   rita = FALSE,
@@ -43,7 +43,7 @@ define_sim_config(
 
 \item{a_pattern}{Pattern type for age-based data ("constant", "wedge", "varying_wedge").}
 
-\item{seed}{Random seed for reproducibility. If NULL, a random seed is generated.}
+\item{sim_seed}{Random seed for simulation. If NULL, a random seed is generated.}
 
 \item{dist}{Logical indicating whether to add stochastic variation.}
 

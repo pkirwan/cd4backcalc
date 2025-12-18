@@ -4,7 +4,7 @@
 \alias{prev_by_year_infection}
 \title{Prevalence distribution by year of infection}
 \usage{
-prev_by_year_infection(stan_data, fit_mat, i)
+prev_by_year_infection(stan_data, fit_mat, i, idx)
 }
 \arguments{
 \item{stan_data}{Data list used in stan model fitting.}
@@ -12,6 +12,8 @@ prev_by_year_infection(stan_data, fit_mat, i)
 \item{fit_mat}{Matrix of posterior samples from stan model.}
 
 \item{i}{Index of the posterior sample to process.}
+
+\item{idx}{Additional index parameter for processing.}
 }
 \value{
 List containing posterior predictive quantities.

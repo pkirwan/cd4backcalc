@@ -10,7 +10,7 @@
 #' @param m_pattern Pattern type for mu ("constant", "differing", "varying").
 #' @param r_pattern Pattern type for RITA data ("constant", "increasing", "none").
 #' @param a_pattern Pattern type for age-based data ("constant", "wedge", "varying_wedge").
-#' @param seed Random seed for reproducibility. If NULL, a random seed is generated.
+#' @param sim_seed Random seed for simulation. If NULL, a random seed is generated.
 #' @param dist Logical indicating whether to add stochastic variation.
 #' @param migration Logical indicating whether to include migration effects.
 #' @param rita Logical indicating whether to simulate RITA (Recent Infection Testing Algorithm) data.
@@ -36,7 +36,7 @@ define_sim_config <- function(
   m_pattern = "constant",
   r_pattern = "constant",
   a_pattern = "constant",
-  seed = NULL,
+  sim_seed = NULL,
   dist = TRUE,
   migration = FALSE,
   rita = FALSE,
@@ -61,10 +61,10 @@ define_sim_config <- function(
     ndiagst <- 5
   }
 
-  q_age <- matrix(rep(q, 52), nrow = 52, byrow = TRUE)
+  q_age <- matrix(rep(q, nage), nrow = nage, byrow = TRUE)
 
-  if (is.null(seed)) {
-    seed <- sample.int(.Machine$integer.max, 1)
+  if (is.null(sim_seed)) {
+    sim_seed <- sample.int(.Machine$integer.max, 1)
   }
 
   # Standard configuration parameters
@@ -76,7 +76,7 @@ define_sim_config <- function(
     m_pattern = m_pattern,
     r_pattern = r_pattern,
     a_pattern = a_pattern,
-    seed = seed,
+    sim_seed = sim_seed,
     dist = dist,
     migration = migration,
     rita = rita,
@@ -95,7 +95,7 @@ define_sim_config <- function(
     cd4_completeness = cd4_completeness
   )
 
-  if (migration == FALSE | rita == TRUE) {
+  if (migration == FALSE || rita == TRUE) {
     config$o_pattern <- "none"
   }
 
@@ -451,7 +451,7 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #' @param m_pattern Pattern type for mu ("constant", "differing", "varying").
 #' @param r_pattern Pattern type for RITA data ("constant", "increasing", "none").
 #' @param a_pattern Pattern type for age-based data ("constant", "wedge", "varying_wedge").
-#' @param seed Random seed for reproducibility. If NULL, a random seed is generated.
+#' @param sim_seed Random seed for reproducibility. If NULL, a random seed is generated.
 #' @param dist Logical indicating whether to add stochastic variation.
 #' @param migration Logical indicating whether to include migration effects.
 #' @param rita Logical indicating whether to simulate RITA (Recent Infection Testing Algorithm) data.
@@ -477,7 +477,7 @@ simulate_diagnoses <- function(
   m_pattern = "constant",
   r_pattern = "constant",
   a_pattern = "constant",
-  seed = NULL,
+  sim_seed = NULL,
   dist = TRUE,
   migration = FALSE,
   rita = FALSE,
@@ -492,14 +492,15 @@ simulate_diagnoses <- function(
   abroad_prop = 0.2, # proportion acquired abroad at outset
   cd4_completeness = 1 # CD4 completeness
 ) {
-  config <- define_sim_config(h_pattern,
+  config <- define_sim_config(
+    h_pattern,
     o_pattern,
     d_pattern,
     p_pattern,
     m_pattern,
     r_pattern,
     a_pattern,
-    seed,
+    sim_seed,
     dist,
     migration,
     rita,
@@ -514,7 +515,7 @@ simulate_diagnoses <- function(
     abroad_prop,
     cd4_completeness
   )
-  set.seed(config$seed)
+  set.seed(config$sim_seed)
 
   # Generate model components
   infs <- generate_infections(
@@ -747,6 +748,13 @@ simulate_diagnoses <- function(
     init_prev_abroad_age <- lat_init_abroad_age
   }
 
+  # Age distribution for prior diagnoses from abroad (ABROAD), by quarter
+  ABROAD <- m[, config$ndiagst]
+  ABROAD_age <- matrix(0, nrow = config$nquar, ncol = config$nage)
+  for (t in 1:config$nquar) {
+    ABROAD_age[t, ] <- round_preserve(agedist_abroad[t, ] * ABROAD[t])
+  }
+
   # Make stan data list
   stan_data <- list(
     "HIV" = hiv_dx,
@@ -755,7 +763,8 @@ simulate_diagnoses <- function(
     "AIDS_age" = aids_dx_age,
     "CD4" = cd4_dx,
     "CD4_age" = cd4_dx_age,
-    "ABROAD" = m[, config$ndiagst],
+    "ABROAD" = ABROAD,
+    "ABROAD_age" = ABROAD_age,
     "nquar" = config$nquar,
     "nage" = config$nage,
     "q" = config$q,

@@ -85,7 +85,12 @@ postproc_ad <- function(
   beta.ind <- grep("beta", colnames(fit.mat))
   lambda.ind <- grep("lambda", colnames(fit.mat))
   x <- stan_data$X
-  infs <- t(apply(fit.mat[, beta.ind], 1, function(y) x %*% y))
+
+  beta_draws <- fit.mat[, beta.ind, drop = FALSE]
+  if (!is.matrix(x)) {
+    x <- as.matrix(x)
+  }
+  infs <- beta_draws %*% t(x)
 
   if (length(lambda.ind) > 1) {
     lambda <- apply(fit.mat[, lambda.ind], 2, get_quantiles)
@@ -110,235 +115,64 @@ postproc_ad <- function(
   ## Posterior mean for all time and ages
   out$infs.all <- apply(infs, 2, get_quantiles)
 
-  # Time profile and age-specific time profile
-  # yearly
-  out$infs <- infs.fct(
-    infs,
-    15,
-    66,
-    nt,
-    type = "time",
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  out$infs.1524 <- infs.fct(
-    infs,
-    15,
-    24,
-    nt,
-    type = "time",
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  out$infs.2534 <- infs.fct(
-    infs,
-    25,
-    34,
-    nt,
-    type = "time",
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  out$infs.3544 <- infs.fct(
-    infs,
-    35,
-    44,
-    nt,
-    type = "time",
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  out$infs.45 <- infs.fct(
-    infs,
-    45,
-    66,
-    nt,
-    type = "time",
-    qt.flag = quar.flag,
-    nage = nage
+  ## Define age bands
+  age_bands <- list(
+    all = c(15, 66),
+    `1524` = c(15, 24),
+    `2534` = c(25, 34),
+    `3544` = c(35, 44),
+    `45` = c(45, 66)
   )
 
-  # quarterly
-  out$infs.qt <- infs.fct.qt(infs, 15, 66, nt, qt.flag = quar.flag, nage = nage)
-  out$infs.qt.1524 <- infs.fct.qt(
-    infs,
-    15,
-    24,
-    nt,
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  out$infs.qt.2534 <- infs.fct.qt(
-    infs,
-    25,
-    34,
-    nt,
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  out$infs.qt.3544 <- infs.fct.qt(
-    infs,
-    35,
-    44,
-    nt,
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  out$infs.qt.45 <- infs.fct.qt(
-    infs,
-    45,
-    66,
-    nt,
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  ## ## incidence
-  ## environment(inc.fct) <- environment()
+  band_suffix <- function(bn) {
+    if (identical(bn, "all")) "" else paste0(".", bn)
+  }
 
-  ## out$inc <- inc.fct(infs,"Tot", l.msmdata+1, nt, qt.flag = quar.flag)
-  ## out$inc.1534 <- inc.fct(infs,"15-34", l.msmdata+1, nt, qt.flag = quar.flag)
-  ## out$inc.3544 <- inc.fct(infs,"35-44", l.msmdata+1, nt, qt.flag = quar.flag)
-  ## out$inc.45 <- inc.fct(infs,"45+", l.msmdata+1, nt, qt.flag = quar.flag)
+  for (bn in names(age_bands)) {
+    ages <- age_bands[[bn]]
+    suf <- band_suffix(bn)
 
-  ## peaks in infections...
-  out$peak <- peak.fct(
-    infs,
-    15,
-    66,
-    nt,
-    last.yr = 10,
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  out$peak.1524 <- peak.fct(
-    infs,
-    15,
-    24,
-    nt,
-    last.yr = 10,
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  out$peak.2534 <- peak.fct(
-    infs,
-    25,
-    34,
-    nt,
-    last.yr = 10,
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  out$peak.3544 <- peak.fct(
-    infs,
-    35,
-    44,
-    nt,
-    last.yr = 10,
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  out$peak.45 <- peak.fct(
-    infs,
-    45,
-    66,
-    nt,
-    last.yr = 10,
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  ### trends in incidence in the last two years
-  out$trend.2 <- trend.fct(
-    infs,
-    15,
-    66,
-    nt,
-    last.yr = 2,
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  out$trend.2.1524 <- trend.fct(
-    infs,
-    15,
-    24,
-    nt,
-    last.yr = 2,
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  out$trend.2.2534 <- trend.fct(
-    infs,
-    25,
-    34,
-    nt,
-    last.yr = 2,
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  out$trend.2.3544 <- trend.fct(
-    infs,
-    35,
-    44,
-    nt,
-    last.yr = 2,
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  out$trend.2.45 <- trend.fct(
-    infs,
-    45,
-    66,
-    nt,
-    last.yr = 2,
-    qt.flag = quar.flag,
-    nage = nage
-  )
+    out[[paste0("infs", suf)]] <- infs.fct(
+      infs,
+      ages[1],
+      ages[2],
+      nt,
+      type = "time",
+      qt.flag = quar.flag,
+      nage = nage
+    )
 
-  ### trends in incidence in the last three years
-  out$trend.3 <- trend.fct(
-    infs,
-    15,
-    66,
-    nt,
-    last.yr = 3,
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  out$trend.3.1524 <- trend.fct(
-    infs,
-    15,
-    24,
-    nt,
-    last.yr = 3,
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  out$trend.3.2534 <- trend.fct(
-    infs,
-    25,
-    34,
-    nt,
-    last.yr = 3,
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  out$trend.3.3544 <- trend.fct(
-    infs,
-    35,
-    44,
-    nt,
-    last.yr = 3,
-    qt.flag = quar.flag,
-    nage = nage
-  )
-  out$trend.3.45 <- trend.fct(
-    infs,
-    45,
-    66,
-    nt,
-    last.yr = 3,
-    qt.flag = quar.flag,
-    nage = nage
-  )
+    out[[paste0("infs.qt", suf)]] <- infs.fct.qt(
+      infs,
+      ages[1],
+      ages[2],
+      nt,
+      qt.flag = quar.flag,
+      nage = nage
+    )
+
+    out[[paste0("peak", suf)]] <- peak.fct(
+      infs,
+      ages[1],
+      ages[2],
+      nt,
+      last.yr = 10,
+      qt.flag = quar.flag,
+      nage = nage
+    )
+
+    for (last_yr in c(2, 3)) {
+      out[[paste0("trend.", last_yr, suf)]] <- trend.fct(
+        infs,
+        ages[1],
+        ages[2],
+        nt,
+        last.yr = last_yr,
+        qt.flag = quar.flag,
+        nage = nage
+      )
+    }
+  }
 
   ### Diagnoses probabilities
   if (!ageprobs.flag) {
@@ -692,559 +526,75 @@ postproc_ad <- function(
     CD4.st5 <- NULL
   }
 
-  out$HIV <- gof.fct(
-    "HIV",
-    15,
-    66,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
+  gof_types <- list(
+    HIV = "HIV",
+    AIDS = "AIDS",
+    `CD4.1` = "CD4.st1",
+    `CD4.2` = "CD4.st2",
+    `CD4.3` = "CD4.st3",
+    `CD4.4` = "CD4.st4"
   )
-  out$HIV.1524 <- gof.fct(
-    "HIV",
-    15,
-    24,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$HIV.2534 <- gof.fct(
-    "HIV",
-    25,
-    34,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$HIV.3544 <- gof.fct(
-    "HIV",
-    35,
-    44,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$HIV.45 <- gof.fct(
-    "HIV",
-    45,
-    66,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-
-  out$AIDS <- gof.fct(
-    "AIDS",
-    15,
-    66,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$AIDS.1524 <- gof.fct(
-    "AIDS",
-    15,
-    24,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$AIDS.2534 <- gof.fct(
-    "AIDS",
-    25,
-    34,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$AIDS.3544 <- gof.fct(
-    "AIDS",
-    35,
-    44,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$AIDS.45 <- gof.fct(
-    "AIDS",
-    45,
-    66,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-
-  out$CD4.1 <- gof.fct(
-    "CD4.st1",
-    15,
-    66,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$CD4.2 <- gof.fct(
-    "CD4.st2",
-    15,
-    66,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$CD4.3 <- gof.fct(
-    "CD4.st3",
-    15,
-    66,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$CD4.4 <- gof.fct(
-    "CD4.st4",
-    15,
-    66,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-
-  out$CD4.1.1524 <- gof.fct(
-    "CD4.st1",
-    15,
-    24,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$CD4.1.2534 <- gof.fct(
-    "CD4.st1",
-    25,
-    34,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$CD4.1.3544 <- gof.fct(
-    "CD4.st1",
-    35,
-    44,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$CD4.1.45 <- gof.fct(
-    "CD4.st1",
-    45,
-    66,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-
-  out$CD4.2.1524 <- gof.fct(
-    "CD4.st2",
-    15,
-    24,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$CD4.2.2534 <- gof.fct(
-    "CD4.st2",
-    25,
-    34,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$CD4.2.3544 <- gof.fct(
-    "CD4.st2",
-    35,
-    44,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$CD4.2.45 <- gof.fct(
-    "CD4.st2",
-    45,
-    66,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-
-  out$CD4.3.1524 <- gof.fct(
-    "CD4.st3",
-    15,
-    24,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$CD4.3.2534 <- gof.fct(
-    "CD4.st3",
-    25,
-    34,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$CD4.3.3544 <- gof.fct(
-    "CD4.st3",
-    35,
-    44,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$CD4.3.45 <- gof.fct(
-    "CD4.st3",
-    45,
-    66,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-
-  out$CD4.4.1524 <- gof.fct(
-    "CD4.st4",
-    15,
-    24,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$CD4.4.2534 <- gof.fct(
-    "CD4.st4",
-    25,
-    34,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$CD4.4.3544 <- gof.fct(
-    "CD4.st4",
-    35,
-    44,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-  out$CD4.4.45 <- gof.fct(
-    "CD4.st4",
-    45,
-    66,
-    HIV,
-    AIDS,
-    CD4.st1,
-    CD4.st2,
-    CD4.st3,
-    CD4.st4,
-    CD4.st5,
-    nt,
-    quar.flag
-  )
-
   if (config$rita) {
-    out$CD4.5 <- gof.fct(
-      "CD4.st5",
-      15,
-      66,
-      HIV,
-      AIDS,
-      CD4.st1,
-      CD4.st2,
-      CD4.st3,
-      CD4.st4,
-      CD4.st5,
-      nt,
-      quar.flag
-    )
-    out$CD4.5.1524 <- gof.fct(
-      "CD4.st5",
-      15,
-      24,
-      HIV,
-      AIDS,
-      CD4.st1,
-      CD4.st2,
-      CD4.st3,
-      CD4.st4,
-      CD4.st5,
-      nt,
-      quar.flag
-    )
-    out$CD4.5.2534 <- gof.fct(
-      "CD4.st5",
-      25,
-      34,
-      HIV,
-      AIDS,
-      CD4.st1,
-      CD4.st2,
-      CD4.st3,
-      CD4.st4,
-      CD4.st5,
-      nt,
-      quar.flag
-    )
-    out$CD4.5.3544 <- gof.fct(
-      "CD4.st5",
-      35,
-      44,
-      HIV,
-      AIDS,
-      CD4.st1,
-      CD4.st2,
-      CD4.st3,
-      CD4.st4,
-      CD4.st5,
-      nt,
-      quar.flag
-    )
-    out$CD4.5.45 <- gof.fct(
-      "CD4.st5",
-      45,
-      66,
-      HIV,
-      AIDS,
-      CD4.st1,
-      CD4.st2,
-      CD4.st3,
-      CD4.st4,
-      CD4.st5,
-      nt,
-      quar.flag
+    gof_types[["CD4.5"]] <- "CD4.st5"
+  }
+
+  for (base_name in names(gof_types)) {
+    type_arg <- gof_types[[base_name]]
+
+    for (bn in names(age_bands)) {
+      ages <- age_bands[[bn]]
+      suf <- band_suffix(bn)
+
+      out[[paste0(base_name, suf)]] <- gof.fct(
+        type_arg,
+        ages[1],
+        ages[2],
+        HIV,
+        AIDS,
+        CD4.st1,
+        CD4.st2,
+        CD4.st3,
+        CD4.st4,
+        CD4.st5,
+        nt,
+        quar.flag
+      )
+    }
+  }
+
+  ### Prevalence
+  prev_states <- list(
+    prev = "all",
+    `prev.st1` = 1,
+    `prev.st2` = 2,
+    `prev.st3` = 3,
+    `prev.st4` = 4
+  )
+  if (config$rita) {
+    prev_states <- c(
+      prev_states,
+      list(`prev.st5` = 5, `prev.st6` = 6, `prev.st7` = 7)
     )
   }
 
-  out$prev <- prev.fct(exp.prev.arr, "all", 15, 66, config$rita)
+  for (base_name in names(prev_states)) {
+    state <- prev_states[[base_name]]
 
-  out$prev.st1 <- prev.fct(exp.prev.arr, 1, 15, 66, config$rita)
-  out$prev.st2 <- prev.fct(exp.prev.arr, 2, 15, 66, config$rita)
-  out$prev.st3 <- prev.fct(exp.prev.arr, 3, 15, 66, config$rita)
-  out$prev.st4 <- prev.fct(exp.prev.arr, 4, 15, 66, config$rita)
+    for (bn in names(age_bands)) {
+      ages <- age_bands[[bn]]
+      suf <- band_suffix(bn)
 
-  out$prev.1524 <- prev.fct(exp.prev.arr, "all", 15, 24, config$rita)
-  out$prev.2534 <- prev.fct(exp.prev.arr, "all", 25, 34, config$rita)
-  out$prev.3544 <- prev.fct(exp.prev.arr, "all", 35, 44, config$rita)
-  out$prev.45 <- prev.fct(exp.prev.arr, "all", 45, 66, config$rita)
-
-  out$prev.st1.1524 <- prev.fct(exp.prev.arr, 1, 15, 24, config$rita)
-  out$prev.st1.2534 <- prev.fct(exp.prev.arr, 1, 25, 34, config$rita)
-  out$prev.st1.3544 <- prev.fct(exp.prev.arr, 1, 35, 44, config$rita)
-  out$prev.st1.45 <- prev.fct(exp.prev.arr, 1, 45, 66, config$rita)
-
-  out$prev.st2.1524 <- prev.fct(exp.prev.arr, 2, 15, 24, config$rita)
-  out$prev.st2.2534 <- prev.fct(exp.prev.arr, 2, 25, 34, config$rita)
-  out$prev.st2.3544 <- prev.fct(exp.prev.arr, 2, 35, 44, config$rita)
-  out$prev.st2.45 <- prev.fct(exp.prev.arr, 2, 45, 66, config$rita)
-
-  out$prev.st3.1524 <- prev.fct(exp.prev.arr, 3, 15, 24, config$rita)
-  out$prev.st3.2534 <- prev.fct(exp.prev.arr, 3, 25, 34, config$rita)
-  out$prev.st3.3544 <- prev.fct(exp.prev.arr, 3, 35, 44, config$rita)
-  out$prev.st3.45 <- prev.fct(exp.prev.arr, 3, 45, 66, config$rita)
-
-  out$prev.st4.1524 <- prev.fct(exp.prev.arr, 4, 15, 24, config$rita)
-  out$prev.st4.2534 <- prev.fct(exp.prev.arr, 4, 25, 34, config$rita)
-  out$prev.st4.3544 <- prev.fct(exp.prev.arr, 4, 35, 44, config$rita)
-  out$prev.st4.45 <- prev.fct(exp.prev.arr, 4, 45, 66, config$rita)
-
-  if (config$rita) {
-    out$prev.st5 <- prev.fct(exp.prev.arr, 5, 15, 66, config$rita)
-    out$prev.st5.1524 <- prev.fct(exp.prev.arr, 5, 15, 24, config$rita)
-    out$prev.st5.2534 <- prev.fct(exp.prev.arr, 5, 25, 34, config$rita)
-    out$prev.st5.3544 <- prev.fct(exp.prev.arr, 5, 35, 44, config$rita)
-    out$prev.st5.45 <- prev.fct(exp.prev.arr, 5, 45, 66, config$rita)
-
-    out$prev.st6 <- prev.fct(exp.prev.arr, 6, 15, 66, config$rita)
-    out$prev.st6.1524 <- prev.fct(exp.prev.arr, 6, 15, 24, config$rita)
-    out$prev.st6.2534 <- prev.fct(exp.prev.arr, 6, 25, 34, config$rita)
-    out$prev.st6.3544 <- prev.fct(exp.prev.arr, 6, 35, 44, config$rita)
-    out$prev.st6.45 <- prev.fct(exp.prev.arr, 6, 45, 66, config$rita)
-
-    out$prev.st7 <- prev.fct(exp.prev.arr, 7, 15, 66, config$rita)
-    out$prev.st7.1524 <- prev.fct(exp.prev.arr, 7, 15, 24, config$rita)
-    out$prev.st7.2534 <- prev.fct(exp.prev.arr, 7, 25, 34, config$rita)
-    out$prev.st7.3544 <- prev.fct(exp.prev.arr, 7, 35, 44, config$rita)
-    out$prev.st7.45 <- prev.fct(exp.prev.arr, 7, 45, 66, config$rita)
+      out[[paste0(base_name, suf)]] <- prev.fct(
+        exp.prev.arr,
+        state,
+        ages[1],
+        ages[2],
+        config$rita
+      )
+    }
   }
+
   ### Getting data posterior predictive distributions
-  ## set.seed to ensure consistent results
   N.Poiss <- 300
 
   HIV.m <- apply(HIV, c(1, 2), mean)
@@ -1344,7 +694,7 @@ postproc_ad <- function(
   p3.m <- apply(p3, c(1, 2), mean)
   p4.m <- apply(p4, c(1, 2), mean)
   if (config$rita) {
-    p5.m <- apply(p4, c(1, 2), mean)
+    p5.m <- apply(p5, c(1, 2), mean)
   }
 
   if (config$rita) {
@@ -1387,394 +737,77 @@ postproc_ad <- function(
     }
   }
 
-  ### Selecting number of people in specific states
-  CD4.1.Poss.q <- CD4.Poiss[,, 1, ]
-  CD4.2.Poss.q <- CD4.Poiss[,, 2, ]
-  CD4.3.Poss.q <- CD4.Poiss[,, 3, ]
-  CD4.4.Poss.q <- CD4.Poiss[,, 4, ]
+  age_idx <- lapply(age_bands, function(ages) {
+    .age_to_idx(ages[1], ages[2], nage = nage)
+  })
 
-  if (config$rita) {
-    CD4.5.Poss.q <- CD4.Poiss[,, 5, ]
+  # If quarterly model: "non-Quar" outputs are yearly aggregates; else identity
+  time_agg_year <- make_time_agg(quar.flag, nt)
+  time_agg_quar <- function(ts) ts
+
+  # --- HIV / AIDS Poisson summaries (yearly-or-quarterly aggregated) ---
+  for (bn in names(age_idx)) {
+    suf <- band_suffix(bn)
+    out[[paste0("HIV", suf, ".Poiss")]] <- summarise_poiss(
+      HIV.p,
+      age_idx[[bn]],
+      time_agg_year
+    )
+    out[[paste0("AIDS", suf, ".Poiss")]] <- summarise_poiss(
+      AIDS.p,
+      age_idx[[bn]],
+      time_agg_year
+    )
   }
 
+  # --- CD4 multinomial summaries (yearly-or-quarterly aggregated) ---
+  nstages <- if (config$rita) 5 else 4
+  npoiss <- dim(CD4.Poiss)[4]
+
+  for (s in seq_len(nstages)) {
+    # CD4.Poiss dims: (nt, nage, stage, N.Poiss)
+    stage_arr <- array(CD4.Poiss[,, s, ], dim = c(nt, nage, npoiss))
+
+    for (bn in names(age_idx)) {
+      suf <- band_suffix(bn)
+      out[[paste0("CD4.", s, suf, ".Mult")]] <- summarise_mult(
+        stage_arr,
+        age_idx[[bn]],
+        time_agg_year
+      )
+    }
+  }
+
+  # --- Quarterly (non-aggregated) outputs (only when quar.flag == TRUE) ---
   if (quar.flag) {
-    qt.indx <- rep(1:(nt / 4), each = 4)
-    call <- "function(x) tapply(rowSums(x), qt.indx, sum)"
-  } else {
-    call <- "rowSums"
+    for (bn in names(age_idx)) {
+      suf <- band_suffix(bn)
+      out[[paste0("HIV", suf, ".Quar.Poiss")]] <- summarise_poiss(
+        HIV.p,
+        age_idx[[bn]],
+        time_agg_quar
+      )
+      out[[paste0("AIDS", suf, ".Quar.Poiss")]] <- summarise_poiss(
+        AIDS.p,
+        age_idx[[bn]],
+        time_agg_quar
+      )
+    }
+
+    for (s in seq_len(nstages)) {
+      stage_arr <- array(CD4.Poiss[,, s, ], dim = c(nt, nage, npoiss))
+
+      for (bn in names(age_idx)) {
+        suf <- band_suffix(bn)
+        out[[paste0("CD4.", s, suf, ".Quar.Mult")]] <- summarise_mult(
+          stage_arr,
+          age_idx[[bn]],
+          time_agg_quar
+        )
+      }
+    }
   }
 
-  out$HIV.Poiss <- apply(
-    apply(HIV.p, 1, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$HIV.1524.Poiss <- apply(
-    apply(HIV.p[,, 1:10], 1, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$HIV.2534.Poiss <- apply(
-    apply(HIV.p[,, 11:20], 1, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$HIV.3544.Poiss <- apply(
-    apply(HIV.p[,, 21:30], 1, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$HIV.45.Poiss <- apply(
-    apply(HIV.p[,, 31:52], 1, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-
-  out$AIDS.Poiss <- apply(
-    apply(AIDS.p, 1, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$AIDS.1524.Poiss <- apply(
-    apply(AIDS.p[,, 1:10], 1, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$AIDS.2534.Poiss <- apply(
-    apply(AIDS.p[,, 11:20], 1, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$AIDS.3544.Poiss <- apply(
-    apply(AIDS.p[,, 21:30], 1, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$AIDS.45.Poiss <- apply(
-    apply(AIDS.p[,, 31:52], 1, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-
-  out$CD4.1.Mult <- apply(
-    apply(CD4.1.Poss.q, 3, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$CD4.2.Mult <- apply(
-    apply(CD4.2.Poss.q, 3, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$CD4.3.Mult <- apply(
-    apply(CD4.3.Poss.q, 3, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$CD4.4.Mult <- apply(
-    apply(CD4.4.Poss.q, 3, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-
-  out$CD4.1.1524.Mult <- apply(
-    apply(CD4.1.Poss.q[, 1:10, ], 3, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$CD4.1.2534.Mult <- apply(
-    apply(CD4.1.Poss.q[, 11:20, ], 3, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$CD4.1.3544.Mult <- apply(
-    apply(CD4.1.Poss.q[, 21:30, ], 3, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$CD4.1.45.Mult <- apply(
-    apply(CD4.1.Poss.q[, 31:52, ], 3, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-
-  out$CD4.2.1524.Mult <- apply(
-    apply(CD4.2.Poss.q[, 1:10, ], 3, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$CD4.2.2534.Mult <- apply(
-    apply(CD4.2.Poss.q[, 11:20, ], 3, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$CD4.2.3544.Mult <- apply(
-    apply(CD4.2.Poss.q[, 21:30, ], 3, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$CD4.2.45.Mult <- apply(
-    apply(CD4.2.Poss.q[, 31:52, ], 3, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-
-  out$CD4.3.1524.Mult <- apply(
-    apply(CD4.3.Poss.q[, 1:10, ], 3, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$CD4.3.2534.Mult <- apply(
-    apply(CD4.3.Poss.q[, 11:20, ], 3, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$CD4.3.3544.Mult <- apply(
-    apply(CD4.3.Poss.q[, 21:30, ], 3, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$CD4.3.45.Mult <- apply(
-    apply(CD4.3.Poss.q[, 31:52, ], 3, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-
-  out$CD4.4.1524.Mult <- apply(
-    apply(CD4.4.Poss.q[, 1:10, ], 3, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$CD4.4.2534.Mult <- apply(
-    apply(CD4.4.Poss.q[, 11:20, ], 3, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$CD4.4.3544.Mult <- apply(
-    apply(CD4.4.Poss.q[, 21:30, ], 3, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-  out$CD4.4.45.Mult <- apply(
-    apply(CD4.4.Poss.q[, 31:52, ], 3, eval(parse(text = call))),
-    1,
-    get_quantiles
-  )
-
-  if (quar.flag) {
-    call <- "rowSums"
-
-    out$HIV.Quar.Poiss <- apply(
-      apply(HIV.p, 1, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$HIV.1524.Quar.Poiss <- apply(
-      apply(HIV.p[,, 1:10], 1, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$HIV.2534.Quar.Poiss <- apply(
-      apply(HIV.p[,, 11:20], 1, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$HIV.3544.Quar.Poiss <- apply(
-      apply(HIV.p[,, 21:30], 1, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$HIV.45.Quar.Poiss <- apply(
-      apply(HIV.p[,, 31:52], 1, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-
-    out$AIDS.Quar.Poiss <- apply(
-      apply(AIDS.p, 1, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$AIDS.1524.Quar.Poiss <- apply(
-      apply(AIDS.p[,, 1:10], 1, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$AIDS.2534.Quar.Poiss <- apply(
-      apply(AIDS.p[,, 11:20], 1, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$AIDS.3544.Quar.Poiss <- apply(
-      apply(AIDS.p[,, 21:30], 1, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$AIDS.45.Quar.Poiss <- apply(
-      apply(AIDS.p[,, 31:52], 1, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-
-    out$CD4.1.Quar.Mult <- apply(
-      apply(CD4.1.Poss.q, 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.2.Quar.Mult <- apply(
-      apply(CD4.2.Poss.q, 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.3.Quar.Mult <- apply(
-      apply(CD4.3.Poss.q, 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.4.Quar.Mult <- apply(
-      apply(CD4.4.Poss.q, 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-
-    out$CD4.1.1524.Quar.Mult <- apply(
-      apply(CD4.1.Poss.q[, 1:10, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.1.2534.Quar.Mult <- apply(
-      apply(CD4.1.Poss.q[, 11:20, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.1.3544.Quar.Mult <- apply(
-      apply(CD4.1.Poss.q[, 21:30, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.1.45.Quar.Mult <- apply(
-      apply(CD4.1.Poss.q[, 31:52, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-
-    out$CD4.2.1524.Quar.Mult <- apply(
-      apply(CD4.2.Poss.q[, 1:10, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.2.2534.Quar.Mult <- apply(
-      apply(CD4.2.Poss.q[, 11:20, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.2.3544.Quar.Mult <- apply(
-      apply(CD4.2.Poss.q[, 21:30, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.2.45.Quar.Mult <- apply(
-      apply(CD4.2.Poss.q[, 31:52, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-
-    out$CD4.3.1524.Quar.Mult <- apply(
-      apply(CD4.3.Poss.q[, 1:10, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.3.2534.Quar.Mult <- apply(
-      apply(CD4.3.Poss.q[, 11:20, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.3.3544.Quar.Mult <- apply(
-      apply(CD4.3.Poss.q[, 21:30, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.3.45.Quar.Mult <- apply(
-      apply(CD4.3.Poss.q[, 31:52, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-
-    out$CD4.4.1524.Quar.Mult <- apply(
-      apply(CD4.4.Poss.q[, 1:10, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.4.2534.Quar.Mult <- apply(
-      apply(CD4.4.Poss.q[, 11:20, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.4.3544.Quar.Mult <- apply(
-      apply(CD4.4.Poss.q[, 21:30, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.4.45.Quar.Mult <- apply(
-      apply(CD4.4.Poss.q[, 31:52, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-  }
-
-  if (config$rita) {
-    out$CD4.5.Mult <- apply(
-      apply(CD4.5.Poss.q, 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.5.1524.Mult <- apply(
-      apply(CD4.5.Poss.q[, 1:10, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.5.2534.Mult <- apply(
-      apply(CD4.5.Poss.q[, 11:20, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.5.3544.Mult <- apply(
-      apply(CD4.5.Poss.q[, 21:30, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.5.45.Mult <- apply(
-      apply(CD4.5.Poss.q[, 31:52, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-
-    out$CD4.5.Quar.Mult <- apply(
-      apply(CD4.5.Poss.q, 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.5.1524.Quar.Mult <- apply(
-      apply(CD4.5.Poss.q[, 1:10, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.5.2534.Quar.Mult <- apply(
-      apply(CD4.5.Poss.q[, 11:20, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.5.3544.Quar.Mult <- apply(
-      apply(CD4.5.Poss.q[, 21:30, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-    out$CD4.5.45.Quar.Mult <- apply(
-      apply(CD4.5.Poss.q[, 31:52, ], 3, eval(parse(text = call))),
-      1,
-      get_quantiles
-    )
-  }
   # ### Time to diagnosis stuff
   # if(!ageprobs.flag & !quar.flag & !ageprobs.spl.flag){
   #   stop("Time to diagnosis not coded up yet")
@@ -1809,4 +842,33 @@ postproc_ad <- function(
   #
 
   return(out)
+}
+
+make_time_agg <- function(quar_flag, nt_local) {
+  if (isTRUE(quar_flag)) {
+    if (nt_local %% 4 != 0) {
+      stop("nt must be divisible by 4 when quar.flag=TRUE")
+    }
+    grp <- rep(seq_len(nt_local / 4), each = 4)
+    function(ts) as.numeric(rowsum(ts, grp, reorder = FALSE))
+  } else {
+    function(ts) ts
+  }
+}
+
+summarise_poiss <- function(p_arr, age_cols, time_agg) {
+  # p_arr dims from apply(rpois): (N.Poiss, nt, nage)
+  # for each Poiss draw: matrix(nt, nage) -> rowSums over age_cols -> time_agg
+  tmp <- apply(p_arr[,, age_cols, drop = FALSE], 1, function(m) {
+    time_agg(rowSums(m))
+  })
+  apply(tmp, 1, get_quantiles)
+}
+
+summarise_mult <- function(stage_arr, age_cols, time_agg) {
+  # stage_arr dims: (nt, nage, N.Poiss)
+  tmp <- apply(stage_arr[, age_cols, , drop = FALSE], 3, function(m) {
+    time_agg(rowSums(m))
+  })
+  apply(tmp, 1, get_quantiles)
 }

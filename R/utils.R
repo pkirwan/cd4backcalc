@@ -2,13 +2,16 @@
 #' Computes the logit transformation of a numeric vector.
 #' @param x Numeric vector input.
 #' @return Logit transformed values.
-logit <- function(x) log(x / (1 - x))
+logit <- function(x) {
+  x <- pmin(pmax(x, .Machine$double.eps), 1 - .Machine$double.eps)
+  stats::qlogis(x)
+}
 
 #' Inverse logit function
 #' Computes the inverse logit transformation of a numeric vector.
 #' @param x Numeric vector input.
 #' @return Inverse logit transformed values.
-invlogit <- function(x) exp(x) / (1 + exp(x))
+invlogit <- function(x) stats::plogis(x)
 
 #' Controlled rounding function to preserve totals
 #'
@@ -54,11 +57,14 @@ round_array_preserve <- function(arr) {
 }
 
 #' Round specified fields in an epidemic object
-#' 
+#'
 #' @param epi_obj Epidemic object containing fields to round.
 #' @param fields Character vector of field names to round.
 #' @return Epidemic object with specified fields rounded.
-round_fields <- function(epi_obj, fields = c("lat", "diags", "lat_age", "diags_age")) {
+round_fields <- function(
+  epi_obj,
+  fields = c("lat", "diags", "lat_age", "diags_age")
+) {
   for (field in fields) {
     if (!is.null(epi_obj[[field]])) {
       # Check if array (3+ dimensions) or matrix (2 dimensions)

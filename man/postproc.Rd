@@ -25,7 +25,7 @@ This function decides which post-processing routine needs to be run
 and passes the relevant data and arguments.
 }
 \examples{
-sim_diags <- simulate_diagnoses(seed = 123)
+sim_diags <- simulate_diagnoses(sim_seed = 123)
 stan_data <- model_type_prep(sim_diags)
 fit <- fit_stan_model(
    stan_data,

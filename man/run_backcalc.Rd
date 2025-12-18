@@ -11,7 +11,7 @@ run_backcalc(
   age = FALSE,
   inf_model = 1,
   diag_model = 1,
-  seed = NULL,
+  model_seed = NULL,
   iter = 2000,
   chains = 4,
   refresh = 100,
@@ -35,7 +35,7 @@ run_backcalc(
 
 \item{diag_model}{Diagnosis model type (1 = spline, 2 = random walk).}
 
-\item{seed}{Random seed for reproducibility.}
+\item{model_seed}{Seed for model fitting (will be set randomly if NULL).}
 
 \item{iter}{Number of iterations for Stan sampling.}
 
@@ -60,6 +60,6 @@ List of posterior predictive quantities and (optionlly) the stanfit object.
 This function runs the CD4 back-calculation model using Stan and runs the post-processing.
 }
 \examples{
-sim_diags <- simulate_diagnoses(seed = 123)
+sim_diags <- simulate_diagnoses(sim_seed = 123)
 hiv_list <- run_backcalc(sim_diags, iter = 5, chains = 1, messages = FALSE, nworkers = 1)
 }
