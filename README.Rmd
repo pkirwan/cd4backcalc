@@ -84,6 +84,30 @@ pak::pak("pkirwan/cd4backcalc")
 - Windows users will require Rtools to compile the Stan models, see: https://cran.r-project.org/bin/windows/Rtools/.
 - MacOS users will require the correct GNU Fortran compiler, see: https://mac.r-project.org/tools/.
 
+## Usage
+
+A basic workflow to simulate diagnosis data and fit the CD4-staged back-calculation model, check convergence and goodness of fit to the simulated data, and plot model estimates is shown in the example below.
+
+```{r example, eval=FALSE}
+library(cd4backcalc)
+
+# simulate data
+sim_diags <- simulate_diagnoses(age = FALSE, rita = FALSE, migration = FALSE)
+
+# run back-calculation model on simulated data
+hiv_list <- run_backcalc(sim_diags)
+
+# check convergence
+plot_diagnostics(hiv_list)
+
+# check goodness of fit
+bias_plot(hiv_list, quantity = "incidence")
+
+# plot estimates compared to simulated values
+plot_estimates(hiv_list, quantity = "incidence")
+plot_estimates(hiv_list, quantity = "undiag_prev")
+```
+
 ## Supported models
 
 The cd4backcalc package includes several pre-compiled models which can be used to fit the back-calculation model to real or simulated diagnosis data under different scenarios:
@@ -93,6 +117,8 @@ The cd4backcalc package includes several pre-compiled models which can be used t
 - With or without migration
 
 The functions in the package are designed to work with all model variants, with the appropriate model selected based on user-specified options. The table below summarises the supported combinations of age structure, RITA evidence, and migration status.
+
+N.B. Due to the increased complexity, fitting times can be substantially longer when using age-dependent models.
 
 ```{r supported-models-table, echo=FALSE}
 grid <- expand.grid(
@@ -124,28 +150,4 @@ grid[["RITA?"]] <- tick_cross(grid[["RITA?"]])
 grid[["Migration?"]] <- tick_cross(grid[["Migration?"]])
 
 knitr::kable(grid, align = "lcccc", row.names = FALSE, escape = FALSE)
-```
-
-## Usage
-
-A basic workflow to simulate diagnosis data and fit the CD4-staged back-calculation model, check convergence and goodness of fit to the simulated data, and plot model estimates is shown in the example below.
-
-```{r example, eval=FALSE}
-library(cd4backcalc)
-
-# simulate data
-sim_diags <- simulate_diagnoses(age = FALSE, rita = FALSE, migration = FALSE)
-
-# run back-calculation model on simulated data
-hiv_list <- run_backcalc(sim_diags)
-
-# check convergence
-plot_diagnostics(hiv_list)
-
-# check goodness of fit
-bias_plot(hiv_list, quantity = "incidence")
-
-# plot estimates compared to simulated values
-plot_estimates(hiv_list, quantity = "incidence")
-plot_estimates(hiv_list, quantity = "undiag_prev")
 ```
