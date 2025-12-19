@@ -4,20 +4,12 @@
 \alias{mse_plot}
 \title{Box plots of mean squared error (MSE).}
 \usage{
-mse_plot(
-  hiv_list,
-  quantity = "incidence",
-  group_name = "Test group",
-  offset = 0.1,
-  lab = TRUE
-)
+mse_plot(hiv_list, quantity = "incidence", offset = 0.1, lab = TRUE)
 }
 \arguments{
 \item{hiv_list}{A list returned from the \code{postproc} function containing model estimates.}
 
 \item{quantity}{The quantity to plot MSE for (default is "incidence", other options are "migration", "prop_uk", and "mp").}
-
-\item{group_name}{The name of the group for labeling.}
 
 \item{offset}{The offset for text labels.}
 

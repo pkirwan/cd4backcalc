@@ -4,12 +4,10 @@
 \alias{make_mse_list}
 \title{Make a list of mean squared error (MSE) values for HIV model estimates.}
 \usage{
-make_mse_list(hiv_list, group_name = "Test group")
+make_mse_list(hiv_list)
 }
 \arguments{
 \item{hiv_list}{A list of HIV model results.}
-
-\item{group_name}{The name of the group for labeling.}
 }
 \value{
 A list of bias and MSE values for incidence, migration, proportion of UK-acquired infections that are migrants, and migration probabilities.

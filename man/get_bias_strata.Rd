@@ -4,7 +4,7 @@
 \alias{get_bias_strata}
 \title{Get bias between HIV model estimates and simulation results for strata.}
 \usage{
-get_bias_strata(hiv_list, model_estimates, type, group_name = "Test group")
+get_bias_strata(hiv_list, model_estimates, type)
 }
 \arguments{
 \item{hiv_list}{A list of HIV model results.}
@@ -12,8 +12,6 @@ get_bias_strata(hiv_list, model_estimates, type, group_name = "Test group")
 \item{model_estimates}{The model estimates for comparison.}
 
 \item{type}{The variable type to calculate bias for.}
-
-\item{group_name}{The name of the group for labeling.}
 }
 \value{
 A data frame of bias values for strata.

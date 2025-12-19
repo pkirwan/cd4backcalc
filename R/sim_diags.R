@@ -650,7 +650,9 @@ simulate_diagnoses <- function(
     "config" = config,
     "lat_init_uk" = lat_init_uk,
     "lat_init_uk_abroad" = lat_init_uk_abroad,
-    "lat_init_abroad" = lat_init_abroad
+    "lat_init_abroad" = lat_init_abroad,
+    # currently detect_prob is 1 for all time points
+    "detect_prob" = rep(1, config$nquar)
   )
 
   # Perform validation checks

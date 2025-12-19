@@ -4,12 +4,10 @@
 \alias{get_mse}
 \title{Get mean squared error (MSE) list for HIV model estimates.}
 \usage{
-get_mse(bias_df, group_name = "Test group")
+get_mse(bias_df)
 }
 \arguments{
 \item{bias_df}{A data frame of bias values.}
-
-\item{group_name}{The name of the group for labeling.}
 }
 \value{
 A data frame of MSE values.
