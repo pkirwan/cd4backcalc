@@ -334,7 +334,32 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
       d4 = d4,
       q = stan_data$q
     )
-    if (config$migration) {
+  }
+
+  if (config$migration) {
+    if (config$rita) {
+      d5 <- fit_mat[i, idx$d5]
+      diagnoses_b <- forward_calculate_rita(
+        init_prev_m / 2,
+        temp_h * temp_p,
+        d1 = d1,
+        d2 = d2,
+        d3 = d3,
+        d4 = d4,
+        d5 = d5,
+        q = stan_data$q
+      )
+      diagnoses_m <- forward_calculate_m_rita(
+        init_prev_m / 2,
+        temp_om,
+        d1 = d1,
+        d2 = d2,
+        d3 = d3,
+        d4 = d4,
+        d5 = d5,
+        q = stan_data$q
+      )
+    } else {
       diagnoses_b <- forward_calculate(
         init_prev_m / 2,
         temp_h * temp_p,
@@ -353,37 +378,37 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
         d4 = d4,
         q = stan_data$q
       )
-
-      # Combine diagnoses
-      diagnoses_combined <- list(
-        HIV.diagnoses = diagnoses$HIV.diagnoses +
-          diagnoses_m$HIV.diagnoses +
-          diagnoses_b$HIV.diagnoses,
-        AIDS.diagnoses = diagnoses$AIDS.diagnoses +
-          diagnoses_m$AIDS.diagnoses +
-          diagnoses_b$AIDS.diagnoses,
-        prevalence = diagnoses$prevalence +
-          diagnoses_m$prevalence +
-          diagnoses_b$prevalence,
-        expected.p = diagnoses$expected.p +
-          diagnoses_m$expected.p +
-          diagnoses_b$expected.p
-      )
-
-      diagnoses_combined_uk <- list(
-        HIV.diagnoses = diagnoses$HIV.diagnoses + diagnoses_b$HIV.diagnoses,
-        AIDS.diagnoses = diagnoses$AIDS.diagnoses + diagnoses_b$AIDS.diagnoses,
-        prevalence = diagnoses$prevalence + diagnoses_b$prevalence,
-        expected.p = diagnoses$expected.p + diagnoses_b$expected.p
-      )
-
-      diagnoses_combined_m <- list(
-        HIV.diagnoses = diagnoses_m$HIV.diagnoses,
-        AIDS.diagnoses = diagnoses_m$AIDS.diagnoses,
-        prevalence = diagnoses_m$prevalence,
-        expected.p = diagnoses_m$expected.p
-      )
     }
+
+    # Combine diagnoses
+    diagnoses_combined <- list(
+      HIV.diagnoses = diagnoses$HIV.diagnoses +
+        diagnoses_m$HIV.diagnoses +
+        diagnoses_b$HIV.diagnoses,
+      AIDS.diagnoses = diagnoses$AIDS.diagnoses +
+        diagnoses_m$AIDS.diagnoses +
+        diagnoses_b$AIDS.diagnoses,
+      prevalence = diagnoses$prevalence +
+        diagnoses_m$prevalence +
+        diagnoses_b$prevalence,
+      expected.p = diagnoses$expected.p +
+        diagnoses_m$expected.p +
+        diagnoses_b$expected.p
+    )
+
+    diagnoses_combined_uk <- list(
+      HIV.diagnoses = diagnoses$HIV.diagnoses + diagnoses_b$HIV.diagnoses,
+      AIDS.diagnoses = diagnoses$AIDS.diagnoses + diagnoses_b$AIDS.diagnoses,
+      prevalence = diagnoses$prevalence + diagnoses_b$prevalence,
+      expected.p = diagnoses$expected.p + diagnoses_b$expected.p
+    )
+
+    diagnoses_combined_m <- list(
+      HIV.diagnoses = diagnoses_m$HIV.diagnoses,
+      AIDS.diagnoses = diagnoses_m$AIDS.diagnoses,
+      prevalence = diagnoses_m$prevalence,
+      expected.p = diagnoses_m$expected.p
+    )
   }
 
   # Calculate distributions
@@ -510,7 +535,11 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
         dist_s1[, 3]
       d_to_i_temp <- d_to_i_temp_1 + d_to_i_temp_2 + d_to_i_temp_3
 
-      HIV.diags <- c(rep(0, nquar - n_CD4), stan_data$CD4[, 1])
+      HIV.diags <- if (config$migration) {
+        c(rep(0, nquar - n_CD4), rowSums(stan_data$CD4[,, 1]))
+      } else {
+        c(rep(0, nquar - n_CD4), stan_data$CD4[, 1])
+      }
 
       tempvec1 <- sapply((state + 1):nquar, function(x) {
         stats::rmultinom(1, HIV.diags[x], d_to_i_temp[x - state, ])
@@ -522,10 +551,11 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
     for (state in 4:config$nlatst) {
       d_to_i_temp <- diag_to_infec_wrap1(diagnoses$prevalence, state)
 
-      HIV.diags <- c(
-        rep(0, nquar - n_CD4),
-        stan_data$CD4[, state - 2]
-      )
+      HIV.diags <- if (config$migration) {
+        c(rep(0, nquar - n_CD4), rowSums(stan_data$CD4[,, state - 2]))
+      } else {
+        c(rep(0, nquar - n_CD4), stan_data$CD4[, state - 2])
+      }
 
       tempvec1 <- sapply((state + 1):nquar, function(x) {
         stats::rmultinom(1, HIV.diags[x], d_to_i_temp[x - state, ])
@@ -642,7 +672,31 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
       d4 = d4,
       q = stan_data$q
     )
-    if (config$migration) {
+  }
+  if (config$migration) {
+    if (config$rita) {
+      d5 <- fit_mat[i, idx$d5]
+      diagnoses_b <- forward_calculate_rita(
+        init_prev_m,
+        temp_h * temp_p,
+        d1 = d1,
+        d2 = d2,
+        d3 = d3,
+        d4 = d4,
+        d5 = d5,
+        q = stan_data$q
+      )
+      diagnoses_m <- forward_calculate_m_rita(
+        rep(0, 7),
+        temp_om,
+        d1 = d1,
+        d2 = d2,
+        d3 = d3,
+        d4 = d4,
+        d5 = d5,
+        q = stan_data$q
+      )
+    } else {
       diagnoses_b <- forward_calculate(
         init_prev_m,
         temp_h * temp_p,
@@ -661,37 +715,37 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
         d4 = d4,
         q = stan_data$q
       )
-
-      # Combine diagnoses
-      diagnoses_combined <- list(
-        HIV.diagnoses = diagnoses$HIV.diagnoses +
-          diagnoses_m$HIV.diagnoses +
-          diagnoses_b$HIV.diagnoses,
-        AIDS.diagnoses = diagnoses$AIDS.diagnoses +
-          diagnoses_m$AIDS.diagnoses +
-          diagnoses_b$AIDS.diagnoses,
-        prevalence = diagnoses$prevalence +
-          diagnoses_m$prevalence +
-          diagnoses_b$prevalence,
-        expected.p = diagnoses$expected.p +
-          diagnoses_m$expected.p +
-          diagnoses_b$expected.p
-      )
-
-      diagnoses_combined_uk <- list(
-        HIV.diagnoses = diagnoses$HIV.diagnoses + diagnoses_b$HIV.diagnoses,
-        AIDS.diagnoses = diagnoses$AIDS.diagnoses + diagnoses_b$AIDS.diagnoses,
-        prevalence = diagnoses$prevalence + diagnoses_b$prevalence,
-        expected.p = diagnoses$expected.p + diagnoses_b$expected.p
-      )
-
-      diagnoses_combined_m <- list(
-        HIV.diagnoses = diagnoses_m$HIV.diagnoses,
-        AIDS.diagnoses = diagnoses_m$AIDS.diagnoses,
-        prevalence = diagnoses_m$prevalence,
-        expected.p = diagnoses_m$expected.p
-      )
     }
+
+    # Combine diagnoses
+    diagnoses_combined <- list(
+      HIV.diagnoses = diagnoses$HIV.diagnoses +
+        diagnoses_m$HIV.diagnoses +
+        diagnoses_b$HIV.diagnoses,
+      AIDS.diagnoses = diagnoses$AIDS.diagnoses +
+        diagnoses_m$AIDS.diagnoses +
+        diagnoses_b$AIDS.diagnoses,
+      prevalence = diagnoses$prevalence +
+        diagnoses_m$prevalence +
+        diagnoses_b$prevalence,
+      expected.p = diagnoses$expected.p +
+        diagnoses_m$expected.p +
+        diagnoses_b$expected.p
+    )
+
+    diagnoses_combined_uk <- list(
+      HIV.diagnoses = diagnoses$HIV.diagnoses + diagnoses_b$HIV.diagnoses,
+      AIDS.diagnoses = diagnoses$AIDS.diagnoses + diagnoses_b$AIDS.diagnoses,
+      prevalence = diagnoses$prevalence + diagnoses_b$prevalence,
+      expected.p = diagnoses$expected.p + diagnoses_b$expected.p
+    )
+
+    diagnoses_combined_m <- list(
+      HIV.diagnoses = diagnoses_m$HIV.diagnoses,
+      AIDS.diagnoses = diagnoses_m$AIDS.diagnoses,
+      prevalence = diagnoses_m$prevalence,
+      expected.p = diagnoses_m$expected.p
+    )
   }
 
   if (!config$migration) {
@@ -823,7 +877,11 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
         dist_s1[, 3]
       d_to_i_temp <- d_to_i_temp_1 + d_to_i_temp_2 + d_to_i_temp_3
 
-      HIV.diags <- c(rep(0, nquar - n_CD4), stan_data$CD4[, 1])
+      HIV.diags <- if (config$migration) {
+        c(rep(0, nquar - n_CD4), rowSums(stan_data$CD4[,, 1]))
+      } else {
+        c(rep(0, nquar - n_CD4), stan_data$CD4[, 1])
+      }
 
       tempvec1 <- sapply((state + 1):nquar, function(x) {
         stats::rmultinom(1, HIV.diags[x], d_to_i_temp[x - state, ])
@@ -834,10 +892,11 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
     for (state in 4:config$nlatst) {
       d_to_i_temp <- diag_to_infec_wrap1(diagnoses$prevalence, state)
 
-      HIV.diags <- c(
-        rep(0, nquar - n_CD4),
-        stan_data$CD4[, state - 2]
-      )
+      HIV.diags <- if (config$migration) {
+        c(rep(0, nquar - n_CD4), rowSums(stan_data$CD4[,, state - 2]))
+      } else {
+        c(rep(0, nquar - n_CD4), stan_data$CD4[, state - 2])
+      }
 
       tempvec1 <- sapply((state + 1):nquar, function(x) {
         stats::rmultinom(1, HIV.diags[x], d_to_i_temp[x - state, ])

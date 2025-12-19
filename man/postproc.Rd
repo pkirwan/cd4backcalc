@@ -26,7 +26,7 @@ and passes the relevant data and arguments.
 }
 \examples{
 sim_diags <- simulate_diagnoses(sim_seed = 123)
-stan_data <- model_type_prep(sim_diags)
+stan_data <- model_type_prep(sim_diags, model_seed = 123)
 fit <- fit_stan_model(
    stan_data,
    iter = 10,

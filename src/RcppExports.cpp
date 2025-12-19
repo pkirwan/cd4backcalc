@@ -329,6 +329,20 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// prev_t_m_rita
+arma::mat prev_t_m_rita(int t, const arma::vec& CD4_prev, const arma::mat& om, const arma::cube& trans_mats);
+RcppExport SEXP _cd4backcalc_prev_t_m_rita(SEXP tSEXP, SEXP CD4_prevSEXP, SEXP omSEXP, SEXP trans_matsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type t(tSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type CD4_prev(CD4_prevSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type om(omSEXP);
+    Rcpp::traits::input_parameter< const arma::cube& >::type trans_mats(trans_matsSEXP);
+    rcpp_result_gen = Rcpp::wrap(prev_t_m_rita(t, CD4_prev, om, trans_mats));
+    return rcpp_result_gen;
+END_RCPP
+}
 // forward_calculate_rita
 List forward_calculate_rita(const arma::vec& CD4_prev, const arma::vec& h, const arma::vec& d1, const arma::vec& d2, const arma::vec& d3, const arma::vec& d4, const arma::vec& d5, const arma::vec& q);
 RcppExport SEXP _cd4backcalc_forward_calculate_rita(SEXP CD4_prevSEXP, SEXP hSEXP, SEXP d1SEXP, SEXP d2SEXP, SEXP d3SEXP, SEXP d4SEXP, SEXP d5SEXP, SEXP qSEXP) {
@@ -347,11 +361,31 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// forward_calculate_m_rita
+List forward_calculate_m_rita(const arma::vec& CD4_prev, const arma::mat& om, const arma::vec& d1, const arma::vec& d2, const arma::vec& d3, const arma::vec& d4, const arma::vec& d5, const arma::vec& q);
+RcppExport SEXP _cd4backcalc_forward_calculate_m_rita(SEXP CD4_prevSEXP, SEXP omSEXP, SEXP d1SEXP, SEXP d2SEXP, SEXP d3SEXP, SEXP d4SEXP, SEXP d5SEXP, SEXP qSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type CD4_prev(CD4_prevSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type om(omSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type d1(d1SEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type d2(d2SEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type d3(d3SEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type d4(d4SEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type d5(d5SEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type q(qSEXP);
+    rcpp_result_gen = Rcpp::wrap(forward_calculate_m_rita(CD4_prev, om, d1, d2, d3, d4, d5, q));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 RcppExport SEXP _rcpp_module_boot_stan_fit4AD_ptens_mod();
 RcppExport SEXP _rcpp_module_boot_stan_fit4AD_ptens_migration_mod();
+RcppExport SEXP _rcpp_module_boot_stan_fit4AD_ptens_migration_rita_mod();
 RcppExport SEXP _rcpp_module_boot_stan_fit4AD_ptens_rita_mod();
 RcppExport SEXP _rcpp_module_boot_stan_fit4AI_spl_migration_mod();
+RcppExport SEXP _rcpp_module_boot_stan_fit4AI_spl_migration_rita_mod();
 RcppExport SEXP _rcpp_module_boot_stan_fit4AI_spl_rita_mod();
 RcppExport SEXP _rcpp_module_boot_stan_fit4AI_spl_rw_gp_mod();
 
@@ -379,11 +413,15 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cd4backcalc_prev_fun1", (DL_FUNC) &_cd4backcalc_prev_fun1, 1},
     {"_cd4backcalc_trans_mat_rita", (DL_FUNC) &_cd4backcalc_trans_mat_rita, 6},
     {"_cd4backcalc_prev_t_rita", (DL_FUNC) &_cd4backcalc_prev_t_rita, 4},
+    {"_cd4backcalc_prev_t_m_rita", (DL_FUNC) &_cd4backcalc_prev_t_m_rita, 4},
     {"_cd4backcalc_forward_calculate_rita", (DL_FUNC) &_cd4backcalc_forward_calculate_rita, 8},
+    {"_cd4backcalc_forward_calculate_m_rita", (DL_FUNC) &_cd4backcalc_forward_calculate_m_rita, 8},
     {"_rcpp_module_boot_stan_fit4AD_ptens_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4AD_ptens_mod, 0},
     {"_rcpp_module_boot_stan_fit4AD_ptens_migration_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4AD_ptens_migration_mod, 0},
+    {"_rcpp_module_boot_stan_fit4AD_ptens_migration_rita_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4AD_ptens_migration_rita_mod, 0},
     {"_rcpp_module_boot_stan_fit4AD_ptens_rita_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4AD_ptens_rita_mod, 0},
     {"_rcpp_module_boot_stan_fit4AI_spl_migration_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4AI_spl_migration_mod, 0},
+    {"_rcpp_module_boot_stan_fit4AI_spl_migration_rita_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4AI_spl_migration_rita_mod, 0},
     {"_rcpp_module_boot_stan_fit4AI_spl_rita_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4AI_spl_rita_mod, 0},
     {"_rcpp_module_boot_stan_fit4AI_spl_rw_gp_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4AI_spl_rw_gp_mod, 0},
     {NULL, NULL, 0}

@@ -93,7 +93,15 @@ prev_t_rita <- function(t, CD4_prev, h, trans_mats) {
     .Call(`_cd4backcalc_prev_t_rita`, t, CD4_prev, h, trans_mats)
 }
 
+prev_t_m_rita <- function(t, CD4_prev, om, trans_mats) {
+    .Call(`_cd4backcalc_prev_t_m_rita`, t, CD4_prev, om, trans_mats)
+}
+
 forward_calculate_rita <- function(CD4_prev, h, d1, d2, d3, d4, d5, q) {
     .Call(`_cd4backcalc_forward_calculate_rita`, CD4_prev, h, d1, d2, d3, d4, d5, q)
+}
+
+forward_calculate_m_rita <- function(CD4_prev, om, d1, d2, d3, d4, d5, q) {
+    .Call(`_cd4backcalc_forward_calculate_m_rita`, CD4_prev, om, d1, d2, d3, d4, d5, q)
 }
 

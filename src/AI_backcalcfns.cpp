@@ -408,6 +408,46 @@ arma::mat prev_t_rita(int t, const arma::vec &CD4_prev, const arma::vec &h, cons
 }
 
 // [[Rcpp::export]]
+arma::mat prev_t_m_rita(int t, const arma::vec &CD4_prev, const arma::mat &om, const arma::cube &trans_mats)
+{
+  int t_max = om.n_cols;
+  int ncd4_st = 7;
+  int nst = 13;
+
+  if (CD4_prev.n_elem != static_cast<unsigned int>(ncd4_st))
+  {
+    Rcpp::stop("prev_t_m_rita: CD4_prev must have length 7 (RITA latent states).", false);
+  }
+  if (om.n_rows != 4)
+  {
+    Rcpp::stop("prev_t_m_rita: om must be a 4 x nquar matrix (m[1:4,] * omega).", false);
+  }
+
+  arma::vec empty_vec(ncd4_st - 1, arma::fill::zeros);
+  arma::vec prev0 = arma::join_cols(CD4_prev, empty_vec);
+  arma::mat prev(t_max, nst, arma::fill::zeros);
+
+  // initialise vector of migrations
+  // Migrants acquired abroad enter latent states 4..7 (1-based), i.e. 3..6 (0-based).
+  arma::vec infs(nst, arma::fill::zeros);
+  infs.subvec(3, 6) = om.col(t);
+
+  prev.row(t) = infs.t();
+  if (t == 0)
+  {
+    // In case of initial prevalence
+    prev.row(t) = (infs + prev0).t();
+  }
+
+  for (int i = t + 1; i < t_max; ++i)
+  {
+    prev.row(i) = prev.row(i - 1) * trans_mats.slice(i);
+  }
+
+  return prev;
+}
+
+// [[Rcpp::export]]
 List forward_calculate_rita(const arma::vec &CD4_prev, const arma::vec &h, const arma::vec &d1, const arma::vec &d2, const arma::vec &d3, const arma::vec &d4, const arma::vec &d5, const arma::vec &q)
 {
   int t_max = h.n_elem;
@@ -437,6 +477,41 @@ List forward_calculate_rita(const arma::vec &CD4_prev, const arma::vec &h, const
   }
 
   // Now I need to return all quantities of interest
+  return List::create(
+      _["prevalence"] = out,
+      _["HIV.diagnoses"] = HIV_diags,
+      _["AIDS.diagnoses"] = AIDS_diags,
+      _["expected.p"] = exp_p);
+}
+
+// [[Rcpp::export]]
+List forward_calculate_m_rita(const arma::vec &CD4_prev, const arma::mat &om, const arma::vec &d1, const arma::vec &d2, const arma::vec &d3, const arma::vec &d4, const arma::vec &d5, const arma::vec &q)
+{
+  int t_max = om.n_cols;
+  int ncd4_st = 7;
+  int nst = 13;
+
+  arma::cube out(t_max, nst, t_max, arma::fill::zeros);
+  arma::cube tmats = trans_mat_rita(d1, d2, d3, d4, d5, q);
+  arma::rowvec empty_vec(nst - ncd4_st, arma::fill::zeros);
+
+  arma::mat HIV_diags(t_max, t_max);
+  arma::mat AIDS_diags(t_max, t_max);
+  arma::cube exp_p(nst - ncd4_st - 1, t_max, t_max, arma::fill::zeros);
+
+  for (int t = 0; t < t_max; ++t)
+  {
+    out.slice(t) = prev_t_m_rita(t, CD4_prev, om, tmats);
+    // Obtaining diagnoses
+    arma::mat X = out.slice(t);
+    arma::mat X1 = X(arma::span::all, arma::span(ncd4_st, nst - 1));
+    arma::mat diags = arma::join_cols(empty_vec, arma::diff(X1));
+    arma::mat HIV_d = diags.cols(1, 5);
+    HIV_diags.row(t) = arma::sum(HIV_d, 1).t();
+    AIDS_diags.row(t) = arma::sum(diags.col(0), 1).t();
+    exp_p.slice(t) = normalize_mat(HIV_d).t();
+  }
+
   return List::create(
       _["prevalence"] = out,
       _["HIV.diagnoses"] = HIV_diags,

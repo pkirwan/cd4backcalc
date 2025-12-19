@@ -202,19 +202,24 @@ confirm_stan_data <- function(stan_data) {
         dim(stan_data$AIDS_age) == c(stan_data$nquar, stan_data$nage, 2)
       )
     )
-    stopifnot(
-      "Incorrect dimensions in stan_data, CD4_age should be (nquar, nage, 2, 4)" = all(
-        dim(stan_data$CD4_age) == c(stan_data$nquar, stan_data$nage, 2, 4)
+    if (stan_data$config$rita) {
+      stopifnot(
+        "Incorrect dimensions in stan_data, CD4_age should be (nquar, nage, 2, 5)" = all(
+          dim(stan_data$CD4_age) == c(stan_data$nquar, stan_data$nage, 2, 5)
+        )
       )
-    )
+    } else {
+      stopifnot(
+        "Incorrect dimensions in stan_data, CD4_age should be (nquar, nage, 2, 4)" = all(
+          dim(stan_data$CD4_age) == c(stan_data$nquar, stan_data$nage, 2, 4)
+        )
+      )
+    }
     stopifnot(
       "Incorrect dimensions in stan_data, ABROAD_age should be (nquar, nage)" = all(
         dim(stan_data$ABROAD_age) == c(stan_data$nquar, stan_data$nage)
       )
     )
-    if (stan_data$config$rita) {
-      stop("Age+Migration+RITA is not yet supported.")
-    }
   } else if (stan_data$config$age) {
     stopifnot(
       "Incorrect dimensions in stan_data, HIV_age should be (nquar, nage)" = all(
@@ -234,6 +239,30 @@ confirm_stan_data <- function(stan_data) {
         dim(stan_data$HIV) == c(stan_data$nquar, 2)
       )
     )
+    stopifnot(
+      "Incorrect dimensions in stan_data, AIDS should be (nquar, 2)" = all(
+        dim(stan_data$AIDS) == c(stan_data$nquar, 2)
+      )
+    )
+    stopifnot(
+      "Incorrect length in stan_data, ABROAD should be (nquar)" = length(
+        stan_data$ABROAD
+      ) ==
+        stan_data$nquar
+    )
+    if (stan_data$config$rita) {
+      stopifnot(
+        "Incorrect dimensions in stan_data, CD4 should be (nquar, 2, 5)" = all(
+          dim(stan_data$CD4) == c(stan_data$nquar, 2, 5)
+        )
+      )
+    } else {
+      stopifnot(
+        "Incorrect dimensions in stan_data, CD4 should be (nquar, 2, 4)" = all(
+          dim(stan_data$CD4) == c(stan_data$nquar, 2, 4)
+        )
+      )
+    }
   } else if (stan_data$config$rita) {
     stopifnot(
       "Incorrect dimensions in stan_data, CD4 should be (nquar, 5)" = all(
@@ -258,13 +287,17 @@ confirm_stan_data <- function(stan_data) {
 #' @return The Stan model object.
 load_stan_model <- function(config) {
   if (config$age) {
-    if (config$migration) {
+    if (config$migration && config$rita) {
+      model <- stanmodels$AD_ptens_migration_rita
+    } else if (config$migration) {
       model <- stanmodels$AD_ptens_migration
     } else if (config$rita) {
       model <- stanmodels$AD_ptens_rita
     } else {
       model <- stanmodels$AD_ptens
     }
+  } else if (config$migration && config$rita) {
+    model <- stanmodels$AI_spl_migration_rita
   } else if (config$migration) {
     model <- stanmodels$AI_spl_migration
   } else if (config$rita) {

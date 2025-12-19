@@ -70,11 +70,11 @@ validate_stan_data <- function(stan_data, sim_data, config) {
 
   stopifnot(
     "Infections not preserved to diagnoses" = abs(
-      sum(sim_data$infs) +
+      sum(sim_data$infs[,1]) +
         sum(stan_data$init_prev) +
         sum(stan_data$init_prev_abroad) +
-        sum(round(sim_data$infs * sim_data$prop_uk)) +
-        sum(sim_data$m[, 1:(config$ndiagst - 1)]) -
+        sum(round(sim_data$infs[,1] * sim_data$prop_uk)) +
+        sum(sim_data$m[, 1:config$nlatst]) -
         # total diagnoses plus latent infections
         sum(stan_data$HIV) -
         sum(stan_data$AIDS) -
