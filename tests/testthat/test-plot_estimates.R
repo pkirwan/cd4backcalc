@@ -49,7 +49,7 @@ test_that("plots are generated correctly for migration model", {
   p1 <- plot_estimates(hiv_list, "migration")
   p2 <- plot_estimates(hiv_list, "migration_prob")
   p3 <- plot_estimates(hiv_list, "transfers")
-  p4 <- plot_estimates(hiv_list, "prop_uk")
+  p4 <- plot_estimates(hiv_list, "ratio_abroad_uk")
   p5 <- plot_estimates(hiv_list, "detect_prob")
   expect_s3_class(p1, "ggplot")
   expect_s3_class(p2, "ggplot")
@@ -58,7 +58,7 @@ test_that("plots are generated correctly for migration model", {
   expect_s3_class(p5, "ggplot")
 })
 
-test_that("plots work for lists", {
+test_that("plots work for migration model lists", {
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 60, sim_seed = 123, migration = TRUE)
   # Fit back-calculation model
@@ -88,11 +88,11 @@ test_that("plots work for lists", {
   expect_s3_class(p2, "ggplot")
   expect_s3_class(p3, "ggplot")
   expect_s3_class(p4, "ggplot")
-    # Generate plots of key quantities
+  # Generate plots of key quantities
   p5 <- plot_estimates(hiv_list, "migration")
   p6 <- plot_estimates(hiv_list, "migration_prob")
   p7 <- plot_estimates(hiv_list, "transfers")
-  p8 <- plot_estimates(hiv_list, "prop_uk")
+  p8 <- plot_estimates(hiv_list, "ratio_abroad_uk")
   p9 <- plot_estimates(hiv_list, "detect_prob")
   expect_s3_class(p5, "ggplot")
   expect_s3_class(p6, "ggplot")
@@ -101,7 +101,7 @@ test_that("plots work for lists", {
   expect_s3_class(p9, "ggplot")
 })
 
-test_that("plots work for lists", {
+test_that("plots work for rita model lists", {
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, rita = TRUE)
   # Fit back-calculation model
@@ -131,15 +131,4 @@ test_that("plots work for lists", {
   expect_s3_class(p2, "ggplot")
   expect_s3_class(p3, "ggplot")
   expect_s3_class(p4, "ggplot")
-    # Generate plots of key quantities
-  p5 <- plot_estimates(hiv_list, "migration")
-  p6 <- plot_estimates(hiv_list, "migration_prob")
-  p7 <- plot_estimates(hiv_list, "transfers")
-  p8 <- plot_estimates(hiv_list, "prop_uk")
-  p9 <- plot_estimates(hiv_list, "detect_prob")
-  expect_s3_class(p5, "ggplot")
-  expect_s3_class(p6, "ggplot")
-  expect_s3_class(p7, "ggplot")
-  expect_s3_class(p8, "ggplot")
-  expect_s3_class(p9, "ggplot")
 })

@@ -3,7 +3,7 @@
 #' Generate a ggplot2 object plotting estimated quantities over time, optionally compared to the simulated values.
 #'
 #' @param hiv_list A list returned from the `postproc` function containing model estimates.
-#' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "prop_uk", and "detect_prob".
+#' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "ratio_abroad_uk", and "detect_prob".
 #' @param chain_results A logical indicating whether to plot chain-by-chain estimates (default is FALSE).
 #' @return A ggplot2 object.
 #' @export
@@ -63,7 +63,7 @@ plot_estimates <- function(
 
   # custom y-axis for probabilities
   if (
-    quantity %in% c("diag_prob", "prop_uk", "detect_prob", "migration_prob")
+    quantity %in% c("diag_prob", "ratio_abroad_uk", "detect_prob", "migration_prob")
   ) {
     p1 <- p1 +
       ggplot2::scale_y_continuous(
@@ -190,7 +190,7 @@ get_plot_title <- function(quantity) {
     "Estimated migration probabilities, by CD4 strata"
   } else if (quantity == "transfers") {
     "Estimated transfers of care"
-  } else if (quantity == "prop_uk") {
+  } else if (quantity == "ratio_abroad_uk") {
     "Estimated born-abroad:native-born ratio"
   } else if (quantity == "detect_prob") {
     "Estimated detection probability for transfers of care"

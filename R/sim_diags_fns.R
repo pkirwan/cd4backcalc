@@ -111,28 +111,28 @@ generate_mu <- function(nquar, nlatst, pattern) {
 #' @param pattern Pattern type for proportion UK ("constant", "increasing").
 #' @param dist Logical indicating whether to add normal variation.
 #' @return Vector of proportion UK values over time.
-generate_prop_uk <- function(nquar, pattern, dist = TRUE) {
+generate_ratio_abroad_uk <- function(nquar, pattern, dist = TRUE) {
   # check pattern
   stopifnot(pattern %in% c("constant", "increasing"))
   if (dist) {
     sigma <- 0.08
     if (pattern == "constant") {
-      log_prop_uk <- stats::rnorm(nquar, rep(log(0.2), nquar), sigma)
+      log_ratio_abroad_uk <- stats::rnorm(nquar, rep(log(0.2), nquar), sigma)
     } else if (pattern == "increasing") {
-      log_prop_uk <- stats::rnorm(
+      log_ratio_abroad_uk <- stats::rnorm(
         nquar,
         seq(log(0.1), log(0.4), length.out = nquar),
         sigma
       )
     }
     # Transform back to proportion scale
-    prop_uk <- exp(log_prop_uk)
+    ratio_abroad_uk <- exp(log_ratio_abroad_uk)
   } else if (pattern == "constant") {
-    prop_uk <- rep(0.2, nquar)
+    ratio_abroad_uk <- rep(0.2, nquar)
   } else if (pattern == "increasing") {
-    prop_uk <- exp(seq(log(0.1), log(0.4), length.out = nquar))
+    ratio_abroad_uk <- exp(seq(log(0.1), log(0.4), length.out = nquar))
   }
-  return(prop_uk)
+  return(ratio_abroad_uk)
 }
 
 #' Generate migration combining omega and mu

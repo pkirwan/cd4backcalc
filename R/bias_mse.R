@@ -221,8 +221,8 @@ extract_simulated_quantities <- function(sim_diags) {
       )
   }
 
-  prop_uk <- tibble::tibble(
-    value = sim_data$prop_uk,
+  ratio_abroad_uk <- tibble::tibble(
+    value = sim_data$ratio_abroad_uk,
     year = seq(0, plot_years, by = 0.25),
     group = "Simulated values"
   )
@@ -292,7 +292,7 @@ extract_simulated_quantities <- function(sim_diags) {
       "diag_prob" = diag_prob,
       "diagnoses" = diagnoses,
       "migration_prob" = migration_prob,
-      "prop_uk" = prop_uk,
+      "ratio_abroad_uk" = ratio_abroad_uk,
       "transfers" = transfers,
       "cd4_strata" = cd4_strata
     )
@@ -319,7 +319,7 @@ get_bias <- function(
     dplyr::mutate(
       bias = .data$`50%` - .data$value
     ) |>
-    dplyr::rename(group = .data$group.x)
+    dplyr::rename(group = group.x)
 }
 
 #' Get bias between HIV model estimates and simulation results for strata.
@@ -342,7 +342,7 @@ get_bias_strata <- function(
     dplyr::mutate(
       bias = .data$`50%` - .data$value
     ) |>
-    dplyr::rename(group = .data$group.x)
+    dplyr::rename(group = group.x)
 }
 
 #' Get mean squared error (MSE) list for HIV model estimates.
@@ -385,10 +385,10 @@ make_mse_list <- function(
       simulated_quantities,
       "migration"
     )
-    out$prop_uk_bias <- get_bias(
+    out$ratio_abroad_uk_bias <- get_bias(
       hiv_list,
       simulated_quantities,
-      "prop_uk"
+      "ratio_abroad_uk"
     )
     out$mp_bias <- get_bias_strata(
       hiv_list,
@@ -397,7 +397,7 @@ make_mse_list <- function(
     )
 
     out$migration_mse <- get_mse(out$migration_bias)
-    out$prop_uk_mse <- get_mse(out$prop_uk_bias)
+    out$ratio_abroad_uk_mse <- get_mse(out$ratio_abroad_uk_bias)
     out$mp_mse <- get_mse(out$mp_bias)
   }
   return(out)
@@ -406,7 +406,7 @@ make_mse_list <- function(
 #' Box plots of mean squared error (MSE).
 #'
 #' @param hiv_list A list returned from the `postproc` function containing model estimates.
-#' @param quantity The quantity to plot MSE for (default is "incidence", other options are "migration", "prop_uk", and "mp").
+#' @param quantity The quantity to plot MSE for (default is "incidence", other options are "migration", "ratio_abroad_uk", and "mp").
 #' @param offset The offset for text labels.
 #' @param lab A logical indicating whether to add labels.
 #' @return A ggplot object of the MSE box plot.
@@ -481,7 +481,7 @@ mse_plot <- function(
 #' Box plots of bias.
 #'
 #' @param hiv_list A list returned from the `postproc` function containing model estimates.
-#' @param quantity The quantity to plot bias for (default is "incidence", other options are "migration", "prop_uk", and "mp").
+#' @param quantity The quantity to plot bias for (default is "incidence", other options are "migration", "ratio_abroad_uk", and "mp").
 #' @param offset The offset for text labels.
 #' @param lab A logical indicating whether to add labels.
 #' @return A ggplot object of the bias box plot.

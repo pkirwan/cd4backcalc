@@ -30,7 +30,7 @@ test_that("age-specific simulation produces expected HIV data", {
   )
   expect_equal(
     sim_diags$stan_data$HIV_age[1],
-    13
+    14
   )
 })
 

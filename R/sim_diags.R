@@ -531,7 +531,9 @@ simulate_diagnoses <- function(
     config$target_mig,
     config$dist
   )
-  prop_uk <- generate_prop_uk(config$nquar, config$p_pattern, config$dist)
+
+  # ratio of born-abroad UK-acquired to UK-born UK-acquired; can exceed 1
+  ratio_abroad_uk <- generate_ratio_abroad_uk(config$nquar, config$p_pattern, config$dist)
   mu <- generate_mu(config$nquar, config$nlatst, config$m_pattern)
   # m is a matrix of dimension [nquar, nlatst + 1] with the last column being those
   # who migrate already diagnosed
@@ -577,8 +579,14 @@ simulate_diagnoses <- function(
     10,
     30
   )
+
+  # Split total uk-acq across into uk-born and born abroad
+  total_uk_acq <- infs[,1]
+  born_uk_acq_uk <- total_uk_acq / (1 + ratio_abroad_uk)
+  born_abroad_acq_uk <- total_uk_acq * ratio_abroad_uk / (1 + ratio_abroad_uk)
+
   infs_age <- array(0, dim = c(config$nage, config$nquar, config$nlatst))
-  infs_age[,, 1] <- t(infs[, 1] * agedist_inf)
+  infs_age[,, 1] <- t(born_uk_acq_uk * agedist_inf)
   lat_init_uk_age <- round_preserve(outer(agedist_inf[1, ], lat_init_uk))
 
   # Distribute UK abroad across ages
@@ -586,7 +594,7 @@ simulate_diagnoses <- function(
     0,
     dim = c(config$nage, config$nquar, config$nlatst)
   )
-  infs_uk_abroad_age[,, 1] <- t(infs[, 1] * prop_uk * agedist_inf)
+  infs_uk_abroad_age[,, 1] <- t(born_abroad_acq_uk * agedist_inf)
   lat_init_uk_abroad_age <- round_preserve(outer(
     agedist_inf[1, ],
     lat_init_uk_abroad
@@ -646,7 +654,7 @@ simulate_diagnoses <- function(
     "m" = m,
     "mu" = mu,
     "d_probs" = d_probs,
-    "prop_uk" = prop_uk,
+    "ratio_abroad_uk" = ratio_abroad_uk,
     "config" = config,
     "lat_init_uk" = lat_init_uk,
     "lat_init_uk_abroad" = lat_init_uk_abroad,
@@ -776,7 +784,7 @@ simulate_diagnoses <- function(
     "init_prev_abroad" = init_prev_abroad,
     "init_prev_abroad_age" = t(init_prev_abroad_age),
     # log(p) is the appropriate transformation for the eta parameter in the migration model
-    "eta_mean" = log(sim_data$prop_uk),
+    "eta_mean" = log(sim_data$ratio_abroad_uk),
     # vague prior sd for eta
     "eta_sd" = 0.5,
     "config" = config

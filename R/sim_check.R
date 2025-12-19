@@ -6,13 +6,19 @@
 #' @param sim_data List of simulated epidemic data.
 #' @return NULL. Throws an error if validation checks fail.
 validate_sim_data <- function(sim_data) {
+
+  total_uk_acq <- sim_data$infs[, 1]
+  
+  uk_born_uk_acq <- total_uk_acq / (1 + sim_data$ratio_abroad_uk)
+  abroad_born_uk_acq <- total_uk_acq * sim_data$ratio_abroad_uk / (1 + sim_data$ratio_abroad_uk)
+
   stopifnot(
     "UK epidemic totals not preserved" = all(
       abs(
         rowSums(sim_data$epi_uk$lat) +
           cumsum(rowSums(sim_data$epi_uk$diags)) -
           sum(sim_data$lat_init_uk) -
-          cumsum(sim_data$infs[, 1])
+          cumsum(uk_born_uk_acq)
       ) <
         15
     )
@@ -24,7 +30,7 @@ validate_sim_data <- function(sim_data) {
         rowSums(sim_data$epi_uk_abroad$lat) +
           cumsum(rowSums(sim_data$epi_uk_abroad$diags)) -
           sum(sim_data$lat_init_uk_abroad) -
-          cumsum(round(sim_data$infs[, 1] * sim_data$prop_uk))
+          cumsum(abroad_born_uk_acq)
       ) <
         15
     )
@@ -73,7 +79,7 @@ validate_stan_data <- function(stan_data, sim_data, config) {
       sum(sim_data$infs[,1]) +
         sum(stan_data$init_prev) +
         sum(stan_data$init_prev_abroad) +
-        sum(round(sim_data$infs[,1] * sim_data$prop_uk)) +
+        # abroad infections migrating to UK
         sum(sim_data$m[, 1:config$nlatst]) -
         # total diagnoses plus latent infections
         sum(stan_data$HIV) -

@@ -109,7 +109,7 @@ postproc_ai <- function(
         hiv_list[[paste0("migration_", ch)]] <- ppq$migration
         hiv_list[[paste0("migration_prob_", ch)]] <- ppq$migration_prob
         hiv_list[[paste0("transfers_", ch)]] <- ppq$transfers
-        hiv_list[[paste0("prop_uk_", ch)]] <- ppq$prop_uk
+        hiv_list[[paste0("ratio_abroad_uk_", ch)]] <- ppq$ratio_abroad_uk
         hiv_list[[paste0("detect_prob_", ch)]] <- ppq$detect_prob
       }
     }
@@ -259,7 +259,7 @@ build_ppq_list <- function(
           prev_dist,
           start.yr = start_yr
         ),
-        prop_uk = prop_uk.df(
+        ratio_abroad_uk = ratio_abroad_uk.df(
           stan_data,
           fit_slice,
           start.yr = start_yr
@@ -1413,7 +1413,7 @@ migration.prob.df <- function(stan_data, fit_mat, start.yr = 1978) {
 #' @param fit_mat Matrix of posterior samples from stan model.
 #' @param start.yr Starting year for the dataframe.
 #' @return Dataframe of proportion UK estimates.
-prop_uk.df <- function(stan_data, fit_mat, start.yr = 1978) {
+ratio_abroad_uk.df <- function(stan_data, fit_mat, start.yr = 1978) {
   nyr <- stan_data$nquar / 4
 
   puk.ind <- grep("^p\\[", colnames(fit_mat))
