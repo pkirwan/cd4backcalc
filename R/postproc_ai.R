@@ -60,196 +60,239 @@ postproc_ai <- function(
   }
   on.exit(future::plan(future::sequential), add = TRUE)
 
-  # generate matrix object
-  fit_mat <- as.matrix(fit)
-
   # increase memory limit
   options(future.globals.maxSize = 3000 * 1024^2)
+
+  # generate matrix object
+  fit_mat <- as.matrix(fit)
 
   # make fit indices
   idx <- make_fit_indices(fit_mat, stan_data$config, stan_data$nquar)
 
-  # Generate infection and prevalence distributions then calculate
-  # the posterior predictive quantities (returned in hiv_list)
   if (chain_results) {
+    nchains <- as.integer(fit@sim$chains)
+    draw_splits <- split_draws(nrow(fit_mat), nchains)
+
     hiv_list <- list()
-    for (i in 1:4) {
-      start_idx <- (nrow(fit_mat) / 4 * (i - 1)) + 1
-      end_idx <- nrow(fit_mat) / 4 * i
+    for (ch in seq_along(draw_splits)) {
+      draw_ids <- draw_splits[[ch]]
 
       inf_dist <- future.apply::future_sapply(
-        start_idx:end_idx,
-        function(i) {
-          infect_dist_by_year_dx(
-            stan_data,
-            fit_mat,
-            i,
-            idx
-          )
-        },
+        draw_ids,
+        function(ii) infect_dist_by_year_dx(stan_data, fit_mat, ii, idx),
         future.seed = TRUE,
         future.globals = c("stan_data", "fit_mat", "idx")
       )
       prev_dist <- future.apply::future_sapply(
-        start_idx:end_idx,
-        function(i) {
-          prev_by_year_infection(
-            stan_data,
-            fit_mat,
-            i,
-            idx
-          )
-        },
+        draw_ids,
+        function(ii) prev_by_year_infection(stan_data, fit_mat, ii, idx),
         future.seed = TRUE,
         future.globals = c("stan_data", "fit_mat", "idx")
       )
 
-      hiv_list[[paste0("incidence_", i)]] <- incidence.df(
-        stan_data,
-        prev_dist,
-        start.yr = start_yr,
-        annual = FALSE
+      ppq <- build_ppq_list(
+        stan_data = stan_data,
+        prev_dist = prev_dist,
+        inf_dist = inf_dist,
+        fit_slice = fit_mat[draw_ids, , drop = FALSE],
+        start_yr = start_yr
       )
-      hiv_list[[paste0("incidence_annual_", i)]] <- incidence.df(
-        stan_data,
-        prev_dist,
-        start.yr = start_yr,
-        annual = TRUE
-      )
-      hiv_list[[paste0("undiag_prev_", i)]] <- undiag.prev.df(
-        stan_data,
-        prev_dist,
-        inf_dist,
-        start.yr = start_yr
-      )
-      hiv_list[[paste0("diag_prob_", i)]] <- diag.prob.df(
-        stan_data,
-        fit_mat[start_idx:end_idx, ],
-        start.yr = start_yr
-      )
-      hiv_list[[paste0("diagnoses_", i)]] <- diagnoses.df(
-        stan_data,
-        prev_dist,
-        start.yr = start_yr
-      )
-      hiv_list[[paste0("migration_", i)]] <- migration.df(
-        stan_data,
-        prev_dist,
-        start.yr = start_yr,
-        annual = FALSE
-      )
-      hiv_list[[paste0("migration_prob_", i)]] <- migration.prob.df(
-        stan_data,
-        fit_mat[start_idx:end_idx, ],
-        start.yr = start_yr
-      )
-      hiv_list[[paste0("transfers_", i)]] <- transfers.df(
-        stan_data,
-        prev_dist,
-        start.yr = start_yr
-      )
-      hiv_list[[paste0("prop_uk_", i)]] <- prop_uk.df(
-        stan_data,
-        fit_mat[start_idx:end_idx, ],
-        start.yr = start_yr
-      )
-      hiv_list[[paste0("detect_prob_", i)]] <- detect.prob.df(
-        stan_data,
-        fit_mat[start_idx:end_idx, ],
-        start.yr = start_yr
-      )
+
+      # Store results by chain
+      hiv_list[[paste0("incidence_", ch)]] <- ppq$incidence
+      hiv_list[[paste0("incidence_annual_", ch)]] <- ppq$incidence_annual
+      hiv_list[[paste0("undiag_prev_", ch)]] <- ppq$undiag_prev
+      hiv_list[[paste0("diag_prob_", ch)]] <- ppq$diag_prob
+      hiv_list[[paste0("diagnoses_", ch)]] <- ppq$diagnoses
+
+      if (stan_data$config$migration) {
+        hiv_list[[paste0("migration_", ch)]] <- ppq$migration
+        hiv_list[[paste0("migration_prob_", ch)]] <- ppq$migration_prob
+        hiv_list[[paste0("transfers_", ch)]] <- ppq$transfers
+        hiv_list[[paste0("prop_uk_", ch)]] <- ppq$prop_uk
+        hiv_list[[paste0("detect_prob_", ch)]] <- ppq$detect_prob
+      }
     }
   } else {
+    draw_ids <- seq_len(nrow(fit_mat))
+
     inf_dist <- future.apply::future_sapply(
-      1:nrow(fit_mat),
-      function(i) {
-        infect_dist_by_year_dx(
-          stan_data,
-          fit_mat,
-          i,
-          idx
-        )
-      },
+      draw_ids,
+      function(ii) infect_dist_by_year_dx(stan_data, fit_mat, ii, idx),
       future.seed = TRUE,
       future.globals = c("stan_data", "fit_mat", "idx")
     )
     prev_dist <- future.apply::future_sapply(
-      1:nrow(fit_mat),
-      function(i) {
-        prev_by_year_infection(
-          stan_data,
-          fit_mat,
-          i,
-          idx
-        )
-      },
+      draw_ids,
+      function(ii) prev_by_year_infection(stan_data, fit_mat, ii, idx),
       future.seed = TRUE,
       future.globals = c("stan_data", "fit_mat", "idx")
     )
-    if (stan_data$config$migration) {
-      hiv_list <- list(
-        incidence = incidence.df(
-          stan_data,
-          prev_dist,
-          start.yr = start_yr,
-          annual = FALSE
-        ),
-        incidence_annual = incidence.df(
-          stan_data,
-          prev_dist,
-          start.yr = start_yr,
-          annual = TRUE
-        ),
+
+    hiv_list <- build_ppq_list(
+      stan_data = stan_data,
+      prev_dist = prev_dist,
+      inf_dist = inf_dist,
+      fit_slice = fit_mat,
+      start_yr = start_yr
+    )
+  }
+
+  return(hiv_list)
+}
+
+#' Make fit indices
+#'
+#' Creates a list of indices for extracting parameters from the fit matrix.
+#'
+#' @param fit_mat Matrix of posterior samples from stan model.
+#' @param config Configuration list used in stan model fitting.
+#' @param nquar Number of quarters in the model.
+#' @return List of indices for various parameters in the fit matrix.
+make_fit_indices <- function(fit_mat, config, nquar) {
+  cn <- colnames(fit_mat)
+
+  idx <- list(
+    d1 = grep("^d\\[1,", cn),
+    d2 = grep("^d\\[2,", cn),
+    d3 = grep("^d\\[3,", cn),
+    d4 = grep("^d\\[4,", cn),
+    d5 = grep("^d\\[5,", cn),
+    lambda = grep("^lambda\\[", cn),
+    gamma = grep("^gamma\\[", cn),
+    p = grep("^p\\[", cn),
+    m = grep("^m\\[", cn),
+    under_rep = match("under_rep", cn)
+  )
+
+  if (
+    any(c(length(idx$d1), length(idx$d2), length(idx$d3), length(idx$d4)) == 0L)
+  ) {
+    stop("Could not find d[1..4,] in fit matrix column names.")
+  }
+  if (config$rita && length(idx$d5) == 0L) {
+    stop(
+      "config$rita=TRUE but could not find d[5,] in fit matrix column names."
+    )
+  }
+  if (length(idx$lambda) == 0L) {
+    stop("Could not find lambda[...] in fit matrix column names.")
+  }
+
+  if (config$migration) {
+    if (length(idx$gamma) == 0L) {
+      stop("config$migration=TRUE but gamma[...] not found.")
+    }
+    if (length(idx$p) == 0L) {
+      stop("config$migration=TRUE but p[...] not found.")
+    }
+    if (length(idx$m) == 0L) stop("config$migration=TRUE but m[...] not found.")
+  }
+
+  idx
+}
+
+#' Build posterior predictive quantities list
+#'
+#' Constructs a list of posterior predictive quantities from the provided distributions.
+#'
+#' @param stan_data Data list used in stan model fitting.
+#' @param prev_dist List of prevalence distributions.
+#' @param inf_dist List of infection distributions.
+#' @param fit_slice Matrix of posterior samples from stan model.
+#' @param start_yr Starting year for posterior predictive quantities.
+#' @return List of posterior predictive quantities.
+build_ppq_list <- function(
+  stan_data,
+  prev_dist,
+  inf_dist,
+  fit_slice,
+  start_yr
+) {
+  out <- list(
+    incidence = incidence.df(
+      stan_data,
+      prev_dist,
+      start.yr = start_yr,
+      annual = FALSE
+    ),
+    incidence_annual = incidence.df(
+      stan_data,
+      prev_dist,
+      start.yr = start_yr,
+      annual = TRUE
+    ),
+    undiag_prev = undiag.prev.df(
+      stan_data,
+      prev_dist,
+      inf_dist,
+      start.yr = start_yr
+    ),
+    diag_prob = diag.prob.df(
+      stan_data,
+      fit_slice,
+      start.yr = start_yr
+    ),
+    diagnoses = diagnoses.df(
+      stan_data,
+      prev_dist,
+      start.yr = start_yr
+    )
+  )
+  if (stan_data$config$migration) {
+    out <- c(
+      out,
+      list(
         migration = migration.df(
           stan_data,
           prev_dist,
           start.yr = start_yr,
           annual = FALSE
         ),
-        undiag_prev = undiag.prev.df(
-          stan_data,
-          prev_dist,
-          inf_dist,
-          start.yr = start_yr
-        ),
-        diag_prob = diag.prob.df(stan_data, fit_mat, start.yr = start_yr),
-        diagnoses = diagnoses.df(stan_data, prev_dist, start.yr = start_yr),
         migration_prob = migration.prob.df(
           stan_data,
-          fit_mat,
+          fit_slice,
           start.yr = start_yr
         ),
-        transfers = transfers.df(stan_data, prev_dist, start.yr = start_yr),
-        prop_uk = prop_uk.df(stan_data, fit_mat, start.yr = start_yr),
-        detect_prob = detect.prob.df(stan_data, fit_mat, start.yr = start_yr)
-      )
-    } else {
-      hiv_list <- list(
-        incidence = incidence.df(
+        transfers = transfers.df(
           stan_data,
           prev_dist,
-          start.yr = start_yr,
-          annual = FALSE
-        ),
-        incidence_annual = incidence.df(
-          stan_data,
-          prev_dist,
-          start.yr = start_yr,
-          annual = TRUE
-        ),
-        undiag_prev = undiag.prev.df(
-          stan_data,
-          prev_dist,
-          inf_dist,
           start.yr = start_yr
         ),
-        diag_prob = diag.prob.df(stan_data, fit_mat, start.yr = start_yr),
-        diagnoses = diagnoses.df(stan_data, prev_dist, start.yr = start_yr)
+        prop_uk = prop_uk.df(
+          stan_data,
+          fit_slice,
+          start.yr = start_yr
+        ),
+        detect_prob = detect.prob.df(
+          stan_data,
+          fit_slice,
+          start.yr = start_yr
+        )
       )
-    }
+    )
   }
 
-  return(hiv_list)
+  out
+}
+
+#' Split draws by chain
+#'
+#' Splits the total number of draws into groups corresponding to each chain.
+#'
+#' @param n_draws Total number of draws.
+#' @param nchains Number of chains.
+#' @return List of indices for each chain.
+split_draws <- function(n_draws, nchains) {
+  nchains <- max(1L, as.integer(nchains))
+  if (nchains > 1) {
+    split(
+      seq_len(n_draws),
+      cut(seq_len(n_draws), breaks = nchains, labels = FALSE)
+    )
+  } else {
+    list(seq_len(n_draws))
+  }
 }
 
 #' Infection distribution by year of diagnosis
@@ -925,57 +968,6 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
     }
   }
   return(output)
-}
-
-#' Make fit indices
-#'
-#' Creates a list of indices for extracting parameters from the fit matrix.
-#'
-#' @param fit_mat Matrix of posterior samples from stan model.
-#' @param config Configuration list used in stan model fitting.
-#' @param nquar Number of quarters in the model.
-#' @return List of indices for various parameters in the fit matrix.
-make_fit_indices <- function(fit_mat, config, nquar) {
-  cn <- colnames(fit_mat)
-
-  idx <- list(
-    d1 = grep("^d\\[1,", cn),
-    d2 = grep("^d\\[2,", cn),
-    d3 = grep("^d\\[3,", cn),
-    d4 = grep("^d\\[4,", cn),
-    d5 = grep("^d\\[5,", cn),
-    lambda = grep("^lambda\\[", cn),
-    gamma = grep("^gamma\\[", cn),
-    p = grep("^p\\[", cn),
-    m = grep("^m\\[", cn),
-    under_rep = match("under_rep", cn)
-  )
-
-  if (
-    any(c(length(idx$d1), length(idx$d2), length(idx$d3), length(idx$d4)) == 0L)
-  ) {
-    stop("Could not find d[1..4,] in fit matrix column names.")
-  }
-  if (config$rita && length(idx$d5) == 0L) {
-    stop(
-      "config$rita=TRUE but could not find d[5,] in fit matrix column names."
-    )
-  }
-  if (length(idx$lambda) == 0L) {
-    stop("Could not find lambda[...] in fit matrix column names.")
-  }
-
-  if (config$migration) {
-    if (length(idx$gamma) == 0L) {
-      stop("config$migration=TRUE but gamma[...] not found.")
-    }
-    if (length(idx$p) == 0L) {
-      stop("config$migration=TRUE but p[...] not found.")
-    }
-    if (length(idx$m) == 0L) stop("config$migration=TRUE but m[...] not found.")
-  }
-
-  idx
 }
 
 #' Incidence dataframe

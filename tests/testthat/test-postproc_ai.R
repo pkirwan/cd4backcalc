@@ -22,6 +22,16 @@ test_that("cd4-only post-processing works", {
     nworkers = 1
   )
   expect_true("diag_prob" %in% names(hiv_list))
+
+  # Chained post-processing
+  hiv_list <- postproc(
+    fit,
+    stan_data,
+    start_yr = 0,
+    nworkers = 1,
+    chain_results = TRUE
+  )
+  expect_true("diag_prob_1" %in% names(hiv_list))
 })
 
 test_that("migration post-processing works", {
