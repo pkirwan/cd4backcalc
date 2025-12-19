@@ -1009,6 +1009,14 @@ incidence.df <- function(
     infections.total
   }
 
+  # remove initial prevalence from first quarter
+  infections.total <- as.matrix(infections.total)
+  init_prev_total <- sum(stan_data$init_prev)
+  if ("init_prev_abroad" %in% names(stan_data)) {
+    init_prev_total <- init_prev_total + sum(stan_data$init_prev_abroad)
+  }
+  infections.total[1, ] <- pmax(0, infections.total[1, ] - init_prev_total)
+
   if (annual == FALSE) {
     q.infections.total <- apply(
       infections.total,
