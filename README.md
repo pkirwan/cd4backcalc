@@ -66,15 +66,25 @@ The cd4backcalc package includes several pre-compiled models which can
 be used to fit the back-calculation model to real or simulated diagnosis
 data under different scenarios:
 
-- CD4-staged back-calculation
-- Age-dependent CD4-staged back-calculation
-- Dual-biomarker back-calculation with CD4 and RITA data
-- CD4-staged back-calculation with migration status
+- Age-independent or age-dependent
+- CD4-only or CD4 + RITA data
+- With or without migration
 
-Most of the functions in the package are designed to work with all model
+The functions in the package are designed to work with all model
 variants, with the appropriate model selected based on user-specified
-options. Model variants are designed to be modular, e.g. an
-age-dependent dual-biomarker model.
+options. The table below summarises the supported combinations of age
+structure, RITA evidence, and migration status.
+
+| Model variant | Age-dependent? | RITA? | Migration? | Example options |
+|:---|:--:|:--:|:--:|:--:|
+| Age-independent CD4-only | :x: | :x: | :x: | age=FALSE, rita=FALSE, migration=FALSE |
+| Age-dependent CD4-only | :white_check_mark: | :x: | :x: | age=TRUE, rita=FALSE, migration=FALSE |
+| Age-independent CD4 + RITA | :x: | :white_check_mark: | :x: | age=FALSE, rita=TRUE, migration=FALSE |
+| Age-dependent CD4 + RITA | :white_check_mark: | :white_check_mark: | :x: | age=TRUE, rita=TRUE, migration=FALSE |
+| Age-independent CD4-only + migration | :x: | :x: | :white_check_mark: | age=FALSE, rita=FALSE, migration=TRUE |
+| Age-dependent CD4-only + migration | :white_check_mark: | :x: | :white_check_mark: | age=TRUE, rita=FALSE, migration=TRUE |
+| Age-independent CD4 + RITA + migration | :x: | :white_check_mark: | :white_check_mark: | age=FALSE, rita=TRUE, migration=TRUE |
+| Age-dependent CD4 + RITA + migration | :white_check_mark: | :white_check_mark: | :white_check_mark: | age=TRUE, rita=TRUE, migration=TRUE |
 
 ## Usage
 
@@ -86,7 +96,7 @@ simulated data, and plot model estimates is shown in the example below.
 library(cd4backcalc)
 
 # simulate data
-sim_diags <- simulate_diagnoses(migration = FALSE, rita = FALSE, age = FALSE)
+sim_diags <- simulate_diagnoses(age = FALSE, rita = FALSE, migration = FALSE)
 
 # run back-calculation model on simulated data
 hiv_list <- run_backcalc(sim_diags)
