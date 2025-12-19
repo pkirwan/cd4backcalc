@@ -85,21 +85,51 @@ extract_simulated_quantities <- function(sim_diags) {
     group = "Simulated values"
   )
 
-  diag_prob <- tibble::tibble(
-    value = as.vector(sim_data$d_probs),
-    year = rep(seq(0, plot_years, by = 0.25), 4),
-    strata = rep(
-      c("CD4>500", "CD4 350-500", "CD4 200-350", "CD4<200"),
-      each = stan_data$nquar
-    ),
-    group = "Simulated values"
-  ) |>
-    dplyr::mutate(
-      strata = factor(
-        .data$strata,
-        levels = c("CD4<200", "CD4 200-350", "CD4 350-500", "CD4>500")
+  diag_prob <- if (stan_data$config$rita) {
+    tibble::tibble(
+      value = as.vector(sim_data$d_probs),
+      year = rep(seq(0, plot_years, by = 0.25), 5),
+      strata = rep(
+        c(
+          "Recently acquired",
+          "CD4>500",
+          "CD4 350-500",
+          "CD4 200-350",
+          "CD4<200"
+        ),
+        each = stan_data$nquar
+      ),
+      group = "Simulated values"
+    ) |>
+      dplyr::mutate(
+        strata = factor(
+          .data$strata,
+          levels = c(
+            "CD4<200",
+            "CD4 200-350",
+            "CD4 350-500",
+            "CD4>500",
+            "Recently acquired"
+          )
+        )
       )
-    )
+  } else {
+    tibble::tibble(
+      value = as.vector(sim_data$d_probs),
+      year = rep(seq(0, plot_years, by = 0.25), 4),
+      strata = rep(
+        c("CD4>500", "CD4 350-500", "CD4 200-350", "CD4<200"),
+        each = stan_data$nquar
+      ),
+      group = "Simulated values"
+    ) |>
+      dplyr::mutate(
+        strata = factor(
+          .data$strata,
+          levels = c("CD4<200", "CD4 200-350", "CD4 350-500", "CD4>500")
+        )
+      )
+  }
 
   diagnoses <- if (stan_data$config$migration) {
     tibble::tibble(
@@ -115,39 +145,81 @@ extract_simulated_quantities <- function(sim_diags) {
     )
   }
 
-  migration_prob <- tibble::tibble(
-    value = as.vector(sweep(
-      sim_data$m,
-      1,
-      ifelse(sim_data$omega == 0, NA_real_, sim_data$omega),
-      "/"
-    )),
-    year = rep(seq(0, plot_years, by = 0.25), 5),
-    strata = rep(
-      c(
-        "CD4>500",
-        "CD4 350-500",
-        "CD4 200-350",
-        "CD4<200",
-        "Transfers of care"
-      ),
-      each = stan_data$nquar
-    ),
-    group = "Simulated values"
-  ) |>
-    dplyr::mutate(
-      value = dplyr::if_else(is.na(.data$value), 0, .data$value),
-      strata = factor(
-        .data$strata,
-        levels = c(
-          "CD4<200",
-          "CD4 200-350",
-          "CD4 350-500",
+  migration_prob <- if (stan_data$config$rita) {
+    tibble::tibble(
+      value = as.vector(sweep(
+        sim_data$m,
+        1,
+        ifelse(sim_data$omega == 0, NA_real_, sim_data$omega),
+        "/"
+      )),
+      year = rep(seq(0, plot_years, by = 0.25), 8),
+      strata = rep(
+        c(
+          "Recently acquired 0-3, CD4>500",
+          "Recently acquired 3-6, CD4 >500",
+          "Recently acquired 0-3, CD4 350-500",
           "CD4>500",
+          "CD4 350-500",
+          "CD4 200-350",
+          "CD4<200",
           "Transfers of care"
+        ),
+        each = stan_data$nquar
+      ),
+      group = "Simulated values"
+    ) |>
+      dplyr::mutate(
+        value = dplyr::if_else(is.na(.data$value), 0, .data$value),
+        strata = factor(
+          .data$strata,
+          levels = c(
+            "CD4<200",
+            "CD4 200-350",
+            "CD4 350-500",
+            "CD4>500",
+            "Recently acquired 0-3, CD4 350-500",
+            "Recently acquired 3-6, CD4 >500",
+            "Recently acquired 0-3, CD4>500",
+            "Transfers of care"
+          )
         )
       )
-    )
+  } else {
+    tibble::tibble(
+      value = as.vector(sweep(
+        sim_data$m,
+        1,
+        ifelse(sim_data$omega == 0, NA_real_, sim_data$omega),
+        "/"
+      )),
+      year = rep(seq(0, plot_years, by = 0.25), 5),
+      strata = rep(
+        c(
+          "CD4>500",
+          "CD4 350-500",
+          "CD4 200-350",
+          "CD4<200",
+          "Transfers of care"
+        ),
+        each = stan_data$nquar
+      ),
+      group = "Simulated values"
+    ) |>
+      dplyr::mutate(
+        value = dplyr::if_else(is.na(.data$value), 0, .data$value),
+        strata = factor(
+          .data$strata,
+          levels = c(
+            "CD4<200",
+            "CD4 200-350",
+            "CD4 350-500",
+            "CD4>500",
+            "Transfers of care"
+          )
+        )
+      )
+  }
 
   prop_uk <- tibble::tibble(
     value = sim_data$prop_uk,
@@ -161,7 +233,29 @@ extract_simulated_quantities <- function(sim_diags) {
     group = "Simulated values"
   )
 
-  cd4_strata <- if (stan_data$config$migration) {
+  cd4_strata <- if (stan_data$config$rita) {
+    if (stan_data$config$migration) {
+      tibble::tibble(
+        `Recently acquired` = rowSums(stan_data$CD4[,, 1]),
+        `CD4>500` = rowSums(stan_data$CD4[,, 2]),
+        `CD4 350-500` = rowSums(stan_data$CD4[,, 3]),
+        `CD4 200-350` = rowSums(stan_data$CD4[,, 4]),
+        `CD4<200` = rowSums(stan_data$CD4[,, 5]),
+        year = seq(0, plot_years, by = 0.25),
+        group = "Simulated values"
+      )
+    } else {
+      tibble::tibble(
+        `Recently acquired` = stan_data$CD4[, 1],
+        `CD4>500` = stan_data$CD4[, 2],
+        `CD4 350-500` = stan_data$CD4[, 3],
+        `CD4 200-350` = stan_data$CD4[, 4],
+        `CD4<200` = stan_data$CD4[, 5],
+        year = seq(0, plot_years, by = 0.25),
+        group = "Simulated values"
+      )
+    }
+  } else if (stan_data$config$migration) {
     tibble::tibble(
       `CD4>500` = rowSums(stan_data$CD4[,, 1]),
       `CD4 350-500` = rowSums(stan_data$CD4[,, 2]),
@@ -171,22 +265,22 @@ extract_simulated_quantities <- function(sim_diags) {
       group = "Simulated values"
     )
   } else {
-    {
-      tibble::tibble(
-        `CD4>500` = stan_data$CD4[, 1],
-        `CD4 350-500` = stan_data$CD4[, 2],
-        `CD4 200-350` = stan_data$CD4[, 3],
-        `CD4<200` = stan_data$CD4[, 4],
-        year = seq(0, plot_years, by = 0.25),
-        group = "Simulated values"
-      )
-    } |>
-      tidyr::pivot_longer(
-        cols = tidyselect::starts_with("CD4"),
-        names_to = "strata",
-        values_to = "value"
-      )
+    tibble::tibble(
+      `CD4>500` = stan_data$CD4[, 1],
+      `CD4 350-500` = stan_data$CD4[, 2],
+      `CD4 200-350` = stan_data$CD4[, 3],
+      `CD4<200` = stan_data$CD4[, 4],
+      year = seq(0, plot_years, by = 0.25),
+      group = "Simulated values"
+    )
   }
+
+  cd4_strata <- cd4_strata |>
+    tidyr::pivot_longer(
+      cols = tidyselect::starts_with(c("CD4", "Recently")),
+      names_to = "strata",
+      values_to = "value"
+    )
 
   return(
     list(

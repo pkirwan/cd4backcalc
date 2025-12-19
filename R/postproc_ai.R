@@ -329,10 +329,10 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
     stan_data$init_prev
   }
 
-  init_prev_m <- if (!("init_prev_m" %in% names(stan_data))) {
+  init_prev_abroad <- if (!("init_prev_abroad" %in% names(stan_data))) {
     rep(0, config$nlatst)
   } else {
-    stan_data$init_prev_m
+    stan_data$init_prev_abroad
   }
 
   # Get diagnosis probabilities
@@ -383,7 +383,7 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
     if (config$rita) {
       d5 <- fit_mat[i, idx$d5]
       diagnoses_b <- forward_calculate_rita(
-        init_prev_m / 2,
+        init_prev_abroad / 2,
         temp_h * temp_p,
         d1 = d1,
         d2 = d2,
@@ -393,7 +393,7 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
         q = stan_data$q
       )
       diagnoses_m <- forward_calculate_m_rita(
-        init_prev_m / 2,
+        init_prev_abroad / 2,
         temp_om,
         d1 = d1,
         d2 = d2,
@@ -404,7 +404,7 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
       )
     } else {
       diagnoses_b <- forward_calculate(
-        init_prev_m / 2,
+        init_prev_abroad / 2,
         temp_h * temp_p,
         d1 = d1,
         d2 = d2,
@@ -413,7 +413,7 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
         q = stan_data$q
       )
       diagnoses_m <- forward_calculate_m(
-        init_prev_m / 2,
+        init_prev_abroad / 2,
         temp_om,
         d1 = d1,
         d2 = d2,
@@ -666,10 +666,10 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
     stan_data$init_prev
   }
 
-  init_prev_m <- if (!("init_prev_m" %in% names(stan_data))) {
+  init_prev_abroad <- if (!("init_prev_abroad" %in% names(stan_data))) {
     rep(0, config$nlatst)
   } else {
-    stan_data$init_prev_m
+    stan_data$init_prev_abroad
   }
 
   # Get diagnosis probabilities
@@ -720,7 +720,7 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
     if (config$rita) {
       d5 <- fit_mat[i, idx$d5]
       diagnoses_b <- forward_calculate_rita(
-        init_prev_m,
+        init_prev_abroad,
         temp_h * temp_p,
         d1 = d1,
         d2 = d2,
@@ -741,7 +741,7 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
       )
     } else {
       diagnoses_b <- forward_calculate(
-        init_prev_m,
+        init_prev_abroad,
         temp_h * temp_p,
         d1 = d1,
         d2 = d2,

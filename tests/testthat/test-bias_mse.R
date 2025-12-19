@@ -46,7 +46,7 @@ test_that("mse_list and plots are generated correctly for migration model", {
 
 test_that("mse_list and plots work for lists", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 60, sim_seed = 123, migration = TRUE)
+  stan_data <- simulate_diagnoses(nquar = 60, sim_seed = 123, rita = TRUE)
   # Fit back-calculation model
   hiv_list <- list()
   for (i in 1:2) {
@@ -63,10 +63,10 @@ test_that("mse_list and plots work for lists", {
     })
   }
   mse_list <- make_mse_list(hiv_list)
-  expect_true(mse_list$incidence_bias[1, 8] == -1546)
+  expect_true(mse_list$incidence_bias[1, 8] == -886)
   # Test extraction and plotting functions
-  p1 <- mse_plot(hiv_list, quantity = "migration")
+  p1 <- mse_plot(hiv_list, quantity = "incidence")
   expect_s3_class(p1, "ggplot")
-  p2 <- bias_plot(hiv_list, quantity = "migration")
+  p2 <- bias_plot(hiv_list, quantity = "incidence")
   expect_s3_class(p2, "ggplot")
 })
