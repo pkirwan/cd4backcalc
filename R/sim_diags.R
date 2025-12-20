@@ -533,7 +533,11 @@ simulate_diagnoses <- function(
   )
 
   # ratio of born-abroad UK-acquired to UK-born UK-acquired; can exceed 1
-  ratio_abroad_uk <- generate_ratio_abroad_uk(config$nquar, config$p_pattern, config$dist)
+  ratio_abroad_uk <- generate_ratio_abroad_uk(
+    config$nquar,
+    config$p_pattern,
+    config$dist
+  )
   mu <- generate_mu(config$nquar, config$nlatst, config$m_pattern)
   # m is a matrix of dimension [nquar, nlatst + 1] with the last column being those
   # who migrate already diagnosed
@@ -546,9 +550,13 @@ simulate_diagnoses <- function(
   )
 
   # Generate initial prevalence
-  lat_init_uk <- round(sum(infs[1, ]) * config$init_props)
+  lat_init_uk <- round(
+    sum(infs[1, ]) / (1 + config$abroad_prop) * config$init_props
+  )
   lat_init_uk_abroad <- round(
-    sum(infs[1, ]) * config$abroad_prop * config$init_props
+    sum(infs[1, ]) *
+      (config$abroad_prop / (1 + config$abroad_prop)) *
+      config$init_props
   )
   lat_init_abroad <- round(
     sum(m[1, 1:(config$nlatst)]) * config$init_props_abroad
@@ -581,7 +589,7 @@ simulate_diagnoses <- function(
   )
 
   # Split total uk-acq across into uk-born and born abroad
-  total_uk_acq <- infs[,1]
+  total_uk_acq <- infs[, 1]
   born_uk_acq_uk <- total_uk_acq / (1 + ratio_abroad_uk)
   born_abroad_acq_uk <- total_uk_acq * ratio_abroad_uk / (1 + ratio_abroad_uk)
 
