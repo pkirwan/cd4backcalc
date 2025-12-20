@@ -63,7 +63,7 @@ test_that("mse_list and plots work for lists", {
     })
   }
   mse_list <- make_mse_list(hiv_list)
-  expect_true(mse_list$incidence_bias[1, 8] == -970)
+  expect_true(mse_list$incidence_bias[1, 8] == -1001)
   # Test extraction and plotting functions
   p1 <- mse_plot(hiv_list, quantity = "incidence")
   expect_s3_class(p1, "ggplot")

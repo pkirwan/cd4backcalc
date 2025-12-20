@@ -282,17 +282,11 @@ extract_simulated_quantities <- function(sim_diags) {
       values_to = "value"
     )
 
-  detect_prob <- stan_data$detect_prob |>
-    tibble::as_tibble() |>
-    dplyr::mutate(
-      year = seq(0, plot_years, by = 0.25),
-      group = "Simulated values"
-    ) |>
-    tidyr::pivot_longer(
-      cols = -c(.data$year, .data$group),
-      names_to = "strata",
-      values_to = "value"
-    )
+  detect_prob <- tibble::tibble(
+    value = stan_data$detect_prob,
+    year = seq(0, plot_years, by = 0.25),
+    group = "Simulated values"
+  )
 
   return(
     list(
