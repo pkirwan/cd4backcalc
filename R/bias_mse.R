@@ -283,7 +283,7 @@ extract_simulated_quantities <- function(sim_diags) {
     )
 
   detect_prob <- tibble::tibble(
-    value = stan_data$detect_prob,
+    value = sim_data$detect_prob,
     year = seq(0, plot_years, by = 0.25),
     group = "Simulated values"
   )

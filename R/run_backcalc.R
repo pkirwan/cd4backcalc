@@ -84,7 +84,7 @@ run_backcalc <- function(
 
 #' Run CD4 back-calculation model
 #'
-#' This function runs the CD4 back-calculation model using Stan and runs the post-processing.
+#' This function runs the CD4 back-calculation model using Stan.
 #'
 #' @param stan_data A list of data formatted for Stan.
 #' @param model_seed Seed for model fitting (will be set to stan_data$config$model_seed if NULL).

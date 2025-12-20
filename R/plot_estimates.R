@@ -33,9 +33,8 @@ plot_estimates <- function(
 
   p1 <- quantiles |>
     ggplot2::ggplot() +
-    ggplot2::aes(.data$year, .data$value, group = .data$group) +
+    ggplot2::aes(.data$year, .data$`50%`, group = .data$group) +
     ggplot2::scale_linetype_manual(values = c(2, 1, 2)) +
-    ggplot2::geom_line(ggplot2::aes(y = .data$`50%`), color = "purple") +
     ggplot2::geom_line(
       ggplot2::aes(y = .data$`2.5%`),
       linetype = "dashed",
@@ -46,6 +45,7 @@ plot_estimates <- function(
       linetype = "dashed",
       color = "gray"
     ) +
+    ggplot2::geom_line(color = "purple") +
     ggplot2::labs(
       title = plot_title,
       x = "Year",
@@ -58,12 +58,17 @@ plot_estimates <- function(
   if ("sim_data" %in% names(hiv_list[[1]])) {
     sim_estimates <- extract_simulated_quantities(hiv_list[[1]])
     p1 <- p1 +
-      ggplot2::geom_point(size = 0.4, data = sim_estimates[[quantity]])
+      ggplot2::geom_point(
+        data = sim_estimates[[quantity]],
+        ggplot2::aes(y = .data$value),
+        size = 0.4
+      )
   }
 
   # custom y-axis for probabilities
   if (
-    quantity %in% c("diag_prob", "ratio_abroad_uk", "detect_prob", "migration_prob")
+    quantity %in%
+      c("diag_prob", "ratio_abroad_uk", "detect_prob", "migration_prob")
   ) {
     p1 <- p1 +
       ggplot2::scale_y_continuous(
