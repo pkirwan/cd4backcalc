@@ -11,7 +11,7 @@ data {
   
   // Splines
   int<lower=1> npars_inf;
-  matrix[nquar * nage, npars_inf] X; // design matrix ... 50 is number of inf params
+  matrix[nquar * nage, npars_inf] X_inf; // design matrix ... 50 is number of inf params
   matrix[npars_inf - 1, 2 * npars_inf - 2] S1; // NOT SURE IF BOUNDARY CONSISTENT
 }
 transformed data {
@@ -34,8 +34,8 @@ transformed data {
 }
 parameters {
   // Infection parameters
-  vector[npars_inf] beta; //beta are the infection parameters
-  vector<lower=0>[2] sigma; // smoothing parameters
+  vector[npars_inf] beta_inf; //beta_inf are the infection parameters
+  vector<lower=0>[2] sigma_inf; // smoothing parameters
   vector<lower=0>[4] vardelta;
   
   // Diagnosis probability parameters
@@ -47,7 +47,8 @@ parameters {
 }
 transformed parameters {
   // Infection parameters
-  vector<lower=0>[nquar * nage] H = exp(X * beta); //vector of expected log responses
+  vector[nquar * nage] lambda = X_inf * beta_inf; // expected infections by time and age
+  vector<lower=0>[nquar * nage] h = exp(lambda); //vector of expected log responses
   vector<lower=0>[4] lat_p;
   
   // Diagnosis probabilities
@@ -66,14 +67,14 @@ transformed parameters {
   vector[nquar] delta_2;
   vector[nquar] delta_3;
   vector[nquar] delta_4;
-  vector<lower=0>[2] lambda; // smoothing parameters
+  vector<lower=0>[2] tau; // smoothing parameters
   
-  lambda = inv(square(sigma));
+  tau = inv(square(sigma_inf));
   
   // PRIORS for the tensor product
-  K1_inv = S1[1 : (npars_inf - 1), 1 : (npars_inf - 1)] * lambda[1]
+  K1_inv = S1[1 : (npars_inf - 1), 1 : (npars_inf - 1)] * tau[1]
            + S1[1 : (npars_inf - 1), npars_inf : (2 * npars_inf - 2)]
-             * lambda[2];
+             * tau[2];
   
   // DIAGNOSES
   
@@ -162,7 +163,7 @@ transformed parameters {
       }
       
       // latent state immediately after t0 inflow (+ any t0==1 prevalence survivors)
-      lat[1] = H[(a0 - 1) * nquar + t0] + lat_p[1];
+      lat[1] = h[(a0 - 1) * nquar + t0] + lat_p[1];
       lat[2] = lat_p[2];
       lat[3] = lat_p[3];
       lat[4] = lat_p[4];
@@ -241,13 +242,13 @@ transformed parameters {
 model {
   // Priors
   // Splines
-  // sigma ~ inv_gamma(.05,.005); // s.d of observations. Manual recommends using flat priors, following Gelman's paper
+  // sigma_inf ~ inv_gamma(.05,.005); // s.d of observations. Manual recommends using flat priors, following Gelman's paper
   // If commented default un-normslized uniform prior
   
-  sigma ~ student_t(4, 0, 200); // Weakly informative priors
+  sigma_inf ~ student_t(4, 0, 200); // Weakly informative priors
   
-  beta[1] ~ normal(0, 30); // 30 s.d corresponding to precision given in JAGS
-  beta[2 : npars_inf] ~ multi_normal_prec(zero_vec, K1_inv);
+  beta_inf[1] ~ normal(0, 30); // 30 s.d corresponding to precision given in JAGS
+  beta_inf[2 : npars_inf] ~ multi_normal_prec(zero_vec, K1_inv);
   
   vardelta ~ gamma(1, 8); // prior for logit random walk
   

@@ -410,8 +410,8 @@ model_type_prep <- function(
     )
 
     # Augment stan_data with design matrix and prior info
-    stan_data$X <- jagam_out_age$jags.data$X
-    stan_data$npars_inf <- ncol(stan_data$X)
+    stan_data$X_inf <- jagam_out_age$jags.data$X
+    stan_data$npars_inf <- ncol(stan_data$X_inf)
     stan_data$S1 <- jagam_out_age$jags.data$S1
   } else {
     # Infection model spline (age-independent)
@@ -481,7 +481,8 @@ make_pars_save <- function(config) {
     # Add age-specific parameters
     pars_save <- c(
       pars_save,
-      "beta",
+      "tau",
+      "beta_inf",
       "delta_1",
       "delta_2",
       "delta_3",

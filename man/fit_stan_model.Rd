@@ -30,7 +30,7 @@ fit_stan_model(
 A stanfit object containing the results of the model fitting.
 }
 \description{
-This function runs the CD4 back-calculation model using Stan and runs the post-processing.
+This function runs the CD4 back-calculation model using Stan.
 }
 \examples{
 sim_diags <- simulate_diagnoses(sim_seed = 123)

@@ -590,19 +590,27 @@ simulate_diagnoses <- function(
 
   # Split total uk-acq across into uk-born and born abroad
   total_uk_acq <- infs[, 1]
+  infs_age <- array(0, dim = c(config$nage, config$nquar, config$nlatst))
+  infs_age[,, 1] <- t(total_uk_acq * agedist_inf)
+
   born_uk_acq_uk <- total_uk_acq / (1 + ratio_abroad_uk)
   born_abroad_acq_uk <- total_uk_acq * ratio_abroad_uk / (1 + ratio_abroad_uk)
 
-  infs_age <- array(0, dim = c(config$nage, config$nquar, config$nlatst))
-  infs_age[,, 1] <- t(born_uk_acq_uk * agedist_inf)
-  lat_init_uk_age <- round_preserve(outer(agedist_inf[1, ], lat_init_uk))
+  # Distribute UK incidence across ages
+  infs_uk_age <- array(
+    0,
+    dim = c(config$nage, config$nquar, config$nlatst)
+  )
+  infs_uk_age[,, 1] <- t(born_uk_acq_uk * agedist_inf)
 
-  # Distribute UK abroad across ages
   infs_uk_abroad_age <- array(
     0,
     dim = c(config$nage, config$nquar, config$nlatst)
   )
   infs_uk_abroad_age[,, 1] <- t(born_abroad_acq_uk * agedist_inf)
+
+  # Distribute UK-born initial prevalence across ages
+  lat_init_uk_age <- round_preserve(outer(agedist_inf[1, ], lat_init_uk))
   lat_init_uk_abroad_age <- round_preserve(outer(
     agedist_inf[1, ],
     lat_init_uk_abroad
@@ -616,8 +624,8 @@ simulate_diagnoses <- function(
     20,
     40
   )
-  m_age <- array(0, dim = c(config$nage, config$nquar, config$nlatst))
-  for (i in 1:config$nlatst) {
+  m_age <- array(0, dim = c(config$nage, config$nquar, (config$nlatst + 1)))
+  for (i in 1:(config$nlatst + 1)) {
     m_age[,, i] <- t(m[, i] * agedist_abroad)
   }
   lat_init_abroad_age <- round_preserve(outer(
@@ -629,7 +637,7 @@ simulate_diagnoses <- function(
   epi_uk <- epi_mat(
     Q_l,
     D_l,
-    infs_age,
+    infs_uk_age,
     lat_init_uk_age,
     config
   )
@@ -643,7 +651,7 @@ simulate_diagnoses <- function(
   epi_abroad <- epi_mat(
     Q_l,
     D_l,
-    m_age,
+    m_age[,, 1:config$nlatst],
     lat_init_abroad_age,
     config
   )
@@ -659,11 +667,12 @@ simulate_diagnoses <- function(
     "epi_abroad" = epi_abroad,
     "omega" = omega,
     "infs" = infs,
+    "infs_age" = infs_age,
     "m" = m,
+    "m_age" = m_age,
     "mu" = mu,
     "d_probs" = d_probs,
     "ratio_abroad_uk" = ratio_abroad_uk,
-    "config" = config,
     "lat_init_uk" = lat_init_uk,
     "lat_init_uk_abroad" = lat_init_uk_abroad,
     "lat_init_abroad" = lat_init_abroad,
@@ -768,10 +777,7 @@ simulate_diagnoses <- function(
 
   # Age distribution for prior diagnoses from abroad (ABROAD), by quarter
   ABROAD <- m[, config$ndiagst]
-  ABROAD_age <- matrix(0, nrow = config$nquar, ncol = config$nage)
-  for (t in 1:config$nquar) {
-    ABROAD_age[t, ] <- round_preserve(agedist_abroad[t, ] * ABROAD[t])
-  }
+  ABROAD_age <- t(m_age[,, config$ndiagst])
 
   # Make stan data list
   stan_data <- list(

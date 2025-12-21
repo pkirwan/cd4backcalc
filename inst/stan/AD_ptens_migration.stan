@@ -24,7 +24,7 @@ data {
   
   // Infection spline (tensor product, as in AD_ptens)
   int<lower=1> npars_inf;
-  matrix[nquar * nage, npars_inf] X;
+  matrix[nquar * nage, npars_inf] X_inf;
   matrix[npars_inf - 1, 2 * npars_inf - 2] S1;
   
   // Time-varying diagnosis splines (as in AI_spl_migration), plus age-group offsets
@@ -70,8 +70,8 @@ transformed data {
 }
 parameters {
   // Infection parameters (tensor product)
-  vector[npars_inf] beta;
-  vector<lower=0>[2] sigma;
+  vector[npars_inf] beta_inf;
+  vector<lower=0>[2] sigma_inf;
   
   // Migration process
   vector[npars_mig] beta_mig;
@@ -116,14 +116,15 @@ parameters {
 }
 transformed parameters {
   // Infection intensity by (t, a)
-  vector<lower=0>[nquar * nage] H = exp(X * beta);
+  vector[nquar * nage] lambda = X_inf * beta_inf;
+  vector<lower=0>[nquar * nage] h = exp(lambda);
   
   // Tensor product prior precision
-  vector<lower=0>[2] lambda = inv(square(sigma));
+  vector<lower=0>[2] tau = inv(square(sigma_inf));
   matrix[npars_inf - 1, npars_inf - 1] K1_inv;
-  K1_inv = S1[1 : (npars_inf - 1), 1 : (npars_inf - 1)] * lambda[1]
+  K1_inv = S1[1 : (npars_inf - 1), 1 : (npars_inf - 1)] * tau[1]
            + S1[1 : (npars_inf - 1), npars_inf : (2 * npars_inf - 2)]
-             * lambda[2];
+             * tau[2];
   
   // Migration process
   real<lower=0> sigma_mig = exp(log_sigma_mig);
@@ -300,7 +301,7 @@ transformed parameters {
         }
         
         // Inflows at entry time t0 and age a0
-        real inflow_native = H[(a0 - 1) * nquar + t0];
+        real inflow_native = h[(a0 - 1) * nquar + t0];
         
         // For migrants: UK-acquired inflow uses same age/time infection surface, scaled by p[t0]
         real inflow_mig_uk = inflow_native * p[t0];
@@ -402,9 +403,9 @@ transformed parameters {
 }
 model {
   // Priors for infection surface
-  sigma ~ student_t(4, 0, 200);
-  beta[1] ~ normal(0, 30);
-  beta[2 : npars_inf] ~ multi_normal_prec(zero_vec, K1_inv);
+  sigma_inf ~ student_t(4, 0, 200);
+  beta_inf[1] ~ normal(0, 30);
+  beta_inf[2 : npars_inf] ~ multi_normal_prec(zero_vec, K1_inv);
   
   // Migration priors
   beta_mig[1] ~ normal(4, 1);

@@ -21,70 +21,82 @@ postproc_ad <- function(
   ## Useful constants
   config <- stan_data$config
 
-  ## nt is the the number of period considered
-  ## i.e. nquar if model quarterly
-  ## or nyr if model yearly
-  ## is.null allows distinction between quarter and years
-  nt <- stan_data$nquar
+  nquar <- stan_data$nquar
+  if (stan_data$nquar %% 4 != 0) {
+    stop("Number of quarters must be divisible by 4")
+  }
   nage <- stan_data$nage
+
+  # Define previous states for prevalence calculations
+  prev_states <- c("all", 1:4)
+  if (config$rita) {
+    prev_states <- c(prev_states, 5:7)
+  }
+
+  # Define diagnosis states
+  diag_states <- list(
+    `CD4>=500` = 1,
+    `CD4 350-499` = 2,
+    `CD4 200-349` = 3,
+    `CD4<200` = 4
+  )
+  if (config$rita) {
+    diag_states <- list(
+      `Recently acquired` = 1,
+      `CD4>=500` = 2,
+      `CD4 350-499` = 3,
+      `CD4 200-349` = 4,
+      `CD4<200` = 5
+    )
+  }
+
+  ## Define age bands
+  age_bands <- list(
+    all = c(15, 66),
+    `1524` = c(15, 24),
+    `2534` = c(25, 34),
+    `3544` = c(35, 44),
+    `45` = c(45, 66)
+  )
+
+  # define quartiles
+  q_levels <- c("2.5%", "50%", "mean", "97.5%")
 
   ### To store indices of various parameters
   ind_list <- list()
-
-  ### Specifications
-  # out$data <- 1 # tentatively set data.rm <- 0
-  out$nt <- nt
-  # out$data.id <- data.id
 
   ### Fit summaries
   fit.mat <- as.matrix(fit)
   fit.summ <- rstan::summary(fit)[[1]]
 
   ### Flags for the model considered
-  ## Is this quarterly? Yearly?
-  ## AgeDx Probs? or not
-  quar.flag <- ifelse(is.null(stan_data$nquar) == FALSE, TRUE, FALSE)
   ageprobs.flag <- ifelse(
-    length(grep("^d\\[", colnames(fit.mat))) == nt * 4,
+    length(grep("^d\\[", colnames(fit.mat))) == nquar * 4,
     FALSE,
     TRUE
   )
   ageprobs.spl.flag <- ifelse(
-    length(grep("^d\\[", colnames(fit.mat))) == nt * 4 * nage,
+    length(grep("^d\\[", colnames(fit.mat))) == nquar * 4 * nage,
     TRUE,
     FALSE
   )
-  delta.flag <- ifelse(
-    length(grep("delta1", colnames(fit.mat))) > 0,
+  urep.flag <- ifelse(
+    ("under_rep" %in% colnames(fit.mat)) == TRUE,
     TRUE,
     FALSE
   )
-  urep.flag <- ifelse(("under_rep" %in% colnames(fit.mat)) == TRUE, TRUE, FALSE)
 
-  out$quar.flag <- quar.flag
-  out$ageprobs.flag <- ageprobs.flag
-  out$ageprobs.spl.flag <- ageprobs.spl.flag
-  out$urep.flag <- urep.flag
-
-  ### General information
-  ## Lack of convergence
+  ## Lack of convergence and sampling diagnostics
   out$conv.chk <- length(fit.summ[, 10][fit.summ[, 10] > 1.05]) == 0
-
-  ## Divergent stuff
   sampler.params <- rstan::get_sampler_params(fit, inc_warmup = FALSE)
   out$n.divg <- sum(sapply(sampler.params, function(x) x[, 5]))
-
-  ## Time taken
   out$time <- max(apply(rstan::get_elapsed_time(fit), 1, sum))
 
   ## Infections (yearly)
   ## Splines - beta: spline pars, gamma = X*beta
-  ## infs matrix with log-infs for every simulation
-  ## has same structure for GP and splines
-
-  beta.ind <- grep("beta", colnames(fit.mat))
-  lambda.ind <- grep("lambda", colnames(fit.mat))
-  x <- stan_data$X
+  beta.ind <- grep("beta_inf", colnames(fit.mat))
+  tau.ind <- grep("tau", colnames(fit.mat))
+  x <- stan_data$X_inf
 
   beta_draws <- fit.mat[, beta.ind, drop = FALSE]
   if (!is.matrix(x)) {
@@ -92,16 +104,14 @@ postproc_ad <- function(
   }
   infs <- beta_draws %*% t(x)
 
-  if (length(lambda.ind) > 1) {
-    lambda <- apply(fit.mat[, lambda.ind], 2, get_quantiles)
+  if (length(tau.ind) > 1) {
+    tau <- apply(fit.mat[, tau.ind], 2, get_quantiles)
   } else {
-    ## if length==1 not a matrix thus does not work
-    lambda <- get_quantiles(fit.mat[, lambda.ind])
+    tau <- get_quantiles(fit.mat[, tau.ind])
   }
 
-  ### Posterior mean of smoothing parameter of interest
-  out$lambda <- lambda
-  ### Posterior mean of alpha and sigma coefficients of interest
+  ### Posterior means of parameter of interest
+  out$tau <- tau
   alpha.ind <- grep("alpha", colnames(fit.mat))
   sigma2.ind <- grep("vardelta", colnames(fit.mat))
 
@@ -115,185 +125,133 @@ postproc_ad <- function(
   ## Posterior mean for all time and ages
   out$infs.all <- apply(infs, 2, get_quantiles)
 
-  ## Define age bands
-  age_bands <- list(
-    all = c(15, 66),
-    `1524` = c(15, 24),
-    `2534` = c(25, 34),
-    `3544` = c(35, 44),
-    `45` = c(45, 66)
+  ### Extract estimates
+  # All ages
+  out$incidence <- infs.fct.qt(
+    infs,
+    age.st = age_bands$all[1],
+    age.end = age_bands$all[2],
+    nquar,
+    nage = nage,
+    start_yr = start_yr
   )
 
-  band_suffix <- function(bn) {
-    if (identical(bn, "all")) "" else paste0(".", bn)
-  }
+  out$annual_incidence <- infs.fct(
+    infs,
+    age.st = age_bands$all[1],
+    age.end = age_bands$all[2],
+    nquar,
+    type = "time",
+    nage = nage,
+    start_yr = start_yr
+  )
 
-  for (bn in names(age_bands)) {
-    ages <- age_bands[[bn]]
-    suf <- band_suffix(bn)
-
-    out[[paste0("infs", suf)]] <- infs.fct(
+  # extract estimates by age band
+  out$incidence_age <- purrr::imap(age_bands, \(age, bn) {
+    infs.fct.qt(
       infs,
-      ages[1],
-      ages[2],
-      nt,
+      age[1],
+      age[2],
+      nquar,
+      nage = nage,
+      start_yr = start_yr
+    ) |>
+      dplyr::mutate(age_band = factor(bn, levels = names(age_bands)))
+  }) |>
+    purrr::list_rbind()
+
+  out$annual_incidence <- purrr::imap(age_bands, \(age, bn) {
+    infs.fct(
+      infs,
+      age[1],
+      age[2],
+      nquar,
       type = "time",
-      qt.flag = quar.flag,
-      nage = nage
-    )
-
-    out[[paste0("infs.qt", suf)]] <- infs.fct.qt(
-      infs,
-      ages[1],
-      ages[2],
-      nt,
-      qt.flag = quar.flag,
-      nage = nage
-    )
-
-    out[[paste0("peak", suf)]] <- peak.fct(
-      infs,
-      ages[1],
-      ages[2],
-      nt,
-      last.yr = 10,
-      qt.flag = quar.flag,
-      nage = nage
-    )
-
-    for (last_yr in c(2, 3)) {
-      out[[paste0("trend.", last_yr, suf)]] <- trend.fct(
-        infs,
-        ages[1],
-        ages[2],
-        nt,
-        last.yr = last_yr,
-        qt.flag = quar.flag,
-        nage = nage
-      )
-    }
-  }
+      nage = nage,
+      start_yr = start_yr
+    ) |>
+      dplyr::mutate(age_band = factor(bn, levels = names(age_bands)))
+  }) |>
+    purrr::list_rbind()
 
   ### Diagnoses probabilities
-  if (!ageprobs.flag) {
-    ind_list$d1.ind <- grep("^d\\[1,", colnames(fit.mat))
-    ind_list$d2.ind <- grep("^d\\[2,", colnames(fit.mat))
-    ind_list$d3.ind <- grep("^d\\[3,", colnames(fit.mat))
-    ind_list$d4.ind <- grep("^d\\[4,", colnames(fit.mat))
 
-    out$d1.q <- apply(fit.mat[, ind_list$d1.ind], 2, get_quantiles)
-    out$d2.q <- apply(fit.mat[, ind_list$d2.ind], 2, get_quantiles)
-    out$d3.q <- apply(fit.mat[, ind_list$d3.ind], 2, get_quantiles)
-    out$d4.q <- apply(fit.mat[, ind_list$d4.ind], 2, get_quantiles)
-  } else {
-    if (!ageprobs.spl.flag) {
-      ind_list$d1.ind.y <- grep("^d\\[1,1", colnames(fit.mat))
-      ind_list$d2.ind.y <- grep("^d\\[1,2", colnames(fit.mat))
-      ind_list$d3.ind.y <- grep("^d\\[1,3", colnames(fit.mat))
-      ind_list$d4.ind.y <- grep("^d\\[1,4", colnames(fit.mat))
-      ind_list$d1.ind.my <- grep("^d\\[2,1", colnames(fit.mat))
-      ind_list$d2.ind.my <- grep("^d\\[2,2", colnames(fit.mat))
-      ind_list$d3.ind.my <- grep("^d\\[2,3", colnames(fit.mat))
-      ind_list$d4.ind.my <- grep("^d\\[2,4", colnames(fit.mat))
-      ind_list$d1.ind.mo <- grep("^d\\[3,1", colnames(fit.mat))
-      ind_list$d2.ind.mo <- grep("^d\\[3,2", colnames(fit.mat))
-      ind_list$d3.ind.mo <- grep("^d\\[3,3", colnames(fit.mat))
-      ind_list$d4.ind.mo <- grep("^d\\[3,4", colnames(fit.mat))
-      ind_list$d1.ind.o <- grep("^d\\[4,1", colnames(fit.mat))
-      ind_list$d2.ind.o <- grep("^d\\[4,2", colnames(fit.mat))
-      ind_list$d3.ind.o <- grep("^d\\[4,3", colnames(fit.mat))
-      ind_list$d4.ind.o <- grep("^d\\[4,4", colnames(fit.mat))
-
-      out$d1.q.y <- apply(fit.mat[, ind_list$d1.ind.y], 2, get_quantiles)
-      out$d2.q.y <- apply(fit.mat[, ind_list$d2.ind.y], 2, get_quantiles)
-      out$d3.q.y <- apply(fit.mat[, ind_list$d3.ind.y], 2, get_quantiles)
-      out$d4.q.y <- apply(fit.mat[, ind_list$d4.ind.y], 2, get_quantiles)
-      out$d1.q.my <- apply(fit.mat[, ind_list$d1.ind.my], 2, get_quantiles)
-      out$d2.q.my <- apply(fit.mat[, ind_list$d2.ind.my], 2, get_quantiles)
-      out$d3.q.my <- apply(fit.mat[, ind_list$d3.ind.my], 2, get_quantiles)
-      out$d4.q.my <- apply(fit.mat[, ind_list$d4.ind.my], 2, get_quantiles)
-      out$d1.q.mo <- apply(fit.mat[, ind_list$d1.ind.mo], 2, get_quantiles)
-      out$d2.q.mo <- apply(fit.mat[, ind_list$d2.ind.mo], 2, get_quantiles)
-      out$d3.q.mo <- apply(fit.mat[, ind_list$d3.ind.mo], 2, get_quantiles)
-      out$d4.q.mo <- apply(fit.mat[, ind_list$d4.ind.mo], 2, get_quantiles)
-      out$d1.q.o <- apply(fit.mat[, ind_list$d1.ind.o], 2, get_quantiles)
-      out$d2.q.o <- apply(fit.mat[, ind_list$d2.ind.o], 2, get_quantiles)
-      out$d3.q.o <- apply(fit.mat[, ind_list$d3.ind.o], 2, get_quantiles)
-      out$d4.q.o <- apply(fit.mat[, ind_list$d4.ind.o], 2, get_quantiles)
-
-      if (config$rita) {
-        ind_list$d5.ind.y <- grep("^d\\[1,5", colnames(fit.mat))
-        ind_list$d5.ind.my <- grep("^d\\[2,5", colnames(fit.mat))
-        ind_list$d5.ind.mo <- grep("^d\\[3,5", colnames(fit.mat))
-        ind_list$d5.ind.o <- grep("^d\\[4,5", colnames(fit.mat))
-
-        out$d5.q.y <- apply(fit.mat[, ind_list$d5.ind.y], 2, get_quantiles)
-        out$d5.q.my <- apply(fit.mat[, ind_list$d5.ind.my], 2, get_quantiles)
-        out$d5.q.mo <- apply(fit.mat[, ind_list$d5.ind.mo], 2, get_quantiles)
-        out$d5.q.o <- apply(fit.mat[, ind_list$d5.ind.o], 2, get_quantiles)
-      }
-    } else {
-      ind_list$d1.ind <- grep("^d\\[1,", colnames(fit.mat))
-      ind_list$d2.ind <- grep("^d\\[2,", colnames(fit.mat))
-      ind_list$d3.ind <- grep("^d\\[3,", colnames(fit.mat))
-      ind_list$d4.ind <- grep("^d\\[4,", colnames(fit.mat))
-      d1.q <- apply(fit.mat[, ind_list$d1.ind], 2, get_quantiles)
-      d2.q <- apply(fit.mat[, ind_list$d2.ind], 2, get_quantiles)
-      d3.q <- apply(fit.mat[, ind_list$d3.ind], 2, get_quantiles)
-      d4.q <- apply(fit.mat[, ind_list$d4.ind], 2, get_quantiles)
-      out$d1.q <- array(d1.q, dim = c(4, nt, nage)) ## array (c(2.5,50,mean,97.5),t,a)
-      out$d2.q <- array(d2.q, dim = c(4, nt, nage)) ## array (c(2.5,50,mean,97.5),t,a)
-      out$d3.q <- array(d3.q, dim = c(4, nt, nage)) ## array (c(2.5,50,mean,97.5),t,a)
-      out$d4.q <- array(d4.q, dim = c(4, nt, nage)) ## array (c(2.5,50,mean,97.5),t,a)
-    }
+  ### Indices for diagnosis parameters by age band
+  ind_list$d1.ind.1524 <- grep("^d\\[1,1", colnames(fit.mat))
+  ind_list$d2.ind.1524 <- grep("^d\\[1,2", colnames(fit.mat))
+  ind_list$d3.ind.1524 <- grep("^d\\[1,3", colnames(fit.mat))
+  ind_list$d4.ind.1524 <- grep("^d\\[1,4", colnames(fit.mat))
+  ind_list$d1.ind.2534 <- grep("^d\\[2,1", colnames(fit.mat))
+  ind_list$d2.ind.2534 <- grep("^d\\[2,2", colnames(fit.mat))
+  ind_list$d3.ind.2534 <- grep("^d\\[2,3", colnames(fit.mat))
+  ind_list$d4.ind.2534 <- grep("^d\\[2,4", colnames(fit.mat))
+  ind_list$d1.ind.3544 <- grep("^d\\[3,1", colnames(fit.mat))
+  ind_list$d2.ind.3544 <- grep("^d\\[3,2", colnames(fit.mat))
+  ind_list$d3.ind.3544 <- grep("^d\\[3,3", colnames(fit.mat))
+  ind_list$d4.ind.3544 <- grep("^d\\[3,4", colnames(fit.mat))
+  ind_list$d1.ind.45 <- grep("^d\\[4,1", colnames(fit.mat))
+  ind_list$d2.ind.45 <- grep("^d\\[4,2", colnames(fit.mat))
+  ind_list$d3.ind.45 <- grep("^d\\[4,3", colnames(fit.mat))
+  ind_list$d4.ind.45 <- grep("^d\\[4,4", colnames(fit.mat))
+  if (config$rita) {
+    ind_list$d5.ind.1524 <- grep("^d\\[1,5", colnames(fit.mat))
+    ind_list$d5.ind.2534 <- grep("^d\\[2,5", colnames(fit.mat))
+    ind_list$d5.ind.3544 <- grep("^d\\[3,5", colnames(fit.mat))
+    ind_list$d5.ind.45 <- grep("^d\\[4,5", colnames(fit.mat))
   }
 
-  if (delta.flag) {
-    delta1.ind <- grep("delta1", colnames(fit.mat))
-    delta2.ind <- grep("delta2", colnames(fit.mat))
-    delta3.ind <- grep("delta3", colnames(fit.mat))
-    delta4.ind <- grep("delta4", colnames(fit.mat))
+  # extract diagnosis probabilities by age band
+  diag_grid <- tidyr::crossing(
+    age_band = names(age_bands)[2:5],
+    state = 1:length(diag_states)
+  )
 
-    out$delta1.q <- apply(fit.mat[, delta1.ind], 2, get_quantiles)
-    out$delta2.q <- apply(fit.mat[, delta2.ind], 2, get_quantiles)
-    out$delta3.q <- apply(fit.mat[, delta3.ind], 2, get_quantiles)
-    out$delta4.q <- apply(fit.mat[, delta4.ind], 2, get_quantiles)
+  out$diag_prob_age <- purrr::pmap(
+    list(age_band = diag_grid$age_band, state = diag_grid$state),
+    function(age_band, state) {
+      idx_name <- sprintf("d%i.ind.%s", state, age_band)
+      idx <- ind_list[[idx_name]]
 
-    if (config$rita) {
-      delta5.ind <- grep("delta5", colnames(fit.mat))
-      out$delta5.q <- apply(fit.mat[, delta5.ind], 2, get_quantiles)
+      q <- apply(fit.mat[, idx, drop = FALSE], 2, get_quantiles)
+
+      tibble::as_tibble(t(q)) |>
+        dplyr::mutate(
+          age_band = factor(age_band, levels = names(age_bands)),
+          strata = factor(
+            state,
+            levels = 1:length(diag_states),
+            labels = names(diag_states)
+          ),
+          year = seq(
+            from = start_yr,
+            length.out = nquar,
+            by = 0.25
+          )
+        )
     }
-  } else {
-    # deltas are the same for every age group so only derive once
-    out$delta1.q <- apply(
-      log((fit.mat[, ind_list$d1.ind.y]) / (1 - fit.mat[, ind_list$d1.ind.y])) -
-        fit.mat[, alpha.ind][, 1],
-      2,
-      get_quantiles
+  ) |>
+    purrr::list_rbind() |>
+    tidyr::pivot_longer(
+      cols = dplyr::all_of(q_levels),
+      names_to = "quartile",
+      values_to = "value"
     )
-    out$delta2.q <- apply(
-      log((fit.mat[, ind_list$d2.ind.y]) / (1 - fit.mat[, ind_list$d2.ind.y])) -
-        fit.mat[, alpha.ind][, 2],
-      2,
-      get_quantiles
-    )
-    out$delta3.q <- apply(
-      log((fit.mat[, ind_list$d3.ind.y]) / (1 - fit.mat[, ind_list$d3.ind.y])) -
-        fit.mat[, alpha.ind][, 3],
-      2,
-      get_quantiles
-    )
-    out$delta4.q <- apply(
-      log((fit.mat[, ind_list$d4.ind.y]) / (1 - fit.mat[, ind_list$d4.ind.y])) -
-        fit.mat[, alpha.ind][, 4],
-      2,
-      get_quantiles
-    )
-  }
 
-  ## Need to set environment of d.mat.iter
-  ## to be global environment (otherwise too many arguments to take care of ...)
-  #  environment(d.mat.iter) <- environment()
+  ### Delta parameters (age progression rates)
+  delta1.ind <- grep("delta_1", colnames(fit.mat))
+  delta2.ind <- grep("delta_2", colnames(fit.mat))
+  delta3.ind <- grep("delta_3", colnames(fit.mat))
+  delta4.ind <- grep("delta_4", colnames(fit.mat))
+
+  out$delta1.q <- apply(fit.mat[, delta1.ind], 2, get_quantiles)
+  out$delta2.q <- apply(fit.mat[, delta2.ind], 2, get_quantiles)
+  out$delta3.q <- apply(fit.mat[, delta3.ind], 2, get_quantiles)
+  out$delta4.q <- apply(fit.mat[, delta4.ind], 2, get_quantiles)
+
+  if (config$rita) {
+    delta5.ind <- grep("delta_5", colnames(fit.mat))
+    out$delta5.q <- apply(fit.mat[, delta5.ind], 2, get_quantiles)
+  }
 
   ## GOODNESS OF FIT
   # Choose the correct Cpp functions
@@ -313,6 +271,7 @@ postproc_ad <- function(
     ncol = nage
   )
 
+  # Expected diagnoses
   exp.diags <- lapply(1:nrow(fit.mat), function(i) {
     g.fct(
       exp(infs[i, ]),
@@ -322,16 +281,18 @@ postproc_ad <- function(
         age.dx.flag = ageprobs.flag,
         age.dx.spl.flag = ageprobs.spl.flag,
         rita.flag = config$rita,
-        nt = nt,
+        nt = nquar,
         nage = nage,
         ind_list = ind_list
       ),
       q_mat,
       prev_mat,
-      nt,
+      nquar,
       nage
     )
   })
+
+  # Expected prevalence
   exp.prev <- lapply(1:nrow(fit.mat), function(i) {
     p.fct(
       exp(infs[i, ]),
@@ -341,13 +302,13 @@ postproc_ad <- function(
         age.dx.flag = ageprobs.flag,
         age.dx.spl.flag = ageprobs.spl.flag,
         rita.flag = config$rita,
-        nt = nt,
+        nt = nquar,
         nage = nage,
         ind_list = ind_list
       ),
       q_mat,
       prev_mat,
-      nt,
+      nquar,
       nage
     )
   })
@@ -356,8 +317,7 @@ postproc_ad <- function(
   exp.diags.arr <- simplify2array(exp.diags)
   exp.prev.arr <- simplify2array(exp.prev)
 
-  ### Prev.mat
-
+  ### Prev.mat for specific years
   if (config$rita) {
     prev.mat.2011 <- rbind(
       apply(exp.prev.arr[1, , 1, ], 1, get_quantiles)[2, ],
@@ -392,99 +352,31 @@ postproc_ad <- function(
 
   ### Expected number of CD4
   nCD4 <- apply(stan_data$CD4_age, c(1, 2), sum)
-  if (config$rita) {
-    CD4.st1 <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
-      nCD4 *
-        (exp.diags.arr[,, 1, i] /
-          (exp.diags.arr[,, 1, i] +
-            exp.diags.arr[,, 2, i] +
-            exp.diags.arr[,, 3, i] +
-            exp.diags.arr[,, 4, i] +
-            exp.diags.arr[,, 5, i]))
-    }))
-    CD4.st2 <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
-      nCD4 *
-        (exp.diags.arr[,, 2, i] /
-          (exp.diags.arr[,, 1, i] +
-            exp.diags.arr[,, 2, i] +
-            exp.diags.arr[,, 3, i] +
-            exp.diags.arr[,, 4, i] +
-            exp.diags.arr[,, 5, i]))
-    }))
-    CD4.st3 <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
-      nCD4 *
-        (exp.diags.arr[,, 3, i] /
-          (exp.diags.arr[,, 1, i] +
-            exp.diags.arr[,, 2, i] +
-            exp.diags.arr[,, 3, i] +
-            exp.diags.arr[,, 4, i] +
-            exp.diags.arr[,, 5, i]))
-    }))
-    CD4.st4 <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
-      nCD4 *
-        (exp.diags.arr[,, 4, i] /
-          (exp.diags.arr[,, 1, i] +
-            exp.diags.arr[,, 2, i] +
-            exp.diags.arr[,, 3, i] +
-            exp.diags.arr[,, 4, i] +
-            exp.diags.arr[,, 5, i]))
-    }))
-    CD4.st5 <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
-      nCD4 *
-        (exp.diags.arr[,, 5, i] /
-          (exp.diags.arr[,, 1, i] +
-            exp.diags.arr[,, 2, i] +
-            exp.diags.arr[,, 3, i] +
-            exp.diags.arr[,, 4, i] +
-            exp.diags.arr[,, 5, i]))
-    }))
-  } else {
-    CD4.st1 <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
-      nCD4 *
-        (exp.diags.arr[,, 1, i] /
-          (exp.diags.arr[,, 1, i] +
-            exp.diags.arr[,, 2, i] +
-            exp.diags.arr[,, 3, i] +
-            exp.diags.arr[,, 4, i]))
-    }))
-    CD4.st2 <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
-      nCD4 *
-        (exp.diags.arr[,, 2, i] /
-          (exp.diags.arr[,, 1, i] +
-            exp.diags.arr[,, 2, i] +
-            exp.diags.arr[,, 3, i] +
-            exp.diags.arr[,, 4, i]))
-    }))
-    CD4.st3 <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
-      nCD4 *
-        (exp.diags.arr[,, 3, i] /
-          (exp.diags.arr[,, 1, i] +
-            exp.diags.arr[,, 2, i] +
-            exp.diags.arr[,, 3, i] +
-            exp.diags.arr[,, 4, i]))
-    }))
-    CD4.st4 <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
-      nCD4 *
-        (exp.diags.arr[,, 4, i] /
-          (exp.diags.arr[,, 1, i] +
-            exp.diags.arr[,, 2, i] +
-            exp.diags.arr[,, 3, i] +
-            exp.diags.arr[,, 4, i]))
-    }))
-  }
 
-  ### Remember that because of quarterly
-  ### dynamics no CD4 dx can occur
-  ### at times 5,9,13,... for age 1
-  ### Thus replace all na by 0
-  if (quar.flag) {
-    CD4.st1[which(is.na(CD4.st1) == TRUE)] <- 0
-    CD4.st2[which(is.na(CD4.st2) == TRUE)] <- 0
-    CD4.st3[which(is.na(CD4.st3) == TRUE)] <- 0
-    CD4.st4[which(is.na(CD4.st4) == TRUE)] <- 0
-    if (config$rita) {
-      CD4.st5[which(is.na(CD4.st5) == TRUE)] <- 0
-    }
+  # denom dims: (nt, nage, nsim)
+  cd4_denom <- apply(
+    exp.diags.arr[,, seq_len(config$ndiagst - 1), , drop = FALSE],
+    c(1, 2, 4),
+    sum
+  )
+
+  # stage proportions p(stage | diagnosed), dims: (nt, nage, stage, nsim)
+  cd4_num <- exp.diags.arr[,, seq_len(config$ndiagst - 1), , drop = FALSE]
+  cd4_p_all <- sweep(cd4_num, MARGIN = c(1, 2, 4), STATS = cd4_denom, FUN = "/")
+  cd4_p_all[!is.finite(cd4_p_all)] <- 0
+
+  # expected CD4 counts by stage
+  CD4_all <- sweep(cd4_p_all, MARGIN = c(1, 2), STATS = nCD4, FUN = "*")
+
+  # extract stages into the original variables expected later
+  CD4.st1 <- CD4_all[,, 1, ]
+  CD4.st2 <- CD4_all[,, 2, ]
+  CD4.st3 <- CD4_all[,, 3, ]
+  CD4.st4 <- CD4_all[,, 4, ]
+  if (isTRUE(config$rita)) {
+    CD4.st5 <- CD4_all[,, 5, ]
+  } else {
+    CD4.st5 <- NULL
   }
 
   ### Expected HIV diagnoses
@@ -511,19 +403,13 @@ postproc_ad <- function(
         urep.vec[i],
         exp.diags.arr[,, 5, i],
         urep.flag = urep.flag,
-        qt.flag = quar.flag,
-        nt = nt
+        nt = nquar
       )
     }))
   } else if (config$rita) {
     AIDS <- exp.diags.arr[,, 6, ]
   } else {
     AIDS <- exp.diags.arr[,, 5, ]
-  }
-
-  ### Storing summary statistics
-  if (!config$rita) {
-    CD4.st5 <- NULL
   }
 
   gof_types <- list(
@@ -542,13 +428,12 @@ postproc_ad <- function(
     type_arg <- gof_types[[base_name]]
 
     for (bn in names(age_bands)) {
-      ages <- age_bands[[bn]]
-      suf <- band_suffix(bn)
+      age <- age_bands[[bn]]
 
-      out[[paste0(base_name, suf)]] <- gof.fct(
+      out[[paste0("gof.", base_name, bn)]] <- gof.fct(
         type_arg,
-        ages[1],
-        ages[2],
+        age[1],
+        age[2],
         HIV,
         AIDS,
         CD4.st1,
@@ -556,43 +441,89 @@ postproc_ad <- function(
         CD4.st3,
         CD4.st4,
         CD4.st5,
-        nt,
-        quar.flag
+        nquar
       )
     }
   }
 
   ### Prevalence
-  prev_states <- list(
-    prev = "all",
-    `prev.st1` = 1,
-    `prev.st2` = 2,
-    `prev.st3` = 3,
-    `prev.st4` = 4
+
+  # undiag_prev overall
+  out$undiag_prev <- prev.fct(
+    exp.prev.arr,
+    "all",
+    age.st = age_bands$all[1],
+    age.end = age_bands$all[2],
+    config$rita,
+    nquar,
+    start_yr
   )
-  if (config$rita) {
-    prev_states <- c(
-      prev_states,
-      list(`prev.st5` = 5, `prev.st6` = 6, `prev.st7` = 7)
-    )
-  }
 
-  for (base_name in names(prev_states)) {
-    state <- prev_states[[base_name]]
+  # undiag_prev by state
+  out$undiag_prev_state <- purrr::map(prev_states, \(state) {
+    prev.fct(
+      exp.prev.arr,
+      state,
+      age.st = age_bands$all[1],
+      age.end = age_bands$all[2],
+      config$rita,
+      nquar,
+      start_yr
+    ) |>
+      dplyr::mutate(
+        strata = factor(
+          as.character(state),
+          levels = as.character(prev_states)
+        )
+      )
+  }) |>
+    purrr::list_rbind()
 
-    for (bn in names(age_bands)) {
-      ages <- age_bands[[bn]]
-      suf <- band_suffix(bn)
+  # undiag_prev by age
+  out$undiag_prev_age <- purrr::imap(age_bands, \(age, bn) {
+    prev.fct(
+      exp.prev.arr,
+      "all",
+      age[1],
+      age[2],
+      config$rita,
+      nquar,
+      start_yr
+    ) |>
+      dplyr::mutate(age_band = factor(bn, levels = names(age_bands)))
+  }) |>
+    purrr::list_rbind()
 
-      out[[paste0(base_name, suf)]] <- prev.fct(
+  # undiag_prev by age and state
+  # build all combinations and map once
+  prev_grid <- tidyr::expand_grid(
+    state = prev_states,
+    bn = names(age_bands)
+  )
+
+  out$undiag_prev_age_state <- purrr::pmap(
+    list(state = prev_grid$state, bn = prev_grid$bn),
+    \(state, bn) {
+      age <- age_bands[[bn]]
+      prev.fct(
         exp.prev.arr,
         state,
-        ages[1],
-        ages[2],
-        config$rita
-      )
+        age[1],
+        age[2],
+        config$rita,
+        nquar,
+        start_yr
+      ) |>
+        dplyr::mutate(
+          age_band = factor(bn, levels = names(age_bands)),
+          strata = factor(
+            as.character(state),
+            levels = as.character(prev_states)
+          )
+        )
     }
-  }
+  ) |>
+    purrr::list_rbind()
 
   ### Getting data posterior predictive distributions
   N.Poiss <- 300
@@ -607,86 +538,27 @@ postproc_ad <- function(
     stats::rpois(N.Poiss, lambda = x)
   })
 
-  if (config$rita) {
-    p1 <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
-      (exp.diags.arr[,, 1, i] /
-        (exp.diags.arr[,, 1, i] +
-          exp.diags.arr[,, 2, i] +
-          exp.diags.arr[,, 3, i] +
-          exp.diags.arr[,, 4, i] +
-          exp.diags.arr[,, 5, i]))
-    }))
-    p2 <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
-      (exp.diags.arr[,, 2, i] /
-        (exp.diags.arr[,, 1, i] +
-          exp.diags.arr[,, 2, i] +
-          exp.diags.arr[,, 3, i] +
-          exp.diags.arr[,, 4, i] +
-          exp.diags.arr[,, 5, i]))
-    }))
-    p3 <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
-      (exp.diags.arr[,, 3, i] /
-        (exp.diags.arr[,, 1, i] +
-          exp.diags.arr[,, 2, i] +
-          exp.diags.arr[,, 3, i] +
-          exp.diags.arr[,, 4, i] +
-          exp.diags.arr[,, 5, i]))
-    }))
-    p4 <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
-      (exp.diags.arr[,, 4, i] /
-        (exp.diags.arr[,, 1, i] +
-          exp.diags.arr[,, 2, i] +
-          exp.diags.arr[,, 3, i] +
-          exp.diags.arr[,, 4, i] +
-          exp.diags.arr[,, 5, i]))
-    }))
-    p5 <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
-      (exp.diags.arr[,, 5, i] /
-        (exp.diags.arr[,, 1, i] +
-          exp.diags.arr[,, 2, i] +
-          exp.diags.arr[,, 3, i] +
-          exp.diags.arr[,, 4, i] +
-          exp.diags.arr[,, 5, i]))
-    }))
-  } else {
-    p1 <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
-      (exp.diags.arr[,, 1, i] /
-        (exp.diags.arr[,, 1, i] +
-          exp.diags.arr[,, 2, i] +
-          exp.diags.arr[,, 3, i] +
-          exp.diags.arr[,, 4, i]))
-    }))
-    p2 <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
-      (exp.diags.arr[,, 2, i] /
-        (exp.diags.arr[,, 1, i] +
-          exp.diags.arr[,, 2, i] +
-          exp.diags.arr[,, 3, i] +
-          exp.diags.arr[,, 4, i]))
-    }))
-    p3 <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
-      (exp.diags.arr[,, 3, i] /
-        (exp.diags.arr[,, 1, i] +
-          exp.diags.arr[,, 2, i] +
-          exp.diags.arr[,, 3, i] +
-          exp.diags.arr[,, 4, i]))
-    }))
-    p4 <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
-      (exp.diags.arr[,, 4, i] /
-        (exp.diags.arr[,, 1, i] +
-          exp.diags.arr[,, 2, i] +
-          exp.diags.arr[,, 3, i] +
-          exp.diags.arr[,, 4, i]))
-    }))
-  }
+  # Probability of diagnosis by stage
 
-  if (quar.flag) {
-    p1[which(is.na(p1) == TRUE)] <- 0
-    p2[which(is.na(p2) == TRUE)] <- 0
-    p3[which(is.na(p3) == TRUE)] <- 0
-    p4[which(is.na(p4) == TRUE)] <- 0
-    if (config$rita) {
-      p5[which(is.na(p5) == TRUE)] <- 0
-    }
+  # denom dims: (nt, nage, nsim)
+  denom <- apply(
+    exp.diags.arr[,, seq_len(config$ndiagst - 1), , drop = FALSE],
+    c(1, 2, 4),
+    sum
+  )
+
+  # p_all dims: (nt, nage, stage, nsim)
+  p_num <- exp.diags.arr[,, seq_len(config$ndiagst - 1), , drop = FALSE]
+  p_all <- sweep(p_num, MARGIN = c(1, 2, 4), STATS = denom, FUN = "/")
+  p_all[!is.finite(p_all)] <- 0
+
+  # extract each stage
+  p1 <- p_all[,, 1, ]
+  p2 <- p_all[,, 2, ]
+  p3 <- p_all[,, 3, ]
+  p4 <- p_all[,, 4, ]
+  if (isTRUE(config$rita)) {
+    p5 <- p_all[,, 5, ]
   }
 
   p1.m <- apply(p1, c(1, 2), mean)
@@ -698,15 +570,15 @@ postproc_ad <- function(
   }
 
   if (config$rita) {
-    CD4.Poiss <- array(0, dim = c(nt, nage, 5, N.Poiss))
+    CD4.Poiss <- array(0, dim = c(nquar, nage, 5, N.Poiss))
   } else {
-    CD4.Poiss <- array(0, dim = c(nt, nage, 4, N.Poiss))
+    CD4.Poiss <- array(0, dim = c(nquar, nage, 4, N.Poiss))
   }
 
-  if (quar.flag && config$rita) {
+  if (config$rita) {
     ### if quarterly there cannot be CD4 for a=1, at t=5, t=9,...
     ### as anyway nCD4[,1] = 0 then ignore and put 0
-    for (t in 1:nt) {
+    for (t in 1:nquar) {
       for (a in 2:nage) {
         CD4.Poiss[t, a, , ] <- stats::rmultinom(
           N.Poiss,
@@ -715,8 +587,8 @@ postproc_ad <- function(
         )
       }
     }
-  } else if (quar.flag) {
-    for (t in 1:nt) {
+  } else {
+    for (t in 1:nquar) {
       for (a in 2:nage) {
         CD4.Poiss[t, a, , ] <- stats::rmultinom(
           N.Poiss,
@@ -725,88 +597,128 @@ postproc_ad <- function(
         )
       }
     }
-  } else {
-    for (t in 1:nt) {
-      for (a in 1:nage) {
-        CD4.Poiss[t, a, , ] <- stats::rmultinom(
-          N.Poiss,
-          size = nCD4[t, a],
-          prob = c(p1.m[t, a], p2.m[t, a], p3.m[t, a], p4.m[t, a])
-        )
-      }
-    }
   }
 
-  age_idx <- lapply(age_bands, function(ages) {
-    .age_to_idx(ages[1], ages[2], nage = nage)
-  })
+  # Create grouping variable for annual sums
+  grp_year <- rep(seq_len(nquar / 4), each = 4)
 
-  # If quarterly model: "non-Quar" outputs are yearly aggregates; else identity
-  time_agg_year <- make_time_agg(quar.flag, nt)
-  time_agg_quar <- function(ts) ts
+  yrs_annual <- start_yr + seq_len(nquar / 4) - 1
+  yrs_quarterly <- start_yr + (seq_len(nquar) - 1) / 4
 
-  # --- HIV / AIDS Poisson summaries (yearly-or-quarterly aggregated) ---
-  for (bn in names(age_idx)) {
-    suf <- band_suffix(bn)
-    out[[paste0("HIV", suf, ".Poiss")]] <- summarise_poiss(
-      HIV.p,
-      age_idx[[bn]],
-      time_agg_year
+  # CD4 total over stages: dims (nt, nage, N.Poiss)
+  CD4.total <- apply(CD4.Poiss, c(1, 2, 4), sum)
+
+  out_template <- tibble::tibble(
+    age_band = factor(character(0), levels = names(age_bands)),
+    year = numeric(0),
+    quartile = factor(character(0), levels = q_levels),
+    value = numeric(0)
+  )
+  out$HIV_ann_age <- out_template
+  out$AIDS_ann_age <- out_template
+  out$CD4_ann_age <- out_template
+  out$diagnoses_ann_age <- out_template
+  out$HIV_age <- out_template
+  out$AIDS_age <- out_template
+  out$CD4_age <- out_template
+  out$diagnoses_age <- out_template
+
+  for (bn in names(age_bands)) {
+    age <- age_bands[[bn]]
+    age_range <- (age[1]:age[2]) - 14
+
+    # ---------- Annual HIV ----------
+    tmp <- apply(HIV.p[,, age_range, drop = FALSE], 1, function(m) {
+      as.numeric(rowsum(rowSums(m), grp_year, reorder = FALSE))
+    })
+
+    q <- apply(tmp, 1, get_quantiles)
+
+    out$HIV_ann_age <- tidy_bind(
+      out$HIV_ann_age,
+      tibble::as_tibble(t(q)),
+      bn,
+      yrs_annual
     )
-    out[[paste0("AIDS", suf, ".Poiss")]] <- summarise_poiss(
-      AIDS.p,
-      age_idx[[bn]],
-      time_agg_year
+
+    # ---------- Annual AIDS ----------
+    tmp <- apply(AIDS.p[,, age_range, drop = FALSE], 1, function(m) {
+      as.numeric(rowsum(rowSums(m), grp_year, reorder = FALSE))
+    })
+    q <- apply(tmp, 1, get_quantiles)
+    out$AIDS_ann_age <- tidy_bind(
+      out$AIDS_ann_age,
+      tibble::as_tibble(t(q)),
+      bn,
+      yrs_annual
+    )
+
+    # ---------- Annual CD4 (total) ----------
+    tmp <- apply(CD4.total[, age_range, , drop = FALSE], 3, function(m) {
+      as.numeric(rowsum(rowSums(m), grp_year, reorder = FALSE))
+    })
+    q <- apply(tmp, 1, get_quantiles)
+
+    out$CD4_ann_age <- tidy_bind(
+      out$CD4_ann_age,
+      tibble::as_tibble(t(q)),
+      bn,
+      yrs_annual
+    )
+
+    # ---------- Quarterly HIV ----------
+    tmp <- apply(HIV.p[,, age_range, drop = FALSE], 1, function(m) rowSums(m))
+    q <- apply(tmp, 1, get_quantiles)
+    tbl <- tibble::as_tibble(t(q))
+
+    out$HIV_age <- tidy_bind(
+      out$HIV_age,
+      tibble::as_tibble(t(q)),
+      bn,
+      yrs_quarterly
+    )
+
+    # ---------- Quarterly AIDS ----------
+    tmp <- apply(AIDS.p[,, age_range, drop = FALSE], 1, function(m) rowSums(m))
+    q <- apply(tmp, 1, get_quantiles)
+    tbl <- tibble::as_tibble(t(q))
+    out$AIDS_age <- tidy_bind(
+      out$AIDS_age,
+      tibble::as_tibble(t(q)),
+      bn,
+      yrs_quarterly
+    )
+
+    # ---------- Quarterly CD4 (total) ----------
+    tmp <- apply(CD4.total[, age_range, , drop = FALSE], 3, function(m) {
+      rowSums(m)
+    })
+    q <- apply(tmp, 1, get_quantiles)
+    out$CD4_age <- tidy_bind(
+      out$CD4_age,
+      tibble::as_tibble(t(q)),
+      bn,
+      yrs_quarterly
     )
   }
 
-  # --- CD4 multinomial summaries (yearly-or-quarterly aggregated) ---
-  nstages <- if (config$rita) 5 else 4
-  npoiss <- dim(CD4.Poiss)[4]
+  out$diagnoses_ann_age <- dplyr::left_join(
+    out$HIV_ann_age,
+    out$AIDS_ann_age,
+    by = c("age_band", "year", "quartile")
+  ) |>
+    dplyr::mutate(value = .data$value.x + .data$value.y) |>
+    dplyr::select(-value.x, -value.y)
 
-  for (s in seq_len(nstages)) {
-    # CD4.Poiss dims: (nt, nage, stage, N.Poiss)
-    stage_arr <- array(CD4.Poiss[,, s, ], dim = c(nt, nage, npoiss))
+  out$diagnoses_age <- dplyr::left_join(
+    out$HIV_age,
+    out$AIDS_age,
+    by = c("age_band", "year", "quartile")
+  ) |>
+    dplyr::mutate(value = .data$value.x + .data$value.y) |>
+    dplyr::select(-value.x, -value.y)
 
-    for (bn in names(age_idx)) {
-      suf <- band_suffix(bn)
-      out[[paste0("CD4.", s, suf, ".Mult")]] <- summarise_mult(
-        stage_arr,
-        age_idx[[bn]],
-        time_agg_year
-      )
-    }
-  }
-
-  # --- Quarterly (non-aggregated) outputs (only when quar.flag == TRUE) ---
-  if (quar.flag) {
-    for (bn in names(age_idx)) {
-      suf <- band_suffix(bn)
-      out[[paste0("HIV", suf, ".Quar.Poiss")]] <- summarise_poiss(
-        HIV.p,
-        age_idx[[bn]],
-        time_agg_quar
-      )
-      out[[paste0("AIDS", suf, ".Quar.Poiss")]] <- summarise_poiss(
-        AIDS.p,
-        age_idx[[bn]],
-        time_agg_quar
-      )
-    }
-
-    for (s in seq_len(nstages)) {
-      stage_arr <- array(CD4.Poiss[,, s, ], dim = c(nt, nage, npoiss))
-
-      for (bn in names(age_idx)) {
-        suf <- band_suffix(bn)
-        out[[paste0("CD4.", s, suf, ".Quar.Mult")]] <- summarise_mult(
-          stage_arr,
-          age_idx[[bn]],
-          time_agg_quar
-        )
-      }
-    }
-  }
+  out$diagnoses <- out$diagnoses_age |> dplyr::filter(.data$age_band == "all")
 
   # ### Time to diagnosis stuff
   # if(!ageprobs.flag & !quar.flag & !ageprobs.spl.flag){
@@ -844,31 +756,19 @@ postproc_ad <- function(
   return(out)
 }
 
-make_time_agg <- function(quar_flag, nt_local) {
-  if (isTRUE(quar_flag)) {
-    if (nt_local %% 4 != 0) {
-      stop("nt must be divisible by 4 when quar.flag=TRUE")
-    }
-    grp <- rep(seq_len(nt_local / 4), each = 4)
-    function(ts) as.numeric(rowsum(ts, grp, reorder = FALSE))
-  } else {
-    function(ts) ts
-  }
-}
-
-summarise_poiss <- function(p_arr, age_cols, time_agg) {
-  # p_arr dims from apply(rpois): (N.Poiss, nt, nage)
-  # for each Poiss draw: matrix(nt, nage) -> rowSums over age_cols -> time_agg
-  tmp <- apply(p_arr[,, age_cols, drop = FALSE], 1, function(m) {
-    time_agg(rowSums(m))
-  })
-  apply(tmp, 1, get_quantiles)
-}
-
-summarise_mult <- function(stage_arr, age_cols, time_agg) {
-  # stage_arr dims: (nt, nage, N.Poiss)
-  tmp <- apply(stage_arr[, age_cols, , drop = FALSE], 3, function(m) {
-    time_agg(rowSums(m))
-  })
-  apply(tmp, 1, get_quantiles)
+tidy_bind <- function(df1, df2, bn, yrs_annual) {
+  df2 <- df2 |>
+    dplyr::mutate(
+      age_band = factor(bn),
+      year = yrs_annual
+    ) |>
+    tidyr::pivot_longer(
+      cols = -c(age_band, year),
+      names_to = "quartile",
+      values_to = "value"
+    ) |>
+    dplyr::mutate(
+      quartile = factor(.data$quartile)
+    )
+  return(dplyr::bind_rows(df1, df2))
 }

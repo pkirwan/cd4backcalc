@@ -12,6 +12,11 @@ plot_estimates <- function(
   quantity,
   chain_results = FALSE
 ) {
+  # make hiv_list a list of lists if not already
+  if (!("incidence" %in% names(hiv_list[[1]]))) {
+    hiv_list <- list(hiv_list)
+  }
+
   plot_title <- get_plot_title(quantity)
 
   # chain-by-chain plotting if requested
@@ -88,6 +93,26 @@ plot_estimates <- function(
   if (quantity %in% c("diag_prob", "migration_prob")) {
     p1 <- p1 +
       ggplot2::facet_wrap(~ .data$strata, scales = "free_y")
+  }
+
+  # facet by age if age-dependent model
+  if (
+    quantity %in%
+      c(
+        "incidence_age",
+        "undiag_prev_age",
+        "migration_age",
+        "diagnoses_age"
+      )
+  ) {
+    p1 <- p1 +
+      ggplot2::facet_wrap(~ .data$age_band, scales = "free_y")
+  }
+
+  # facet by strata and age for age-dependent diagnosis and migration probabilities
+  if (quantity %in% c("diag_prob_age", "migration_prob_age")) {
+    p1 <- p1 +
+      ggplot2::facet_wrap(~ .data$strata + .data$age_band, scales = "free_y")
   }
 
   return(p1)
@@ -199,6 +224,20 @@ get_plot_title <- function(quantity) {
     "Estimated born-abroad:native-born ratio"
   } else if (quantity == "detect_prob") {
     "Estimated detection probability for transfers of care"
+  } else if (quantity == "incidence_age") {
+    "Estimated HIV incidence by age"
+  } else if (quantity == "undiag_prev_age") {
+    "Estimated undiagnosed HIV prevalence by age"
+  } else if (quantity == "migration_age") {
+    "Estimated migration with undiagnosed HIV by age"
+  } else if (quantity == "diagnoses_age") {
+    "Estimated HIV diagnoses by age"
+  } else if (quantity == "diag_prob_age") {
+    "Estimated HIV diagnosis probabilities by CD4 strata and age"
+  } else if (quantity == "incidence_trend") {
+    "Estimated HIV incidence trend by age"
+  } else if (quantity == "peak_incidence") {
+    "Estimated year of peak HIV incidence by age"
   } else {
     stop("Invalid quantity specified.")
   }

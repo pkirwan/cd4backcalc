@@ -132,3 +132,38 @@ test_that("plots work for rita model lists", {
   expect_s3_class(p3, "ggplot")
   expect_s3_class(p4, "ggplot")
 })
+
+test_that("plots work for age-dependent model", {
+  # Simulate diagnoses
+  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, age = TRUE)
+  # Fit back-calculation model
+  suppressWarnings({
+    hiv_list <- run_backcalc(
+      stan_data,
+      model_seed = 123,
+      iter = 10,
+      chains = 1,
+      refresh = 0,
+      messages = FALSE,
+      nworkers = 1
+    )
+  })
+  # plot diagnostics
+  p0 <- plot_diagnostics(hiv_list)
+  expect_s3_class(p0, "ggplot")
+  # Generate plots of key quantities
+  p1 <- plot_estimates(hiv_list, "incidence")
+  p2 <- plot_estimates(hiv_list, "undiag_prev")
+  p3 <- plot_estimates(hiv_list, "diagnoses")
+  p4 <- plot_estimates(hiv_list, "incidence_age")
+  p5 <- plot_estimates(hiv_list, "undiag_prev_age")
+  p6 <- plot_estimates(hiv_list, "diagnoses_age")
+  p7 <- plot_estimates(hiv_list, "diag_prob_age")
+  expect_s3_class(p1, "ggplot")
+  expect_s3_class(p2, "ggplot")
+  expect_s3_class(p3, "ggplot")
+  expect_s3_class(p4, "ggplot")
+  expect_s3_class(p5, "ggplot")
+  expect_s3_class(p6, "ggplot")
+  expect_s3_class(p7, "ggplot")
+})

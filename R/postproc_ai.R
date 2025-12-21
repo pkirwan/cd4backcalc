@@ -1250,15 +1250,15 @@ diag.prob.df <- function(stan_data, fit_mat, start.yr = 1978) {
       tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
     d2.q <- t(d2.q) |>
       as.data.frame() |>
-      cbind(year, strata = "CD4>500") |>
+      cbind(year, strata = "CD4>=500") |>
       tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
     d3.q <- t(d3.q) |>
       as.data.frame() |>
-      cbind(year, strata = "CD4 350-500") |>
+      cbind(year, strata = "CD4 350-499") |>
       tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
     d4.q <- t(d4.q) |>
       as.data.frame() |>
-      cbind(year, strata = "CD4 200-350") |>
+      cbind(year, strata = "CD4 200-349") |>
       tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
     d5.q <- t(d5.q) |>
       as.data.frame() |>
@@ -1268,15 +1268,15 @@ diag.prob.df <- function(stan_data, fit_mat, start.yr = 1978) {
   } else {
     d1.q <- t(d1.q) |>
       as.data.frame() |>
-      cbind(year, strata = "CD4>500") |>
+      cbind(year, strata = "CD4>=500") |>
       tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
     d2.q <- t(d2.q) |>
       as.data.frame() |>
-      cbind(year, strata = "CD4 350-500") |>
+      cbind(year, strata = "CD4 350-499") |>
       tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
     d3.q <- t(d3.q) |>
       as.data.frame() |>
-      cbind(year, strata = "CD4 200-350") |>
+      cbind(year, strata = "CD4 200-349") |>
       tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
     d4.q <- t(d4.q) |>
       as.data.frame() |>
@@ -1383,15 +1383,15 @@ migration.prob.df <- function(stan_data, fit_mat, start.yr = 1978) {
 
   m1.q <- t(m1.q) |>
     as.data.frame() |>
-    cbind(year, strata = "CD4>500") |>
+    cbind(year, strata = "CD4>=500") |>
     tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
   m2.q <- t(m2.q) |>
     as.data.frame() |>
-    cbind(year, strata = "CD4 350-500") |>
+    cbind(year, strata = "CD4 350-499") |>
     tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
   m3.q <- t(m3.q) |>
     as.data.frame() |>
-    cbind(year, strata = "CD4 200-350") |>
+    cbind(year, strata = "CD4 200-349") |>
     tidyr::pivot_longer(-c("year", "strata"), names_to = "quartile")
   m4.q <- t(m4.q) |>
     as.data.frame() |>

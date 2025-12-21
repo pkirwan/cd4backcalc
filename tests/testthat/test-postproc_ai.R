@@ -139,7 +139,10 @@ test_that("age-specific post-processing works", {
     start_yr = 0,
     nworkers = 1
   )
-  expect_true("infs.qt" %in% names(hiv_list))
+  expect_true("incidence" %in% names(hiv_list))
+  expect_true("undiag_prev" %in% names(hiv_list))
+  expect_true("incidence_age" %in% names(hiv_list))
+  expect_true("diag_prob_age" %in% names(hiv_list))
 })
 
 test_that("age-specific rita post-processing works", {
@@ -169,7 +172,8 @@ test_that("age-specific rita post-processing works", {
     start_yr = 0,
     nworkers = 1
   )
-  expect_true("infs.qt" %in% names(hiv_list))
+  expect_true("incidence" %in% names(hiv_list))
+  expect_true("undiag_prev" %in% names(hiv_list))
 })
 
 test_that("age-specific migration model fit works", {
