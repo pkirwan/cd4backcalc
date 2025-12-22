@@ -777,7 +777,7 @@ simulate_diagnoses <- function(
 
   # Age distribution for prior diagnoses from abroad (ABROAD), by quarter
   ABROAD <- m[, config$ndiagst]
-  ABROAD_age <- t(m_age[,, config$ndiagst])
+  ABROAD_age <- t(round_matrix_preserve(m_age[,, config$ndiagst], colwise = TRUE))
 
   # Make stan data list
   stan_data <- list(

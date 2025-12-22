@@ -4,7 +4,7 @@
 \alias{prev.fct}
 \title{Function to get posterior functions of prevalence}
 \usage{
-prev.fct(prev.arr, state, age.st, age.end, rita.flag)
+prev.fct(prev.arr, state, age.st, age.end, rita.flag, nt, start_yr)
 }
 \arguments{
 \item{prev.arr}{A 4D array with prevalence for each posterior sample.}
@@ -16,6 +16,10 @@ prev.fct(prev.arr, state, age.st, age.end, rita.flag)
 \item{age.end}{Ending age for prevalence calculation.}
 
 \item{rita.flag}{Logical flag indicating if RITA diagnoses are considered.}
+
+\item{nt}{Total number of time points.}
+
+\item{start_yr}{Starting year for the time series.}
 }
 \value{
 A matrix with summary statistics (2.5\%, 50\%, mean, 97.5\%) for each time point.

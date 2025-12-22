@@ -4,7 +4,7 @@
 \alias{urep.fct}
 \title{Function to deal with under-reporting of AIDS diagnoses}
 \usage{
-urep.fct(urep, AIDS, urep.flag, qt.flag, nt)
+urep.fct(urep, AIDS, urep.flag, nt)
 }
 \arguments{
 \item{urep}{Under-reporting factor.}
@@ -12,8 +12,6 @@ urep.fct(urep, AIDS, urep.flag, qt.flag, nt)
 \item{AIDS}{A matrix of AIDS diagnoses.}
 
 \item{urep.flag}{Logical flag indicating if under-reporting is considered.}
-
-\item{qt.flag}{Logical flag indicating if quarterly data is considered.}
 
 \item{nt}{Total number of time points.}
 }

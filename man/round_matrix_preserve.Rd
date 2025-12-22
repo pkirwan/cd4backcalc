@@ -4,10 +4,12 @@
 \alias{round_matrix_preserve}
 \title{Matrix rounding function to preserve totals}
 \usage{
-round_matrix_preserve(mat)
+round_matrix_preserve(mat, colwise = FALSE)
 }
 \arguments{
 \item{mat}{Numeric matrix to be rounded.}
+
+\item{colwise}{Logical; if TRUE, round each column separately.}
 }
 \value{
 Rounded numeric matrix with preserved total.

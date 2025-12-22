@@ -451,7 +451,7 @@ get_bias <- function(
     dplyr::mutate(
       bias = .data$`50%` - .data$value
     ) |>
-    dplyr::rename(group = group.x)
+    dplyr::rename(group = "group.x")
 }
 
 #' Get bias between HIV model estimates and simulation results for strata.
@@ -474,7 +474,7 @@ get_bias_strata <- function(
     dplyr::mutate(
       bias = .data$`50%` - .data$value
     ) |>
-    dplyr::rename(group = group.x)
+    dplyr::rename(group = "group.x")
 }
 
 #' Get mean squared error (MSE) list for HIV model estimates.

@@ -112,7 +112,7 @@ plot_estimates <- function(
   # facet by strata and age for age-dependent diagnosis and migration probabilities
   if (quantity %in% c("diag_prob_age", "migration_prob_age")) {
     p1 <- p1 +
-      ggplot2::facet_wrap(~ .data$strata + .data$age_band, scales = "free_y")
+      ggplot2::facet_wrap(~ .data$strata + .data$age_band, scales = "free_y", ncol = 4)
   }
 
   return(p1)

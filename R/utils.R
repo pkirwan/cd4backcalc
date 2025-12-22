@@ -35,12 +35,24 @@ round_preserve <- function(x) {
 #' Matrix rounding function to preserve totals
 #'
 #' @param mat Numeric matrix to be rounded.
+#' @param colwise Logical; if TRUE, round each column separately.
 #' @return Rounded numeric matrix with preserved total.
-round_matrix_preserve <- function(mat) {
+round_matrix_preserve <- function(mat, colwise = FALSE) {
   # Convert matrix to vector, round, and convert back
   dims <- dim(mat)
   vec <- as.vector(mat)
-  rounded <- round_preserve(vec)
+  if (colwise) {
+    # Round each column separately
+    rounded_vec <- unlist(
+      lapply(
+        split(vec, rep(1:dims[2], each = dims[1])),
+        round_preserve
+      )
+    )
+    rounded <- rounded_vec
+  } else {
+    rounded <- round_preserve(vec)
+  }
   matrix(rounded, nrow = dims[1], ncol = dims[2])
 }
 

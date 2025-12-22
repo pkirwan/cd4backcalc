@@ -143,6 +143,7 @@ test_that("age-specific post-processing works", {
   expect_true("undiag_prev" %in% names(hiv_list))
   expect_true("incidence_age" %in% names(hiv_list))
   expect_true("diag_prob_age" %in% names(hiv_list))
+  expect_true("diagnoses_age" %in% names(hiv_list))
 })
 
 test_that("age-specific rita post-processing works", {

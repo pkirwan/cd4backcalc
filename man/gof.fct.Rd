@@ -15,8 +15,7 @@ gof.fct(
   CD4.st3,
   CD4.st4,
   CD4.st5 = NULL,
-  nt,
-  qt.flag
+  nt
 )
 }
 \arguments{
@@ -41,13 +40,10 @@ gof.fct(
 \item{CD4.st5}{A 3D array of posterior samples for CD4 stage 5 diagnoses (optional).}
 
 \item{nt}{Total number of time points (quarters).}
-
-\item{qt.flag}{Logical flag indicating whether to aggregate quarterly diagnoses into yearly.}
 }
 \value{
 A matrix with summary statistics (2.5\%, 50\%, mean, 97.5\%) for each time point or age group.
 }
 \description{
 This function generates goodness of fit statistics for HIV, AIDS, and CD4 diagnoses by age group from their respective posterior samples (per each posterior iteration).
-This function can aggregates diagnoses by year, depending on qt.flag.
 }

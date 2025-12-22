@@ -16,24 +16,26 @@ postproc_ad <- function(
   nworkers = 1,
   chain_results = FALSE
 ) {
+  ### MODEL SETUP ###
   out <- list()
+  ind_list <- list()
+  N.Poiss <- 300
 
-  ## Useful constants
+  # Useful constants
   config <- stan_data$config
-
   nquar <- stan_data$nquar
   if (stan_data$nquar %% 4 != 0) {
     stop("Number of quarters must be divisible by 4")
   }
   nage <- stan_data$nage
 
-  # Define previous states for prevalence calculations
+  # Define prevalent states
   prev_states <- c("all", 1:4)
   if (config$rita) {
     prev_states <- c(prev_states, 5:7)
   }
 
-  # Define diagnosis states
+  # Define diagnosed states
   diag_states <- list(
     `CD4>=500` = 1,
     `CD4 350-499` = 2,
@@ -50,7 +52,7 @@ postproc_ad <- function(
     )
   }
 
-  ## Define age bands
+  # Define age bands
   age_bands <- list(
     all = c(15, 66),
     `1524` = c(15, 24),
@@ -59,17 +61,14 @@ postproc_ad <- function(
     `45` = c(45, 66)
   )
 
-  # define quartiles
+  # Define quartiles
   q_levels <- c("2.5%", "50%", "mean", "97.5%")
 
-  ### To store indices of various parameters
-  ind_list <- list()
-
-  ### Fit summaries
+  ### Fit summaries ###
   fit.mat <- as.matrix(fit)
   fit.summ <- rstan::summary(fit)[[1]]
 
-  ### Flags for the model considered
+  # Flags for the model considered
   ageprobs.flag <- ifelse(
     length(grep("^d\\[", colnames(fit.mat))) == nquar * 4,
     FALSE,
@@ -92,8 +91,9 @@ postproc_ad <- function(
   out$n.divg <- sum(sapply(sampler.params, function(x) x[, 5]))
   out$time <- max(apply(rstan::get_elapsed_time(fit), 1, sum))
 
-  ## Infections (yearly)
-  ## Splines - beta: spline pars, gamma = X*beta
+  ### INCIDENCE ESTIMATES ###
+
+  # Splines - beta: spline pars, gamma = X*beta
   beta.ind <- grep("beta_inf", colnames(fit.mat))
   tau.ind <- grep("tau", colnames(fit.mat))
   x <- stan_data$X_inf
@@ -110,7 +110,7 @@ postproc_ad <- function(
     tau <- get_quantiles(fit.mat[, tau.ind])
   }
 
-  ### Posterior means of parameter of interest
+  # Posterior means of parameter of interest
   out$tau <- tau
   alpha.ind <- grep("alpha", colnames(fit.mat))
   sigma2.ind <- grep("vardelta", colnames(fit.mat))
@@ -122,11 +122,10 @@ postproc_ad <- function(
     out$sigma2 <- fit.mat[, sigma2.ind]
   }
 
-  ## Posterior mean for all time and ages
+  # Posterior mean for all time and ages
   out$infs.all <- apply(infs, 2, get_quantiles)
 
-  ### Extract estimates
-  # All ages
+  # Extract incidence estimates
   out$incidence <- infs.fct.qt(
     infs,
     age.st = age_bands$all[1],
@@ -146,7 +145,7 @@ postproc_ad <- function(
     start_yr = start_yr
   )
 
-  # extract estimates by age band
+  # Extract incidence estimates by age band
   out$incidence_age <- purrr::imap(age_bands, \(age, bn) {
     infs.fct.qt(
       infs,
@@ -160,7 +159,7 @@ postproc_ad <- function(
   }) |>
     purrr::list_rbind()
 
-  out$annual_incidence <- purrr::imap(age_bands, \(age, bn) {
+  out$annual_incidence_age <- purrr::imap(age_bands, \(age, bn) {
     infs.fct(
       infs,
       age[1],
@@ -174,9 +173,9 @@ postproc_ad <- function(
   }) |>
     purrr::list_rbind()
 
-  ### Diagnoses probabilities
+  ### DIAGNOSIS PROBABILITIES ###
 
-  ### Indices for diagnosis parameters by age band
+  # Indices for diagnosis parameters by age band
   ind_list$d1.ind.1524 <- grep("^d\\[1,1", colnames(fit.mat))
   ind_list$d2.ind.1524 <- grep("^d\\[1,2", colnames(fit.mat))
   ind_list$d3.ind.1524 <- grep("^d\\[1,3", colnames(fit.mat))
@@ -200,7 +199,7 @@ postproc_ad <- function(
     ind_list$d5.ind.45 <- grep("^d\\[4,5", colnames(fit.mat))
   }
 
-  # extract diagnosis probabilities by age band
+  # Extract diagnosis probabilities by age band
   diag_grid <- tidyr::crossing(
     age_band = names(age_bands)[2:5],
     state = 1:length(diag_states)
@@ -237,7 +236,7 @@ postproc_ad <- function(
       values_to = "value"
     )
 
-  ### Delta parameters (age progression rates)
+  # Delta parameters (age progression rates)
   delta1.ind <- grep("delta_1", colnames(fit.mat))
   delta2.ind <- grep("delta_2", colnames(fit.mat))
   delta3.ind <- grep("delta_3", colnames(fit.mat))
@@ -253,7 +252,8 @@ postproc_ad <- function(
     out$delta5.q <- apply(fit.mat[, delta5.ind], 2, get_quantiles)
   }
 
-  ## GOODNESS OF FIT
+  ### GENERATE PREVALENCE AND DIAGNOSIS ARRAYS ###
+
   # Choose the correct Cpp functions
   if (config$rita) {
     g.fct <- gof_iter_fct_rita
@@ -263,7 +263,7 @@ postproc_ad <- function(
     p.fct <- prev_iter_fct
   }
 
-  # convert q and init_prev to matrices for easier handling in Cpp
+  # Convert q and init_prev to matrices for easier handling in Cpp
   q_mat <- matrix(stan_data$q_age, nrow = 4, ncol = nage)
   prev_mat <- matrix(
     stan_data$init_prev_age,
@@ -313,44 +313,13 @@ postproc_ad <- function(
     )
   })
 
-  ### List to array (easier to handle)
+  # List to array (easier to handle)
   exp.diags.arr <- simplify2array(exp.diags)
   exp.prev.arr <- simplify2array(exp.prev)
 
-  ### Prev.mat for specific years
-  if (config$rita) {
-    prev.mat.2011 <- rbind(
-      apply(exp.prev.arr[1, , 1, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 2, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 3, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 4, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 5, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 6, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 7, ], 1, get_quantiles)[2, ]
-    )
-  } else if (start_yr == 1995) {
-    prev.mat.1995 <- rbind(
-      apply(exp.prev.arr[1, , 1, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 2, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 3, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 4, ], 1, get_quantiles)[2, ]
-    )
-    prev.mat.2011 <- rbind(
-      apply(exp.prev.arr[65, , 1, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[65, , 2, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[65, , 3, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[65, , 4, ], 1, get_quantiles)[2, ]
-    )
-  } else if (start_yr == 2011) {
-    prev.mat.2011 <- rbind(
-      apply(exp.prev.arr[1, , 1, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 2, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 3, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 4, ], 1, get_quantiles)[2, ]
-    )
-  }
+  ### EXPECTED DIAGNOSES ###
 
-  ### Expected number of CD4
+  # Expected number of CD4
   nCD4 <- apply(stan_data$CD4_age, c(1, 2), sum)
 
   # denom dims: (nt, nage, nsim)
@@ -396,22 +365,22 @@ postproc_ad <- function(
   ### Expected AIDS diagnoses
   ### Depending on whether under-reporting present
   ### (With real-data always)
+  aids_slice <- ifelse(config$rita, 6, 5)
   if (urep.flag) {
     urep.vec <- fit.mat[, "under_rep"]
     AIDS <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
       urep.fct(
         urep.vec[i],
-        exp.diags.arr[,, 5, i],
+        exp.diags.arr[,, aids_slice, i],
         urep.flag = urep.flag,
         nt = nquar
       )
     }))
-  } else if (config$rita) {
-    AIDS <- exp.diags.arr[,, 6, ]
   } else {
-    AIDS <- exp.diags.arr[,, 5, ]
+    AIDS <- exp.diags.arr[,, aids_slice, ]
   }
 
+  ### GOODNESS OF FIT ###
   gof_types <- list(
     HIV = "HIV",
     AIDS = "AIDS",
@@ -424,13 +393,18 @@ postproc_ad <- function(
     gof_types[["CD4.5"]] <- "CD4.st5"
   }
 
-  for (base_name in names(gof_types)) {
-    type_arg <- gof_types[[base_name]]
+  grid <- tidyr::crossing(
+    base_name = names(gof_types),
+    bn = names(age_bands)
+  )
 
-    for (bn in names(age_bands)) {
+  gof_results <- purrr::pmap(
+    list(base_name = grid$base_name, bn = grid$bn),
+    function(base_name, bn) {
+      type_arg <- gof_types[[base_name]]
       age <- age_bands[[bn]]
 
-      out[[paste0("gof.", base_name, bn)]] <- gof.fct(
+      gof.fct(
         type_arg,
         age[1],
         age[2],
@@ -444,9 +418,12 @@ postproc_ad <- function(
         nquar
       )
     }
-  }
+  )
 
-  ### Prevalence
+  names(gof_results) <- paste0("gof.", grid$base_name, grid$bn)
+  out <- c(out, gof_results)
+
+  ### UNDIAGNOSED PREVALENCE ###
 
   # undiag_prev overall
   out$undiag_prev <- prev.fct(
@@ -525,8 +502,7 @@ postproc_ad <- function(
   ) |>
     purrr::list_rbind()
 
-  ### Getting data posterior predictive distributions
-  N.Poiss <- 300
+  ### POSTERIOR PREDICTIVE DISTRIBUTIONS ###
 
   HIV.m <- apply(HIV, c(1, 2), mean)
 
@@ -557,7 +533,7 @@ postproc_ad <- function(
   p2 <- p_all[,, 2, ]
   p3 <- p_all[,, 3, ]
   p4 <- p_all[,, 4, ]
-  if (isTRUE(config$rita)) {
+  if (config$rita) {
     p5 <- p_all[,, 5, ]
   }
 
@@ -599,116 +575,55 @@ postproc_ad <- function(
     }
   }
 
-  # Create grouping variable for annual sums
-  grp_year <- rep(seq_len(nquar / 4), each = 4)
-
-  yrs_annual <- start_yr + seq_len(nquar / 4) - 1
-  yrs_quarterly <- start_yr + (seq_len(nquar) - 1) / 4
-
   # CD4 total over stages: dims (nt, nage, N.Poiss)
   CD4.total <- apply(CD4.Poiss, c(1, 2, 4), sum)
 
-  out_template <- tibble::tibble(
-    age_band = factor(character(0), levels = names(age_bands)),
-    year = numeric(0),
-    quartile = factor(character(0), levels = q_levels),
-    value = numeric(0)
+  # Create tidy data frames for posterior predictive summaries
+  out$HIV_ann_age <- tidy_bind(
+    HIV.p,
+    age_bands,
+    q_levels,
+    nquar,
+    start_yr,
+    qt.flag = FALSE
   )
-  out$HIV_ann_age <- out_template
-  out$AIDS_ann_age <- out_template
-  out$CD4_ann_age <- out_template
-  out$diagnoses_ann_age <- out_template
-  out$HIV_age <- out_template
-  out$AIDS_age <- out_template
-  out$CD4_age <- out_template
-  out$diagnoses_age <- out_template
+  out$AIDS_ann_age <- tidy_bind(
+    AIDS.p,
+    age_bands,
+    q_levels,
+    nquar,
+    start_yr,
+    qt.flag = FALSE
+  )
+  out$CD4_ann_age <- tidy_bind(
+    CD4.total,
+    age_bands,
+    q_levels,
+    nquar,
+    start_yr,
+    qt.flag = FALSE,
+    CD4 = TRUE
+  )
 
-  for (bn in names(age_bands)) {
-    age <- age_bands[[bn]]
-    age_range <- (age[1]:age[2]) - 14
+  out$HIV_age <- tidy_bind(HIV.p, age_bands, q_levels, nquar, start_yr)
+  out$AIDS_age <- tidy_bind(AIDS.p, age_bands, q_levels, nquar, start_yr)
+  out$CD4_age <- tidy_bind(
+    CD4.total,
+    age_bands,
+    q_levels,
+    nquar,
+    start_yr,
+    CD4 = TRUE
+  )
 
-    # ---------- Annual HIV ----------
-    tmp <- apply(HIV.p[,, age_range, drop = FALSE], 1, function(m) {
-      as.numeric(rowsum(rowSums(m), grp_year, reorder = FALSE))
-    })
-
-    q <- apply(tmp, 1, get_quantiles)
-
-    out$HIV_ann_age <- tidy_bind(
-      out$HIV_ann_age,
-      tibble::as_tibble(t(q)),
-      bn,
-      yrs_annual
-    )
-
-    # ---------- Annual AIDS ----------
-    tmp <- apply(AIDS.p[,, age_range, drop = FALSE], 1, function(m) {
-      as.numeric(rowsum(rowSums(m), grp_year, reorder = FALSE))
-    })
-    q <- apply(tmp, 1, get_quantiles)
-    out$AIDS_ann_age <- tidy_bind(
-      out$AIDS_ann_age,
-      tibble::as_tibble(t(q)),
-      bn,
-      yrs_annual
-    )
-
-    # ---------- Annual CD4 (total) ----------
-    tmp <- apply(CD4.total[, age_range, , drop = FALSE], 3, function(m) {
-      as.numeric(rowsum(rowSums(m), grp_year, reorder = FALSE))
-    })
-    q <- apply(tmp, 1, get_quantiles)
-
-    out$CD4_ann_age <- tidy_bind(
-      out$CD4_ann_age,
-      tibble::as_tibble(t(q)),
-      bn,
-      yrs_annual
-    )
-
-    # ---------- Quarterly HIV ----------
-    tmp <- apply(HIV.p[,, age_range, drop = FALSE], 1, function(m) rowSums(m))
-    q <- apply(tmp, 1, get_quantiles)
-    tbl <- tibble::as_tibble(t(q))
-
-    out$HIV_age <- tidy_bind(
-      out$HIV_age,
-      tibble::as_tibble(t(q)),
-      bn,
-      yrs_quarterly
-    )
-
-    # ---------- Quarterly AIDS ----------
-    tmp <- apply(AIDS.p[,, age_range, drop = FALSE], 1, function(m) rowSums(m))
-    q <- apply(tmp, 1, get_quantiles)
-    tbl <- tibble::as_tibble(t(q))
-    out$AIDS_age <- tidy_bind(
-      out$AIDS_age,
-      tibble::as_tibble(t(q)),
-      bn,
-      yrs_quarterly
-    )
-
-    # ---------- Quarterly CD4 (total) ----------
-    tmp <- apply(CD4.total[, age_range, , drop = FALSE], 3, function(m) {
-      rowSums(m)
-    })
-    q <- apply(tmp, 1, get_quantiles)
-    out$CD4_age <- tidy_bind(
-      out$CD4_age,
-      tibble::as_tibble(t(q)),
-      bn,
-      yrs_quarterly
-    )
-  }
-
+  # Combine diagnoses
   out$diagnoses_ann_age <- dplyr::left_join(
     out$HIV_ann_age,
     out$AIDS_ann_age,
     by = c("age_band", "year", "quartile")
   ) |>
     dplyr::mutate(value = .data$value.x + .data$value.y) |>
-    dplyr::select(-value.x, -value.y)
+    dplyr::select(-c("value.x", "value.y"))
 
   out$diagnoses_age <- dplyr::left_join(
     out$HIV_age,
@@ -716,7 +631,7 @@ postproc_ad <- function(
     by = c("age_band", "year", "quartile")
   ) |>
     dplyr::mutate(value = .data$value.x + .data$value.y) |>
-    dplyr::select(-value.x, -value.y)
+    dplyr::select(-c("value.x", "value.y"))
 
   out$diagnoses <- out$diagnoses_age |> dplyr::filter(.data$age_band == "all")
 
@@ -756,19 +671,127 @@ postproc_ad <- function(
   return(out)
 }
 
-tidy_bind <- function(df1, df2, bn, yrs_annual) {
-  df2 <- df2 |>
-    dplyr::mutate(
-      age_band = factor(bn),
-      year = yrs_annual
-    ) |>
-    tidyr::pivot_longer(
-      cols = -c(age_band, year),
-      names_to = "quartile",
-      values_to = "value"
-    ) |>
-    dplyr::mutate(
-      quartile = factor(.data$quartile)
+#' Helper function to bind tidy data frames
+#'
+#' @param list List of HIV posterior predictive matrices.
+#' @param age_bands Age bands list.
+#' @param q_levels Quartile levels.
+#' @param nquar Number of quarters.
+#' @param start_yr Starting year.
+#' @param qt.flag Logical indicating if quarterly output is required.
+#' @param CD4 Logical indicating if CD4 data is being processed.
+#' @return Combined tidy data frame.
+tidy_bind <- function(
+  list,
+  age_bands,
+  q_levels,
+  nquar,
+  start_yr,
+  qt.flag = TRUE,
+  CD4 = FALSE
+) {
+  out_template <- tibble::tibble(
+    age_band = factor(character(0), levels = names(age_bands)),
+    year = numeric(0),
+    quartile = factor(character(0), levels = q_levels),
+    value = numeric(0)
+  )
+
+  # Create grouping variable for annual sums
+  grp_year <- rep(seq_len(nquar / 4), each = 4)
+
+  # Define years vector
+  if (qt.flag) {
+    yrs <- start_yr + (seq_len(nquar) - 1) / 4
+  } else {
+    yrs <- start_yr + seq_len(nquar / 4) - 1
+  }
+
+  # Loop over age bands
+  for (bn in names(age_bands)) {
+    age <- age_bands[[bn]]
+    age_range <- (age[1]:age[2]) - 14
+
+    if (qt.flag) {
+      if (CD4) {
+        tmp <- apply(list[, age_range, , drop = FALSE], 3, function(m) {
+          rowSums(m)
+        })
+      } else {
+        tmp <- apply(list[,, age_range, drop = FALSE], 1, function(m) {
+          rowSums(m)
+        })
+      }
+    } else {
+      if (CD4) {
+        tmp <- apply(list[, age_range, , drop = FALSE], 3, function(m) {
+          as.numeric(rowsum(rowSums(m), grp_year, reorder = FALSE))
+        })
+      } else {
+        tmp <- apply(list[,, age_range, drop = FALSE], 1, function(m) {
+          as.numeric(rowsum(rowSums(m), grp_year, reorder = FALSE))
+        })
+      }
+    }
+
+    q <- apply(tmp, 1, get_quantiles)
+
+    df1 <- tibble::as_tibble(t(q)) |>
+      dplyr::mutate(
+        age_band = factor(bn),
+        year = yrs
+      ) |>
+      tidyr::pivot_longer(
+        cols = -c("age_band", "year"),
+        names_to = "quartile",
+        values_to = "value"
+      ) |>
+      dplyr::mutate(
+        quartile = factor(.data$quartile)
+      )
+    out_template <- dplyr::bind_rows(out_template, df1)
+  }
+  return(out_template)
+}
+
+#' Get initial prevalence matrix to provide to age-dependent model
+#'
+#' @param config Configuration list.
+#' @param exp.prev.arr Expected prevalence array.
+#' @param start_yr Starting year.
+#' @return Initial prevalence matrix.
+get_init_prev <- function(config, exp.prev.arr, start_yr) {
+  ### Initial prevalence matrix
+  # Prev.mat for specific years
+  if (config$rita) {
+    prev.mat.2011 <- rbind(
+      apply(exp.prev.arr[1, , 1, ], 1, get_quantiles)[2, ],
+      apply(exp.prev.arr[1, , 2, ], 1, get_quantiles)[2, ],
+      apply(exp.prev.arr[1, , 3, ], 1, get_quantiles)[2, ],
+      apply(exp.prev.arr[1, , 4, ], 1, get_quantiles)[2, ],
+      apply(exp.prev.arr[1, , 5, ], 1, get_quantiles)[2, ],
+      apply(exp.prev.arr[1, , 6, ], 1, get_quantiles)[2, ],
+      apply(exp.prev.arr[1, , 7, ], 1, get_quantiles)[2, ]
     )
-  return(dplyr::bind_rows(df1, df2))
+  } else if (start_yr == 1995) {
+    prev.mat.1995 <- rbind(
+      apply(exp.prev.arr[1, , 1, ], 1, get_quantiles)[2, ],
+      apply(exp.prev.arr[1, , 2, ], 1, get_quantiles)[2, ],
+      apply(exp.prev.arr[1, , 3, ], 1, get_quantiles)[2, ],
+      apply(exp.prev.arr[1, , 4, ], 1, get_quantiles)[2, ]
+    )
+    prev.mat.2011 <- rbind(
+      apply(exp.prev.arr[65, , 1, ], 1, get_quantiles)[2, ],
+      apply(exp.prev.arr[65, , 2, ], 1, get_quantiles)[2, ],
+      apply(exp.prev.arr[65, , 3, ], 1, get_quantiles)[2, ],
+      apply(exp.prev.arr[65, , 4, ], 1, get_quantiles)[2, ]
+    )
+  } else if (start_yr == 2011) {
+    prev.mat.2011 <- rbind(
+      apply(exp.prev.arr[1, , 1, ], 1, get_quantiles)[2, ],
+      apply(exp.prev.arr[1, , 2, ], 1, get_quantiles)[2, ],
+      apply(exp.prev.arr[1, , 3, ], 1, get_quantiles)[2, ],
+      apply(exp.prev.arr[1, , 4, ], 1, get_quantiles)[2, ]
+    )
+  }
 }
