@@ -254,130 +254,271 @@ postproc_ad <- function(
 
   ### GENERATE PREVALENCE AND DIAGNOSIS ARRAYS ###
 
-  # Choose the correct Cpp functions
-  if (config$rita) {
-    g.fct <- gof_iter_fct_rita
-    p.fct <- prev_iter_fct_rita
+  if (config$migration) {
+    # Expected diagnoses from Stan transformed parameters
+    exp_values <- rstan::extract(
+      fit,
+      pars = c("exp_HIV_dx", "exp_AIDS_dx", "exp_p", "misclassified_dx"),
+      permuted = TRUE
+    )
+
+    exp_HIV_dx <- exp_values$exp_HIV_dx # [draw, t, a, y]
+    exp_AIDS_dx <- exp_values$exp_AIDS_dx # [draw, t, a, y]
+    exp_p <- exp_values$exp_p # [draw, t, a, y, cd4]
+    mis_dx <- exp_values$misclassified_dx # [draw, t, a]
+
+    # HIV/AIDS arrays as (t, age, draw), summed over y
+    HIV <- aperm(apply(exp_HIV_dx, c(1, 2, 3), sum), c(2, 3, 1))
+    AIDS <- aperm(apply(exp_AIDS_dx, c(1, 2, 3), sum), c(2, 3, 1))
+
+    # Apply under-reporting to AIDS if present
+    if (urep.flag) {
+      urep.vec <- fit.mat[, "under_rep"]
+      AIDS <- simplify2array(lapply(seq_len(nrow(fit.mat)), function(i) {
+        urep.fct(urep.vec[i], AIDS[,, i], urep.flag = TRUE, nt = nquar)
+      }))
+    }
+
+    # Migration-consistent undiagnosed prevalence via C++
+
+    # abroad_age_prop as in Stan (uniform if a quarter total is zero)
+    ABROAD_age <- as.matrix(stan_data$ABROAD_age)
+
+    ABROAD_tot <- rowSums(ABROAD_age)
+    abroad_age_prop <- ABROAD_age
+    for (t in seq_len(nquar)) {
+      if (ABROAD_tot[t] > 0) {
+        abroad_age_prop[t, ] <- ABROAD_age[t, ] / ABROAD_tot[t]
+      } else {
+        abroad_age_prop[t, ] <- rep(1 / nage, nage)
+      }
+    }
+
+    # Build d-cube indices (agegrp, state, t) from fit.mat colnames, then per draw create (state,t,agegrp)
+    d_idx <- array(NA_integer_, dim = c(4, 4, nquar))
+    for (ag in 1:4) {
+      for (k in 1:4) {
+        ind <- grep(sprintf("^d\\[%d,%d,", ag, k), colnames(fit.mat))
+        if (length(ind) != nquar) {
+          stop(sprintf(
+            "Could not find d[%d,%d,] with length nquar=%d.",
+            ag,
+            k,
+            nquar
+          ))
+        }
+        d_idx[ag, k, ] <- ind
+      }
+    }
+
+    # Omega, p, m indices
+    omega.ind <- grep("^omega\\[", colnames(fit.mat))
+    p.ind <- grep("^p\\[", colnames(fit.mat))
+    m.ind <- grep("^m\\[", colnames(fit.mat))
+
+    if (length(omega.ind) != nquar) {
+      stop("omega[...] not found or wrong length.")
+    }
+    if (length(p.ind) != nquar) {
+      stop("p[...] not found or wrong length.")
+    }
+    if (length(m.ind) != 5 * nquar) {
+      stop("m[...] not found or wrong length (expected 5*nquar).")
+    }
+
+    q_mat <- matrix(stan_data$q_age, nrow = 4, ncol = nage)
+
+    prev_total_mat <- matrix(stan_data$init_prev_age, nrow = 4, ncol = nage) +
+      matrix(stan_data$init_prev_abroad_age, nrow = 4, ncol = nage)
+
+    exp.prev <- lapply(seq_len(nrow(fit.mat)), function(i) {
+      # d_cube: 4 (state) x nquar (time) x 4 (agegrp)
+      d_cube <- array(NA_real_, dim = c(4, nquar, 4))
+      for (ag in 1:4) {
+        for (k in 1:4) {
+          d_cube[k, , ag] <- fit.mat[i, d_idx[ag, k, ]]
+        }
+      }
+
+      omega_i <- fit.mat[i, omega.ind]
+      p_i <- fit.mat[i, p.ind]
+
+      # m_mat: 5 x nquar (rows are k=1..5)
+      m_mat <- matrix(fit.mat[i, m.ind], nrow = 5, ncol = nquar)
+
+      prev_iter_fct_migration(
+        H = exp(infs[i, ]),
+        d = d_cube,
+        q = q_mat,
+        prev_total = prev_total_mat,
+        omega = omega_i,
+        p = p_i,
+        m = m_mat,
+        abroad_age_prop = abroad_age_prop,
+        nquar = nquar,
+        nage = nage
+      )
+    })
+
+    exp.prev.arr <- simplify2array(exp.prev) # (t, age, state, draw)
+
+    # exp.diags.arr is not used in migration mode
+    exp.diags.arr <- NULL
   } else {
-    g.fct <- gof_iter_fct
-    p.fct <- prev_iter_fct
+    # Choose the correct Cpp functions
+    if (config$rita) {
+      g.fct <- gof_iter_fct_rita
+      p.fct <- prev_iter_fct_rita
+    } else {
+      g.fct <- gof_iter_fct
+      p.fct <- prev_iter_fct
+    }
+
+    # Convert q and init_prev to matrices for easier handling in Cpp
+    q_mat <- matrix(stan_data$q_age, nrow = 4, ncol = nage)
+    prev_mat <- matrix(
+      stan_data$init_prev_age,
+      nrow = nrow(stan_data$init_prev_age),
+      ncol = nage
+    )
+
+    # Expected diagnoses
+    exp.diags <- lapply(1:nrow(fit.mat), function(i) {
+      g.fct(
+        exp(infs[i, ]),
+        d.mat.iter(
+          fit.mat,
+          i,
+          age.dx.flag = ageprobs.flag,
+          age.dx.spl.flag = ageprobs.spl.flag,
+          rita.flag = config$rita,
+          nt = nquar,
+          nage = nage,
+          ind_list = ind_list
+        ),
+        q_mat,
+        prev_mat,
+        nquar,
+        nage
+      )
+    })
+
+    # Expected prevalence
+    exp.prev <- lapply(1:nrow(fit.mat), function(i) {
+      p.fct(
+        exp(infs[i, ]),
+        d.mat.iter(
+          fit.mat,
+          i,
+          age.dx.flag = ageprobs.flag,
+          age.dx.spl.flag = ageprobs.spl.flag,
+          rita.flag = config$rita,
+          nt = nquar,
+          nage = nage,
+          ind_list = ind_list
+        ),
+        q_mat,
+        prev_mat,
+        nquar,
+        nage
+      )
+    })
+
+    # List to array (easier to handle)
+    exp.diags.arr <- simplify2array(exp.diags)
+    exp.prev.arr <- simplify2array(exp.prev)
   }
-
-  # Convert q and init_prev to matrices for easier handling in Cpp
-  q_mat <- matrix(stan_data$q_age, nrow = 4, ncol = nage)
-  prev_mat <- matrix(
-    stan_data$init_prev_age,
-    nrow = nrow(stan_data$init_prev_age),
-    ncol = nage
-  )
-
-  # Expected diagnoses
-  exp.diags <- lapply(1:nrow(fit.mat), function(i) {
-    g.fct(
-      exp(infs[i, ]),
-      d.mat.iter(
-        fit.mat,
-        i,
-        age.dx.flag = ageprobs.flag,
-        age.dx.spl.flag = ageprobs.spl.flag,
-        rita.flag = config$rita,
-        nt = nquar,
-        nage = nage,
-        ind_list = ind_list
-      ),
-      q_mat,
-      prev_mat,
-      nquar,
-      nage
-    )
-  })
-
-  # Expected prevalence
-  exp.prev <- lapply(1:nrow(fit.mat), function(i) {
-    p.fct(
-      exp(infs[i, ]),
-      d.mat.iter(
-        fit.mat,
-        i,
-        age.dx.flag = ageprobs.flag,
-        age.dx.spl.flag = ageprobs.spl.flag,
-        rita.flag = config$rita,
-        nt = nquar,
-        nage = nage,
-        ind_list = ind_list
-      ),
-      q_mat,
-      prev_mat,
-      nquar,
-      nage
-    )
-  })
-
-  # List to array (easier to handle)
-  exp.diags.arr <- simplify2array(exp.diags)
-  exp.prev.arr <- simplify2array(exp.prev)
 
   ### EXPECTED DIAGNOSES ###
 
   # Expected number of CD4
   nCD4 <- apply(stan_data$CD4_age, c(1, 2), sum)
 
-  # denom dims: (nt, nage, nsim)
-  cd4_denom <- apply(
-    exp.diags.arr[,, seq_len(config$ndiagst - 1), , drop = FALSE],
-    c(1, 2, 4),
-    sum
-  )
+  if (config$migration) {
+    # exp_p is already defined above in migration branch as [draw,t,a,y,cd4]
+    denom_uk <- exp_HIV_dx[,,, 1] # [draw,t,a]
+    denom_m <- pmax(0, exp_HIV_dx[,,, 2] - mis_dx) # [draw,t,a] (exclude misclassified)
 
-  # stage proportions p(stage | diagnosed), dims: (nt, nage, stage, nsim)
-  cd4_num <- exp.diags.arr[,, seq_len(config$ndiagst - 1), , drop = FALSE]
-  cd4_p_all <- sweep(cd4_num, MARGIN = c(1, 2, 4), STATS = cd4_denom, FUN = "/")
-  cd4_p_all[!is.finite(cd4_p_all)] <- 0
+    numer_uk <- sweep(exp_p[,,, 1, , drop = TRUE], c(1, 2, 3), denom_uk, "*")
+    numer_m <- sweep(exp_p[,,, 2, , drop = TRUE], c(1, 2, 3), denom_m, "*")
 
-  # expected CD4 counts by stage
-  CD4_all <- sweep(cd4_p_all, MARGIN = c(1, 2), STATS = nCD4, FUN = "*")
+    denom_tot <- denom_uk + denom_m
+    numer_tot <- numer_uk + numer_m
 
-  # extract stages into the original variables expected later
-  CD4.st1 <- CD4_all[,, 1, ]
-  CD4.st2 <- CD4_all[,, 2, ]
-  CD4.st3 <- CD4_all[,, 3, ]
-  CD4.st4 <- CD4_all[,, 4, ]
-  if (isTRUE(config$rita)) {
-    CD4.st5 <- CD4_all[,, 5, ]
-  } else {
+    p_all <- sweep(numer_tot, c(1, 2, 3), denom_tot, "/")
+    p_all[!is.finite(p_all)] <- 0.25
+
+    # Reorder to (t, age, stage, draw)
+    p_all <- aperm(p_all, c(2, 3, 4, 1))
+
+    CD4_all <- sweep(p_all, c(1, 2), nCD4, "*")
+
+    CD4.st1 <- CD4_all[,, 1, ]
+    CD4.st2 <- CD4_all[,, 2, ]
+    CD4.st3 <- CD4_all[,, 3, ]
+    CD4.st4 <- CD4_all[,, 4, ]
     CD4.st5 <- NULL
-  }
-
-  ### Expected HIV diagnoses
-  if (config$rita) {
-    HIV <- exp.diags.arr[,, 1, ] +
-      exp.diags.arr[,, 2, ] +
-      exp.diags.arr[,, 3, ] +
-      exp.diags.arr[,, 4, ] +
-      exp.diags.arr[,, 5, ]
   } else {
-    HIV <- exp.diags.arr[,, 1, ] +
-      exp.diags.arr[,, 2, ] +
-      exp.diags.arr[,, 3, ] +
-      exp.diags.arr[,, 4, ]
-  }
+    # denom dims: (nt, nage, nsim)
+    cd4_denom <- apply(
+      exp.diags.arr[,, seq_len(config$ndiagst - 1), , drop = FALSE],
+      c(1, 2, 4),
+      sum
+    )
 
-  ### Expected AIDS diagnoses
-  ### Depending on whether under-reporting present
-  ### (With real-data always)
-  aids_slice <- ifelse(config$rita, 6, 5)
-  if (urep.flag) {
-    urep.vec <- fit.mat[, "under_rep"]
-    AIDS <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
-      urep.fct(
-        urep.vec[i],
-        exp.diags.arr[,, aids_slice, i],
-        urep.flag = urep.flag,
-        nt = nquar
-      )
-    }))
-  } else {
-    AIDS <- exp.diags.arr[,, aids_slice, ]
+    # stage proportions p(stage | diagnosed), dims: (nt, nage, stage, nsim)
+    cd4_num <- exp.diags.arr[,, seq_len(config$ndiagst - 1), , drop = FALSE]
+    cd4_p_all <- sweep(
+      cd4_num,
+      MARGIN = c(1, 2, 4),
+      STATS = cd4_denom,
+      FUN = "/"
+    )
+    cd4_p_all[!is.finite(cd4_p_all)] <- 0
+
+    CD4_all <- sweep(cd4_p_all, MARGIN = c(1, 2), STATS = nCD4, FUN = "*")
+
+    CD4.st1 <- CD4_all[,, 1, ]
+    CD4.st2 <- CD4_all[,, 2, ]
+    CD4.st3 <- CD4_all[,, 3, ]
+    CD4.st4 <- CD4_all[,, 4, ]
+    if (config$rita) {
+      CD4.st5 <- CD4_all[,, 5, ]
+    } else {
+      CD4.st5 <- NULL
+    }
+
+    ### Expected HIV diagnoses
+    if (config$rita) {
+      HIV <- exp.diags.arr[,, 1, ] +
+        exp.diags.arr[,, 2, ] +
+        exp.diags.arr[,, 3, ] +
+        exp.diags.arr[,, 4, ] +
+        exp.diags.arr[,, 5, ]
+    } else {
+      HIV <- exp.diags.arr[,, 1, ] +
+        exp.diags.arr[,, 2, ] +
+        exp.diags.arr[,, 3, ] +
+        exp.diags.arr[,, 4, ]
+    }
+
+    ### Expected AIDS diagnoses
+    ### Depending on whether under-reporting present
+    ### (With real-data always)
+    aids_slice <- ifelse(config$rita, 6, 5)
+    if (urep.flag) {
+      urep.vec <- fit.mat[, "under_rep"]
+      AIDS <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
+        urep.fct(
+          urep.vec[i],
+          exp.diags.arr[,, aids_slice, i],
+          urep.flag = urep.flag,
+          nt = nquar
+        )
+      }))
+    } else {
+      AIDS <- exp.diags.arr[,, aids_slice, ]
+    }
   }
 
   ### GOODNESS OF FIT ###
@@ -517,16 +658,18 @@ postproc_ad <- function(
   # Probability of diagnosis by stage
 
   # denom dims: (nt, nage, nsim)
-  denom <- apply(
-    exp.diags.arr[,, seq_len(config$ndiagst - 1), , drop = FALSE],
-    c(1, 2, 4),
-    sum
-  )
+  if (!config$migration) {
+    denom <- apply(
+      exp.diags.arr[,, seq_len(config$ndiagst - 1), , drop = FALSE],
+      c(1, 2, 4),
+      sum
+    )
 
-  # p_all dims: (nt, nage, stage, nsim)
-  p_num <- exp.diags.arr[,, seq_len(config$ndiagst - 1), , drop = FALSE]
-  p_all <- sweep(p_num, MARGIN = c(1, 2, 4), STATS = denom, FUN = "/")
-  p_all[!is.finite(p_all)] <- 0
+    # p_all dims: (nt, nage, stage, nsim)
+    p_num <- exp.diags.arr[,, seq_len(config$ndiagst - 1), , drop = FALSE]
+    p_all <- sweep(p_num, MARGIN = c(1, 2, 4), STATS = denom, FUN = "/")
+    p_all[!is.finite(p_all)] <- 0
+  }
 
   # extract each stage
   p1 <- p_all[,, 1, ]
@@ -635,38 +778,93 @@ postproc_ad <- function(
 
   out$diagnoses <- out$diagnoses_age |> dplyr::filter(.data$age_band == "all")
 
-  # ### Time to diagnosis stuff
-  # if(!ageprobs.flag & !quar.flag & !ageprobs.spl.flag){
-  #   stop("Time to diagnosis not coded up yet")
-  # }else if(ageprobs.flag & !quar.flag & !ageprobs.spl.flag){
-  #   stop("Time to diagnosis not coded up yet")
-  # }else if(!ageprobs.flag & quar.flag & !ageprobs.spl.flag){
-  #   Rcpp::sourceCpp('HIV backcalculation/Age dependency/MSMdata16/TimeToDxFct_aidiags.cpp')
-  # }else if(ageprobs.flag & quar.flag & !ageprobs.spl.flag){
-  #   Rcpp::sourceCpp('HIV backcalculation/Age dependency/MSMdata16/TimeToDxFct_acdiags.cpp')
-  # }else if(ageprobs.flag & quar.flag & ageprobs.spl.flag){
-  #   Rcpp::sourceCpp('HIV backcalculation/Age dependency/MSMdata16/TimeToDxFct_adiags.cpp')
-  # }else{
-  #   stop("Flags somehow uncorrectly specified")
-  # }
-  # d.ind <- grep("d\\[",colnames(fit.mat))
-  # d.mat <- fit.mat[,d.ind]
-  #
-  # ### the call depends on model... maybe include nac in fct
-  # t.to.d <- t_to_d(nt, nage, 4, n_ind_sim=20, d.mat, stan_data$q)
-  # snaps <- snap(nt, nage, 4, n_ind_sim=20, t_max=150,  d.mat, stan_data$q)
-  #
-  # t.to.d.dist <- apply(t.to.d[[1]], c(1,2), quantile, probs=c(0.1,0.25,0.5,0.75,0.9))
-  #
-  # t.to.d.dist[t.to.d.dist==(nt+1)] <- NA
-  # ### Scaling quarters to years
-  # out$t.to.d.dist  <- t.to.d.dist/4
-  #
-  # snaps.dist <- apply(snaps[[1]], c(1,2), quantile, probs=c(0.1,0.25,0.5,0.75,0.9))
-  #
-  # ### Scaling quarters to years
-  # out$snaps.dist  <- snaps.dist/4
-  #
+  ### MIGRATION OUTPUTS (AD migration model) ###
+  if (config$migration) {
+    # migration (omega[t])
+    omega.ind <- grep("^omega\\[", colnames(fit.mat))
+
+    omega.draws <- fit.mat[, omega.ind, drop = FALSE]
+    omega.q <- apply(omega.draws, 2, get_quantiles)
+
+    out$migration <- make_tibble(
+      omega.q,
+      nt = nquar,
+      start_yr = start_yr,
+      qt.flag = TRUE
+    )
+
+    # out$migration <- out$migration_age |>
+    #   dplyr::filter(.data$age_band == "all")
+
+    # migration_prob (m[k,t], k=1..5)
+    migration_prob_labels <- c(
+      "CD4>=500",
+      "CD4 350-499",
+      "CD4 200-349",
+      "CD4<200",
+      "Transfers of care"
+    )
+
+    migration_prob_df <- lapply(seq_len(5), function(k) {
+      mk.ind <- grep(sprintf("^m\\[%d,", k), colnames(fit.mat))
+      mk.q <- apply(fit.mat[, mk.ind, drop = FALSE], 2, get_quantiles)
+
+      make_tibble(
+        mk.q,
+        nt = nquar,
+        start_yr = start_yr,
+        qt.flag = TRUE
+      ) |>
+        dplyr::mutate(
+          strata = factor(
+            migration_prob_labels[k],
+            levels = migration_prob_labels
+          )
+        )
+    })
+
+    out$migration_prob <- dplyr::bind_rows(migration_prob_df)
+
+    # transfers (omega[t] * m[5,t])
+    m5.ind <- grep("^m\\[5,", colnames(fit.mat))
+    m5.draws <- fit.mat[, m5.ind, drop = FALSE]
+    transfers.draws <- omega.draws * m5.draws
+    transfers.q <- apply(transfers.draws, 2, get_quantiles)
+
+    out$transfers <- make_tibble(
+      transfers.q,
+      nt = nquar,
+      start_yr = start_yr,
+      qt.flag = TRUE
+    )
+
+    # out$transfers <- out$transfers_age |>
+    #   dplyr::filter(.data$age_band == "all")
+
+    # ratio_abroad_uk (p[t])
+    p.ind <- grep("^p\\[", colnames(fit.mat))
+    p.draws <- fit.mat[, p.ind, drop = FALSE]
+
+    p.q <- apply(p.draws, 2, get_quantiles)
+    out$ratio_abroad_uk <- make_tibble(
+      p.q,
+      nt = nquar,
+      start_yr = start_yr,
+      qt.flag = TRUE
+    )
+
+    # detect_prob (detect_prob[t])
+    detect.ind <- grep("^detect_prob\\[", colnames(fit.mat))
+    detect.draws <- fit.mat[, detect.ind, drop = FALSE]
+
+    detect.q <- apply(detect.draws, 2, get_quantiles)
+    out$detect_prob <- make_tibble(
+      detect.q,
+      nt = nquar,
+      start_yr = start_yr,
+      qt.flag = TRUE
+    )
+  }
 
   return(out)
 }

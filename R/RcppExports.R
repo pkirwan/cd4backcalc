@@ -29,6 +29,10 @@ prev_iter_fct_rita <- function(H, d, q, prev, nquar, nage) {
     .Call(`_cd4backcalc_prev_iter_fct_rita`, H, d, q, prev, nquar, nage)
 }
 
+prev_iter_fct_migration <- function(H, d, q, prev_total, omega, p, m, abroad_age_prop, nquar, nage) {
+    .Call(`_cd4backcalc_prev_iter_fct_migration`, H, d, q, prev_total, omega, p, m, abroad_age_prop, nquar, nage)
+}
+
 normalize_mat <- function(m) {
     .Call(`_cd4backcalc_normalize_mat`, m)
 }

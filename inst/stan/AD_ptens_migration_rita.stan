@@ -207,7 +207,7 @@ transformed parameters {
   vector<lower=0, upper=1>[nquar] detect_prob;
   vector<lower=0>[nquar] true_abroad_dx;
   vector<lower=0>[nquar] exp_ABROAD_dx;
-  matrix<lower=0>[nquar, nage] misclassified_dx_age = rep_matrix(0, nquar,
+  matrix<lower=0>[nquar, nage] misclassified_dx = rep_matrix(0, nquar,
                                                                  nage);
   
   for (t in 1 : nquar) {
@@ -215,7 +215,7 @@ transformed parameters {
     true_abroad_dx[t] = omega[t] * m[5, t];
     exp_ABROAD_dx[t] = true_abroad_dx[t] * detect_prob[t];
     for (a in 1 : nage) {
-      misclassified_dx_age[t, a] = true_abroad_dx[t] * (1 - detect_prob[t])
+      misclassified_dx[t, a] = true_abroad_dx[t] * (1 - detect_prob[t])
                                    * abroad_age_prop[t, a];
     }
   }
@@ -404,7 +404,7 @@ transformed parameters {
         
         // Add misclassified abroad diagnoses to migrant HIV totals only (excluded from CD4 composition)
         if (y == 2) {
-          hiv_dx += misclassified_dx_age[t, a];
+          hiv_dx += misclassified_dx[t, a];
         }
         
         exp_HIV_dx[t, a, y] = hiv_dx;
@@ -413,7 +413,7 @@ transformed parameters {
         {
           real denom = hiv_dx;
           if (y == 2) {
-            denom -= misclassified_dx_age[t, a];
+            denom -= misclassified_dx[t, a];
           }
           if (denom > 0) {
             exp_p[t, a, y] = to_vector(exp_diag[t, a, y, 1 : 5]) / denom;

@@ -605,3 +605,121 @@ arma::cube prev_iter_fct_rita(const arma::vec &H, const arma::cube &d, const arm
 
   return exp_diag;
 }
+
+// [[Rcpp::export]]
+arma::cube prev_iter_fct_migration(
+    const arma::vec &H,               // length nquar*nage (age-blocked: t varies fastest)
+    const arma::cube &d,              // dims: 4 (state) x nquar (time) x 4 (agegrp)
+    const arma::mat &q,               // 4 x nage
+    const arma::mat &prev_total,      // 4 x nage (init_prev_age + init_prev_abroad_age)
+    const arma::vec &omega,           // length nquar
+    const arma::vec &p,               // length nquar (UK-acquired prop among migrants)
+    const arma::mat &m,               // 5 x nquar (migration probs; rows 1..4 are abroad CD4 states)
+    const arma::mat &abroad_age_prop, // nquar x nage (rows sum to 1; fallback uniform handled in R)
+    int nquar,
+    int nage)
+{
+  arma::cube exp_prev(nquar, nage, 4, arma::fill::zeros);
+  const arma::vec empty_vec1(4, arma::fill::zeros);
+
+  int nagegrp = d.n_slices; // should be 4
+
+  // Precompute transition matrices PA[t][a0][ag] where a0 is age-at-entry index
+  std::vector<std::vector<std::vector<arma::mat>>> PA(
+      nquar, std::vector<std::vector<arma::mat>>(nage, std::vector<arma::mat>(nagegrp)));
+
+  for (int t = 0; t < nquar; ++t)
+  {
+    for (int a0 = 0; a0 < nage; ++a0)
+    {
+      for (int ag = 0; ag < nagegrp; ++ag)
+      {
+        arma::mat d1 = d.slice(ag);           // 4 x nquar
+        PA[t][a0][ag] = Q1_fct(d1, q, t, a0); // uses q(.,a0) = progression by age at entry
+      }
+    }
+  }
+
+  // Cohort latent arrays (t, a0, t0) with 4-state vectors
+  std::vector<std::vector<std::vector<arma::vec>>> lat_arr(
+      nquar, std::vector<std::vector<arma::vec>>(nage, std::vector<arma::vec>(nquar)));
+
+  // Init with zeros
+  for (int t = 0; t < nquar; ++t)
+  {
+    for (int a0 = 0; a0 < nage; ++a0)
+    {
+      for (int t0 = 0; t0 < nquar; ++t0)
+      {
+        lat_arr[t][a0][t0] = empty_vec1;
+      }
+    }
+  }
+
+  for (int t0 = 0; t0 < nquar; ++t0)
+  {
+    for (int a0 = 0; a0 < nage; ++a0)
+    {
+      arma::vec lat_p(4, arma::fill::zeros);
+      int ag0 = age_to_agroup(a0);
+
+      // Add (combined) initial prevalence only at t0==0 (quarter 1)
+      if (t0 == 0)
+      {
+        arma::vec tmp(4);
+        tmp(0) = prev_total(0, a0);
+        tmp(1) = prev_total(1, a0);
+        tmp(2) = prev_total(2, a0);
+        tmp(3) = prev_total(3, a0);
+
+        // survivors after diagnosis+progression in quarter 1
+        lat_p += (PA[0][a0][ag0].t() * tmp);
+      }
+
+      // Inflows at entry time t0 and entry age a0
+      double inflow_native = H((a0 * nquar) + t0);
+      double inflow_mig_uk = inflow_native * p(t0);
+
+      double inflow_ab1 = omega(t0) * abroad_age_prop(t0, a0) * m(0, t0);
+      double inflow_ab2 = omega(t0) * abroad_age_prop(t0, a0) * m(1, t0);
+      double inflow_ab3 = omega(t0) * abroad_age_prop(t0, a0) * m(2, t0);
+      double inflow_ab4 = omega(t0) * abroad_age_prop(t0, a0) * m(3, t0);
+
+      // Combined (native + migrant) undiagnosed latent state at t0
+      lat_arr[t0][a0][t0](0) = inflow_native + inflow_mig_uk + inflow_ab1 + lat_p(0);
+      lat_arr[t0][a0][t0](1) = inflow_ab2 + lat_p(1);
+      lat_arr[t0][a0][t0](2) = inflow_ab3 + lat_p(2);
+      lat_arr[t0][a0][t0](3) = inflow_ab4 + lat_p(3);
+
+      for (int t = (t0 + 1); t < nquar; ++t)
+      {
+        int a = age_fct(a0, t, t0, nquar, nage);
+        int ag = age_to_agroup(a);
+
+        // propagate undiagnosed (diagnosis probs depend on current age group via ag, progression on a0)
+        lat_arr[t][a0][t0] = PA[t][a0][ag].t() * lat_arr[t - 1][a0][t0];
+      }
+    }
+  }
+
+  // Convert cohort-by-entry-age arrays to cohort-by-current-age and aggregate t0
+  std::vector<std::vector<std::vector<arma::vec>>> lat_arr1 = a0toa_fct(lat_arr, nquar, nage);
+
+  for (int t = 0; t < nquar; ++t)
+  {
+    for (int a = 0; a < nage; ++a)
+    {
+      arma::vec tot(4, arma::fill::zeros);
+      for (int t0 = 0; t0 <= t; ++t0)
+      {
+        tot += lat_arr1[t][a][t0];
+      }
+      exp_prev(t, a, 0) = tot(0);
+      exp_prev(t, a, 1) = tot(1);
+      exp_prev(t, a, 2) = tot(2);
+      exp_prev(t, a, 3) = tot(3);
+    }
+  }
+
+  return exp_prev;
+}

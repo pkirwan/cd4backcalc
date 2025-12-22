@@ -61,10 +61,10 @@ plot_estimates <- function(
   # add simulated values if data were simulated
   # simulated values are the same for all iterations, so just use first
   if ("sim_data" %in% names(hiv_list[[1]])) {
-    sim_estimates <- extract_simulated_quantities(hiv_list[[1]])
+    sim_estimates <- extract_simulated_quantity(hiv_list[[1]], quantity)
     p1 <- p1 +
       ggplot2::geom_point(
-        data = sim_estimates[[quantity]],
+        data = sim_estimates,
         ggplot2::aes(y = .data$value),
         size = 0.4
       )

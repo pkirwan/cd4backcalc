@@ -507,10 +507,12 @@ make_pars_save <- function(config) {
     pars_save <- c(
       pars_save,
       "gamma",
+      "omega",
       "p",
       "m",
       "detect_prob",
-      "log_lik_abroad"
+      "log_lik_abroad",
+      "misclassified_dx"
     )
   }
 

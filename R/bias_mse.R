@@ -51,15 +51,17 @@ get_estimates <- function(hiv_list, var) {
 #' Extract simulated quantities based on the provided configuration.
 #'
 #' @param sim_diags The simulated diagnosis data containing stan_data and sim_data.
+#' @param quantity The quantity to extract.
 #' @return A list of model estimates including undiagnosed prevalence, incidence, migration, diagnosis probabilities, diagnoses, migration probabilities, proportion of UK-acquired infections that are migrants, transfers of care, and CD4 strata.
 #' @export
-extract_simulated_quantities <- function(sim_diags) {
+extract_simulated_quantity <- function(sim_diags, quantity) {
   stan_data <- sim_diags$stan_data
   sim_data <- sim_diags$sim_data
 
   plot_years <- stan_data$nquar / 4 - 0.25
   age_group_labels <- c("1524", "2534", "3544", "45")
 
+  # Create data frames for each basic quantity
   undiag_prev <- if (stan_data$config$migration) {
     tibble::tibble(
       value = rowSums(sim_data$epi_uk$lat) +
@@ -76,104 +78,29 @@ extract_simulated_quantities <- function(sim_diags) {
       group = "Simulated values"
     )
   }
-
-  undiag_prev_age <- tidyr::expand_grid(
-    year = seq(0, plot_years, by = 0.25),
-    age = 15:(stan_data$nage + 14)
-  ) |>
-    dplyr::mutate(
-      value = as.vector(apply(
-        sim_data$epi_uk$lat_age +
-          sim_data$epi_uk_abroad$lat_age +
-          if (stan_data$config$migration) {
-            sim_data$epi_abroad$lat_age
-          } else {
-            0
-          },
-        c(1, 2),
-        sum
-      )),
-      group = "Simulated values",
-      age_band = cut(
-        .data$age,
-        breaks = c(15, 25, 35, 45, 100),
-        labels = age_group_labels,
-        right = FALSE
-      )
-    ) |>
-    dplyr::group_by(.data$year, .data$age_band, .data$group) |>
-    dplyr::summarise(value = sum(.data$value), .groups = "drop") |>
-    dplyr::bind_rows(
-      undiag_prev |>
-        dplyr::mutate(
-          age_band = "all"
-        )
-    )
-
   incidence <- tibble::tibble(
     value = sim_data$infs[, 1],
     year = seq(0, plot_years, by = 0.25),
     group = "Simulated values"
   )
-
-  incidence_age <- tidyr::expand_grid(
-    year = seq(0, plot_years, by = 0.25),
-    age = 15:(stan_data$nage + 14)
-  ) |>
-    dplyr::mutate(
-      value = as.vector(sim_data$infs_age[,, 1]),
-      group = "Simulated values",
-      age_band = cut(
-        .data$age,
-        breaks = c(15, 25, 35, 45, 100),
-        labels = age_group_labels,
-        right = FALSE
-      )
-    ) |>
-    dplyr::group_by(.data$year, .data$age_band, .data$group) |>
-    dplyr::summarise(value = sum(.data$value), .groups = "drop") |>
-    dplyr::bind_rows(
-      incidence |>
-        dplyr::mutate(
-          age_band = "all"
-        )
-    )
-
   migration <- tibble::tibble(
     value = rowSums(sim_data$m[, 1:stan_data$config$nlatst]),
     year = seq(0, plot_years, by = 0.25),
     group = "Simulated values"
   )
-
-  migration_age <- tidyr::expand_grid(
-    year = seq(0, plot_years, by = 0.25),
-    age = 15:(stan_data$nage + 14)
-  ) |>
-    dplyr::mutate(
-      value = as.vector(apply(
-        sim_data$m_age[,,
-          1:stan_data$config$nlatst
-        ],
-        c(1, 2),
-        sum
-      )),
-      group = "Simulated values",
-      age_band = cut(
-        .data$age,
-        breaks = c(15, 25, 35, 45, 100),
-        labels = age_group_labels,
-        right = FALSE
-      )
-    ) |>
-    dplyr::group_by(.data$year, .data$age_band, .data$group) |>
-    dplyr::summarise(value = sum(.data$value), .groups = "drop") |>
-    dplyr::bind_rows(
-      migration |>
-        dplyr::mutate(
-          age_band = "all"
-        )
+  diagnoses <- if (stan_data$config$migration) {
+    tibble::tibble(
+      value = rowSums(stan_data$HIV) + rowSums(stan_data$AIDS),
+      year = seq(0, plot_years, by = 0.25),
+      group = "Simulated values"
     )
-
+  } else {
+    tibble::tibble(
+      value = stan_data$HIV + stan_data$AIDS,
+      year = seq(0, plot_years, by = 0.25),
+      group = "Simulated values"
+    )
+  }
   diag_prob <- if (stan_data$config$rita) {
     tibble::tibble(
       value = as.vector(sim_data$d_probs),
@@ -220,215 +147,278 @@ extract_simulated_quantities <- function(sim_diags) {
       )
   }
 
-  diag_prob_age <- tidyr::crossing(
-    diag_prob,
-    age_band = age_group_labels
-  )
-
-  diagnoses <- if (stan_data$config$migration) {
-    tibble::tibble(
-      value = rowSums(stan_data$HIV) + rowSums(stan_data$AIDS),
+  if (quantity == "undiag_prev") {
+    out <- undiag_prev
+  } else if (quantity == "incidence") {
+    out <- incidence
+  } else if (quantity == "migration") {
+    out <- migration
+  } else if (quantity == "diagnoses") {
+    out <- diagnoses
+  } else if (quantity == "undiag_prev_age") {
+    out <- tidyr::expand_grid(
       year = seq(0, plot_years, by = 0.25),
-      group = "Simulated values"
-    )
-  } else {
-    tibble::tibble(
-      value = stan_data$HIV + stan_data$AIDS,
-      year = seq(0, plot_years, by = 0.25),
-      group = "Simulated values"
-    )
-  }
-
-  diagnoses_age <- tidyr::expand_grid(
-    # diagnoses are age x year
-    age = 15:(stan_data$nage + 14),
-    year = seq(0, plot_years, by = 0.25)
-  ) |>
-    dplyr::mutate(
-      value = as.vector(
-        apply(stan_data$HIV_age, c(1, 2), sum) +
-          apply(stan_data$AIDS_age, c(1, 2), sum)
-      ),
-      group = "Simulated values",
-      age_band = cut(
-        .data$age,
-        breaks = c(15, 25, 35, 45, 100),
-        labels = age_group_labels,
-        right = FALSE
-      )
-    ) |>
-    dplyr::group_by(.data$year, .data$age_band, .data$group) |>
-    dplyr::summarise(value = sum(.data$value), .groups = "drop") |>
-    dplyr::bind_rows(
-      diagnoses |>
-        dplyr::mutate(
-          age_band = "all"
-        )
-    )
-
-  migration_prob <- if (stan_data$config$rita) {
-    tibble::tibble(
-      value = as.vector(sweep(
-        sim_data$m,
-        1,
-        ifelse(sim_data$omega == 0, NA_real_, sim_data$omega),
-        "/"
-      )),
-      year = rep(seq(0, plot_years, by = 0.25), 8),
-      strata = rep(
-        c(
-          "Recently acquired 0-3, CD4>500",
-          "Recently acquired 3-6, CD4 >=500",
-          "Recently acquired 0-3, CD4 350-499",
-          "CD4>=500",
-          "CD4 350-499",
-          "CD4 200-349",
-          "CD4<200",
-          "Transfers of care"
-        ),
-        each = stan_data$nquar
-      ),
-      group = "Simulated values"
+      age = 15:(stan_data$nage + 14)
     ) |>
       dplyr::mutate(
-        value = dplyr::if_else(is.na(.data$value), 0, .data$value),
-        strata = factor(
-          .data$strata,
-          levels = c(
-            "CD4<200",
-            "CD4 200-349",
-            "CD4 350-499",
-            "CD4>=500",
-            "Recently acquired 0-3, CD4 350-499",
-            "Recently acquired 3-6, CD4 >=500",
-            "Recently acquired 0-3, CD4>=500",
-            "Transfers of care"
-          )
+        value = as.vector(apply(
+          sim_data$epi_uk$lat_age +
+            sim_data$epi_uk_abroad$lat_age +
+            if (stan_data$config$migration) {
+              sim_data$epi_abroad$lat_age
+            } else {
+              0
+            },
+          c(1, 2),
+          sum
+        )),
+        group = "Simulated values",
+        age_band = cut(
+          .data$age,
+          breaks = c(15, 25, 35, 45, 100),
+          labels = age_group_labels,
+          right = FALSE
         )
+      ) |>
+      dplyr::group_by(.data$year, .data$age_band, .data$group) |>
+      dplyr::summarise(value = sum(.data$value), .groups = "drop") |>
+      dplyr::bind_rows(
+        undiag_prev |>
+          dplyr::mutate(
+            age_band = "all"
+          )
       )
-  } else {
-    tibble::tibble(
-      value = as.vector(sweep(
-        sim_data$m,
-        1,
-        ifelse(sim_data$omega == 0, NA_real_, sim_data$omega),
-        "/"
-      )),
-      year = rep(seq(0, plot_years, by = 0.25), 5),
-      strata = rep(
-        c(
-          "CD4>=500",
-          "CD4 350-499",
-          "CD4 200-349",
-          "CD4<200",
-          "Transfers of care"
-        ),
-        each = stan_data$nquar
-      ),
-      group = "Simulated values"
+  } else if (quantity == "incidence_age") {
+    out <- tidyr::expand_grid(
+      year = seq(0, plot_years, by = 0.25),
+      age = 15:(stan_data$nage + 14)
     ) |>
       dplyr::mutate(
-        value = dplyr::if_else(is.na(.data$value), 0, .data$value),
-        strata = factor(
-          .data$strata,
-          levels = c(
-            "CD4<200",
-            "CD4 200-349",
-            "CD4 350-499",
-            "CD4>=500",
-            "Transfers of care"
-          )
+        value = as.vector(sim_data$infs_age[,, 1]),
+        group = "Simulated values",
+        age_band = cut(
+          .data$age,
+          breaks = c(15, 25, 35, 45, 100),
+          labels = age_group_labels,
+          right = FALSE
         )
+      ) |>
+      dplyr::group_by(.data$year, .data$age_band, .data$group) |>
+      dplyr::summarise(value = sum(.data$value), .groups = "drop") |>
+      dplyr::bind_rows(
+        incidence |>
+          dplyr::mutate(
+            age_band = "all"
+          )
       )
-  }
-
-  ratio_abroad_uk <- tibble::tibble(
-    value = sim_data$ratio_abroad_uk,
-    year = seq(0, plot_years, by = 0.25),
-    group = "Simulated values"
-  )
-
-  transfers <- tibble::tibble(
-    value = stan_data$ABROAD,
-    year = seq(0, plot_years, by = 0.25),
-    group = "Simulated values"
-  )
-
-  cd4_strata <- if (stan_data$config$rita) {
-    if (stan_data$config$migration) {
+  } else if (quantity == "migration_age") {
+    out <- tidyr::expand_grid(
+      year = seq(0, plot_years, by = 0.25),
+      age = 15:(stan_data$nage + 14)
+    ) |>
+      dplyr::mutate(
+        value = as.vector(apply(
+          sim_data$m_age[,,
+            1:stan_data$config$nlatst
+          ],
+          c(1, 2),
+          sum
+        )),
+        group = "Simulated values",
+        age_band = cut(
+          .data$age,
+          breaks = c(15, 25, 35, 45, 100),
+          labels = age_group_labels,
+          right = FALSE
+        )
+      ) |>
+      dplyr::group_by(.data$year, .data$age_band, .data$group) |>
+      dplyr::summarise(value = sum(.data$value), .groups = "drop") |>
+      dplyr::bind_rows(
+        migration |>
+          dplyr::mutate(
+            age_band = "all"
+          )
+      )
+  } else if (quantity == "diag_prob") {
+    out <- diag_prob
+  } else if (quantity == "diag_prob_age") {
+    out <- tidyr::crossing(
+      diag_prob,
+      age_band = age_group_labels
+    )
+  } else if (quantity == "diagnoses_age") {
+    out <- tidyr::expand_grid(
+      # diagnoses are age x year
+      age = 15:(stan_data$nage + 14),
+      year = seq(0, plot_years, by = 0.25)
+    ) |>
+      dplyr::mutate(
+        value = as.vector(
+          apply(stan_data$HIV_age, c(1, 2), sum) +
+            apply(stan_data$AIDS_age, c(1, 2), sum)
+        ),
+        group = "Simulated values",
+        age_band = cut(
+          .data$age,
+          breaks = c(15, 25, 35, 45, 100),
+          labels = age_group_labels,
+          right = FALSE
+        )
+      ) |>
+      dplyr::group_by(.data$year, .data$age_band, .data$group) |>
+      dplyr::summarise(value = sum(.data$value), .groups = "drop") |>
+      dplyr::bind_rows(
+        diagnoses |>
+          dplyr::mutate(
+            age_band = "all"
+          )
+      )
+  } else if (quantity == "migration_prob") {
+    out <- if (stan_data$config$rita) {
       tibble::tibble(
-        `Recently acquired` = rowSums(stan_data$CD4[,, 1]),
-        `CD4>=500` = rowSums(stan_data$CD4[,, 2]),
-        `CD4 350-499` = rowSums(stan_data$CD4[,, 3]),
-        `CD4 200-349` = rowSums(stan_data$CD4[,, 4]),
-        `CD4<200` = rowSums(stan_data$CD4[,, 5]),
+        value = as.vector(sweep(
+          sim_data$m,
+          1,
+          ifelse(sim_data$omega == 0, NA_real_, sim_data$omega),
+          "/"
+        )),
+        year = rep(seq(0, plot_years, by = 0.25), 8),
+        strata = rep(
+          c(
+            "Recently acquired 0-3, CD4>500",
+            "Recently acquired 3-6, CD4 >=500",
+            "Recently acquired 0-3, CD4 350-499",
+            "CD4>=500",
+            "CD4 350-499",
+            "CD4 200-349",
+            "CD4<200",
+            "Transfers of care"
+          ),
+          each = stan_data$nquar
+        ),
+        group = "Simulated values"
+      ) |>
+        dplyr::mutate(
+          value = dplyr::if_else(is.na(.data$value), 0, .data$value),
+          strata = factor(
+            .data$strata,
+            levels = c(
+              "CD4<200",
+              "CD4 200-349",
+              "CD4 350-499",
+              "CD4>=500",
+              "Recently acquired 0-3, CD4 350-499",
+              "Recently acquired 3-6, CD4 >=500",
+              "Recently acquired 0-3, CD4>=500",
+              "Transfers of care"
+            )
+          )
+        )
+    } else {
+      tibble::tibble(
+        value = as.vector(sweep(
+          sim_data$m,
+          1,
+          ifelse(sim_data$omega == 0, NA_real_, sim_data$omega),
+          "/"
+        )),
+        year = rep(seq(0, plot_years, by = 0.25), 5),
+        strata = rep(
+          c(
+            "CD4>=500",
+            "CD4 350-499",
+            "CD4 200-349",
+            "CD4<200",
+            "Transfers of care"
+          ),
+          each = stan_data$nquar
+        ),
+        group = "Simulated values"
+      ) |>
+        dplyr::mutate(
+          value = dplyr::if_else(is.na(.data$value), 0, .data$value),
+          strata = factor(
+            .data$strata,
+            levels = c(
+              "CD4<200",
+              "CD4 200-349",
+              "CD4 350-499",
+              "CD4>=500",
+              "Transfers of care"
+            )
+          )
+        )
+    }
+  } else if (quantity == "ratio_abroad_uk") {
+    out <- tibble::tibble(
+      value = sim_data$ratio_abroad_uk,
+      year = seq(0, plot_years, by = 0.25),
+      group = "Simulated values"
+    )
+  } else if (quantity == "transfers") {
+    out <- tibble::tibble(
+      value = stan_data$ABROAD,
+      year = seq(0, plot_years, by = 0.25),
+      group = "Simulated values"
+    )
+  } else if (quantity == "cd4_strata") {
+    out <- if (stan_data$config$rita) {
+      if (stan_data$config$migration) {
+        tibble::tibble(
+          `Recently acquired` = rowSums(stan_data$CD4[,, 1]),
+          `CD4>=500` = rowSums(stan_data$CD4[,, 2]),
+          `CD4 350-499` = rowSums(stan_data$CD4[,, 3]),
+          `CD4 200-349` = rowSums(stan_data$CD4[,, 4]),
+          `CD4<200` = rowSums(stan_data$CD4[,, 5]),
+          year = seq(0, plot_years, by = 0.25),
+          group = "Simulated values"
+        )
+      } else {
+        tibble::tibble(
+          `Recently acquired` = stan_data$CD4[, 1],
+          `CD4>=500` = stan_data$CD4[, 2],
+          `CD4 350-499` = stan_data$CD4[, 3],
+          `CD4 200-349` = stan_data$CD4[, 4],
+          `CD4<200` = stan_data$CD4[, 5],
+          year = seq(0, plot_years, by = 0.25),
+          group = "Simulated values"
+        )
+      }
+    } else if (stan_data$config$migration) {
+      tibble::tibble(
+        `CD4>=500` = rowSums(stan_data$CD4[,, 1]),
+        `CD4 350-499` = rowSums(stan_data$CD4[,, 2]),
+        `CD4 200-349` = rowSums(stan_data$CD4[,, 3]),
+        `CD4<200` = rowSums(stan_data$CD4[,, 4]),
         year = seq(0, plot_years, by = 0.25),
         group = "Simulated values"
       )
     } else {
       tibble::tibble(
-        `Recently acquired` = stan_data$CD4[, 1],
-        `CD4>=500` = stan_data$CD4[, 2],
-        `CD4 350-499` = stan_data$CD4[, 3],
-        `CD4 200-349` = stan_data$CD4[, 4],
-        `CD4<200` = stan_data$CD4[, 5],
+        `CD4>=500` = stan_data$CD4[, 1],
+        `CD4 350-499` = stan_data$CD4[, 2],
+        `CD4 200-349` = stan_data$CD4[, 3],
+        `CD4<200` = stan_data$CD4[, 4],
         year = seq(0, plot_years, by = 0.25),
         group = "Simulated values"
       )
     }
-  } else if (stan_data$config$migration) {
-    tibble::tibble(
-      `CD4>=500` = rowSums(stan_data$CD4[,, 1]),
-      `CD4 350-499` = rowSums(stan_data$CD4[,, 2]),
-      `CD4 200-349` = rowSums(stan_data$CD4[,, 3]),
-      `CD4<200` = rowSums(stan_data$CD4[,, 4]),
-      year = seq(0, plot_years, by = 0.25),
-      group = "Simulated values"
-    )
-  } else {
-    tibble::tibble(
-      `CD4>=500` = stan_data$CD4[, 1],
-      `CD4 350-499` = stan_data$CD4[, 2],
-      `CD4 200-349` = stan_data$CD4[, 3],
-      `CD4<200` = stan_data$CD4[, 4],
+
+    out <- out |>
+      tidyr::pivot_longer(
+        cols = tidyselect::starts_with(c("CD4", "Recently")),
+        names_to = "strata",
+        values_to = "value"
+      )
+  } else if (quantity == "detect_prob") {
+    out <- tibble::tibble(
+      value = sim_data$detect_prob,
       year = seq(0, plot_years, by = 0.25),
       group = "Simulated values"
     )
   }
-
-  cd4_strata <- cd4_strata |>
-    tidyr::pivot_longer(
-      cols = tidyselect::starts_with(c("CD4", "Recently")),
-      names_to = "strata",
-      values_to = "value"
-    )
-
-  detect_prob <- tibble::tibble(
-    value = sim_data$detect_prob,
-    year = seq(0, plot_years, by = 0.25),
-    group = "Simulated values"
-  )
-
-  return(
-    list(
-      "stan_data" = stan_data,
-      "sim_data" = sim_data,
-      "undiag_prev" = undiag_prev,
-      "undiag_prev_age" = undiag_prev_age,
-      "incidence" = incidence,
-      "incidence_age" = incidence_age,
-      "migration" = migration,
-      "diag_prob" = diag_prob,
-      "diag_prob_age" = diag_prob_age,
-      "diagnoses" = diagnoses,
-      "diagnoses_age" = diagnoses_age,
-      "migration_prob" = migration_prob,
-      "ratio_abroad_uk" = ratio_abroad_uk,
-      "transfers" = transfers,
-      "cd4_strata" = cd4_strata,
-      "detect_prob" = detect_prob
-    )
-  )
+  return(out)
 }
 
 #' Get bias between HIV model estimates and simulation results.
@@ -444,7 +434,7 @@ get_bias <- function(
 ) {
   bias <- dplyr::left_join(
     get_estimates(hiv_list, type),
-    model_estimates[[type]],
+    model_estimates,
     by = c("year")
   ) |>
     dplyr::filter(.data$year > 0) |>
@@ -467,7 +457,7 @@ get_bias_strata <- function(
 ) {
   bias <- dplyr::left_join(
     get_estimates(hiv_list, type),
-    model_estimates[[type]],
+    model_estimates,
     by = c("year", "strata")
   ) |>
     dplyr::filter(.data$year > 0) |>
@@ -500,13 +490,11 @@ make_mse_list <- function(
     hiv_list <- list(hiv_list)
   }
 
-  simulated_quantities <- extract_simulated_quantities(hiv_list[[1]])
-
   out <- list()
 
   out$incidence_bias <- get_bias(
     hiv_list,
-    simulated_quantities,
+    extract_simulated_quantity(hiv_list[[1]], quantity = "incidence"),
     "incidence"
   )
   out$incidence_mse <- get_mse(out$incidence_bias)
@@ -514,17 +502,17 @@ make_mse_list <- function(
   if (hiv_list[[1]]$stan_data$config$migration) {
     out$migration_bias <- get_bias(
       hiv_list,
-      simulated_quantities,
+      extract_simulated_quantity(hiv_list[[1]], quantity = "migration"),
       "migration"
     )
     out$ratio_abroad_uk_bias <- get_bias(
       hiv_list,
-      simulated_quantities,
+      extract_simulated_quantity(hiv_list[[1]], quantity = "ratio_abroad_uk"),
       "ratio_abroad_uk"
     )
     out$mp_bias <- get_bias_strata(
       hiv_list,
-      simulated_quantities,
+      extract_simulated_quantity(hiv_list[[1]], quantity = "migration_prob"),
       "migration_prob"
     )
 
