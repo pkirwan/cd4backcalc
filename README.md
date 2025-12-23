@@ -29,9 +29,9 @@ suitable prior distributions, to estimate HIV incidence and prevalence
 of undiagnosed HIV over time, as well as the probabilities of diagnosis
 in each CD4 state.
 
-<div class="figure">
+<div class="figure" style="text-align: center">
 
-<img src="man/figures/README-backcalc-model-1.png" alt="Figure: CD4-staged back-calculation model. The model compartments represent undiagnosed HIV (round boxes) and diagnosed HIV or AIDS (square boxes); the $h_j$ arrow represents HIV acquired at each time point ($j$); HIV progression probabilities ($q_i$) vary by CD4 stratum; HIV diagnosis probabilities ($d_{i,j}$) vary by CD4 stratum and time." width="100%" />
+<img src="man/figures/README-backcalc-model-1.png" alt="Figure: CD4-staged back-calculation model. The model compartments represent undiagnosed HIV (round boxes) and diagnosed HIV or AIDS (square boxes); the $h_j$ arrow represents HIV acquired at each time point ($j$); HIV progression probabilities ($q_i$) vary by CD4 stratum; HIV diagnosis probabilities ($d_{i,j}$) vary by CD4 stratum and time." width="80%" />
 <p class="caption">
 
 Figure: CD4-staged back-calculation model. The model compartments
