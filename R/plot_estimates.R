@@ -69,6 +69,12 @@ plot_estimates <- function(
     quantiles <- get_estimates(hiv_list, quantity)
   }
 
+  # filter out zero time point for incidence plots
+  if (quantity %in% c("incidence", "incidence_age")) {
+    quantiles <- quantiles |>
+      filter(.data$year > 0)
+  }
+
   p1 <- quantiles |>
     ggplot2::ggplot() +
     ggplot2::aes(.data$year, .data$`50%`, group = .data$group) +

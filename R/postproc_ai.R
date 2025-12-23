@@ -1009,7 +1009,8 @@ incidence.df <- function(
     infections.total
   }
 
-  # remove initial prevalence from first quarter
+  # Adjustments to remove initial prevalence from first quarter of data
+  # usually results in zero infections
   infections.total <- as.matrix(infections.total)
   init_prev_total <- sum(stan_data$init_prev)
   if ("init_prev_abroad" %in% names(stan_data)) {
