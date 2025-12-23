@@ -3,6 +3,10 @@
 
 # cd4backcalc
 
+<!-- Hex sticker -->
+
+<img src="man/figures/hex_sticker.png" align="right" height="139" />
+
 <!-- badges: start -->
 
 [![Lifecycle:
@@ -72,6 +76,9 @@ library(cd4backcalc)
 # simulate data
 sim_diags <- simulate_diagnoses(age = FALSE, rita = FALSE, migration = FALSE)
 
+# visualise simulated data
+plot_simulations(sim_diags, quantity = "incidence")
+
 # run back-calculation model on simulated data
 hiv_list <- run_backcalc(sim_diags)
 
@@ -104,9 +111,9 @@ structure, RITA evidence, and migration status.
 N.B. Due to the increased complexity, fitting times can be substantially
 longer when using age-dependent models.
 
-|Model                  | Age-independent (age = FALSE) | Age-dependent (age = TRUE) |       Model specification       |
-|:----------------------|:-----------------------------:|:--------------------------:|:-------------------------------:|
-|CD4                    |      :white_check_mark:       |     :white_check_mark:     | rita = FALSE, migration = FALSE |
-|CD4 + RITA             |      :white_check_mark:       |     :white_check_mark:     | rita = TRUE, migration = FALSE  |
-|CD4 + Migration        |      :white_check_mark:       |     :white_check_mark:     | rita = FALSE, migration = TRUE  |
-|CD4 + RITA + Migration |      :white_check_mark:       |     :white_check_mark:     |  rita = TRUE, migration = TRUE  |
+| Model | Age-independent (age = FALSE) | Age-dependent (age = TRUE) | Model specification |
+|:---|:--:|:--:|:--:|
+| CD4 | :white_check_mark: | :white_check_mark: | rita = FALSE, migration = FALSE |
+| CD4 + RITA | :white_check_mark: | :white_check_mark: | rita = TRUE, migration = FALSE |
+| CD4 + Migration | :white_check_mark: | :white_check_mark: | rita = FALSE, migration = TRUE |
+| CD4 + RITA + Migration | :white_check_mark: | :white_check_mark: | rita = TRUE, migration = TRUE |
