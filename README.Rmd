@@ -13,10 +13,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# cd4backcalc
-
-<!-- Hex sticker -->
-<img src="man/figures/hex_sticker.png" align="right" height="139" />
+# cd4backcalc <img src="man/figures/hex_sticker.png" align="right" height="190" />
 
 <!-- badges: start -->
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)

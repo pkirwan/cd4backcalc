@@ -1,11 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# cd4backcalc
-
-<!-- Hex sticker -->
-
-<img src="man/figures/hex_sticker.png" align="right" height="139" />
+# cd4backcalc <img src="man/figures/hex_sticker.png" align="right" height="190" />
 
 <!-- badges: start -->
 
