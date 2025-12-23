@@ -121,7 +121,7 @@ plot_diagnostics <- function(hiv_list, ntraces = 6) {
   if ("fit" %in% names(hiv_list[[1]])) {
     fit <- hiv_list[[1]]$fit
     message(
-      "Traceplots will be shown for the first iteration of the list, for other iterations please provide the appropriate fit object."
+      "Traceplots for the first iteration in the list, for other iterations please provide the appropriate fit object."
     )
   } else if ("fit" %in% names(hiv_list)) {
     fit <- hiv_list$fit
