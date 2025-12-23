@@ -12,6 +12,16 @@ test_that("simulated plots are generated correctly", {
   expect_s3_class(p4, "ggplot")
 })
 
+test_that("simulated age plots are generated correctly", {
+  # Simulate diagnoses
+  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, age = TRUE)
+  # Generate plots of key quantities
+  p1 <- plot_simulations(stan_data, "incidence_age")
+  p2 <- plot_simulations(stan_data, "undiag_prev_age")
+  expect_s3_class(p1, "ggplot")
+  expect_s3_class(p2, "ggplot")
+})
+
 test_that("plots are generated correctly", {
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123)

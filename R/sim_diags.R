@@ -368,7 +368,7 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
     }
 
     # Age people every 4 quarters (1 year)
-    if (t %% 4 == 0 && t < config$nquar) {
+    if ((t - 1) %% 4 == 0 && t < config$nquar) {
       # Shift latent states up one age group, retain oldest group
       lat_age[config$nage - 1, t, ] <- lat_age[config$nage, t, ] +
         lat_age[config$nage - 1, t, ]
