@@ -29,7 +29,7 @@ suitable prior distributions, to estimate HIV incidence and prevalence
 of undiagnosed HIV over time, as well as the probabilities of diagnosis
 in each CD4 state.
 
-<div class="figure" style="text-align: center">
+<div class="figure">
 
 <img src="man/figures/README-backcalc-model-1.png" alt="Figure: CD4-staged back-calculation model. The model compartments represent undiagnosed HIV (round boxes) and diagnosed HIV or AIDS (square boxes); the $h_j$ arrow represents HIV acquired at each time point ($j$); HIV progression probabilities ($q_i$) vary by CD4 stratum; HIV diagnosis probabilities ($d_{i,j}$) vary by CD4 stratum and time." width="80%" />
 <p class="caption">
@@ -69,25 +69,39 @@ simulated data, and plot model estimates is shown in the example below.
 ``` r
 library(cd4backcalc)
 
-# simulate data
-sim_diags <- simulate_diagnoses(age = FALSE, rita = FALSE, migration = FALSE)
+# simulate data under an increasing incidence scenario
+sim_diags <- simulate_diagnoses(h_pattern = "increasing")
 
 # visualise simulated data
 plot_simulations(sim_diags, quantity = "incidence")
+```
 
+<img src="man/figures/README-simulate-data-1.png" width="80%" />
+
+``` r
 # run back-calculation model on simulated data
+# default is 2000 iterations and 4 chains
 hiv_list <- run_backcalc(sim_diags)
 
 # check convergence
 plot_diagnostics(hiv_list)
+```
 
+<img src="man/figures/README-simulate-data-2.png" width="80%" />
+
+``` r
 # check goodness of fit
 bias_plot(hiv_list, quantity = "incidence")
+```
 
+<img src="man/figures/README-simulate-data-3.png" width="80%" />
+
+``` r
 # plot estimates compared to simulated values
 plot_estimates(hiv_list, quantity = "incidence")
-plot_estimates(hiv_list, quantity = "undiag_prev")
 ```
+
+<img src="man/figures/README-simulate-data-4.png" width="80%" />
 
 ## Supported models
 
@@ -101,15 +115,15 @@ data under different scenarios:
 
 The functions in the package are designed to work with all model
 variants, with the appropriate model selected based on user-specified
-options. The table below summarises the supported combinations of age
-structure, RITA evidence, and migration status.
+options. The table below shows the options which should be used for each
+combination of RITA evidence, migration status, and age structure.
 
 N.B. Due to the increased complexity, fitting times can be substantially
-longer when using age-dependent models.
+longer when using the age-dependent models.
 
-| Model | Age-independent (age = FALSE) | Age-dependent (age = TRUE) | Model specification |
-|:---|:--:|:--:|:--:|
-| CD4 | :white_check_mark: | :white_check_mark: | rita = FALSE, migration = FALSE |
-| CD4 + RITA | :white_check_mark: | :white_check_mark: | rita = TRUE, migration = FALSE |
-| CD4 + Migration | :white_check_mark: | :white_check_mark: | rita = FALSE, migration = TRUE |
-| CD4 + RITA + Migration | :white_check_mark: | :white_check_mark: | rita = TRUE, migration = TRUE |
+| Model | Age-independent | Age-dependent |
+|:---|:--:|:--:|
+| CD4 | rita = FALSE, migration = FALSE, age = FALSE | rita = FALSE, migration = FALSE, age = TRUE |
+| CD4 + RITA | rita = TRUE, migration = FALSE, age = FALSE | rita = TRUE, migration = FALSE, age = TRUE |
+| CD4 + Migration | rita = FALSE, migration = TRUE, age = FALSE | rita = FALSE, migration = TRUE, age = TRUE |
+| CD4 + RITA + Migration | rita = TRUE, migration = TRUE, age = FALSE | rita = TRUE, migration = TRUE, age = TRUE |

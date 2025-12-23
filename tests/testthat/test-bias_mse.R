@@ -49,7 +49,7 @@ test_that("extract_simulated_quantity correctly extracts values for ai", {
   )
   expect_equal(
     sim_estimates$value[1],
-    stan_data$sim_data$m[1, 1] / stan_data$sim_data$omega[1]
+    stan_data$sim_data$mu[1, 1]
   )
   sim_estimates <- extract_simulated_quantity(
     stan_data,

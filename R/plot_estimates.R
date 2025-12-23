@@ -116,7 +116,7 @@ plot_estimates <- function(
 #' @param ntraces Number of parameter traces to plot for each diagnostic.
 #' @return A ggplot2 object containing diagnostic plots.
 #' @export
-plot_diagnostics <- function(hiv_list, ntraces = 6) {
+plot_diagnostics <- function(hiv_list, ntraces = 4) {
   # check if hiv_list is a list of results or a single result
   if ("fit" %in% names(hiv_list[[1]])) {
     fit <- hiv_list[[1]]$fit

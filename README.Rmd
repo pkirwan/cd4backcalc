@@ -9,7 +9,7 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   fig.path = "man/figures/README-",
-  out.width = "100%"
+  out.width = "80%"
 )
 ```
 
@@ -28,7 +28,7 @@ CD4 back-calculation is a discrete-time, multi-state Markov model used to repres
 
 Models are fitted within a Bayesian framework (using rstan), with suitable prior distributions, to estimate HIV incidence and prevalence of undiagnosed HIV over time, as well as the probabilities of diagnosis in each CD4 state.
 
-```{tikz backcalc-model, fig.cap = "Figure: CD4-staged back-calculation model. The model compartments represent undiagnosed HIV (round boxes) and diagnosed HIV or AIDS (square boxes); the $h_j$ arrow represents HIV acquired at each time point ($j$); HIV progression probabilities ($q_i$) vary by CD4 stratum; HIV diagnosis probabilities ($d_{i,j}$) vary by CD4 stratum and time.", fig.ext = 'png', echo=FALSE, out.width='80%', fig.align='center'}
+```{tikz backcalc-model, fig.cap = "Figure: CD4-staged back-calculation model. The model compartments represent undiagnosed HIV (round boxes) and diagnosed HIV or AIDS (square boxes); the $h_j$ arrow represents HIV acquired at each time point ($j$); HIV progression probabilities ($q_i$) vary by CD4 stratum; HIV diagnosis probabilities ($d_{i,j}$) vary by CD4 stratum and time.", fig.ext = 'png', echo=FALSE}
 \usetikzlibrary{shapes,decorations,arrows,calc,arrows.meta,fit,positioning}
 \tikzset{
     -Latex,auto,node distance =1 cm and 1 cm,semithick,
@@ -88,16 +88,17 @@ pak::pak("pkirwan/cd4backcalc")
 
 A basic workflow to simulate diagnosis data and fit the CD4-staged back-calculation model, check convergence and goodness of fit to the simulated data, and plot model estimates is shown in the example below.
 
-```{r example, eval=FALSE}
+```{r simulate-data, message=FALSE, warning=FALSE}
 library(cd4backcalc)
 
-# simulate data
-sim_diags <- simulate_diagnoses(age = FALSE, rita = FALSE, migration = FALSE)
+# simulate data under an increasing incidence scenario
+sim_diags <- simulate_diagnoses(h_pattern = "increasing")
 
 # visualise simulated data
 plot_simulations(sim_diags, quantity = "incidence")
 
 # run back-calculation model on simulated data
+# default is 2000 iterations and 4 chains
 hiv_list <- run_backcalc(sim_diags)
 
 # check convergence
@@ -108,7 +109,6 @@ bias_plot(hiv_list, quantity = "incidence")
 
 # plot estimates compared to simulated values
 plot_estimates(hiv_list, quantity = "incidence")
-plot_estimates(hiv_list, quantity = "undiag_prev")
 ```
 
 ## Supported models
@@ -119,18 +119,18 @@ The cd4backcalc package includes several pre-compiled models which can be used t
 - CD4-only or CD4 + RITA data
 - With or without migration
 
-The functions in the package are designed to work with all model variants, with the appropriate model selected based on user-specified options. The table below summarises the supported combinations of age structure, RITA evidence, and migration status.
+The functions in the package are designed to work with all model variants, with the appropriate model selected based on user-specified options. The table below shows the options which should be used for each combination of RITA evidence, migration status, and age structure.
 
-N.B. Due to the increased complexity, fitting times can be substantially longer when using age-dependent models.
+N.B. Due to the increased complexity, fitting times can be substantially longer when using the age-dependent models.
 
 ```{r supported-models-table, echo=FALSE}
 
 grid <- tibble::tribble(
-  ~Model, ~`Age-independent (age = FALSE)`, ~`Age-dependent (age = TRUE)`, ~`Model specification`,
-  "CD4", ":white_check_mark:", ":white_check_mark:", "rita = FALSE, migration = FALSE",
-  "CD4 + RITA", ":white_check_mark:", ":white_check_mark:", "rita = TRUE, migration = FALSE",
-  "CD4 + Migration", ":white_check_mark:", ":white_check_mark:", "rita = FALSE, migration = TRUE",
-  "CD4 + RITA + Migration", ":white_check_mark:", ":white_check_mark:", "rita = TRUE, migration = TRUE"
+  ~Model, ~`Age-independent`, ~`Age-dependent`,
+  "CD4", "rita = FALSE, migration = FALSE, age = FALSE", "rita = FALSE, migration = FALSE, age = TRUE",
+  "CD4 + RITA", "rita = TRUE, migration = FALSE, age = FALSE", "rita = TRUE, migration = FALSE, age = TRUE",
+  "CD4 + Migration", "rita = FALSE, migration = TRUE, age = FALSE", "rita = FALSE, migration = TRUE, age = TRUE",
+  "CD4 + RITA + Migration", "rita = TRUE, migration = TRUE, age = FALSE", "rita = TRUE, migration = TRUE, age = TRUE"
 )
 
 knitr::kable(grid, align = "lccc", row.names = FALSE, escape = FALSE)

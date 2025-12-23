@@ -283,7 +283,8 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
     out <- if (stan_data$config$rita) {
       tibble::tibble(
         # use mu for true migration probabilities (not mu_detect)
-        value = sim_data$mu,
+        # as.vector goes column-wise
+        value = as.vector(sim_data$mu),
         year = rep(seq(0, plot_years, by = 0.25), 8),
         strata = rep(
           c(
@@ -318,12 +319,7 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
         )
     } else {
       tibble::tibble(
-        value = as.vector(sweep(
-          sim_data$m,
-          1,
-          ifelse(sim_data$omega == 0, NA_real_, sim_data$omega),
-          "/"
-        )),
+        value = as.vector(sim_data$mu),
         year = rep(seq(0, plot_years, by = 0.25), 5),
         strata = rep(
           c(
@@ -555,6 +551,7 @@ mse_plot <- function(
       outliers = FALSE
     ) +
     ggplot2::labs(
+      title = paste0("Mean Squared Error of ", gsub("_", " ", quantity)),
       x = "",
       y = "Squared difference"
     ) +
@@ -625,6 +622,7 @@ bias_plot <- function(
     ggplot2::geom_hline(yintercept = 0, colour = "grey") +
     ggplot2::geom_boxplot(coef = Inf, alpha = 0.2, width = 0.4) +
     ggplot2::labs(
+      title = paste("Bias in", gsub("_", " ", quantity)),
       x = "",
       y = "Difference"
     ) +
