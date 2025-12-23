@@ -104,9 +104,9 @@ structure, RITA evidence, and migration status.
 N.B. Due to the increased complexity, fitting times can be substantially
 longer when using age-dependent models.
 
-|Model                  |  Age-independent   |   Age-dependent    |
-|:----------------------|:------------------:|:------------------:|
-|CD4-only               | :white_check_mark: | :white_check_mark: |
-|CD4 + RITA             | :white_check_mark: | :white_check_mark: |
-|CD4-only + Migration   | :white_check_mark: | :white_check_mark: |
-|CD4 + RITA + Migration | :white_check_mark: | :white_check_mark: |
+|Model                  | Age-independent (age = FALSE) | Age-dependent (age = TRUE) |       Model specification       |
+|:----------------------|:-----------------------------:|:--------------------------:|:-------------------------------:|
+|CD4                    |      :white_check_mark:       |     :white_check_mark:     | rita = FALSE, migration = FALSE |
+|CD4 + RITA             |      :white_check_mark:       |     :white_check_mark:     | rita = TRUE, migration = FALSE  |
+|CD4 + Migration        |      :white_check_mark:       |     :white_check_mark:     | rita = FALSE, migration = TRUE  |
+|CD4 + RITA + Migration |      :white_check_mark:       |     :white_check_mark:     |  rita = TRUE, migration = TRUE  |

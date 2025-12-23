@@ -101,7 +101,7 @@ define_sim_config <- function(
     config <- define_simulation_type(config, sim_type)
   }
 
-  if (migration == FALSE || rita == TRUE) {
+  if (migration == FALSE) {
     config$o_pattern <- "none"
   }
 
