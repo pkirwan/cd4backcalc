@@ -12,6 +12,7 @@ define_sim_config(
   m_pattern = "constant",
   r_pattern = "constant",
   a_pattern = "constant",
+  sim_type = NULL,
   sim_seed = NULL,
   dist = TRUE,
   migration = FALSE,
@@ -42,6 +43,8 @@ define_sim_config(
 \item{r_pattern}{Pattern type for RITA data ("constant", "increasing", "none").}
 
 \item{a_pattern}{Pattern type for age-based data ("constant", "wedge", "varying_wedge").}
+
+\item{sim_type}{If provided, a preset type of simulation to define patterns for.}
 
 \item{sim_seed}{Random seed for simulation. If NULL, a random seed is generated.}
 

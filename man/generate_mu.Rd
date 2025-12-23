@@ -4,7 +4,7 @@
 \alias{generate_mu}
 \title{Generate migration probability patterns}
 \usage{
-generate_mu(nquar, nlatst, pattern)
+generate_mu(nquar, nlatst, pattern, detect_prob)
 }
 \arguments{
 \item{nquar}{Number of time quarters.}
@@ -12,6 +12,8 @@ generate_mu(nquar, nlatst, pattern)
 \item{nlatst}{Number of latent states.}
 
 \item{pattern}{Pattern type for mu ("constant", "differing", "varying").}
+
+\item{detect_prob}{Vector of detection probabilities for those migrating already diagnosed.}
 }
 \value{
 Matrix of mu values over time.

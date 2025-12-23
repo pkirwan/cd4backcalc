@@ -84,7 +84,9 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
     group = "Simulated values"
   )
   migration <- tibble::tibble(
-    value = rowSums(sim_data$m[, 1:stan_data$config$nlatst]),
+    # (1 / detect_prob) - 1 = (1 - detect_prob) * (1 / detect_prob)
+    value = rowSums(sim_data$m[, 1:stan_data$config$nlatst]) -
+      (stan_data$ABROAD * ((1 / sim_data$detect_prob) - 1)),
     year = seq(0, plot_years, by = 0.25),
     group = "Simulated values"
   )
@@ -155,6 +157,8 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
     out <- migration
   } else if (quantity == "diagnoses") {
     out <- diagnoses
+  } else if (quantity == "diag_prob") {
+    out <- diag_prob
   } else if (quantity == "undiag_prev_age") {
     out <- tidyr::expand_grid(
       year = seq(0, plot_years, by = 0.25),
@@ -217,13 +221,16 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
       age = 15:(stan_data$nage + 14)
     ) |>
       dplyr::mutate(
-        value = as.vector(apply(
-          sim_data$m_age[,,
-            1:stan_data$config$nlatst
-          ],
-          c(1, 2),
-          sum
-        )),
+        value = as.vector(
+          apply(
+            sim_data$m_age[,,
+              1:stan_data$config$nlatst
+            ],
+            c(1, 2),
+            sum
+          ) -
+            t(stan_data$ABROAD_age * ((1 / sim_data$detect_prob) - 1))
+        ),
         group = "Simulated values",
         age_band = cut(
           .data$age,
@@ -240,8 +247,6 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
             age_band = "all"
           )
       )
-  } else if (quantity == "diag_prob") {
-    out <- diag_prob
   } else if (quantity == "diag_prob_age") {
     out <- tidyr::crossing(
       diag_prob,
@@ -277,12 +282,8 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
   } else if (quantity == "migration_prob") {
     out <- if (stan_data$config$rita) {
       tibble::tibble(
-        value = as.vector(sweep(
-          sim_data$m,
-          1,
-          ifelse(sim_data$omega == 0, NA_real_, sim_data$omega),
-          "/"
-        )),
+        # use mu for true migration probabilities (not mu_detect)
+        value = sim_data$mu,
         year = rep(seq(0, plot_years, by = 0.25), 8),
         strata = rep(
           c(
@@ -310,7 +311,7 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
               "CD4>=500",
               "Recently acquired 0-3, CD4 350-499",
               "Recently acquired 3-6, CD4 >=500",
-              "Recently acquired 0-3, CD4>=500",
+              "Recently acquired 0-3, CD4 >=500",
               "Transfers of care"
             )
           )
@@ -358,7 +359,7 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
     )
   } else if (quantity == "transfers") {
     out <- tibble::tibble(
-      value = stan_data$ABROAD,
+      value = stan_data$ABROAD * (1 / sim_data$detect_prob),
       year = seq(0, plot_years, by = 0.25),
       group = "Simulated values"
     )
@@ -437,6 +438,7 @@ get_bias <- function(
     model_estimates,
     by = c("year")
   ) |>
+    # bias should not be calculated for year 0
     dplyr::filter(.data$year > 0) |>
     dplyr::mutate(
       bias = .data$`50%` - .data$value
@@ -460,6 +462,7 @@ get_bias_strata <- function(
     model_estimates,
     by = c("year", "strata")
   ) |>
+    # bias should not be calculated for year 0
     dplyr::filter(.data$year > 0) |>
     dplyr::mutate(
       bias = .data$`50%` - .data$value

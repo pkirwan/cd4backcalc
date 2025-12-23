@@ -1,4 +1,3 @@
-
 #' Generate infections according to specified pattern
 #'
 #' @param nquar Number of time quarters.
@@ -73,8 +72,9 @@ generate_omega <- function(nquar, pattern, target_mig = 12000, dist = TRUE) {
 #' @param nquar Number of time quarters.
 #' @param nlatst Number of latent states.
 #' @param pattern Pattern type for mu ("constant", "differing", "varying").
+#' @param detect_prob Vector of detection probabilities for those migrating already diagnosed.
 #' @return Matrix of mu values over time.
-generate_mu <- function(nquar, nlatst, pattern) {
+generate_mu <- function(nquar, nlatst, pattern, detect_prob) {
   # check pattern
   stopifnot(pattern %in% c("constant", "differing", "varying"))
   if (pattern == "constant") {
@@ -100,6 +100,13 @@ generate_mu <- function(nquar, nlatst, pattern) {
       )
     )
   }
+  # redistribute mu for those migrating already diagnosed
+  # proportional redistribution
+  mu[, 1:nlatst] <- mu[, 1:nlatst] +
+      (mu[, nlatst + 1] * (1 - detect_prob)) *
+      (mu[, 1:nlatst] / rowSums(mu[, 1:nlatst]))
+  mu[, nlatst + 1] <- mu[, nlatst + 1] * detect_prob
+
   # normalize mu
   mu <- mu / rowSums(mu)
   return(mu)

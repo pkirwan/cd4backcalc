@@ -1,3 +1,17 @@
+test_that("simulated plots are generated correctly", {
+  # Simulate diagnoses
+  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123)
+  # Generate plots of key quantities
+  p1 <- plot_simulations(stan_data, "incidence")
+  p2 <- plot_simulations(stan_data, "undiag_prev")
+  p3 <- plot_simulations(stan_data, "diag_prob")
+  p4 <- plot_simulations(stan_data, "diagnoses")
+  expect_s3_class(p1, "ggplot")
+  expect_s3_class(p2, "ggplot")
+  expect_s3_class(p3, "ggplot")
+  expect_s3_class(p4, "ggplot")
+})
+
 test_that("plots are generated correctly", {
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123)

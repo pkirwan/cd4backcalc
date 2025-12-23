@@ -4,16 +4,18 @@
 \alias{define_simulation_type}
 \title{Define simulation type}
 \usage{
-define_simulation_type(sim_type = "constant")
+define_simulation_type(config, sim_type = "constant")
 }
 \arguments{
+\item{config}{Configuration list to modify.}
+
 \item{sim_type}{Type of simulation to define patterns for.}
 }
 \value{
 Configuration list for the specified simulation type.
 }
 \description{
-This is a helper function to defines various pre-specified simulation
+This is a helper function to define various pre-specified simulation
 types for epidemic simulations. Each configuration specifies patterns
 for infections, migration, diagnosis probabilities, and other parameters.
 }
@@ -34,7 +36,4 @@ List of available simulation types:
 \item "combo_3": Combination of varying infections, step change migration, varying diagnosis probabilities, increasing proportion UK, and varying migration probabilities.
 \item "combo_3_no_migration": Similar to "combo_3" but without migration effects.
 }
-}
-\examples{
-define_simulation_type(sim_type = "constant")
 }

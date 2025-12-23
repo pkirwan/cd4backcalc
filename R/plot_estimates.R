@@ -1,3 +1,36 @@
+#' Plot simulated quantities
+#'
+#' Generate a ggplot2 object plotting simulated quantities over time.
+#'
+#' @param sim_diags A list containing the simulated diagnosis data objects sim_data and stan_data.
+#' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "ratio_abroad_uk", and "detect_prob".
+#' @return A ggplot2 object.
+#' @export
+plot_simulations <- function(
+  sim_diags,
+  quantity
+) {
+  plot_title <- get_plot_title(quantity)
+  # replace "Estimated" with "Simulated"
+  plot_title <- sub("Estimated", "Simulated", plot_title)
+  sim_estimates <- extract_simulated_quantity(sim_diags, quantity)
+
+  p1 <- sim_estimates |>
+    ggplot2::ggplot() +
+    ggplot2::aes(.data$year, .data$value, group = .data$group) +
+    ggplot2::geom_point(color = "purple") +
+    ggplot2::labs(
+      title = plot_title,
+      x = "Year",
+      y = plot_title
+    ) +
+    ggplot2::theme_bw()
+
+  p1 <- do_facetting(p1, quantity)
+
+  return(p1)
+}
+
 #' Plot estimated model quantities
 #'
 #' Generate a ggplot2 object plotting estimated quantities over time, optionally compared to the simulated values.
@@ -70,50 +103,7 @@ plot_estimates <- function(
       )
   }
 
-  # custom y-axis for probabilities
-  if (
-    quantity %in%
-      c("diag_prob", "ratio_abroad_uk", "detect_prob", "migration_prob")
-  ) {
-    p1 <- p1 +
-      ggplot2::scale_y_continuous(
-        labels = scales::percent,
-        limits = c(0, NA),
-        expand = ggplot2::expansion(mult = c(0, 0.05))
-      )
-  } else {
-    p1 <- p1 +
-      ggplot2::scale_y_continuous(
-        limits = c(0, NA),
-        expand = ggplot2::expansion(mult = c(0, 0.05))
-      )
-  }
-
-  # facet by strata for diagnosis and migration probabilities
-  if (quantity %in% c("diag_prob", "migration_prob")) {
-    p1 <- p1 +
-      ggplot2::facet_wrap(~ .data$strata, scales = "free_y")
-  }
-
-  # facet by age if age-dependent model
-  if (
-    quantity %in%
-      c(
-        "incidence_age",
-        "undiag_prev_age",
-        "migration_age",
-        "diagnoses_age"
-      )
-  ) {
-    p1 <- p1 +
-      ggplot2::facet_wrap(~ .data$age_band, scales = "free_y")
-  }
-
-  # facet by strata and age for age-dependent diagnosis and migration probabilities
-  if (quantity %in% c("diag_prob_age", "migration_prob_age")) {
-    p1 <- p1 +
-      ggplot2::facet_wrap(~ .data$strata + .data$age_band, scales = "free_y", ncol = 4)
-  }
+  p1 <- do_facetting(p1, quantity)
 
   return(p1)
 }
@@ -242,4 +232,62 @@ get_plot_title <- function(quantity) {
     stop("Invalid quantity specified.")
   }
   return(plot_title)
+}
+
+#' Helper function to do facetting for plots
+#'
+#' @param p1 A ggplot2 object.
+#' @param quantity A string specifying the quantity.
+#' @return A ggplot2 object.
+do_facetting <- function(p1, quantity) {
+  # custom y-axis for probabilities
+  if (
+    quantity %in%
+      c("diag_prob", "ratio_abroad_uk", "detect_prob", "migration_prob")
+  ) {
+    p1 <- p1 +
+      ggplot2::scale_y_continuous(
+        labels = scales::percent,
+        limits = c(0, NA),
+        expand = ggplot2::expansion(mult = c(0, 0.05))
+      )
+  } else {
+    p1 <- p1 +
+      ggplot2::scale_y_continuous(
+        limits = c(0, NA),
+        expand = ggplot2::expansion(mult = c(0, 0.05))
+      )
+  }
+
+  # facet by strata for diagnosis and migration probabilities
+  if (quantity %in% c("diag_prob", "migration_prob")) {
+    p1 <- p1 +
+      ggplot2::facet_wrap(~ .data$strata, scales = "free_y")
+  }
+
+  # facet by age if age-dependent model
+  if (
+    quantity %in%
+      c(
+        "incidence_age",
+        "undiag_prev_age",
+        "migration_age",
+        "diagnoses_age"
+      )
+  ) {
+    p1 <- p1 +
+      ggplot2::facet_wrap(~ .data$age_band, scales = "free_y")
+  }
+
+  # facet by strata and age for age-dependent diagnosis and migration probabilities
+  if (quantity %in% c("diag_prob_age", "migration_prob_age")) {
+    p1 <- p1 +
+      ggplot2::facet_wrap(
+        ~ .data$strata + .data$age_band,
+        scales = "free_y",
+        ncol = 4
+      )
+  }
+
+  return(p1)
 }

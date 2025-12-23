@@ -150,12 +150,12 @@ transformed parameters {
   
   // t = 2, ..., nquar
   for (t in 2 : nquar) {
-    incidence_state_8[t] = fmax(0, cum_diags[t, 8] - cum_diags[t - 1, 8]);
-    incidence_state_9[t] = fmax(0, cum_diags[t, 9] - cum_diags[t - 1, 9]);
-    incidence_state_10[t] = fmax(0, cum_diags[t, 10] - cum_diags[t - 1, 10]);
-    incidence_state_11[t] = fmax(0, cum_diags[t, 11] - cum_diags[t - 1, 11]);
-    incidence_state_12[t] = fmax(0, cum_diags[t, 12] - cum_diags[t - 1, 12]);
-    incidence_state_13[t] = fmax(0, cum_diags[t, 13] - cum_diags[t - 1, 13]);
+    incidence_state_8[t] = cum_diags[t, 8] - cum_diags[t - 1, 8];
+    incidence_state_9[t] = cum_diags[t, 9] - cum_diags[t - 1, 9];
+    incidence_state_10[t] = cum_diags[t, 10] - cum_diags[t - 1, 10];
+    incidence_state_11[t] = cum_diags[t, 11] - cum_diags[t - 1, 11];
+    incidence_state_12[t] = cum_diags[t, 12] - cum_diags[t - 1, 12];
+    incidence_state_13[t] = cum_diags[t, 13] - cum_diags[t - 1, 13];
   }
   
   // Prevalence matrix

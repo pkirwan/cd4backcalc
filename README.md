@@ -104,13 +104,9 @@ structure, RITA evidence, and migration status.
 N.B. Due to the increased complexity, fitting times can be substantially
 longer when using age-dependent models.
 
-| Model variant | Age-dependent? | RITA? | Migration? | Example options |
-|:---|:--:|:--:|:--:|:--:|
-| Age-independent CD4-only | :x: | :x: | :x: | age=FALSE, rita=FALSE, migration=FALSE |
-| Age-dependent CD4-only | :white_check_mark: | :x: | :x: | age=TRUE, rita=FALSE, migration=FALSE |
-| Age-independent CD4 + RITA | :x: | :white_check_mark: | :x: | age=FALSE, rita=TRUE, migration=FALSE |
-| Age-dependent CD4 + RITA | :white_check_mark: | :white_check_mark: | :x: | age=TRUE, rita=TRUE, migration=FALSE |
-| Age-independent CD4-only + migration | :x: | :x: | :white_check_mark: | age=FALSE, rita=FALSE, migration=TRUE |
-| Age-dependent CD4-only + migration | :white_check_mark: | :x: | :white_check_mark: | age=TRUE, rita=FALSE, migration=TRUE |
-| Age-independent CD4 + RITA + migration | :x: | :white_check_mark: | :white_check_mark: | age=FALSE, rita=TRUE, migration=TRUE |
-| Age-dependent CD4 + RITA + migration | :white_check_mark: | :white_check_mark: | :white_check_mark: | age=TRUE, rita=TRUE, migration=TRUE |
+|Model                  |  Age-independent   |   Age-dependent    |
+|:----------------------|:------------------:|:------------------:|
+|CD4-only               | :white_check_mark: | :white_check_mark: |
+|CD4 + RITA             | :white_check_mark: | :white_check_mark: |
+|CD4-only + Migration   | :white_check_mark: | :white_check_mark: |
+|CD4 + RITA + Migration | :white_check_mark: | :white_check_mark: |

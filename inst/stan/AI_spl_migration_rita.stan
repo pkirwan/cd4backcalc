@@ -257,24 +257,12 @@ transformed parameters {
     incidence_state_13[1, y] = cum_diags[1, y, 13];
     
     for (t in 2 : nquar) {
-      incidence_state_8[t, y] = fmax(0,
-                                     cum_diags[t, y, 8]
-                                     - cum_diags[t - 1, y, 8]);
-      incidence_state_9[t, y] = fmax(0,
-                                     cum_diags[t, y, 9]
-                                     - cum_diags[t - 1, y, 9]);
-      incidence_state_10[t, y] = fmax(0,
-                                      cum_diags[t, y, 10]
-                                      - cum_diags[t - 1, y, 10]);
-      incidence_state_11[t, y] = fmax(0,
-                                      cum_diags[t, y, 11]
-                                      - cum_diags[t - 1, y, 11]);
-      incidence_state_12[t, y] = fmax(0,
-                                      cum_diags[t, y, 12]
-                                      - cum_diags[t - 1, y, 12]);
-      incidence_state_13[t, y] = fmax(0,
-                                      cum_diags[t, y, 13]
-                                      - cum_diags[t - 1, y, 13]);
+      incidence_state_8[t, y] = cum_diags[t, y, 8] - cum_diags[t - 1, y, 8];
+      incidence_state_9[t, y] = cum_diags[t, y, 9] - cum_diags[t - 1, y, 9];
+      incidence_state_10[t, y] = cum_diags[t, y, 10] - cum_diags[t - 1, y, 10];
+      incidence_state_11[t, y] = cum_diags[t, y, 11] - cum_diags[t - 1, y, 11];
+      incidence_state_12[t, y] = cum_diags[t, y, 12] - cum_diags[t - 1, y, 12];
+      incidence_state_13[t, y] = cum_diags[t, y, 13] - cum_diags[t - 1, y, 13];
     }
   }
   

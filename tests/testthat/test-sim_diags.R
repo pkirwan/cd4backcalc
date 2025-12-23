@@ -18,7 +18,7 @@ test_that("rita simulation produces expected HIV data", {
   sim_diags <- simulate_diagnoses(sim_seed = 123, rita = TRUE)
   expect_equal(
     sim_diags$stan_data$HIV[1],
-    906
+    614
   )
 })
 
@@ -38,11 +38,11 @@ test_that("age-specific rita simulation produces expected HIV data", {
   sim_diags <- simulate_diagnoses(sim_seed = 123, age = TRUE, rita = TRUE)
   expect_equal(
     sim_diags$stan_data$HIV[1],
-    906
+    614
   )
   expect_equal(
     sim_diags$stan_data$HIV_age[1],
-    16
+    10
   )
 })
 
@@ -71,14 +71,22 @@ test_that("age-specific migration and rita simulation produces expected HIV data
   )
   expect_equal(
     sim_diags$stan_data$HIV[1, 1],
-    755
+    514
   )
   expect_equal(
     sim_diags$stan_data$HIV_age[1, 1, 1],
-    14
+    9
   )
   expect_equal(
     sim_diags$stan_data$ABROAD,
     rowSums(sim_diags$stan_data$ABROAD_age)
+  )
+})
+
+test_that("different sim_type produces expected results", {
+  sim_diags <- simulate_diagnoses(nquar = 40, sim_seed = 123, sim_type = "combo_3")
+  expect_equal(
+    sim_diags$stan_data$HIV[1],
+    1686
   )
 })

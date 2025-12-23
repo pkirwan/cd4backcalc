@@ -40,7 +40,8 @@ test_that("extract_simulated_quantity correctly extracts values for ai", {
   sim_estimates <- extract_simulated_quantity(stan_data, quantity = "migration")
   expect_equal(
     sim_estimates$value[1],
-    sum(stan_data$sim_data$m[1, 1:4])
+    sum(stan_data$sim_data$m[1, 1:4]) -
+      (stan_data$stan_data$ABROAD[1] * ((1 / stan_data$sim_data$detect_prob[1]) - 1))
   )
   sim_estimates <- extract_simulated_quantity(
     stan_data,
@@ -61,7 +62,7 @@ test_that("extract_simulated_quantity correctly extracts values for ai", {
   sim_estimates <- extract_simulated_quantity(stan_data, quantity = "transfers")
   expect_equal(
     sim_estimates$value[1],
-    stan_data$stan_data$ABROAD[1]
+    stan_data$stan_data$ABROAD[1] * (1 / stan_data$sim_data$detect_prob[1])
   )
   sim_estimates <- extract_simulated_quantity(
     stan_data,
@@ -123,7 +124,9 @@ test_that("extract_simulated_quantity correctly extracts values for ad", {
   )
   expect_equal(
     sim_estimates$value[1],
-    sum(stan_data$sim_data$m_age[1:10, 1, 1:4])
+    sum(stan_data$sim_data$m_age[1:10, 1, 1:4]) - 
+      (sum(stan_data$stan_data$ABROAD_age[1, 1:10]) *
+        ((1 / stan_data$sim_data$detect_prob[1]) - 1))
   )
 })
 
@@ -192,7 +195,7 @@ test_that("mse_list and plots work for lists", {
     })
   }
   mse_list <- make_mse_list(hiv_list)
-  expect_true(mse_list$incidence_bias[1, 8] == -1001)
+  expect_true(mse_list$incidence_bias[1, 8] == -1108)
   # Test extraction and plotting functions
   p1 <- mse_plot(hiv_list, quantity = "incidence")
   expect_s3_class(p1, "ggplot")

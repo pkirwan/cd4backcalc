@@ -10,6 +10,7 @@
 #' @param m_pattern Pattern type for mu ("constant", "differing", "varying").
 #' @param r_pattern Pattern type for RITA data ("constant", "increasing", "none").
 #' @param a_pattern Pattern type for age-based data ("constant", "wedge", "varying_wedge").
+#' @param sim_type If provided, a preset type of simulation to define patterns for.
 #' @param sim_seed Random seed for simulation. If NULL, a random seed is generated.
 #' @param dist Logical indicating whether to add stochastic variation.
 #' @param migration Logical indicating whether to include migration effects.
@@ -36,6 +37,7 @@ define_sim_config <- function(
   m_pattern = "constant",
   r_pattern = "constant",
   a_pattern = "constant",
+  sim_type = NULL,
   sim_seed = NULL,
   dist = TRUE,
   migration = FALSE,
@@ -54,7 +56,7 @@ define_sim_config <- function(
   if (rita) {
     nlatst <- 7
     ndiagst <- 6
-    init_props <- c(2, 1, 1, 3, 3.5, 1.75, 0.5)
+    init_props <- c(1, 0.8, 0.08, 4, 2.6, 1.3, 0.4)
     init_props_abroad <- c(0, 0, 0, 1.75, 2.25, 2.25, 1.25)
   } else {
     nlatst <- 4
@@ -95,6 +97,10 @@ define_sim_config <- function(
     cd4_completeness = cd4_completeness
   )
 
+  if (!is.null(sim_type)) {
+    config <- define_simulation_type(config, sim_type)
+  }
+
   if (migration == FALSE || rita == TRUE) {
     config$o_pattern <- "none"
   }
@@ -108,7 +114,7 @@ define_sim_config <- function(
 
 #' Define simulation type
 #'
-#' This is a helper function to defines various pre-specified simulation
+#' This is a helper function to define various pre-specified simulation
 #' types for epidemic simulations. Each configuration specifies patterns
 #' for infections, migration, diagnosis probabilities, and other parameters.
 #'
@@ -127,12 +133,11 @@ define_sim_config <- function(
 #' - "combo_3": Combination of varying infections, step change migration, varying diagnosis probabilities, increasing proportion UK, and varying migration probabilities.
 #' - "combo_3_no_migration": Similar to "combo_3" but without migration effects.
 #'
+#' @param config Configuration list to modify.
 #' @param sim_type Type of simulation to define patterns for.
 #' @return Configuration list for the specified simulation type.
-#' @examples
-#' define_simulation_type(sim_type = "constant")
 #' @export
-define_simulation_type <- function(sim_type = "constant") {
+define_simulation_type <- function(config, sim_type = "constant") {
   # check sim_type is valid
   valid_sim_types <- c(
     "constant",
@@ -157,71 +162,49 @@ define_simulation_type <- function(sim_type = "constant") {
     )
   }
 
-  # set default config
-  h_pattern <- "constant"
-  o_pattern <- "constant"
-  d_pattern <- "constant"
-  p_pattern <- "constant"
-  m_pattern <- "constant"
-  r_pattern <- "constant"
-  migration <- TRUE
-  rita <- FALSE
-
   if (sim_type == "h_increasing") {
-    h_pattern <- "increasing"
+    config$h_pattern <- "increasing"
   } else if (sim_type == "h_varying") {
-    h_pattern <- "varying"
+    config$h_pattern <- "varying"
   } else if (sim_type == "o_increasing") {
-    o_pattern <- "increasing"
+    config$o_pattern <- "increasing"
   } else if (sim_type == "o_step_change") {
-    o_pattern <- "step_change"
+    config$o_pattern <- "step_change"
   } else if (sim_type == "d_varying") {
-    d_pattern <- "varying"
+    config$d_pattern <- "varying"
   } else if (sim_type == "p_increasing") {
-    p_pattern <- "increasing"
+    config$p_pattern <- "increasing"
   } else if (sim_type == "m_differing") {
-    m_pattern <- "differing"
+    config$m_pattern <- "differing"
   } else if (sim_type == "m_varying") {
-    m_pattern <- "varying"
+    config$m_pattern <- "varying"
   } else if (sim_type == "combo_1") {
-    h_pattern <- "varying"
-    o_pattern <- "step_change"
-    d_pattern <- "varying"
+    config$h_pattern <- "varying"
+    config$o_pattern <- "step_change"
+    config$d_pattern <- "varying"
   } else if (sim_type == "combo_2") {
-    h_pattern <- "varying"
-    o_pattern <- "step_change"
-    d_pattern <- "varying"
-    p_pattern <- "increasing"
+    config$h_pattern <- "varying"
+    config$o_pattern <- "step_change"
+    config$d_pattern <- "varying"
+    config$p_pattern <- "increasing"
   } else if (sim_type == "combo_3") {
-    h_pattern <- "varying"
-    o_pattern <- "step_change"
-    d_pattern <- "varying"
-    p_pattern <- "increasing"
-    m_pattern <- "varying"
+    config$h_pattern <- "varying"
+    config$o_pattern <- "step_change"
+    config$d_pattern <- "varying"
+    config$p_pattern <- "increasing"
+    config$m_pattern <- "varying"
   } else if (sim_type == "combo_3_no_migration") {
-    h_pattern <- "varying"
-    o_pattern <- "none"
-    d_pattern <- "varying"
-    p_pattern <- "increasing"
-    migration <- FALSE
+    config$h_pattern <- "varying"
+    config$o_pattern <- "none"
+    config$d_pattern <- "varying"
+    config$p_pattern <- "increasing"
   }
 
   if (grepl("miss_cd4", sim_type)) {
-    cd4_completeness <- 0.8
+    config$cd4_completeness <- 0.8
   } else {
-    cd4_completeness <- 1
+    config$cd4_completeness <- 1
   }
-
-  config <- define_sim_config(
-    h_pattern = h_pattern,
-    o_pattern = o_pattern,
-    d_pattern = d_pattern,
-    p_pattern = p_pattern,
-    m_pattern = m_pattern,
-    r_pattern = r_pattern,
-    migration = migration,
-    rita = FALSE
-  )
 
   return(config)
 }
@@ -451,6 +434,7 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #' @param m_pattern Pattern type for mu ("constant", "differing", "varying").
 #' @param r_pattern Pattern type for RITA data ("constant", "increasing", "none").
 #' @param a_pattern Pattern type for age-based data ("constant", "wedge", "varying_wedge").
+#' @param sim_type If provided, a preset type of simulation to define patterns for.
 #' @param sim_seed Random seed for reproducibility. If NULL, a random seed is generated.
 #' @param dist Logical indicating whether to add stochastic variation.
 #' @param migration Logical indicating whether to include migration effects.
@@ -477,6 +461,7 @@ simulate_diagnoses <- function(
   m_pattern = "constant",
   r_pattern = "constant",
   a_pattern = "constant",
+  sim_type = NULL,
   sim_seed = NULL,
   dist = TRUE,
   migration = FALSE,
@@ -500,6 +485,7 @@ simulate_diagnoses <- function(
     m_pattern,
     r_pattern,
     a_pattern,
+    sim_type,
     sim_seed,
     dist,
     migration,
@@ -538,10 +524,35 @@ simulate_diagnoses <- function(
     config$p_pattern,
     config$dist
   )
-  mu <- generate_mu(config$nquar, config$nlatst, config$m_pattern)
+
+  # mu is a matrix of dimension [nquar, nlatst + 1] giving migration probabilities
+  # mu are the true migration probabilities
+  mu <- generate_mu(
+    config$nquar,
+    config$nlatst,
+    config$m_pattern,
+    rep(1, config$nquar)
+  )
+
+  # detection probabilities for those migrating already diagnosed
+  detect_prob <- rep(0.8, config$nquar)
+  # mu_detect are the migration probabilities after accounting for detection probabilities
+  mu_detect <- generate_mu(
+    config$nquar,
+    config$nlatst,
+    config$m_pattern,
+    detect_prob
+  )
+
   # m is a matrix of dimension [nquar, nlatst + 1] with the last column being those
   # who migrate already diagnosed
-  m <- generate_migration(config$nquar, config$nlatst, omega, mu, config$dist)
+  m <- generate_migration(
+    config$nquar,
+    config$nlatst,
+    omega,
+    mu_detect,
+    config$dist
+  )
   d_probs <- generate_diagnosis_probs(
     config$nquar,
     config$d_pattern,
@@ -671,13 +682,14 @@ simulate_diagnoses <- function(
     "m" = m,
     "m_age" = m_age,
     "mu" = mu,
+    "mu_detect" = mu_detect,
     "d_probs" = d_probs,
     "ratio_abroad_uk" = ratio_abroad_uk,
     "lat_init_uk" = lat_init_uk,
     "lat_init_uk_abroad" = lat_init_uk_abroad,
     "lat_init_abroad" = lat_init_abroad,
-    # currently detect_prob is 1 for all time points
-    "detect_prob" = rep(1, config$nquar)
+    # currently detect_prob is 0.8 for all time points
+    "detect_prob" = detect_prob
   )
 
   # Perform validation checks
@@ -777,7 +789,10 @@ simulate_diagnoses <- function(
 
   # Age distribution for prior diagnoses from abroad (ABROAD), by quarter
   ABROAD <- m[, config$ndiagst]
-  ABROAD_age <- t(round_matrix_preserve(m_age[,, config$ndiagst], colwise = TRUE))
+  ABROAD_age <- t(round_matrix_preserve(
+    m_age[,, config$ndiagst],
+    colwise = TRUE
+  ))
 
   # Make stan data list
   stan_data <- list(

@@ -302,8 +302,10 @@ load_stan_model <- function(config) {
     model <- stanmodels$AI_spl_migration
   } else if (config$rita) {
     model <- stanmodels$AI_spl_rita
-  } else {
+  } else if (config$diag_model == 2 || config$inf_model == 2 || config$inf_model == 3) {
     model <- stanmodels$AI_spl_rw_gp
+  } else {
+    model <- stanmodels$AI_spl
   }
   return(model)
 }

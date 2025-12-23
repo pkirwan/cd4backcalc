@@ -94,6 +94,9 @@ library(cd4backcalc)
 # simulate data
 sim_diags <- simulate_diagnoses(age = FALSE, rita = FALSE, migration = FALSE)
 
+# visualise simulated data
+plot_simulations(sim_diags, quantity = "incidence")
+
 # run back-calculation model on simulated data
 hiv_list <- run_backcalc(sim_diags)
 
@@ -121,33 +124,14 @@ The functions in the package are designed to work with all model variants, with 
 N.B. Due to the increased complexity, fitting times can be substantially longer when using age-dependent models.
 
 ```{r supported-models-table, echo=FALSE}
-grid <- expand.grid(
-  Age_dependent = c(FALSE, TRUE),
-  RITA = c(FALSE, TRUE),
-  Migration = c(FALSE, TRUE)
+
+grid <- tibble::tribble(
+  ~Model, ~`Age-independent`, ~`Age-dependent`,
+  "CD4", ":white_check_mark:", ":white_check_mark:",
+  "CD4 + RITA", ":white_check_mark:", ":white_check_mark:",
+  "CD4 + Migration", ":white_check_mark:", ":white_check_mark:",
+  "CD4 + RITA + Migration", ":white_check_mark:", ":white_check_mark:"
 )
 
-grid$Model <- paste(
-  ifelse(grid$Age_dependent, "Age-dependent", "Age-independent"),
-  ifelse(grid$RITA, "CD4 + RITA", "CD4-only"),
-  ifelse(grid$Migration, "+ migration", ""),
-  sep = " "
-)
-
-grid$Options <- sprintf(
-  "age=%s, rita=%s, migration=%s",
-  grid$Age_dependent,
-  grid$RITA,
-  grid$Migration
-)
-
-grid <- grid[, c("Model", "Age_dependent", "RITA", "Migration", "Options")]
-names(grid) <- c("Model variant", "Age-dependent?", "RITA?", "Migration?", "Example options")
-
-tick_cross <- function(x) ifelse(x, ":white_check_mark:", ":x:")
-grid[["Age-dependent?"]] <- tick_cross(grid[["Age-dependent?"]])
-grid[["RITA?"]] <- tick_cross(grid[["RITA?"]])
-grid[["Migration?"]] <- tick_cross(grid[["Migration?"]])
-
-knitr::kable(grid, align = "lcccc", row.names = FALSE, escape = FALSE)
+knitr::kable(grid, align = "lcc", row.names = FALSE, escape = FALSE)
 ```
