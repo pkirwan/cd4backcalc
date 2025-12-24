@@ -551,7 +551,7 @@ mse_plot <- function(
       outliers = FALSE
     ) +
     ggplot2::labs(
-      title = paste0("Mean Squared Error of ", gsub("E", "e", get_plot_title(quantity))),
+      title = paste0("Mean Squared Error of estimated ", get_plot_title(quantity)),
       x = "",
       y = "Squared difference"
     ) +
@@ -622,7 +622,7 @@ bias_plot <- function(
     ggplot2::geom_hline(yintercept = 0, colour = "grey") +
     ggplot2::geom_boxplot(coef = Inf, alpha = 0.2, width = 0.4) +
     ggplot2::labs(
-      title = paste("Bias in ", gsub("E", "e", get_plot_title(quantity))),
+      title = paste("Bias in estimated ", get_plot_title(quantity)),
       x = "",
       y = "Difference"
     ) +

@@ -12,7 +12,7 @@ plot_simulations <- function(
 ) {
   plot_title <- get_plot_title(quantity)
   # replace "Estimated" with "Simulated"
-  plot_title <- sub("Estimated", "Simulated", plot_title)
+  plot_title <- paste0("Simulated ", plot_title)
   sim_estimates <- extract_simulated_quantity(sim_diags, quantity)
 
   p1 <- sim_estimates |>
@@ -50,7 +50,7 @@ plot_estimates <- function(
     hiv_list <- list(hiv_list)
   }
 
-  plot_title <- get_plot_title(quantity)
+  plot_title <- paste0("Estimated ", get_plot_title(quantity))
 
   # chain-by-chain plotting if requested
   if (chain_results) {
@@ -203,37 +203,37 @@ plot_diagnostics <- function(hiv_list, ntraces = 4) {
 #' @return A string containing the plot title.
 get_plot_title <- function(quantity) {
   plot_title <- if (quantity == "incidence") {
-    "Estimated HIV incidence"
+    "HIV incidence"
   } else if (quantity == "undiag_prev") {
-    "Estimated undiagnosed HIV prevalence"
+    "undiagnosed HIV prevalence"
   } else if (quantity == "migration") {
-    "Estimated migration with undiagnosed HIV"
+    "migration with undiagnosed HIV"
   } else if (quantity == "diag_prob") {
-    "Estimated HIV diagnosis probabilities, by CD4 strata"
+    "HIV diagnosis probabilities, by CD4 strata"
   } else if (quantity == "diagnoses") {
-    "Estimated HIV diagnoses"
+    "HIV diagnoses"
   } else if (quantity == "migration_prob") {
-    "Estimated migration probabilities, by CD4 strata"
+    "migration probabilities, by CD4 strata"
   } else if (quantity == "transfers") {
-    "Estimated transfers of care"
+    "transfers of care"
   } else if (quantity == "ratio_abroad_uk") {
-    "Estimated born-abroad:native-born ratio"
+    "born-abroad:native-born ratio"
   } else if (quantity == "detect_prob") {
-    "Estimated detection probability for transfers of care"
+    "detection probability for transfers of care"
   } else if (quantity == "incidence_age") {
-    "Estimated HIV incidence by age"
+    "HIV incidence by age"
   } else if (quantity == "undiag_prev_age") {
-    "Estimated undiagnosed HIV prevalence by age"
+    "undiagnosed HIV prevalence by age"
   } else if (quantity == "migration_age") {
-    "Estimated migration with undiagnosed HIV by age"
+    "migration with undiagnosed HIV by age"
   } else if (quantity == "diagnoses_age") {
-    "Estimated HIV diagnoses by age"
+    "HIV diagnoses by age"
   } else if (quantity == "diag_prob_age") {
-    "Estimated HIV diagnosis probabilities by CD4 strata and age"
+    "HIV diagnosis probabilities by CD4 strata and age"
   } else if (quantity == "incidence_trend") {
-    "Estimated HIV incidence trend by age"
+    "HIV incidence trend by age"
   } else if (quantity == "peak_incidence") {
-    "Estimated year of peak HIV incidence by age"
+    "year of peak HIV incidence by age"
   } else {
     stop("Invalid quantity specified.")
   }
