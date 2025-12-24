@@ -75,6 +75,22 @@ plot_estimates <- function(
       dplyr::filter(.data$year > 0)
   }
 
+  if (quantity %in% c("diag_prob", "migration_prob")) {
+    quantiles <- quantiles |>
+      dplyr::mutate(
+        strata = factor(
+          .data$strata,
+          levels = c(
+            "CD4>=500",
+            "CD4 350-499",
+            "CD4 200-349",
+            "CD4<200",
+            "Recently acquired"
+          )
+        )
+      )
+  }
+
   p1 <- quantiles |>
     ggplot2::ggplot() +
     ggplot2::aes(.data$year, .data$`50%`, group = .data$group) +
@@ -268,7 +284,7 @@ do_facetting <- function(p1, quantity) {
   # facet by strata for diagnosis and migration probabilities
   if (quantity %in% c("diag_prob", "migration_prob")) {
     p1 <- p1 +
-      ggplot2::facet_wrap(~ .data$strata, scales = "free_y")
+      ggplot2::facet_grid(~ .data$strata, scales = "free_y", nrow = 1)
   }
 
   # facet by age if age-dependent model

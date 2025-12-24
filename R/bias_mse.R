@@ -280,73 +280,35 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
           )
       )
   } else if (quantity == "migration_prob") {
-    out <- if (stan_data$config$rita) {
-      tibble::tibble(
-        # use mu for true migration probabilities (not mu_detect)
-        # as.vector goes column-wise
-        value = as.vector(sim_data$mu),
-        year = rep(seq(0, plot_years, by = 0.25), 8),
-        strata = rep(
-          c(
-            "Recently acquired 0-3, CD4>500",
-            "Recently acquired 3-6, CD4 >=500",
-            "Recently acquired 0-3, CD4 350-499",
-            "CD4>=500",
-            "CD4 350-499",
-            "CD4 200-349",
-            "CD4<200",
-            "Transfers of care"
-          ),
-          each = stan_data$nquar
+    # no recently acquired category in migration prob
+    out <- tibble::tibble(
+      value = as.vector(sim_data$mu),
+      year = rep(seq(0, plot_years, by = 0.25), 5),
+      strata = rep(
+        c(
+          "CD4>=500",
+          "CD4 350-499",
+          "CD4 200-349",
+          "CD4<200",
+          "Transfers of care"
         ),
-        group = "Simulated values"
-      ) |>
-        dplyr::mutate(
-          value = dplyr::if_else(is.na(.data$value), 0, .data$value),
-          strata = factor(
-            .data$strata,
-            levels = c(
-              "CD4<200",
-              "CD4 200-349",
-              "CD4 350-499",
-              "CD4>=500",
-              "Recently acquired 0-3, CD4 350-499",
-              "Recently acquired 3-6, CD4 >=500",
-              "Recently acquired 0-3, CD4 >=500",
-              "Transfers of care"
-            )
+        each = stan_data$nquar
+      ),
+      group = "Simulated values"
+    ) |>
+      dplyr::mutate(
+        value = dplyr::if_else(is.na(.data$value), 0, .data$value),
+        strata = factor(
+          .data$strata,
+          levels = c(
+            "CD4<200",
+            "CD4 200-349",
+            "CD4 350-499",
+            "CD4>=500",
+            "Transfers of care"
           )
         )
-    } else {
-      tibble::tibble(
-        value = as.vector(sim_data$mu),
-        year = rep(seq(0, plot_years, by = 0.25), 5),
-        strata = rep(
-          c(
-            "CD4>=500",
-            "CD4 350-499",
-            "CD4 200-349",
-            "CD4<200",
-            "Transfers of care"
-          ),
-          each = stan_data$nquar
-        ),
-        group = "Simulated values"
-      ) |>
-        dplyr::mutate(
-          value = dplyr::if_else(is.na(.data$value), 0, .data$value),
-          strata = factor(
-            .data$strata,
-            levels = c(
-              "CD4<200",
-              "CD4 200-349",
-              "CD4 350-499",
-              "CD4>=500",
-              "Transfers of care"
-            )
-          )
-        )
-    }
+      )
   } else if (quantity == "ratio_abroad_uk") {
     out <- tibble::tibble(
       value = sim_data$ratio_abroad_uk,
@@ -551,7 +513,10 @@ mse_plot <- function(
       outliers = FALSE
     ) +
     ggplot2::labs(
-      title = paste0("Mean Squared Error of estimated ", get_plot_title(quantity)),
+      title = paste0(
+        "Mean Squared Error of estimated ",
+        get_plot_title(quantity)
+      ),
       x = "",
       y = "Squared difference"
     ) +
