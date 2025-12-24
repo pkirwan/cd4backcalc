@@ -69,13 +69,17 @@ plot_estimates <- function(
     quantiles <- get_estimates(hiv_list, quantity)
   }
 
-  # filter out zero time point for incidence plots
-  if (quantity %in% c("incidence", "incidence_age")) {
+  # filter out zero time point for incidence and diagnosis plots
+  # by construction these are always zero at time zero
+  if (quantity %in% c("incidence", "incidence_age", "diagnoses", "diagnoses_age")) {
     quantiles <- quantiles |>
       dplyr::filter(.data$year > 0)
   }
 
-  if (quantity %in% c("diag_prob", "migration_prob")) {
+  if (
+    quantity %in%
+      c("diag_prob", "migration_prob", "diag_prob_age", "migration_prob_age")
+  ) {
     quantiles <- quantiles |>
       dplyr::mutate(
         strata = factor(
@@ -307,7 +311,7 @@ do_facetting <- function(p1, quantity) {
       ggplot2::facet_wrap(
         ~ .data$strata + .data$age_band,
         scales = "free_y",
-        ncol = 4
+        nrow = 4
       )
   }
 
