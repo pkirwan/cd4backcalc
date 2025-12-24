@@ -71,11 +71,11 @@ test_that("age-specific migration and rita simulation produces expected HIV data
   )
   expect_equal(
     sim_diags$stan_data$HIV[1, 1],
-    555
+    586
   )
   expect_equal(
     sim_diags$stan_data$HIV_age[1, 1, 1],
-    10
+    11
   )
   expect_equal(
     sim_diags$stan_data$ABROAD,

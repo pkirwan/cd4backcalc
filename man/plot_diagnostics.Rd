@@ -4,7 +4,7 @@
 \alias{plot_diagnostics}
 \title{Plot diagnostics for fitted model}
 \usage{
-plot_diagnostics(hiv_list, ntraces = 6)
+plot_diagnostics(hiv_list, ntraces = 4)
 }
 \arguments{
 \item{hiv_list}{A list returned from the \code{run_backcalc} function containing model estimates and fit objects.}

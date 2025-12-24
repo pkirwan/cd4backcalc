@@ -529,7 +529,7 @@ simulate_diagnoses <- function(
   # mu are the true migration probabilities
   mu <- generate_mu(
     config$nquar,
-    config$nlatst,
+    4,
     config$m_pattern,
     rep(1, config$nquar)
   )
@@ -539,10 +539,23 @@ simulate_diagnoses <- function(
   # mu_detect are the migration probabilities after accounting for detection probabilities
   mu_detect <- generate_mu(
     config$nquar,
-    config$nlatst,
+    4,
     config$m_pattern,
     detect_prob
   )
+
+  if (config$rita) {
+    # pad first three columns with zeros for RITA states
+    # because migrants assumed to enter non-RITA states only
+    mu <- cbind(
+      matrix(0, nrow = config$nquar, ncol = 3),
+      mu
+    )
+    mu_detect <- cbind(
+      matrix(0, nrow = config$nquar, ncol = 3),
+      mu_detect
+    )
+  }
 
   # m is a matrix of dimension [nquar, nlatst + 1] with the last column being those
   # who migrate already diagnosed

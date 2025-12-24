@@ -12,6 +12,18 @@ test_that("simulated plots are generated correctly", {
   expect_s3_class(p4, "ggplot")
 })
 
+test_that("simulated plots are generated correctly for migration_prob", {
+  # Simulate diagnoses
+  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, migration = TRUE, m_pattern = "varying")
+  # Generate plots of key quantities
+  p1 <- plot_simulations(stan_data, "migration_prob")
+  expect_s3_class(p1, "ggplot")
+  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, migration = TRUE, rita = TRUE, m_pattern = "varying")
+  # Generate plots of key quantities
+  p2 <- plot_simulations(stan_data, "migration_prob")
+  expect_s3_class(p2, "ggplot")
+})
+
 test_that("simulated age plots are generated correctly", {
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, age = TRUE)
@@ -160,7 +172,7 @@ test_that("plots work for rita model lists", {
 
 test_that("plots work for migration and rita model lists", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, rita = TRUE, migration = TRUE)
+  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, rita = TRUE, migration = TRUE, m_pattern = "varying")
   # Fit back-calculation model
   hiv_list <- list()
   for (i in 1:2) {

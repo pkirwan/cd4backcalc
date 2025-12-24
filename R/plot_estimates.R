@@ -71,14 +71,33 @@ plot_estimates <- function(
 
   # filter out zero time point for incidence and diagnosis plots
   # by construction these are always zero at time zero
-  if (quantity %in% c("incidence", "incidence_age", "diagnoses", "diagnoses_age")) {
+  if (
+    quantity %in% c("incidence", "incidence_age", "diagnoses", "diagnoses_age")
+  ) {
     quantiles <- quantiles |>
       dplyr::filter(.data$year > 0)
   }
 
   if (
     quantity %in%
-      c("diag_prob", "migration_prob", "diag_prob_age", "migration_prob_age")
+      c("diag_prob", "diag_prob_age")
+  ) {
+    quantiles <- quantiles |>
+      dplyr::mutate(
+        strata = factor(
+          .data$strata,
+          levels = c(
+            "Recently acquired",
+            "CD4>=500",
+            "CD4 350-499",
+            "CD4 200-349",
+            "CD4<200"
+          )
+        )
+      )
+  } else if (
+    quantity %in%
+      c("migration_prob", "migration_prob_age")
   ) {
     quantiles <- quantiles |>
       dplyr::mutate(
@@ -89,7 +108,7 @@ plot_estimates <- function(
             "CD4 350-499",
             "CD4 200-349",
             "CD4<200",
-            "Recently acquired"
+            "Transfers of care"
           )
         )
       )
@@ -97,7 +116,7 @@ plot_estimates <- function(
 
   p1 <- quantiles |>
     ggplot2::ggplot() +
-    ggplot2::aes(.data$year, .data$`50%`, group = .data$group) +
+    ggplot2::aes(.data$year, .data$`50%`, color = .data$group, group = .data$group) +
     ggplot2::scale_linetype_manual(values = c(2, 1, 2)) +
     ggplot2::geom_line(
       ggplot2::aes(y = .data$`2.5%`),
@@ -109,11 +128,15 @@ plot_estimates <- function(
       linetype = "dashed",
       color = "gray"
     ) +
-    ggplot2::geom_line(color = "purple") +
+    ggplot2::geom_line() +
     ggplot2::labs(
       title = plot_title,
       x = "Year",
-      y = plot_title
+      y = plot_title,
+      color = ""
+    ) +
+    ggplot2::scale_color_manual(
+      values = c(rep("purple", length(unique(quantiles$group))), "black")
     ) +
     ggplot2::theme_bw()
 
@@ -288,7 +311,7 @@ do_facetting <- function(p1, quantity) {
   # facet by strata for diagnosis and migration probabilities
   if (quantity %in% c("diag_prob", "migration_prob")) {
     p1 <- p1 +
-      ggplot2::facet_grid(~ .data$strata, scales = "free_y", nrow = 1)
+      ggplot2::facet_grid(cols = ggplot2::vars(.data$strata), scales = "free_y")
   }
 
   # facet by age if age-dependent model
@@ -302,16 +325,19 @@ do_facetting <- function(p1, quantity) {
       )
   ) {
     p1 <- p1 +
-      ggplot2::facet_wrap(~ .data$age_band, scales = "free_y")
+      ggplot2::facet_grid(
+        cols = ggplot2::vars(.data$age_band),
+        scales = "free_y"
+      )
   }
 
   # facet by strata and age for age-dependent diagnosis and migration probabilities
   if (quantity %in% c("diag_prob_age", "migration_prob_age")) {
     p1 <- p1 +
-      ggplot2::facet_wrap(
-        ~ .data$strata + .data$age_band,
-        scales = "free_y",
-        nrow = 4
+      ggplot2::facet_grid(
+        cols = ggplot2::vars(.data$strata),
+        rows = ggplot2::vars(.data$age_band),
+        scales = "free_y"
       )
   }
 
