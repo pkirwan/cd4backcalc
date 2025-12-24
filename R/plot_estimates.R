@@ -72,7 +72,7 @@ plot_estimates <- function(
   # filter out zero time point for incidence plots
   if (quantity %in% c("incidence", "incidence_age")) {
     quantiles <- quantiles |>
-      filter(.data$year > 0)
+      dplyr::filter(.data$year > 0)
   }
 
   p1 <- quantiles |>

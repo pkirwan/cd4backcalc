@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# cd4backcalc <img src="man/figures/hex_sticker.png" align="right" height="190" />
+# cd4backcalc <img src="man/figures/hex_sticker.png" align="right" height="150" />
 
 <!-- badges: start -->
 
@@ -31,7 +31,7 @@ in each CD4 state.
 
 <div class="figure">
 
-<img src="man/figures/README-backcalc-model-1.png" alt="Figure: CD4-staged back-calculation model. The model compartments represent undiagnosed HIV (round boxes) and diagnosed HIV or AIDS (square boxes); the $h_j$ arrow represents HIV acquired at each time point ($j$); HIV progression probabilities ($q_i$) vary by CD4 stratum; HIV diagnosis probabilities ($d_{i,j}$) vary by CD4 stratum and time." width="80%" />
+<img src="man/figures/README-backcalc-model-1.png" alt="Figure: CD4-staged back-calculation model. The model compartments represent undiagnosed HIV (round boxes) and diagnosed HIV or AIDS (square boxes); the $h_j$ arrow represents HIV acquired at each time point ($j$); HIV progression probabilities ($q_i$) vary by CD4 stratum; HIV diagnosis probabilities ($d_{i,j}$) vary by CD4 stratum and time." width="100%" />
 <p class="caption">
 
 Figure: CD4-staged back-calculation model. The model compartments
@@ -76,7 +76,7 @@ sim_diags <- simulate_diagnoses(h_pattern = "increasing")
 plot_simulations(sim_diags, quantity = "incidence")
 ```
 
-<img src="man/figures/README-simulate-data-1.png" width="80%" />
+<img src="man/figures/README-simulate-data-1.png" width="100%" />
 
 ``` r
 # run back-calculation model on simulated data
@@ -87,21 +87,21 @@ hiv_list <- run_backcalc(sim_diags)
 plot_diagnostics(hiv_list)
 ```
 
-<img src="man/figures/README-simulate-data-2.png" width="80%" />
+<img src="man/figures/README-simulate-data-2.png" width="100%" />
 
 ``` r
 # check goodness of fit
 bias_plot(hiv_list, quantity = "incidence")
 ```
 
-<img src="man/figures/README-simulate-data-3.png" width="80%" />
+<img src="man/figures/README-simulate-data-3.png" width="100%" />
 
 ``` r
 # plot estimates compared to simulated values
 plot_estimates(hiv_list, quantity = "incidence")
 ```
 
-<img src="man/figures/README-simulate-data-4.png" width="80%" />
+<img src="man/figures/README-simulate-data-4.png" width="100%" />
 
 ## Supported models
 

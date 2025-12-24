@@ -551,7 +551,7 @@ mse_plot <- function(
       outliers = FALSE
     ) +
     ggplot2::labs(
-      title = paste0("Mean Squared Error of ", gsub("_", " ", quantity)),
+      title = paste0("Mean Squared Error of ", gsub("E", "e", get_plot_title(quantity))),
       x = "",
       y = "Squared difference"
     ) +
@@ -559,7 +559,7 @@ mse_plot <- function(
       breaks = scales::pretty_breaks(),
       labels = scales::label_comma()
     ) +
-    ggplot2::theme_minimal(15) +
+    ggplot2::theme_bw() +
     ggplot2::theme(
       legend.position = "none",
       panel.grid.minor = ggplot2::element_blank()
@@ -622,7 +622,7 @@ bias_plot <- function(
     ggplot2::geom_hline(yintercept = 0, colour = "grey") +
     ggplot2::geom_boxplot(coef = Inf, alpha = 0.2, width = 0.4) +
     ggplot2::labs(
-      title = paste("Bias in", gsub("_", " ", quantity)),
+      title = paste("Bias in ", gsub("E", "e", get_plot_title(quantity))),
       x = "",
       y = "Difference"
     ) +
@@ -630,7 +630,7 @@ bias_plot <- function(
       breaks = scales::pretty_breaks(),
       labels = scales::label_comma()
     ) +
-    ggplot2::theme_minimal(15) +
+    ggplot2::theme_bw() +
     ggplot2::theme(
       legend.position = "none",
       panel.grid.minor = ggplot2::element_blank()
