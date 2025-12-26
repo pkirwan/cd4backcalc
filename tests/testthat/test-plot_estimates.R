@@ -82,7 +82,7 @@ test_that("plots are generated correctly for migration model", {
   p0 <- plot_diagnostics(hiv_list)
   expect_s3_class(p0, "ggplot")
   # Generate plots of key quantities
-  p1 <- plot_estimates(hiv_list, "migration")
+  p1 <- plot_estimates(hiv_list, "undiag_migration")
   p2 <- plot_estimates(hiv_list, "migration_prob")
   p3 <- plot_estimates(hiv_list, "transfers")
   p4 <- plot_estimates(hiv_list, "ratio_abroad_uk")
@@ -125,7 +125,7 @@ test_that("plots work for migration model lists", {
   expect_s3_class(p3, "ggplot")
   expect_s3_class(p4, "ggplot")
   # Generate plots of key quantities
-  p5 <- plot_estimates(hiv_list, "migration")
+  p5 <- plot_estimates(hiv_list, "undiag_migration")
   p6 <- plot_estimates(hiv_list, "migration_prob")
   p7 <- plot_estimates(hiv_list, "transfers")
   p8 <- plot_estimates(hiv_list, "ratio_abroad_uk")

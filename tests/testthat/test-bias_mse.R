@@ -38,9 +38,9 @@ test_that("mse_list and plots are generated correctly for migration model", {
     )
   })
   # Test extraction and plotting functions
-  p1 <- mse_plot(hiv_list, quantity = "migration")
+  p1 <- mse_plot(hiv_list, quantity = "undiag_migration")
   expect_s3_class(p1, "ggplot")
-  p2 <- bias_plot(hiv_list, quantity = "migration")
+  p2 <- bias_plot(hiv_list, quantity = "undiag_migration")
   expect_s3_class(p2, "ggplot")
 })
 

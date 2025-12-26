@@ -106,7 +106,8 @@ postproc_ai <- function(
       hiv_list[[paste0("diagnoses_", ch)]] <- ppq$diagnoses
 
       if (stan_data$model_config$migration) {
-        hiv_list[[paste0("migration_", ch)]] <- ppq$migration
+        hiv_list[[paste0("all_migration_", ch)]] <- ppq$all_migration
+        hiv_list[[paste0("undiag_migration_", ch)]] <- ppq$undiag_migration
         hiv_list[[paste0("migration_prob_", ch)]] <- ppq$migration_prob
         hiv_list[[paste0("transfers_", ch)]] <- ppq$transfers
         hiv_list[[paste0("ratio_abroad_uk_", ch)]] <- ppq$ratio_abroad_uk
@@ -243,7 +244,13 @@ build_ppq_list <- function(
     out <- c(
       out,
       list(
-        migration = migration.df(
+        all_migration = total.migration.df(
+          stan_data,
+          prev_dist,
+          start.yr = start_yr,
+          annual = FALSE
+        ),
+        undiag_migration = undx.migration.df(
           stan_data,
           prev_dist,
           start.yr = start_yr,
@@ -1054,7 +1061,7 @@ incidence.df <- function(
 #' @param start.yr Starting year for the dataframe.
 #' @param annual Logical indicating if annual migration is required.
 #' @return Dataframe of migration estimates.
-migration.df <- function(
+total.migration.df <- function(
   stan_data,
   prev_dist,
   start.yr = 1978,
@@ -1135,6 +1142,53 @@ transfers.df <- function(
     df <- df |> tidyr::pivot_longer(-"year", names_to = "quartile")
   }
   return(df)
+}
+
+#' Undiagnosed migration dataframe
+#'
+#' Calculates undiagnosed migration inflow (omega * (1 - m5)) from prevalence distribution.
+#'
+#' @param stan_data Data list used in stan model fitting.
+#' @param prev_dist Prevalence distribution by year of infection.
+#' @param start.yr Starting year for the dataframe.
+#' @param annual Logical indicating if annual undiagnosed migration is required.
+#' @return Dataframe of undiagnosed migration estimates.
+undx.migration.df <- function(
+  stan_data,
+  prev_dist,
+  start.yr = 1978,
+  annual = FALSE
+) {
+  nyr <- stan_data$nquar / 4
+
+  undx_migration <- simplify2array(prev_dist["undx.migration", ])
+
+  if (annual == FALSE) {
+    q.undx <- apply(
+      undx_migration,
+      1,
+      stats::quantile,
+      probs = c(0.025, 0.5, 0.975)
+    )
+    df <- as.data.frame(t(q.undx))
+    df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 0.25)
+    df <- df |> tidyr::pivot_longer(-"year", names_to = "quartile")
+  } else {
+    undx_years <- apply(undx_migration, 2, function(x) {
+      tapply(x, rep(1:(stan_data$nquar / 4), each = 4), sum)
+    })
+    q.undx_years <- apply(
+      undx_years,
+      1,
+      stats::quantile,
+      probs = c(0.025, 0.5, 0.975)
+    )
+    df <- as.data.frame(t(q.undx_years))
+    df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 1)
+    df <- df |> tidyr::pivot_longer(-"year", names_to = "quartile")
+  }
+
+  df
 }
 
 #' Undiagnosed prevalence dataframe

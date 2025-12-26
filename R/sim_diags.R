@@ -657,6 +657,9 @@ simulate_diagnoses <- function(
     lat_init_abroad
   ))
 
+  # Useful to store omega by age for diagnostics
+  omega_age <- omega * agedist_abroad
+
   # Run epidemic simulations
   epi_uk <- epi_mat(
     Q_l,
@@ -690,6 +693,7 @@ simulate_diagnoses <- function(
     "epi_uk_abroad" = epi_uk_abroad,
     "epi_abroad" = epi_abroad,
     "omega" = omega,
+    "omega_age" = omega_age,
     "infs" = infs,
     "infs_age" = infs_age,
     "m" = m,

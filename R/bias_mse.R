@@ -79,10 +79,15 @@ make_mse_list <- function(
   out$incidence_mse <- get_mse(out$incidence_bias)
 
   if (hiv_list[[1]]$stan_data$model_config$migration) {
-    out$migration_bias <- get_bias(
+    out$undiag_migration_bias <- get_bias(
       hiv_list,
-      extract_simulated_quantity(hiv_list[[1]], quantity = "migration"),
-      "migration"
+      extract_simulated_quantity(hiv_list[[1]], quantity = "undiag_migration"),
+      "undiag_migration"
+    )
+    out$all_migration_bias <- get_bias(
+      hiv_list,
+      extract_simulated_quantity(hiv_list[[1]], quantity = "all_migration"),
+      "all_migration"
     )
     out$ratio_abroad_uk_bias <- get_bias(
       hiv_list,
@@ -95,7 +100,8 @@ make_mse_list <- function(
       "migration_prob"
     )
 
-    out$migration_mse <- get_mse(out$migration_bias)
+    out$undiag_migration_mse <- get_mse(out$undiag_migration_bias)
+    out$all_migration_mse <- get_mse(out$all_migration_bias)
     out$ratio_abroad_uk_mse <- get_mse(out$ratio_abroad_uk_bias)
     out$mp_mse <- get_mse(out$mp_bias)
   }
@@ -105,7 +111,7 @@ make_mse_list <- function(
 #' Box plots of mean squared error (MSE).
 #'
 #' @param hiv_list A list returned from the `postproc` function containing model estimates.
-#' @param quantity The quantity to plot MSE for (default is "incidence", other options are "migration", "ratio_abroad_uk", and "mp").
+#' @param quantity The quantity to plot MSE for (default is "incidence", other options are "undiag_migration", "ratio_abroad_uk", and "mp").
 #' @param offset The offset for text labels.
 #' @param lab A logical indicating whether to add labels.
 #' @return A ggplot object of the MSE box plot.
@@ -184,7 +190,7 @@ mse_plot <- function(
 #' Box plots of bias.
 #'
 #' @param hiv_list A list returned from the `postproc` function containing model estimates.
-#' @param quantity The quantity to plot bias for (default is "incidence", other options are "migration", "ratio_abroad_uk", and "mp").
+#' @param quantity The quantity to plot bias for (default is "incidence", other options are "undiag_migration", "ratio_abroad_uk", and "mp").
 #' @param offset The offset for text labels.
 #' @param lab A logical indicating whether to add labels.
 #' @return A ggplot object of the bias box plot.

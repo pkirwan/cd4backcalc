@@ -3,7 +3,7 @@
 #' Generate a ggplot2 object plotting simulated quantities over time.
 #'
 #' @param sim_diags A list containing the simulated diagnosis data objects sim_data and stan_data.
-#' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "ratio_abroad_uk", and "detect_prob".
+#' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "undiag_migration", "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "ratio_abroad_uk", and "detect_prob".
 #' @return A ggplot2 object.
 #' @export
 plot_simulations <- function(
@@ -36,7 +36,7 @@ plot_simulations <- function(
 #' Generate a ggplot2 object plotting estimated quantities over time, optionally compared to the simulated values.
 #'
 #' @param hiv_list A list returned from the `postproc` function containing model estimates.
-#' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "ratio_abroad_uk", and "detect_prob".
+#' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "undiag_migration", "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "ratio_abroad_uk", and "detect_prob".
 #' @param chain_results A logical indicating whether to plot chain-by-chain estimates (default is FALSE).
 #' @return A ggplot2 object.
 #' @export
@@ -116,7 +116,12 @@ plot_estimates <- function(
 
   p1 <- quantiles |>
     ggplot2::ggplot() +
-    ggplot2::aes(.data$year, .data$`50%`, color = .data$group, group = .data$group) +
+    ggplot2::aes(
+      .data$year,
+      .data$`50%`,
+      color = .data$group,
+      group = .data$group
+    ) +
     ggplot2::scale_linetype_manual(values = c(2, 1, 2)) +
     ggplot2::geom_line(
       ggplot2::aes(y = .data$`2.5%`),
@@ -249,8 +254,10 @@ get_plot_title <- function(quantity) {
     "HIV incidence"
   } else if (quantity == "undiag_prev") {
     "undiagnosed HIV prevalence"
-  } else if (quantity == "migration") {
+  } else if (quantity == "undiag_migration") {
     "migration with undiagnosed HIV"
+  } else if (quantity == "all_migration") {
+    "overall migration with HIV (including diagnosed and undiagnosed)"
   } else if (quantity == "diag_prob") {
     "HIV diagnosis probabilities, by CD4 strata"
   } else if (quantity == "diagnoses") {
@@ -267,7 +274,7 @@ get_plot_title <- function(quantity) {
     "HIV incidence by age"
   } else if (quantity == "undiag_prev_age") {
     "undiagnosed HIV prevalence by age"
-  } else if (quantity == "migration_age") {
+  } else if (quantity == "undiag_migration_age") {
     "migration with undiagnosed HIV by age"
   } else if (quantity == "diagnoses_age") {
     "HIV diagnoses by age"
@@ -320,7 +327,7 @@ do_facetting <- function(p1, quantity) {
       c(
         "incidence_age",
         "undiag_prev_age",
-        "migration_age",
+        "undiag_migration_age",
         "diagnoses_age"
       )
   ) {

@@ -37,12 +37,23 @@ test_that("extract_simulated_quantity correctly extracts values for ai", {
   )
 
   stan_data <- simulate_diagnoses(nquar = 60, sim_seed = 123, migration = TRUE)
-  sim_estimates <- extract_simulated_quantity(stan_data, quantity = "migration")
+  sim_estimates <- extract_simulated_quantity(
+    stan_data,
+    quantity = "undiag_migration"
+  )
   expect_equal(
     sim_estimates$value[1],
     sum(stan_data$sim_data$m[1, 1:4]) -
       (stan_data$stan_data$ABROAD[1] *
         ((1 / stan_data$sim_data$detect_prob[1]) - 1))
+  )
+  sim_estimates <- extract_simulated_quantity(
+    stan_data,
+    quantity = "all_migration"
+  )
+  expect_equal(
+    sim_estimates$value[1],
+    sum(stan_data$sim_data$omega[1])
   )
   sim_estimates <- extract_simulated_quantity(
     stan_data,
@@ -124,6 +135,7 @@ test_that("extract_simulated_quantity correctly extracts values for ad", {
     sim_estimates$value[1],
     stan_data$sim_data$d_probs[1, 1]
   )
+  # age and migration
   stan_data <- simulate_diagnoses(
     nquar = 60,
     sim_seed = 123,
@@ -132,12 +144,20 @@ test_that("extract_simulated_quantity correctly extracts values for ad", {
   )
   sim_estimates <- extract_simulated_quantity(
     stan_data,
-    quantity = "migration_age"
+    quantity = "undiag_migration_age"
   )
   expect_equal(
     sim_estimates$value[1],
     sum(stan_data$sim_data$m_age[1:10, 1, 1:4]) -
       (sum(stan_data$stan_data$ABROAD_age[1, 1:10]) *
         ((1 / stan_data$sim_data$detect_prob[1]) - 1))
+  )
+  sim_estimates <- extract_simulated_quantity(
+    stan_data,
+    quantity = "all_migration_age"
+  )
+  expect_equal(
+    sim_estimates$value[1],
+    sum(stan_data$sim_data$omega_age[1:10, 1])
   )
 })

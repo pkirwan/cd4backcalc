@@ -83,10 +83,15 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
     year = seq(0, plot_years, by = 0.25),
     group = "Simulated values"
   )
-  migration <- tibble::tibble(
+  undiag_migration <- tibble::tibble(
     # (1 / detect_prob) - 1 = (1 - detect_prob) * (1 / detect_prob)
     value = rowSums(sim_data$m[, 1:stan_data$sim_config$nlatst]) -
       (stan_data$ABROAD * ((1 / sim_data$detect_prob) - 1)),
+    year = seq(0, plot_years, by = 0.25),
+    group = "Simulated values"
+  )
+  all_migration <- tibble::tibble(
+    value = sim_data$omega,
     year = seq(0, plot_years, by = 0.25),
     group = "Simulated values"
   )
@@ -153,8 +158,10 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
     out <- undiag_prev
   } else if (quantity == "incidence") {
     out <- incidence
-  } else if (quantity == "migration") {
-    out <- migration
+  } else if (quantity == "undiag_migration") {
+    out <- undiag_migration
+  } else if (quantity == "all_migration") {
+    out <- all_migration
   } else if (quantity == "diagnoses") {
     out <- diagnoses
   } else if (quantity == "diag_prob") {
@@ -215,7 +222,7 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
             age_band = "all"
           )
       )
-  } else if (quantity == "migration_age") {
+  } else if (quantity == "undiag_migration_age") {
     out <- tidyr::expand_grid(
       year = seq(0, plot_years, by = 0.25),
       age = 15:(stan_data$nage + 14)
@@ -242,7 +249,30 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
       dplyr::group_by(.data$year, .data$age_band, .data$group) |>
       dplyr::summarise(value = sum(.data$value), .groups = "drop") |>
       dplyr::bind_rows(
-        migration |>
+        undiag_migration |>
+          dplyr::mutate(
+            age_band = "all"
+          )
+      )
+  } else if (quantity == "all_migration_age") {
+    out <- tidyr::expand_grid(
+      year = seq(0, plot_years, by = 0.25),
+      age = 15:(stan_data$nage + 14)
+    ) |>
+      dplyr::mutate(
+        value = as.vector(sim_data$omega_age),
+        group = "Simulated values",
+        age_band = cut(
+          .data$age,
+          breaks = c(15, 25, 35, 45, 100),
+          labels = age_group_labels,
+          right = FALSE
+        )
+      ) |>
+      dplyr::group_by(.data$year, .data$age_band, .data$group) |>
+      dplyr::summarise(value = sum(.data$value), .groups = "drop") |>
+      dplyr::bind_rows(
+        undiag_migration |>
           dplyr::mutate(
             age_band = "all"
           )

@@ -810,14 +810,15 @@ postproc_ad <- function(
     omega.draws <- fit.mat[, omega.ind, drop = FALSE]
     omega.q <- apply(omega.draws, 2, get_quantiles)
 
-    out$migration <- make_tibble(
+    # omega is total migration
+    out$all_migration <- make_tibble(
       omega.q,
       nt = nquar,
       start_yr = start_yr,
       qt.flag = TRUE
     )
 
-    # out$migration <- out$migration_age |>
+    # out$undiag_migration <- out$undiag_migration_age |>
     #   dplyr::filter(.data$age_band == "all")
 
     # migration_prob (m[k,t], k=1..5)
@@ -862,6 +863,17 @@ postproc_ad <- function(
       qt.flag = TRUE
     )
 
+    # undiagnosed migration
+    undiag_migration.draws <- omega.draws * (1 - m5.draws)
+    undiag_migration.q <- apply(undiag_migration.draws, 2, get_quantiles)
+
+    out$undiag_migration <- make_tibble(
+      undiag_migration.q,
+      nt = nquar,
+      start_yr = start_yr,
+      qt.flag = TRUE
+    )
+
     # out$transfers <- out$transfers_age |>
     #   dplyr::filter(.data$age_band == "all")
 
@@ -884,6 +896,24 @@ postproc_ad <- function(
     detect.q <- apply(detect.draws, 2, get_quantiles)
     out$detect_prob <- make_tibble(
       detect.q,
+      nt = nquar,
+      start_yr = start_yr,
+      qt.flag = TRUE
+    )
+
+    # transfers detected / misclassified
+    transfers_detected.draws <- transfers.draws * detect.draws
+    transfers_misclassified.draws <- transfers.draws * (1 - detect.draws)
+
+    out$transfers_detected <- make_tibble(
+      apply(transfers_detected.draws, 2, get_quantiles),
+      nt = nquar,
+      start_yr = start_yr,
+      qt.flag = TRUE
+    )
+
+    out$transfers_misclassified <- make_tibble(
+      apply(transfers_misclassified.draws, 2, get_quantiles),
       nt = nquar,
       start_yr = start_yr,
       qt.flag = TRUE
