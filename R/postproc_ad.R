@@ -22,7 +22,7 @@ postproc_ad <- function(
   N.Poiss <- 300
 
   # Useful constants
-  config <- stan_data$config
+  config <- stan_data$model_config
   nquar <- stan_data$nquar
   if (stan_data$nquar %% 4 != 0) {
     stop("Number of quarters must be divisible by 4")
@@ -295,9 +295,9 @@ postproc_ad <- function(
     }
 
     # Build d-cube indices (agegrp, state, t) from fit.mat colnames, then per draw create (state,t,agegrp)
-    d_idx <- array(NA_integer_, dim = c(4, 4, nquar))
+    d_idx <- array(NA_integer_, dim = c(4, (config$ndiagst - 1), nquar))
     for (ag in 1:4) {
-      for (k in 1:4) {
+      for (k in 1:(config$ndiagst - 1)) {
         ind <- grep(sprintf("^d\\[%d,%d,", ag, k), colnames(fit.mat))
         if (length(ind) != nquar) {
           stop(sprintf(
@@ -328,14 +328,19 @@ postproc_ad <- function(
 
     q_mat <- matrix(stan_data$q_age, nrow = 4, ncol = nage)
 
-    prev_total_mat <- matrix(stan_data$init_prev_age, nrow = 4, ncol = nage) +
-      matrix(stan_data$init_prev_abroad_age, nrow = 4, ncol = nage)
+    # Expected prevalence with RITA strata
+    prev_total_mat <- matrix(
+      stan_data$init_prev_age,
+      nrow = config$nlatst,
+      ncol = nage
+    ) +
+      matrix(stan_data$init_prev_abroad_age, nrow = config$nlatst, ncol = nage)
 
     exp.prev <- lapply(seq_len(nrow(fit.mat)), function(i) {
-      # d_cube: 4 (state) x nquar (time) x 4 (agegrp)
-      d_cube <- array(NA_real_, dim = c(4, nquar, 4))
+      # d_cube: 4/5 (ndiagst - 1) x nquar (time) x 4 (agegrp)
+      d_cube <- array(NA_real_, dim = c(config$ndiagst - 1, nquar, 4))
       for (ag in 1:4) {
-        for (k in 1:4) {
+        for (k in 1:(config$ndiagst - 1)) {
           d_cube[k, , ag] <- fit.mat[i, d_idx[ag, k, ]]
         }
       }
@@ -346,18 +351,33 @@ postproc_ad <- function(
       # m_mat: 5 x nquar (rows are k=1..5)
       m_mat <- matrix(fit.mat[i, m.ind], nrow = 5, ncol = nquar)
 
-      prev_iter_fct_migration(
-        H = exp(infs[i, ]),
-        d = d_cube,
-        q = q_mat,
-        prev_total = prev_total_mat,
-        omega = omega_i,
-        p = p_i,
-        m = m_mat,
-        abroad_age_prop = abroad_age_prop,
-        nquar = nquar,
-        nage = nage
-      )
+      if (config$rita) {
+        prev_iter_fct_migration_rita(
+          H = exp(infs[i, ]),
+          d = d_cube,
+          q = q_mat,
+          prev_total = prev_total_mat,
+          omega = omega_i,
+          p = p_i,
+          m = m_mat,
+          abroad_age_prop = abroad_age_prop,
+          nquar = nquar,
+          nage = nage
+        )
+      } else {
+        prev_iter_fct_migration(
+          H = exp(infs[i, ]),
+          d = d_cube,
+          q = q_mat,
+          prev_total = prev_total_mat,
+          omega = omega_i,
+          p = p_i,
+          m = m_mat,
+          abroad_age_prop = abroad_age_prop,
+          nquar = nquar,
+          nage = nage
+        )
+      }
     })
 
     exp.prev.arr <- simplify2array(exp.prev) # (t, age, state, draw)
@@ -457,7 +477,11 @@ postproc_ad <- function(
     CD4.st2 <- CD4_all[,, 2, ]
     CD4.st3 <- CD4_all[,, 3, ]
     CD4.st4 <- CD4_all[,, 4, ]
-    CD4.st5 <- NULL
+    if (config$rita) {
+      CD4.st5 <- CD4_all[,, 5, ]
+    } else {
+      CD4.st5 <- NULL
+    }
   } else {
     # denom dims: (nt, nage, nsim)
     cd4_denom <- apply(

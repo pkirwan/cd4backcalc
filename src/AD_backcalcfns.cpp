@@ -723,3 +723,175 @@ arma::cube prev_iter_fct_migration(
 
   return exp_prev;
 }
+
+// [[Rcpp::export]]
+arma::cube prev_iter_fct_migration_rita(
+    const arma::vec &H,               // length nquar*nage (age-blocked: t varies fastest)
+    const arma::cube &d,              // dims: 5 (diag state) x nquar (time) x 4 (agegrp)
+    const arma::mat &q,               // 4 x nage (progression by age at entry)
+    const arma::mat &prev_total,      // 7 x nage (init_prev_age + init_prev_abroad_age)
+    const arma::vec &omega,           // length nquar
+    const arma::vec &p,               // length nquar (UK-acquired prop among migrants)
+    const arma::mat &m,               // 5 x nquar (migration probs; rows 1..4 are abroad CD4 states; row 5 transfers not used here)
+    const arma::mat &abroad_age_prop, // nquar x nage (rows sum to 1; fallback uniform handled in R)
+    int nquar,
+    int nage)
+{
+  arma::cube exp_prev(nquar, nage, 7, arma::fill::zeros);
+  const arma::vec empty_vec7(7, arma::fill::zeros);
+
+  // Cohort latent arrays (t, a0, t0) with 7-state vectors (undiagnosed)
+  std::vector<std::vector<std::vector<arma::vec>>> lat_arr(
+      nquar, std::vector<std::vector<arma::vec>>(nage, std::vector<arma::vec>(nquar)));
+
+  // Init with zeros
+  for (int t = 0; t < nquar; ++t)
+  {
+    for (int a0 = 0; a0 < nage; ++a0)
+    {
+      for (int t0 = 0; t0 < nquar; ++t0)
+      {
+        lat_arr[t][a0][t0] = empty_vec7;
+      }
+    }
+  }
+
+  for (int t0 = 0; t0 < nquar; ++t0)
+  {
+    for (int a0 = 0; a0 < nage; ++a0)
+    {
+      arma::vec lat_p(7, arma::fill::zeros);
+      int ag0 = age_to_agroup(a0);
+
+      // Prevalent infections at quarter 1 only (t0 == 0), progressed to survivors
+      if (t0 == 0)
+      {
+        // Diagnosis probs at quarter 1 for age-group at entry
+        double d1 = d(0, 0, ag0);
+        double d2 = d(1, 0, ag0);
+        double d3 = d(2, 0, ag0);
+        double d4 = d(3, 0, ag0);
+        double d5 = d(4, 0, ag0);
+        double nd1 = 1.0 - d1;
+        double nd2 = 1.0 - d2;
+        double nd3 = 1.0 - d3;
+        double nd4 = 1.0 - d4;
+        double nd5 = 1.0 - d5;
+
+        // Progression probs by age-at-entry
+        double q1 = q(0, a0);
+        double q2 = q(1, a0);
+        double q3 = q(2, a0);
+        double q4 = q(3, a0);
+        double nq1 = 1.0 - q1;
+        double nq2 = 1.0 - q2;
+        double nq3 = 1.0 - q3;
+        double nq4 = 1.0 - q4;
+
+        // Initial undiagnosed prevalence in 7 states (combined native + abroad)
+        double v1 = prev_total(0, a0);
+        double v2 = prev_total(1, a0);
+        double v3 = prev_total(2, a0);
+        double v4 = prev_total(3, a0);
+        double v5 = prev_total(4, a0);
+        double v6 = prev_total(5, a0);
+        double v7 = prev_total(6, a0);
+
+        // Survivors after diagnosis and progression (matches Stan's lat_p construction)
+        lat_p(0) = 0.0;
+        lat_p(1) = (nd1 * nq1) * v1;
+        lat_p(2) = (nd1 * q1) * v1;
+        lat_p(3) = (nd1 * nq1) * v2 + (nd2 * nq1) * v4;
+        lat_p(4) = (nd1 * q1) * v2 + (nd1 * nq2) * v3 + (nd2 * q1) * v4 + (nd3 * nq2) * v5;
+        lat_p(5) = (nd1 * q2) * v3 + (nd3 * q2) * v5 + (nd4 * nq3) * v6;
+        lat_p(6) = (nd4 * q3) * v6 + (nd5 * nq4) * v7;
+      }
+
+      // Inflows at entry time t0 and entry age a0
+      double inflow_native = H((a0 * nquar) + t0);
+      double inflow_mig_uk = inflow_native * p(t0);
+
+      double ageprop = abroad_age_prop(t0, a0);
+      double mig_total = omega(t0) * ageprop;
+
+      // Migrants acquired abroad enter states 4..7 only (CD4>=500, 350-499, 200-349, <200)
+      double inflow_ab4 = mig_total * m(0, t0); // m[1,t0] in Stan
+      double inflow_ab5 = mig_total * m(1, t0); // m[2,t0]
+      double inflow_ab6 = mig_total * m(2, t0); // m[3,t0]
+      double inflow_ab7 = mig_total * m(3, t0); // m[4,t0]
+
+      arma::vec lat0 = lat_p;
+
+      // Combined prevalence (native + migrant) undiagnosed at entry quarter
+      lat0(0) += inflow_native + inflow_mig_uk;
+      lat0(3) += inflow_ab4;
+      lat0(4) += inflow_ab5;
+      lat0(5) += inflow_ab6;
+      lat0(6) += inflow_ab7;
+
+      lat_arr[t0][a0][t0] = lat0;
+
+      // Propagate for subsequent quarters: diagnosis (by current age-group) then progression (by a0)
+      for (int t = t0 + 1; t < nquar; ++t)
+      {
+        int a = age_fct(a0, t, t0, nquar, nage);
+        int ag = age_to_agroup(a);
+
+        double d1 = d(0, t, ag);
+        double d2 = d(1, t, ag);
+        double d3 = d(2, t, ag);
+        double d4 = d(3, t, ag);
+        double d5 = d(4, t, ag);
+        double nd1 = 1.0 - d1;
+        double nd2 = 1.0 - d2;
+        double nd3 = 1.0 - d3;
+        double nd4 = 1.0 - d4;
+        double nd5 = 1.0 - d5;
+
+        double q1 = q(0, a0);
+        double q2 = q(1, a0);
+        double q3 = q(2, a0);
+        double q4 = q(3, a0);
+        double nq1 = 1.0 - q1;
+        double nq2 = 1.0 - q2;
+        double nq3 = 1.0 - q3;
+        double nq4 = 1.0 - q4;
+
+        const arma::vec &lat = lat_arr[t - 1][a0][t0];
+        arma::vec lat_next(7, arma::fill::zeros);
+
+        // Stan update (indices shifted by -1)
+        lat_next(0) = 0.0;
+        lat_next(1) = (nd1 * nq1) * lat(0);
+        lat_next(2) = (nd1 * q1) * lat(0);
+        lat_next(3) = (nd1 * nq1) * lat(1) + (nd2 * nq1) * lat(3);
+        lat_next(4) = (nd1 * q1) * lat(1) + (nd1 * nq2) * lat(2) + (nd2 * q1) * lat(3) + (nd3 * nq2) * lat(4);
+        lat_next(5) = (nd1 * q2) * lat(2) + (nd3 * q2) * lat(4) + (nd4 * nq3) * lat(5);
+        lat_next(6) = (nd4 * q3) * lat(5) + (nd5 * nq4) * lat(6);
+
+        lat_arr[t][a0][t0] = lat_next;
+      }
+    }
+  }
+
+  // Convert cohort-by-entry-age arrays to cohort-by-current-age and aggregate over t0
+  std::vector<std::vector<std::vector<arma::vec>>> lat_arr1 = a0toa_fct(lat_arr, nquar, nage);
+
+  for (int t = 0; t < nquar; ++t)
+  {
+    for (int a = 0; a < nage; ++a)
+    {
+      arma::vec tot(7, arma::fill::zeros);
+      for (int t0 = 0; t0 <= t; ++t0)
+      {
+        tot += lat_arr1[t][a][t0];
+      }
+      for (int k = 0; k < 7; ++k)
+      {
+        exp_prev(t, a, k) = tot(k);
+      }
+    }
+  }
+
+  return exp_prev;
+}

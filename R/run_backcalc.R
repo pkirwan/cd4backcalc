@@ -24,9 +24,9 @@
 #' @export
 run_backcalc <- function(
   stan_data,
-  migration = FALSE,
-  rita = FALSE,
-  age = FALSE,
+  migration = NULL,
+  rita = NULL,
+  age = NULL,
   inf_model = 1,
   diag_model = 1,
   model_seed = NULL,
@@ -47,7 +47,7 @@ run_backcalc <- function(
     sim_data <- NULL
   }
 
-  # Prepare spline basis and augment stan_data
+  # Prepare spline basis and augment stan_data with model_config
   stan_data <- model_type_prep(
     stan_data = stan_data,
     migration = migration,
@@ -87,7 +87,7 @@ run_backcalc <- function(
 #' This function runs the CD4 back-calculation model using Stan.
 #'
 #' @param stan_data A list of data formatted for Stan.
-#' @param model_seed Seed for model fitting (will be set to stan_data$config$model_seed if NULL).
+#' @param model_seed Seed for model fitting (will be set to stan_data$model_config$model_seed if NULL).
 #' @param iter Number of iterations for Stan sampling.
 #' @param chains Number of chains for Stan sampling.
 #' @param refresh Number of iterations between progress messages.
@@ -112,17 +112,17 @@ fit_stan_model <- function(
 
   # model seed
   if (is.null(model_seed)) {
-    model_seed <- stan_data$config$model_seed
+    model_seed <- stan_data$model_config$model_seed
   }
 
   # Check stan_data validity
   confirm_stan_data(stan_data)
 
   # Load appropriate model
-  model <- load_stan_model(stan_data$config)
+  model <- load_stan_model(stan_data$model_config)
 
   # Make pars_save
-  pars_save <- make_pars_save(stan_data$config)
+  pars_save <- make_pars_save(stan_data$model_config)
 
   # Sample from model
   fit <- rstan::sampling(
@@ -178,7 +178,9 @@ stan_model_config <- function(
     migration = migration,
     rita = rita,
     age = age,
-    model_seed = model_seed
+    model_seed = model_seed,
+    ndiagst = ifelse(rita, 6, 5),
+    nlatst = ifelse(rita, 7, 4)
   )
   return(config)
 }
@@ -191,7 +193,7 @@ stan_model_config <- function(
 #' @param stan_data A list of data formatted for Stan.
 #' @return NULL. Throws an error if checks fail.
 confirm_stan_data <- function(stan_data) {
-  if (stan_data$config$age && stan_data$config$migration) {
+  if (stan_data$model_config$age && stan_data$model_config$migration) {
     stopifnot(
       "Incorrect dimensions in stan_data, HIV_age should be (nquar, nage, 2)" = all(
         dim(stan_data$HIV_age) == c(stan_data$nquar, stan_data$nage, 2)
@@ -202,7 +204,7 @@ confirm_stan_data <- function(stan_data) {
         dim(stan_data$AIDS_age) == c(stan_data$nquar, stan_data$nage, 2)
       )
     )
-    if (stan_data$config$rita) {
+    if (stan_data$model_config$rita) {
       stopifnot(
         "Incorrect dimensions in stan_data, CD4_age should be (nquar, nage, 2, 5)" = all(
           dim(stan_data$CD4_age) == c(stan_data$nquar, stan_data$nage, 2, 5)
@@ -220,20 +222,20 @@ confirm_stan_data <- function(stan_data) {
         dim(stan_data$ABROAD_age) == c(stan_data$nquar, stan_data$nage)
       )
     )
-  } else if (stan_data$config$age) {
+  } else if (stan_data$model_config$age) {
     stopifnot(
       "Incorrect dimensions in stan_data, HIV_age should be (nquar, nage)" = all(
         dim(stan_data$HIV_age) == c(stan_data$nquar, stan_data$nage)
       )
     )
-    if (stan_data$config$rita) {
+    if (stan_data$model_config$rita) {
       stopifnot(
         "Incorrect dimensions in stan_data, CD4_age should be (nquar, nage, 5)" = all(
           dim(stan_data$CD4_age) == c(stan_data$nquar, stan_data$nage, 5)
         )
       )
     }
-  } else if (stan_data$config$migration) {
+  } else if (stan_data$model_config$migration) {
     stopifnot(
       "Incorrect dimensions in stan_data, HIV should be (nquar, 2)" = all(
         dim(stan_data$HIV) == c(stan_data$nquar, 2)
@@ -250,7 +252,7 @@ confirm_stan_data <- function(stan_data) {
       ) ==
         stan_data$nquar
     )
-    if (stan_data$config$rita) {
+    if (stan_data$model_config$rita) {
       stopifnot(
         "Incorrect dimensions in stan_data, CD4 should be (nquar, 2, 5)" = all(
           dim(stan_data$CD4) == c(stan_data$nquar, 2, 5)
@@ -263,7 +265,7 @@ confirm_stan_data <- function(stan_data) {
         )
       )
     }
-  } else if (stan_data$config$rita) {
+  } else if (stan_data$model_config$rita) {
     stopifnot(
       "Incorrect dimensions in stan_data, CD4 should be (nquar, 5)" = all(
         dim(stan_data$CD4) == c(stan_data$nquar, 5)
@@ -302,7 +304,9 @@ load_stan_model <- function(config) {
     model <- stanmodels$AI_spl_migration
   } else if (config$rita) {
     model <- stanmodels$AI_spl_rita
-  } else if (config$diag_model == 2 || config$inf_model == 2 || config$inf_model == 3) {
+  } else if (
+    config$diag_model == 2 || config$inf_model == 2 || config$inf_model == 3
+  ) {
     model <- stanmodels$AI_spl_rw_gp
   } else {
     model <- stanmodels$AI_spl
@@ -329,9 +333,9 @@ load_stan_model <- function(config) {
 #' @export
 model_type_prep <- function(
   stan_data,
-  migration = FALSE,
-  rita = FALSE,
-  age = FALSE,
+  migration = NULL,
+  rita = NULL,
+  age = NULL,
   inf_model = 1,
   diag_model = 1,
   model_seed = NULL,
@@ -350,21 +354,39 @@ model_type_prep <- function(
     model_seed <- sample.int(.Machine$integer.max, 1)
   }
 
-  # Create stan_data$config if it doesn't exist
-  if (is.null(stan_data$config)) {
-    stan_data$config <- stan_model_config(
-      migration,
-      rita,
-      age,
-      inf_model,
-      diag_model,
-      model_seed
+  # Set migration, rita, age based on stan_data if NULL
+  # If NULL and sim_config values are available, use those; otherwise default to FALSE
+  if (is.null(migration)) {
+    migration <- ifelse(
+      !is.null(stan_data$sim_config$migration),
+      stan_data$sim_config$migration,
+      FALSE
     )
-  } else {
-    stan_data$config$inf_model <- inf_model
-    stan_data$config$diag_model <- diag_model
-    stan_data$config$model_seed <- model_seed
   }
+  if (is.null(rita)) {
+    rita <- ifelse(
+      !is.null(stan_data$sim_config$rita),
+      stan_data$sim_config$rita,
+      FALSE
+    )
+  }
+  if (is.null(age)) {
+    age <- ifelse(
+      !is.null(stan_data$sim_config$age),
+      stan_data$sim_config$age,
+      FALSE
+    )
+  }
+
+  # Create stan_data$model_config
+  stan_data$model_config <- stan_model_config(
+    migration,
+    rita,
+    age,
+    inf_model,
+    diag_model,
+    model_seed
+  )
 
   # Generate fake data for jagam to create the spline basis
   jags_data <- list(
@@ -389,7 +411,7 @@ model_type_prep <- function(
   stan_data$X_diag <- jagam_out_diag$jags.data$X
   stan_data$npars_diag <- ncol(stan_data$X_diag)
 
-  if (stan_data$config$age) {
+  if (stan_data$model_config$age) {
     # Age-specific infection model spline
     jags_data_age <- list(
       age = rep(1:stan_data$nage, each = stan_data$nquar),
@@ -429,7 +451,7 @@ model_type_prep <- function(
     stan_data$x <- range01(1:stan_data$nquar)
   }
 
-  if (stan_data$config$migration) {
+  if (stan_data$model_config$migration) {
     # Migration model splines
     jagam_out_mig <- create_spline(knots)
     jagam_out_cob <- create_spline(knots - 4)
@@ -448,14 +470,14 @@ model_type_prep <- function(
 
   # Add model types to stan_data
   stan_data$inf_model <- ifelse(
-    is.null(stan_data$config$inf_model),
+    is.null(stan_data$model_config$inf_model),
     1,
-    stan_data$config$inf_model
+    stan_data$model_config$inf_model
   )
   stan_data$diag_model <- ifelse(
-    is.null(stan_data$config$diag_model),
+    is.null(stan_data$model_config$diag_model),
     1,
-    stan_data$config$diag_model
+    stan_data$model_config$diag_model
   )
 
   return(stan_data)

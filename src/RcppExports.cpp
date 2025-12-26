@@ -139,6 +139,26 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// prev_iter_fct_migration_rita
+arma::cube prev_iter_fct_migration_rita(const arma::vec& H, const arma::cube& d, const arma::mat& q, const arma::mat& prev_total, const arma::vec& omega, const arma::vec& p, const arma::mat& m, const arma::mat& abroad_age_prop, int nquar, int nage);
+RcppExport SEXP _cd4backcalc_prev_iter_fct_migration_rita(SEXP HSEXP, SEXP dSEXP, SEXP qSEXP, SEXP prev_totalSEXP, SEXP omegaSEXP, SEXP pSEXP, SEXP mSEXP, SEXP abroad_age_propSEXP, SEXP nquarSEXP, SEXP nageSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type H(HSEXP);
+    Rcpp::traits::input_parameter< const arma::cube& >::type d(dSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type q(qSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type prev_total(prev_totalSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type omega(omegaSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type p(pSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type m(mSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type abroad_age_prop(abroad_age_propSEXP);
+    Rcpp::traits::input_parameter< int >::type nquar(nquarSEXP);
+    Rcpp::traits::input_parameter< int >::type nage(nageSEXP);
+    rcpp_result_gen = Rcpp::wrap(prev_iter_fct_migration_rita(H, d, q, prev_total, omega, p, m, abroad_age_prop, nquar, nage));
+    return rcpp_result_gen;
+END_RCPP
+}
 // normalize_mat
 arma::mat normalize_mat(arma::mat m);
 RcppExport SEXP _cd4backcalc_normalize_mat(SEXP mSEXP) {
@@ -419,6 +439,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_cd4backcalc_prev_iter_fct", (DL_FUNC) &_cd4backcalc_prev_iter_fct, 6},
     {"_cd4backcalc_prev_iter_fct_rita", (DL_FUNC) &_cd4backcalc_prev_iter_fct_rita, 6},
     {"_cd4backcalc_prev_iter_fct_migration", (DL_FUNC) &_cd4backcalc_prev_iter_fct_migration, 10},
+    {"_cd4backcalc_prev_iter_fct_migration_rita", (DL_FUNC) &_cd4backcalc_prev_iter_fct_migration_rita, 10},
     {"_cd4backcalc_normalize_mat", (DL_FUNC) &_cd4backcalc_normalize_mat, 1},
     {"_cd4backcalc_normalize_mat_1", (DL_FUNC) &_cd4backcalc_normalize_mat_1, 1},
     {"_cd4backcalc_trans_mat", (DL_FUNC) &_cd4backcalc_trans_mat, 5},

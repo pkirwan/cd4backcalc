@@ -6,9 +6,9 @@
 \usage{
 run_backcalc(
   stan_data,
-  migration = FALSE,
-  rita = FALSE,
-  age = FALSE,
+  migration = NULL,
+  rita = NULL,
+  age = NULL,
   inf_model = 1,
   diag_model = 1,
   model_seed = NULL,

@@ -29,7 +29,7 @@ postproc <- function(
   chain_results = FALSE
 ) {
   # Run the appropriate post-processing routine
-  if (stan_data$config$age) {
+  if (stan_data$model_config$age) {
     postproc_ad(fit, stan_data, start_yr, nworkers, chain_results)
   } else {
     postproc_ai(fit, stan_data, start_yr, nworkers, chain_results)
@@ -67,7 +67,7 @@ postproc_ai <- function(
   fit_mat <- as.matrix(fit)
 
   # make fit indices
-  idx <- make_fit_indices(fit_mat, stan_data$config, stan_data$nquar)
+  idx <- make_fit_indices(fit_mat, stan_data$model_config, stan_data$nquar)
 
   if (chain_results) {
     nchains <- as.integer(fit@sim$chains)
@@ -105,7 +105,7 @@ postproc_ai <- function(
       hiv_list[[paste0("diag_prob_", ch)]] <- ppq$diag_prob
       hiv_list[[paste0("diagnoses_", ch)]] <- ppq$diagnoses
 
-      if (stan_data$config$migration) {
+      if (stan_data$model_config$migration) {
         hiv_list[[paste0("migration_", ch)]] <- ppq$migration
         hiv_list[[paste0("migration_prob_", ch)]] <- ppq$migration_prob
         hiv_list[[paste0("transfers_", ch)]] <- ppq$transfers
@@ -239,7 +239,7 @@ build_ppq_list <- function(
       start.yr = start_yr
     )
   )
-  if (stan_data$config$migration) {
+  if (stan_data$model_config$migration) {
     out <- c(
       out,
       list(
@@ -308,7 +308,7 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
   if (i %% 10 == 0) {
     cat("Iteration Number = ", i, "\n")
   }
-  config <- stan_data$config
+  config <- stan_data$model_config
 
   output <- list()
 
@@ -651,7 +651,7 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
   if (i %% 10 == 0) {
     cat("Iteration Number = ", i, "\n")
   }
-  config <- stan_data$config
+  config <- stan_data$model_config
 
   output <- list()
 

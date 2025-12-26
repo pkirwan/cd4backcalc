@@ -477,7 +477,7 @@ simulate_diagnoses <- function(
   abroad_prop = 0.2, # proportion acquired abroad at outset
   cd4_completeness = 1 # CD4 completeness
 ) {
-  config <- define_sim_config(
+  sim_config <- define_sim_config(
     h_pattern,
     o_pattern,
     d_pattern,
@@ -501,58 +501,58 @@ simulate_diagnoses <- function(
     abroad_prop,
     cd4_completeness
   )
-  set.seed(config$sim_seed)
+  set.seed(sim_config$sim_seed)
 
   # Generate model components
   infs <- generate_infections(
-    config$nquar,
-    config$nlatst,
-    config$h_pattern,
-    config$target_inf,
-    config$dist
+    sim_config$nquar,
+    sim_config$nlatst,
+    sim_config$h_pattern,
+    sim_config$target_inf,
+    sim_config$dist
   )
   omega <- generate_omega(
-    config$nquar,
-    config$o_pattern,
-    config$target_mig,
-    config$dist
+    sim_config$nquar,
+    sim_config$o_pattern,
+    sim_config$target_mig,
+    sim_config$dist
   )
 
   # ratio of born-abroad UK-acquired to UK-born UK-acquired; can exceed 1
   ratio_abroad_uk <- generate_ratio_abroad_uk(
-    config$nquar,
-    config$p_pattern,
-    config$dist
+    sim_config$nquar,
+    sim_config$p_pattern,
+    sim_config$dist
   )
 
   # mu is a matrix of dimension [nquar, nlatst + 1] giving migration probabilities
   # mu are the true migration probabilities
   mu <- generate_mu(
-    config$nquar,
+    sim_config$nquar,
     4,
-    config$m_pattern,
-    rep(1, config$nquar)
+    sim_config$m_pattern,
+    rep(1, sim_config$nquar)
   )
 
   # detection probabilities for those migrating already diagnosed
-  detect_prob <- rep(0.8, config$nquar)
+  detect_prob <- rep(0.8, sim_config$nquar)
   # mu_detect are the migration probabilities after accounting for detection probabilities
   mu_detect <- generate_mu(
-    config$nquar,
+    sim_config$nquar,
     4,
-    config$m_pattern,
+    sim_config$m_pattern,
     detect_prob
   )
 
-  if (config$rita) {
+  if (sim_config$rita) {
     # pad first three columns with zeros for RITA states
     # because migrants assumed to enter non-RITA states only
     mu <- cbind(
-      matrix(0, nrow = config$nquar, ncol = 3),
+      matrix(0, nrow = sim_config$nquar, ncol = 3),
       mu
     )
     mu_detect <- cbind(
-      matrix(0, nrow = config$nquar, ncol = 3),
+      matrix(0, nrow = sim_config$nquar, ncol = 3),
       mu_detect
     )
   }
@@ -560,61 +560,61 @@ simulate_diagnoses <- function(
   # m is a matrix of dimension [nquar, nlatst + 1] with the last column being those
   # who migrate already diagnosed
   m <- generate_migration(
-    config$nquar,
-    config$nlatst,
+    sim_config$nquar,
+    sim_config$nlatst,
     omega,
     mu_detect,
-    config$dist
+    sim_config$dist
   )
   d_probs <- generate_diagnosis_probs(
-    config$nquar,
-    config$d_pattern,
-    config$dist,
-    config$rita
+    sim_config$nquar,
+    sim_config$d_pattern,
+    sim_config$dist,
+    sim_config$rita
   )
 
   # Generate initial prevalence
   lat_init_uk <- round(
-    sum(infs[1, ]) / (1 + config$abroad_prop) * config$init_props
+    sum(infs[1, ]) / (1 + sim_config$abroad_prop) * sim_config$init_props
   )
   lat_init_uk_abroad <- round(
     sum(infs[1, ]) *
-      (config$abroad_prop / (1 + config$abroad_prop)) *
-      config$init_props
+      (sim_config$abroad_prop / (1 + sim_config$abroad_prop)) *
+      sim_config$init_props
   )
   lat_init_abroad <- round(
-    sum(m[1, 1:(config$nlatst)]) * config$init_props_abroad
+    sum(m[1, 1:(sim_config$nlatst)]) * sim_config$init_props_abroad
   )
 
   # Generate Q and D matrices
-  Q_l <- lapply(1:config$nquar, function(x) {
-    Q_mat(x, d_probs, config$q_age, config$nlatst, config$nage, config$rita)
+  Q_l <- lapply(1:sim_config$nquar, function(x) {
+    Q_mat(x, d_probs, sim_config$q_age, sim_config$nlatst, sim_config$nage, sim_config$rita)
   })
-  D_l <- lapply(1:config$nquar, function(x) {
+  D_l <- lapply(1:sim_config$nquar, function(x) {
     D_mat(
       x,
       d_probs,
-      config$q_age,
-      config$nlatst,
-      config$ndiagst,
-      config$nage,
-      config$rita
+      sim_config$q_age,
+      sim_config$nlatst,
+      sim_config$ndiagst,
+      sim_config$nage,
+      sim_config$rita
     )
   })
 
   # Distribute across ages using UK age distribution
   # Dimensions: [age, quarter, state]
   agedist_inf <- generate_age_dist(
-    config$nquar,
-    config$nage,
-    config$a_pattern,
+    sim_config$nquar,
+    sim_config$nage,
+    sim_config$a_pattern,
     10,
     30
   )
 
   # Split total uk-acq across into uk-born and born abroad
   total_uk_acq <- infs[, 1]
-  infs_age <- array(0, dim = c(config$nage, config$nquar, config$nlatst))
+  infs_age <- array(0, dim = c(sim_config$nage, sim_config$nquar, sim_config$nlatst))
   infs_age[,, 1] <- t(total_uk_acq * agedist_inf)
 
   born_uk_acq_uk <- total_uk_acq / (1 + ratio_abroad_uk)
@@ -623,13 +623,13 @@ simulate_diagnoses <- function(
   # Distribute UK incidence across ages
   infs_uk_age <- array(
     0,
-    dim = c(config$nage, config$nquar, config$nlatst)
+    dim = c(sim_config$nage, sim_config$nquar, sim_config$nlatst)
   )
   infs_uk_age[,, 1] <- t(born_uk_acq_uk * agedist_inf)
 
   infs_uk_abroad_age <- array(
     0,
-    dim = c(config$nage, config$nquar, config$nlatst)
+    dim = c(sim_config$nage, sim_config$nquar, sim_config$nlatst)
   )
   infs_uk_abroad_age[,, 1] <- t(born_abroad_acq_uk * agedist_inf)
 
@@ -642,14 +642,14 @@ simulate_diagnoses <- function(
 
   # Distribute abroad initial prevalence across ages
   agedist_abroad <- generate_age_dist(
-    config$nquar,
-    config$nage,
-    config$a_pattern,
+    sim_config$nquar,
+    sim_config$nage,
+    sim_config$a_pattern,
     20,
     40
   )
-  m_age <- array(0, dim = c(config$nage, config$nquar, (config$nlatst + 1)))
-  for (i in 1:(config$nlatst + 1)) {
+  m_age <- array(0, dim = c(sim_config$nage, sim_config$nquar, (sim_config$nlatst + 1)))
+  for (i in 1:(sim_config$nlatst + 1)) {
     m_age[,, i] <- t(m[, i] * agedist_abroad)
   }
   lat_init_abroad_age <- round_preserve(outer(
@@ -663,21 +663,21 @@ simulate_diagnoses <- function(
     D_l,
     infs_uk_age,
     lat_init_uk_age,
-    config
+    sim_config
   )
   epi_uk_abroad <- epi_mat(
     Q_l,
     D_l,
     infs_uk_abroad_age,
     lat_init_uk_abroad_age,
-    config
+    sim_config
   )
   epi_abroad <- epi_mat(
     Q_l,
     D_l,
-    m_age[,, 1:config$nlatst],
+    m_age[,, 1:sim_config$nlatst],
     lat_init_abroad_age,
-    config
+    sim_config
   )
 
   # Apply rounding which preserves sums
@@ -713,42 +713,41 @@ simulate_diagnoses <- function(
   born_abroad_age <- epi_abroad$diags_age + epi_uk_abroad$diags_age
 
   # cd4_dx is an nquar x 2 x (ndiagst - 1) array
-  cd4_dx <- array(0, dim = c(config$nquar, 2, config$ndiagst - 1))
-  for (i in 1:(config$ndiagst - 1)) {
+  cd4_dx <- array(0, dim = c(sim_config$nquar, 2, sim_config$ndiagst - 1))
+  for (i in 1:(sim_config$ndiagst - 1)) {
     cd4_dx[, 1, i] <- epi_uk$diags[, i]
     cd4_dx[, 2, i] <- born_abroad[, i]
   }
   # cd4_dx_age is an [nage, nquar, 2, ndiagst - 1] array
   cd4_dx_age <- array(
     0,
-    dim = c(config$nage, config$nquar, 2, config$ndiagst - 1)
+    dim = c(sim_config$nage, sim_config$nquar, 2, sim_config$ndiagst - 1)
   )
-  for (i in 1:(config$ndiagst - 1)) {
+  for (i in 1:(sim_config$ndiagst - 1)) {
     cd4_dx_age[,, 1, i] <- epi_uk$diags_age[,, i]
     cd4_dx_age[,, 2, i] <- born_abroad_age[,, i]
   }
 
   # aids_dx is an nquar x 2 matrix
   aids_dx <- matrix(
-    c(epi_uk$diags[, config$ndiagst], born_abroad[, config$ndiagst]),
-    nrow = config$nquar
+    c(epi_uk$diags[, sim_config$ndiagst], born_abroad[, sim_config$ndiagst]),
+    nrow = sim_config$nquar
   )
   # aids_dx_age is an [nage, nquar, 2] array
-  aids_dx_age <- array(0, dim = c(config$nage, config$nquar, 2))
-  aids_dx_age[,, 1] <- epi_uk$diags_age[,, config$ndiagst]
-  aids_dx_age[,, 2] <- born_abroad_age[,, config$ndiagst]
+  aids_dx_age <- array(0, dim = c(sim_config$nage, sim_config$nquar, 2))
+  aids_dx_age[,, 1] <- epi_uk$diags_age[,, sim_config$ndiagst]
+  aids_dx_age[,, 2] <- born_abroad_age[,, sim_config$ndiagst]
 
   # hix_dx is an nquar x 2 matrix
   hiv_dx <- matrix(
     c(epi_uk$diags[, 1], born_abroad[, 1]),
-    nrow = config$nquar
+    nrow = sim_config$nquar
   ) +
-    matrix(c(epi_uk$diags[, 2], born_abroad[, 2]), nrow = config$nquar) +
-    matrix(c(epi_uk$diags[, 3], born_abroad[, 3]), nrow = config$nquar) +
-    matrix(c(epi_uk$diags[, 4], born_abroad[, 4]), nrow = config$nquar)
-
+    matrix(c(epi_uk$diags[, 2], born_abroad[, 2]), nrow = sim_config$nquar) +
+    matrix(c(epi_uk$diags[, 3], born_abroad[, 3]), nrow = sim_config$nquar) +
+    matrix(c(epi_uk$diags[, 4], born_abroad[, 4]), nrow = sim_config$nquar)
   # hiv_dx_age is an [nage, nquar, 2] array
-  hiv_dx_age <- array(0, dim = c(config$nage, config$nquar, 2))
+  hiv_dx_age <- array(0, dim = c(sim_config$nage, sim_config$nquar, 2))
   hiv_dx_age[,, 1] <-
     epi_uk$diags_age[,, 1] +
     epi_uk$diags_age[,, 2] +
@@ -760,14 +759,14 @@ simulate_diagnoses <- function(
     born_abroad_age[,, 3] +
     born_abroad_age[,, 4]
 
-  if (config$rita) {
+  if (sim_config$rita) {
     hiv_dx <- hiv_dx +
-      matrix(c(epi_uk$diags[, 5], born_abroad[, 5]), nrow = config$nquar)
+      matrix(c(epi_uk$diags[, 5], born_abroad[, 5]), nrow = sim_config$nquar)
     hiv_dx_age[,, 1] <- hiv_dx_age[,, 1] + epi_uk$diags_age[,, 5]
     hiv_dx_age[,, 2] <- hiv_dx_age[,, 2] + born_abroad_age[,, 5]
   }
 
-  if (config$migration) {
+  if (sim_config$migration) {
     init_prev <- lat_init_uk
     init_prev_age <- lat_init_uk_age
     init_prev_abroad <- lat_init_uk_abroad + lat_init_abroad
@@ -780,7 +779,7 @@ simulate_diagnoses <- function(
     hiv_dx <- rowSums(hiv_dx)
     aids_dx <- rowSums(aids_dx)
     cd4_dx <- apply(
-      cd4_dx[,, 1:(config$ndiagst - 1), drop = FALSE],
+      cd4_dx[,, 1:(sim_config$ndiagst - 1), drop = FALSE],
       c(1, 3),
       sum
     )
@@ -789,7 +788,7 @@ simulate_diagnoses <- function(
     aids_dx_age <- apply(aids_dx_age[,, 1:2, drop = FALSE], c(1, 2), sum)
     aids_dx_age <- t(aids_dx_age)
     cd4_dx_age <- apply(
-      cd4_dx_age[,, 1:2, 1:(config$ndiagst - 1), drop = FALSE],
+      cd4_dx_age[,, 1:2, 1:(sim_config$ndiagst - 1), drop = FALSE],
       c(1, 2, 4),
       sum
     )
@@ -801,9 +800,9 @@ simulate_diagnoses <- function(
   }
 
   # Age distribution for prior diagnoses from abroad (ABROAD), by quarter
-  ABROAD <- m[, config$ndiagst]
+  ABROAD <- m[, sim_config$ndiagst]
   ABROAD_age <- t(round_matrix_preserve(
-    m_age[,, config$ndiagst],
+    m_age[,, sim_config$ndiagst],
     colwise = TRUE
   ))
 
@@ -817,10 +816,10 @@ simulate_diagnoses <- function(
     "CD4_age" = cd4_dx_age,
     "ABROAD" = ABROAD,
     "ABROAD_age" = ABROAD_age,
-    "nquar" = config$nquar,
-    "nage" = config$nage,
-    "q" = config$q,
-    "q_age" = t(config$q_age),
+    "nquar" = sim_config$nquar,
+    "nage" = sim_config$nage,
+    "q" = sim_config$q,
+    "q_age" = t(sim_config$q_age),
     "init_prev" = init_prev,
     "init_prev_age" = t(init_prev_age),
     "init_prev_abroad" = init_prev_abroad,
@@ -829,14 +828,13 @@ simulate_diagnoses <- function(
     "eta_mean" = log(sim_data$ratio_abroad_uk),
     # vague prior sd for eta
     "eta_sd" = 0.5,
-    "config" = config
+    "sim_config" = sim_config
   )
 
   # Perform validation checks
-  validate_stan_data(stan_data, sim_data, config)
-
+  validate_stan_data(stan_data, sim_data, sim_config)
   # Adjust CD4 counts if completeness less than 100%
-  stan_data$CD4 <- round(stan_data$CD4 * config$cd4_completeness)
+  stan_data$CD4 <- round(stan_data$CD4 * sim_config$cd4_completeness)
 
   return(list(
     "stan_data" = stan_data,

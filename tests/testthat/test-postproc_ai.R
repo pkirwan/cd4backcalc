@@ -197,7 +197,7 @@ test_that("age-specific migration model fit works", {
   })
   expect_s4_class(fit, "stanfit")
 
-    # Post-process fitted model to obtain posterior predictive
+  # Post-process fitted model to obtain posterior predictive
   hiv_list <- postproc(
     fit,
     stan_data,
@@ -229,4 +229,15 @@ test_that("age-specific rita migration model fit works", {
     )
   })
   expect_s4_class(fit, "stanfit")
+
+  # Post-process fitted model to obtain posterior predictive
+  hiv_list <- postproc(
+    fit,
+    stan_data,
+    start_yr = 0,
+    nworkers = 1
+  )
+  expect_true("incidence" %in% names(hiv_list))
+  expect_true("undiag_prev" %in% names(hiv_list))
+  expect_true("migration_prob" %in% names(hiv_list))
 })

@@ -78,7 +78,7 @@ make_mse_list <- function(
   )
   out$incidence_mse <- get_mse(out$incidence_bias)
 
-  if (hiv_list[[1]]$stan_data$config$migration) {
+  if (hiv_list[[1]]$stan_data$model_config$migration) {
     out$migration_bias <- get_bias(
       hiv_list,
       extract_simulated_quantity(hiv_list[[1]], quantity = "migration"),

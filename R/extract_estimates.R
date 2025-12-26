@@ -62,7 +62,7 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
   age_group_labels <- c("1524", "2534", "3544", "45")
 
   # Create data frames for each basic quantity
-  undiag_prev <- if (stan_data$config$migration) {
+  undiag_prev <- if (stan_data$sim_config$migration) {
     tibble::tibble(
       value = rowSums(sim_data$epi_uk$lat) +
         rowSums(sim_data$epi_uk_abroad$lat) +
@@ -85,12 +85,12 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
   )
   migration <- tibble::tibble(
     # (1 / detect_prob) - 1 = (1 - detect_prob) * (1 / detect_prob)
-    value = rowSums(sim_data$m[, 1:stan_data$config$nlatst]) -
+    value = rowSums(sim_data$m[, 1:stan_data$sim_config$nlatst]) -
       (stan_data$ABROAD * ((1 / sim_data$detect_prob) - 1)),
     year = seq(0, plot_years, by = 0.25),
     group = "Simulated values"
   )
-  diagnoses <- if (stan_data$config$migration) {
+  diagnoses <- if (stan_data$sim_config$migration) {
     tibble::tibble(
       value = rowSums(stan_data$HIV) + rowSums(stan_data$AIDS),
       year = seq(0, plot_years, by = 0.25),
@@ -103,7 +103,7 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
       group = "Simulated values"
     )
   }
-  diag_prob <- if (stan_data$config$rita) {
+  diag_prob <- if (stan_data$sim_config$rita) {
     tibble::tibble(
       value = as.vector(sim_data$d_probs),
       year = rep(seq(0, plot_years, by = 0.25), 5),
@@ -168,7 +168,7 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
         value = as.vector(apply(
           sim_data$epi_uk$lat_age +
             sim_data$epi_uk_abroad$lat_age +
-            if (stan_data$config$migration) {
+            if (stan_data$sim_config$migration) {
               sim_data$epi_abroad$lat_age
             } else {
               0
@@ -224,7 +224,7 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
         value = as.vector(
           apply(
             sim_data$m_age[,,
-              1:stan_data$config$nlatst
+              1:stan_data$sim_config$nlatst
             ],
             c(1, 2),
             sum
@@ -282,7 +282,7 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
   } else if (quantity == "migration_prob") {
     # no recently acquired category in migration prob
     out <- tibble::tibble(
-      value = if (stan_data$config$rita) {
+      value = if (stan_data$sim_config$rita) {
         as.vector(sim_data$mu[, 4:ncol(sim_data$mu)])
       } else {
         as.vector(sim_data$mu)
@@ -326,8 +326,8 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
       group = "Simulated values"
     )
   } else if (quantity == "cd4_strata") {
-    out <- if (stan_data$config$rita) {
-      if (stan_data$config$migration) {
+    out <- if (stan_data$sim_config$rita) {
+      if (stan_data$sim_config$migration) {
         tibble::tibble(
           `Recently acquired` = rowSums(stan_data$CD4[,, 1]),
           `CD4>=500` = rowSums(stan_data$CD4[,, 2]),
@@ -348,7 +348,7 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
           group = "Simulated values"
         )
       }
-    } else if (stan_data$config$migration) {
+    } else if (stan_data$sim_config$migration) {
       tibble::tibble(
         `CD4>=500` = rowSums(stan_data$CD4[,, 1]),
         `CD4 350-499` = rowSums(stan_data$CD4[,, 2]),

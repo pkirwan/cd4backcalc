@@ -16,7 +16,7 @@ fit_stan_model(
 \arguments{
 \item{stan_data}{A list of data formatted for Stan.}
 
-\item{model_seed}{Seed for model fitting (will be set to stan_data$config$model_seed if NULL).}
+\item{model_seed}{Seed for model fitting (will be set to stan_data$model_config$model_seed if NULL).}
 
 \item{iter}{Number of iterations for Stan sampling.}
 
