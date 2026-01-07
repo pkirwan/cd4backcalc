@@ -804,9 +804,9 @@ simulate_diagnoses <- function(
   }
 
   # Age distribution for prior diagnoses from abroad (ABROAD), by quarter
-  ABROAD <- m[, sim_config$ndiagst]
+  ABROAD <- m[, sim_config$nlatst + 1]
   ABROAD_age <- t(round_matrix_preserve(
-    m_age[,, sim_config$ndiagst],
+    m_age[,, sim_config$nlatst + 1],
     colwise = TRUE
   ))
 

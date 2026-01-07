@@ -64,6 +64,10 @@ test_that("age-specific migration simulation produces expected HIV data", {
     sim_diags$stan_data$ABROAD,
     rowSums(sim_diags$stan_data$ABROAD_age)
   )
+  expect_equal(
+    sum(sim_diags$stan_data$ABROAD),
+    1880
+  )
 })
 
 test_that("age-specific migration and rita simulation produces expected HIV data", {
@@ -84,6 +88,10 @@ test_that("age-specific migration and rita simulation produces expected HIV data
   expect_equal(
     sim_diags$stan_data$ABROAD,
     rowSums(sim_diags$stan_data$ABROAD_age)
+  )
+  expect_equal(
+    sum(sim_diags$stan_data$ABROAD),
+    1880
   )
 })
 
