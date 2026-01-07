@@ -278,12 +278,12 @@ model {
   // Infection priors
   beta_inf[1] ~ normal(5, 1.5); // Vaguely informative priors: corresponds to quarter inf in (exp(2),exp(8)) = (8,4390)
   beta_inf[2 : npars_inf] ~ normal(0, sigma_inf);
-  log_sigma_inf ~ normal(-2, 1);
+  log_sigma_inf ~ normal(-2, 0.5);
   
   // Migration priors
   beta_mig[1] ~ normal(4, 1);
   beta_mig[2 : npars_mig] ~ normal(0, sigma_mig);
-  log_sigma_mig ~ normal(-2, 1);
+  log_sigma_mig ~ normal(-2, 0.5);
   
   // Diagnosis probability priors
   alpha_diag_1 ~ normal(-3.2, 0.5);
