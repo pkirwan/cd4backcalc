@@ -1,6 +1,10 @@
 test_that("cd4-only post-processing works", {
   # Simulate diagnoses
-  sim_diags <- simulate_diagnoses(nquar = 60, sim_seed = 123)
+  sim_diags <- simulate_diagnoses(
+    nquar = 60,
+    sim_seed = 123,
+    cd4_completeness = 0.8
+  )
   stan_data <- model_type_prep(sim_diags, model_seed = 123)
   # Fit back-calculation model
   suppressWarnings({
@@ -36,7 +40,12 @@ test_that("cd4-only post-processing works", {
 
 test_that("migration post-processing works", {
   # Simulate diagnoses
-  sim_diags <- simulate_diagnoses(nquar = 60, migration = TRUE, sim_seed = 123)
+  sim_diags <- simulate_diagnoses(
+    nquar = 60,
+    migration = TRUE,
+    sim_seed = 123,
+    cd4_completeness = 0.8
+  )
   stan_data <- model_type_prep(sim_diags, model_seed = 123)
   # Fit back-calculation model
   suppressWarnings({
@@ -62,7 +71,12 @@ test_that("migration post-processing works", {
 
 test_that("rita post-processing works", {
   # Simulate diagnoses
-  sim_diags <- simulate_diagnoses(nquar = 60, rita = TRUE, sim_seed = 123)
+  sim_diags <- simulate_diagnoses(
+    nquar = 60,
+    rita = TRUE,
+    sim_seed = 123,
+    cd4_completeness = 0.8
+  )
   stan_data <- model_type_prep(sim_diags, model_seed = 123)
   # Fit back-calculation model
   suppressWarnings({
@@ -92,7 +106,8 @@ test_that("migration and rita post-processing works", {
     nquar = 60,
     migration = TRUE,
     rita = TRUE,
-    sim_seed = 123
+    sim_seed = 123,
+    cd4_completeness = 0.8
   )
   stan_data <- model_type_prep(sim_diags, model_seed = 123)
   # Fit back-calculation model
@@ -118,7 +133,12 @@ test_that("migration and rita post-processing works", {
 })
 
 test_that("age-specific post-processing works", {
-  sim_diags <- simulate_diagnoses(sim_seed = 123, nquar = 40, age = TRUE)
+  sim_diags <- simulate_diagnoses(
+    sim_seed = 123,
+    nquar = 40,
+    age = TRUE,
+    cd4_completeness = 0.8
+  )
   stan_data <- model_type_prep(sim_diags, model_seed = 123)
   # Fit back-calculation model
   suppressWarnings({
@@ -151,7 +171,8 @@ test_that("age-specific rita post-processing works", {
     sim_seed = 123,
     nquar = 40,
     age = TRUE,
-    rita = TRUE
+    rita = TRUE,
+    cd4_completeness = 0.8
   )
   stan_data <- model_type_prep(sim_diags, model_seed = 123)
   # Fit back-calculation model
@@ -182,7 +203,8 @@ test_that("age-specific migration model fit works", {
     sim_seed = 123,
     nquar = 40,
     age = TRUE,
-    migration = TRUE
+    migration = TRUE,
+    cd4_completeness = 0.8
   )
   stan_data <- model_type_prep(sim_diags, model_seed = 123)
   # Fit back-calculation model
@@ -215,7 +237,8 @@ test_that("age-specific rita migration model fit works", {
     nquar = 40,
     age = TRUE,
     migration = TRUE,
-    rita = TRUE
+    rita = TRUE,
+    cd4_completeness = 0.8
   )
   stan_data <- model_type_prep(sim_diags, model_seed = 123)
   # Fit back-calculation model

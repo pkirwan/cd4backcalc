@@ -350,6 +350,7 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
 
   # Get infections and migrations
   temp_h <- exp(fit_mat[i, idx$lambda])
+
   if (config$migration) {
     temp_omega <- exp(fit_mat[i, idx$gamma])
     temp_p <- fit_mat[i, idx$p]
@@ -664,7 +665,12 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
 
   n_CD4 <- nrow(stan_data$CD4)
   nquar <- stan_data$nquar
-  N_sample <- rowSums(stan_data$CD4)
+  if (config$migration) {
+    N_sample_uk <- rowSums(stan_data$CD4[, 1, ])
+    N_sample_abroad <- rowSums(stan_data$CD4[, 2, ])
+  } else {
+    N_sample <- rowSums(stan_data$CD4)
+  }
 
   # Get initial prevalence
   init_prev <- if (!("init_prev" %in% names(stan_data))) {
@@ -723,6 +729,7 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
       q = stan_data$q
     )
   }
+  
   if (config$migration) {
     if (config$rita) {
       d5 <- fit_mat[i, idx$d5]
@@ -875,23 +882,52 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
   )
 
   # Number of HIV diagnoses with no CD4
-  Dx.no.CD4 <- if (config$migration) {
-    rowSums(stan_data$HIV) - c(rep(0, nquar - n_CD4), N_sample)
-  } else {
-    stan_data$HIV - c(rep(0, nquar - n_CD4), N_sample)
-  }
+  if (config$migration) {
+    Dx.no.CD4.uk <- stan_data$HIV[, 1] - c(rep(0, nquar - n_CD4), N_sample_uk)
+    Dx.no.CD4.abroad <- stan_data$HIV[, 2] -
+      c(rep(0, nquar - n_CD4), N_sample_abroad)
+    Dx.no.CD4.b <- Dx.no.CD4.abroad *
+      colSums(diagnoses_b$HIV.diagnoses) /
+      (colSums(diagnoses_b$HIV.diagnoses) + colSums(diagnoses_m$HIV.diagnoses))
+    Dx.no.CD4.m <- Dx.no.CD4.abroad *
+      colSums(diagnoses_m$HIV.diagnoses) /
+      (colSums(diagnoses_b$HIV.diagnoses) + colSums(diagnoses_m$HIV.diagnoses))
 
-  temp <- sapply(2:nquar, function(x) {
-    if (Dx.no.CD4[x] > 0 && sum(d_to_i_HIV[,, x]) > 0) {
+    temp_uk <- sapply(2:nquar, function(x) {
+      if (Dx.no.CD4.uk[x] > 0 && sum(d_to_i_HIV_uk[,, x]) > 0) {
+        stats::rmultinom(
+          1,
+          Dx.no.CD4.uk[x] + Dx.no.CD4.b[x],
+          d_to_i_HIV_uk[,, x]
+        )
+      } else {
+        matrix(0, nrow = nquar * (config$ndiagst - 1), ncol = 1)
+      }
+    })
+
+    temp_abroad <- sapply(2:nquar, function(x) {
+      if (Dx.no.CD4.m[x] > 0 && sum(d_to_i_HIV_abroad[,, x]) > 0) {
+        stats::rmultinom(1, Dx.no.CD4.m[x], d_to_i_HIV_abroad[,, x])
+      } else {
+        matrix(0, nrow = nquar * (config$ndiagst - 1), ncol = 1)
+      }
+    })
+
+    temp <- array(
+      c(matrix(0, config$ndiagst - 1, nquar), temp_uk + temp_abroad),
+      dim = c(config$ndiagst - 1, nquar, nquar)
+    )
+  } else {
+    Dx.no.CD4 <- stan_data$HIV - c(rep(0, nquar - n_CD4), N_sample)
+
+    temp <- sapply(2:nquar, function(x) {
       stats::rmultinom(1, Dx.no.CD4[x], d_to_i_HIV[,, x])
-    } else {
-      matrix(0, nrow = nquar * (config$ndiagst - 1), ncol = 1)
-    }
-  })
-  temp <- array(
-    c(matrix(0, config$ndiagst - 1, nquar), temp),
-    dim = c(config$ndiagst - 1, nquar, nquar)
-  )
+    })
+    temp <- array(
+      c(matrix(0, config$ndiagst - 1, nquar), temp),
+      dim = c(config$ndiagst - 1, nquar, nquar)
+    )
+  }
 
   output$HIV.Dx.no.CD4 <- apply(temp, 1:2, sum)
   output$HIV.Dx.CD4 <- matrix(0, config$ndiagst - 1, nquar) ## Initialization needed later
