@@ -407,7 +407,7 @@ model_type_prep <- function(
   }
 
   # Diagnosis model spline
-  jagam_out_diag <- create_spline(knots - 4)
+  jagam_out_diag <- create_spline(knots - 2)
   stan_data$X_diag <- jagam_out_diag$jags.data$X
   stan_data$npars_diag <- ncol(stan_data$X_diag)
 

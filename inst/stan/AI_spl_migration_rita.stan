@@ -329,11 +329,11 @@ model {
   beta_diag_3[2 : npars_diag] ~ normal(0, sigma_diag_3);
   beta_diag_4[2 : npars_diag] ~ normal(0, sigma_diag_4);
   beta_diag_5[2 : npars_diag] ~ normal(0, sigma_diag_5);
-  sigma_diag_1 ~ gamma(2, 64);
-  sigma_diag_2 ~ gamma(2, 64);
-  sigma_diag_3 ~ gamma(2, 64);
-  sigma_diag_4 ~ gamma(2, 64);
-  sigma_diag_5 ~ gamma(2, 64);
+  sigma_diag_1 ~ gamma(2, 8);
+  sigma_diag_2 ~ gamma(2, 8);
+  sigma_diag_3 ~ gamma(2, 8);
+  sigma_diag_4 ~ gamma(2, 8);
+  sigma_diag_5 ~ gamma(2, 8);
   
   // Proportion UK-acquired priors
   alpha_cob ~ std_normal();
