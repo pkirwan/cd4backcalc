@@ -45,12 +45,14 @@ HIV diagnosis probabilities ($d_{i,j}$) vary by CD4 stratum and time.
 
 ## Installation
 
-You can install the development version of cd4backcalc from
-[GitHub](https://github.com/) with:
+Before installation you will need to set up a Personal Access Token (PAT) in Github with "Contents" and "Metadata" permissions for this repository.
+See [here](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) for instructions. 
+
+You can then install the development version of cd4backcalc with:
 
 ``` r
-# install.packages("pak")
-pak::pak("pkirwan/cd4backcalc")
+# install.packages("devtools")
+devtools::install_github("pkirwan/cd4backcalc", auth_token = "github_pat_YOUR_TOKEN_HERE")
 ```
 
 ### System requirements for installation
