@@ -37,12 +37,14 @@ plot_simulations <- function(
 #'
 #' @param hiv_list A list returned from the `postproc` function containing model estimates.
 #' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "undiag_migration", "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "ratio_abroad_uk", and "detect_prob".
+#' @param start_year An integer specifying the starting year for the x-axis (default is 0).
 #' @param chain_results A logical indicating whether to plot chain-by-chain estimates (default is FALSE).
 #' @return A ggplot2 object.
 #' @export
 plot_estimates <- function(
   hiv_list,
   quantity,
+  start_year = 0,
   chain_results = FALSE
 ) {
   # make hiv_list a list of lists if not already
@@ -117,8 +119,8 @@ plot_estimates <- function(
   p1 <- quantiles |>
     ggplot2::ggplot() +
     ggplot2::aes(
-      .data$year,
-      .data$`50%`,
+      x = .data$year + start_year,
+      y = .data$`50%`,
       color = .data$group,
       group = .data$group
     ) +
@@ -152,6 +154,15 @@ plot_estimates <- function(
     p1 <- p1 +
       ggplot2::geom_point(
         data = sim_estimates,
+        ggplot2::aes(y = .data$value),
+        size = 0.4
+      )
+  } else if (quantity %in% c("diagnoses", "diagnoses_age", "transfers")) {
+    # add observed diagnoses if real data
+    observed_data <- extract_real_data(hiv_list[[1]], quantity)
+    p1 <- p1 +
+      ggplot2::geom_point(
+        data = observed_data,
         ggplot2::aes(y = .data$value),
         size = 0.4
       )

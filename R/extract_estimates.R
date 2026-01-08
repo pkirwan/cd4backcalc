@@ -413,3 +413,66 @@ extract_simulated_quantity <- function(sim_diags, quantity) {
   }
   return(out)
 }
+
+#' Extract real data for plotting
+#'
+#' @param hiv_list A list of HIV model results.
+#' @param quantity A string specifying the quantity to extract.
+#' @return A data frame of observed diagnoses for plotting.
+#' @export
+extract_real_data <- function(hiv_list, quantity) {
+  stan_data <- hiv_list$stan_data
+  plot_years <- stan_data$nquar / 4 - 0.25
+  age_group_labels <- c("1524", "2534", "3544", "45")
+
+  diagnoses <- if (stan_data$model_config$migration) {
+    tibble::tibble(
+      value = rowSums(stan_data$HIV) + rowSums(stan_data$AIDS),
+      year = seq(0, plot_years, by = 0.25),
+      group = "Observed values"
+    )
+  } else {
+    tibble::tibble(
+      value = stan_data$HIV + stan_data$AIDS,
+      year = seq(0, plot_years, by = 0.25),
+      group = "Observed values"
+    )
+  }
+  if (quantity == "diagnoses") {
+    return(diagnoses)
+  } else if (quantity == "diagnoses_age") {
+    out <- tidyr::expand_grid(
+      # diagnoses are age x year
+      age = 15:(stan_data$nage + 14),
+      year = seq(0, plot_years, by = 0.25)
+    ) |>
+      dplyr::mutate(
+        value = as.vector(
+          apply(stan_data$HIV_age, c(1, 2), sum) +
+            apply(stan_data$AIDS_age, c(1, 2), sum)
+        ),
+        group = "Observed values",
+        age_band = cut(
+          .data$age,
+          breaks = c(15, 25, 35, 45, 100),
+          labels = age_group_labels,
+          right = FALSE
+        )
+      ) |>
+      dplyr::group_by(.data$year, .data$age_band, .data$group) |>
+      dplyr::summarise(value = sum(.data$value), .groups = "drop") |>
+      dplyr::bind_rows(
+        diagnoses |>
+          dplyr::mutate(
+            age_band = "all"
+          )
+      )
+  } else if (quantity == "transfers") {
+    out <- tibble::tibble(
+      value = stan_data$ABROAD,
+      year = seq(0, plot_years, by = 0.25),
+      group = "Observed values"
+    )
+  }
+  return(out)
+}

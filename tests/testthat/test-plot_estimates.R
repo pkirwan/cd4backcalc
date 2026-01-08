@@ -267,3 +267,30 @@ test_that("plots work for age-dependent rita model", {
   expect_s3_class(p6, "ggplot")
   expect_s3_class(p7, "ggplot")
 })
+
+
+test_that("start_year and overlay of real values works", {
+  # Simulate diagnoses
+  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, age = TRUE, rita = TRUE, migration = TRUE)
+  # Fit back-calculation model
+  suppressWarnings({
+    hiv_list <- run_backcalc(
+      stan_data,
+      model_seed = 123,
+      iter = 10,
+      chains = 1,
+      refresh = 0,
+      messages = FALSE,
+      nworkers = 1
+    )
+  })
+  # Remove sim_data element from list to mimic real data scenario
+  hiv_list <- hiv_list[names(hiv_list) != "sim_data"]
+  # Generate plots of key quantities
+  p1 <- plot_estimates(hiv_list, "diagnoses", start_year = 2000)
+  p2 <- plot_estimates(hiv_list, "diagnoses_age", start_year = 2000)
+  p3 <- plot_estimates(hiv_list, "transfers", start_year = 2000)
+  expect_s3_class(p1, "ggplot")
+  expect_s3_class(p2, "ggplot")
+  expect_s3_class(p3, "ggplot")
+})
