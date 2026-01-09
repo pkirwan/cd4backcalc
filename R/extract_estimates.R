@@ -33,7 +33,7 @@ get_sims <- function(sim_list, var, var2, plot_years = 29.75) {
 #' @export
 get_estimates <- function(hiv_list, var) {
   # make hiv_list a list of lists if not already
-  if (!("incidence" %in% names(hiv_list[[1]]))) {
+  if (!("incidence" %in% names(hiv_list[[1]])) && !("incidence_1" %in% names(hiv_list[[1]]))) {
     hiv_list <- list(hiv_list)
   }
   # extract estimates

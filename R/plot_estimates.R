@@ -48,7 +48,10 @@ plot_estimates <- function(
   chain_results = FALSE
 ) {
   # make hiv_list a list of lists if not already
-  if (!("incidence" %in% names(hiv_list[[1]]))) {
+  if (
+    !("incidence" %in% names(hiv_list[[1]])) &&
+      !("incidence_1" %in% names(hiv_list[[1]]))
+  ) {
     hiv_list <- list(hiv_list)
   }
 
@@ -56,16 +59,17 @@ plot_estimates <- function(
 
   # chain-by-chain plotting if requested
   if (chain_results) {
-    quantiles <- dplyr::bind_rows(
-      get_estimates(hiv_list, paste0(quantity, "_1")) |>
-        dplyr::mutate(chain = "Chain 1"),
-      get_estimates(hiv_list, paste0(quantity, "_2")) |>
-        dplyr::mutate(chain = "Chain 2"),
-      get_estimates(hiv_list, paste0(quantity, "_3")) |>
-        dplyr::mutate(chain = "Chain 3"),
-      get_estimates(hiv_list, paste0(quantity, "_4")) |>
-        dplyr::mutate(chain = "Chain 4")
-    ) |>
+    # derive the number of chains from hiv_list
+    n_chains <- sum(grepl("incidence_[0-9]", names(hiv_list[[1]])))
+    quantiles <- tibble::tibble()
+    for (i in 1:n_chains) {
+      quantiles <- quantiles |>
+        dplyr::bind_rows(
+          get_estimates(hiv_list, paste0(quantity, "_", i)) |>
+            dplyr::mutate(chain = paste0("Chain ", i))
+        )
+    }
+    quantiles <- quantiles |>
       dplyr::mutate(group = paste0(.data$group, ", ", .data$chain))
   } else {
     quantiles <- get_estimates(hiv_list, quantity)

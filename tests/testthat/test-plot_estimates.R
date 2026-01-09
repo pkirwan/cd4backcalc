@@ -63,6 +63,27 @@ test_that("plots are generated correctly", {
   expect_s3_class(p4, "ggplot")
 })
 
+test_that("chained plots are generated correctly", {
+  # Simulate diagnoses
+  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123)
+  # Fit back-calculation model
+  suppressWarnings({
+    hiv_list <- run_backcalc(
+      stan_data,
+      model_seed = 123,
+      iter = 20,
+      chains = 2,
+      refresh = 0,
+      messages = FALSE,
+      nworkers = 1,
+      chain_results = TRUE
+    )
+  })
+  # Generate plots of key quantities
+  p1 <- plot_estimates(hiv_list, "incidence", chain_results = TRUE)
+  expect_s3_class(p1, "ggplot")
+})
+
 test_that("plots are generated correctly for migration model", {
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 60, sim_seed = 123, migration = TRUE)

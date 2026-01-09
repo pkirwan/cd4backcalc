@@ -490,6 +490,7 @@ model_type_prep <- function(
 #'
 #' @param config Configuration object containing model settings.
 #' @return A character vector of parameter names to save.
+#' @export
 make_pars_save <- function(config) {
   # basic parameters to save
   pars_save <- c(
