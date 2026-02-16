@@ -1,0 +1,43 @@
+# Function to get posterior functions of incidence
+
+This function generates incidence by age group from log-infections (per
+each posterior iteration). This function always aggregates quarterly
+incidence curve.
+
+## Usage
+
+``` r
+infs.fct.qt(infs, age.st, age.end, nt, nage = 52, start_yr = 0)
+```
+
+## Arguments
+
+- infs:
+
+  A matrix with quarterly log-infections for each posterior sample in
+  each row.
+
+- age.st:
+
+  Starting age for incidence calculation.
+
+- age.end:
+
+  Ending age for incidence calculation.
+
+- nt:
+
+  Total number of time points (quarters).
+
+- nage:
+
+  Number of age groups.
+
+- start_yr:
+
+  Starting year for the time series.
+
+## Value
+
+A matrix with summary statistics (2.5%, 50%, mean, 97.5%) for each time
+point.
