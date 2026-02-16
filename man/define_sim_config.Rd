@@ -26,7 +26,8 @@ define_sim_config(
   init_props = c(7, 3.5, 1.75, 0.5),
   init_props_abroad = c(1.75, 2.25, 2.25, 1.25),
   abroad_prop = 0.2,
-  cd4_completeness = 1
+  cd4_completeness = 1,
+  rita_completeness = 1
 )
 }
 \arguments{
@@ -73,6 +74,8 @@ define_sim_config(
 \item{abroad_prop}{Proportion of infections acquired abroad at the outset.}
 
 \item{cd4_completeness}{CD4 completeness.}
+
+\item{rita_completeness}{RITA completeness.}
 }
 \value{
 Configuration list.

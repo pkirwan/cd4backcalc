@@ -106,3 +106,52 @@ test_that("different sim_type produces expected results", {
     1686
   )
 })
+
+test_that("cd4_completeness and rita_completeness parameters affect simulated data as expected", {
+  sim_diags <- simulate_diagnoses(
+    nquar = 40,
+    sim_seed = 123,
+    sim_type = "combo_3",
+    cd4_completeness = 0.5
+  )
+  expect_equal(
+    sim_diags$stan_data$CD4[1],
+    395
+  )
+  expect_equal(
+    sim_diags$stan_data$CD4_age[1],
+    7
+  )
+
+  sim_diags_rita <- simulate_diagnoses(
+    nquar = 40,
+    sim_seed = 123,
+    sim_type = "combo_3",
+    cd4_completeness = 0.5
+  )
+  expect_equal(
+    sim_diags_rita$stan_data$CD4[1],
+    395
+  )
+  expect_equal(
+    sim_diags_rita$stan_data$CD4_age[1],
+    7
+  )
+
+  sim_diags_rita_cd4 <- simulate_diagnoses(
+    sim_seed = 123,
+    nquar = 40,
+    sim_type = "combo_3",
+    rita = TRUE,
+    cd4_completeness = 0.8,
+    rita_completeness = 0.5
+  )
+  expect_equal(
+    sim_diags_rita_cd4$stan_data$CD4[1],
+    258
+  )
+  expect_equal(
+    sim_diags_rita_cd4$stan_data$CD4_age[1],
+    5
+  )
+})

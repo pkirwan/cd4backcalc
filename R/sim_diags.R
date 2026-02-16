@@ -25,6 +25,7 @@
 #' @param init_props_abroad Initial state proportions for infections acquired abroad.
 #' @param abroad_prop Proportion of infections acquired abroad at the outset.
 #' @param cd4_completeness CD4 completeness.
+#' @param rita_completeness RITA completeness.
 #' @return Configuration list.
 #' @examples
 #' define_sim_config(h_pattern = "constant")
@@ -51,7 +52,8 @@ define_sim_config <- function(
   init_props = c(7, 3.5, 1.75, 0.5), # initial state proportions
   init_props_abroad = c(1.75, 2.25, 2.25, 1.25), # initial state proportions abroad
   abroad_prop = 0.2, # proportion acquired abroad at outset
-  cd4_completeness = 1 # CD4 completeness
+  cd4_completeness = 1, # CD4 completeness
+  rita_completeness = 1 # RITA completeness
 ) {
   if (rita) {
     nlatst <- 7
@@ -94,7 +96,8 @@ define_sim_config <- function(
     init_props = init_props,
     init_props_abroad = init_props_abroad,
     abroad_prop = abroad_prop,
-    cd4_completeness = cd4_completeness
+    cd4_completeness = cd4_completeness,
+    rita_completeness = rita_completeness
   )
 
   if (!is.null(sim_type)) {
@@ -449,6 +452,7 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #' @param init_props_abroad Initial state proportions for infections acquired abroad.
 #' @param abroad_prop Proportion of infections acquired abroad at the outset.
 #' @param cd4_completeness CD4 completeness.
+#' @param rita_completeness RITA completeness.
 #' @return List containing simulated epidemic data.
 #' @examples
 #' simulate_diagnoses()
@@ -475,7 +479,8 @@ simulate_diagnoses <- function(
   init_props = c(7, 3.5, 1.75, 0.5), # initial state proportions
   init_props_abroad = c(1.75, 2.25, 2.25, 1.25), # initial state proportions abroad
   abroad_prop = 0.2, # proportion acquired abroad at outset
-  cd4_completeness = 1 # CD4 completeness
+  cd4_completeness = 1, # CD4 completeness
+  rita_completeness = 1 # RITA completeness
 ) {
   sim_config <- define_sim_config(
     h_pattern,
@@ -499,7 +504,8 @@ simulate_diagnoses <- function(
     init_props,
     init_props_abroad,
     abroad_prop,
-    cd4_completeness
+    cd4_completeness,
+    rita_completeness
   )
   set.seed(sim_config$sim_seed)
 
@@ -588,7 +594,14 @@ simulate_diagnoses <- function(
 
   # Generate Q and D matrices
   Q_l <- lapply(1:sim_config$nquar, function(x) {
-    Q_mat(x, d_probs, sim_config$q_age, sim_config$nlatst, sim_config$nage, sim_config$rita)
+    Q_mat(
+      x,
+      d_probs,
+      sim_config$q_age,
+      sim_config$nlatst,
+      sim_config$nage,
+      sim_config$rita
+    )
   })
   D_l <- lapply(1:sim_config$nquar, function(x) {
     D_mat(
@@ -614,7 +627,10 @@ simulate_diagnoses <- function(
 
   # Split total uk-acq across into uk-born and born abroad
   total_uk_acq <- infs[, 1]
-  infs_age <- array(0, dim = c(sim_config$nage, sim_config$nquar, sim_config$nlatst))
+  infs_age <- array(
+    0,
+    dim = c(sim_config$nage, sim_config$nquar, sim_config$nlatst)
+  )
   infs_age[,, 1] <- t(total_uk_acq * agedist_inf)
 
   born_uk_acq_uk <- total_uk_acq / (1 + ratio_abroad_uk)
@@ -648,7 +664,10 @@ simulate_diagnoses <- function(
     20,
     40
   )
-  m_age <- array(0, dim = c(sim_config$nage, sim_config$nquar, (sim_config$nlatst + 1)))
+  m_age <- array(
+    0,
+    dim = c(sim_config$nage, sim_config$nquar, (sim_config$nlatst + 1))
+  )
   for (i in 1:(sim_config$nlatst + 1)) {
     m_age[,, i] <- t(m[, i] * agedist_abroad)
   }
@@ -837,8 +856,29 @@ simulate_diagnoses <- function(
 
   # Perform validation checks
   validate_stan_data(stan_data, sim_data, sim_config)
-  # Adjust CD4 counts if completeness less than 100%
-  stan_data$CD4 <- round(stan_data$CD4 * sim_config$cd4_completeness)
+
+  # Adjust CD4 counts if completeness less than 100% using a normal approximation to the binomial distribution
+  if (sim_config$cd4_completeness < 1) {
+    stan_data$CD4 <- round(
+      stan_data$CD4 *
+        pmin(1, stats::rnorm(length(stan_data$CD4), sim_config$cd4_completeness, 0.05))
+    )
+    stan_data$CD4_age <- round(
+      stan_data$CD4_age *
+        pmin(1, stats::rnorm(length(stan_data$CD4_age), sim_config$cd4_completeness, 0.05))
+    )
+  }
+  # Adjust RITA counts if completeness less than 100% using a normal approximation to the binomial distribution
+  if (sim_config$rita && sim_config$rita_completeness < 1) {
+    stan_data$CD4 <- round(
+      stan_data$CD4 *
+        pmin(1, stats::rnorm(length(stan_data$CD4), sim_config$rita_completeness, 0.05))
+    )
+    stan_data$CD4_age <- round(
+      stan_data$CD4_age *
+        pmin(1, stats::rnorm(length(stan_data$CD4_age), sim_config$rita_completeness, 0.05))
+    )
+  }
 
   return(list(
     "stan_data" = stan_data,

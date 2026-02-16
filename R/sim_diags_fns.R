@@ -17,18 +17,20 @@ generate_infections <- function(
   stopifnot(pattern %in% c("varying", "constant", "increasing"))
 
   ann_inf <- target_inf / nquar
-  infs <- dplyr::case_when(
-    pattern == "varying" ~ c(
+  infs <- if (pattern == "varying") {
+    c(
       seq(1.2, 2, length.out = round(nquar * 0.1)),
       seq(2, 1.4, length.out = round(nquar * 4 / 15)),
       seq(1.4, 1, length.out = round(nquar * 0.2)),
       seq(1, 0.3, length.out = round(nquar * 2 / 15)),
       seq(0.3, 0.1, length.out = round(nquar * 0.3))
     ) *
-      ann_inf,
-    pattern == "constant" ~ rep(ann_inf, nquar),
-    pattern == "increasing" ~ seq(0.5, 1.5, length.out = nquar) * ann_inf
-  )
+      ann_inf
+  } else if (pattern == "constant") {
+    rep(ann_inf, nquar)
+  } else if (pattern == "increasing") {
+    seq(0.5, 1.5, length.out = nquar) * ann_inf
+  }
   infs <- if (dist) stats::rpois(nquar, infs) else infs
   h <- matrix(
     c(infs, rep(0, nquar * (nlatst))),
@@ -50,19 +52,22 @@ generate_omega <- function(nquar, pattern, target_mig = 12000, dist = TRUE) {
   # check pattern
   stopifnot(pattern %in% c("constant", "increasing", "step_change", "none"))
   ann_mig = target_mig / nquar
-  omega <- dplyr::case_when(
-    pattern == "constant" ~ rep(ann_mig, nquar),
-    pattern == "increasing" ~ seq(0.5, 1.5, length.out = nquar) * ann_mig,
-    pattern == "step_change" ~ c(
+  omega <- if (pattern == "constant") {
+    rep(ann_mig, nquar)
+  } else if (pattern == "increasing") {
+    seq(0.5, 1.5, length.out = nquar) * ann_mig
+  } else if (pattern == "step_change") {
+    c(
       seq(0.4, 0.4, length.out = round(nquar * 0.1)),
       seq(0.4, 1.2, length.out = round(nquar * 0.1)),
       seq(1.2, 0.4, length.out = round(nquar * 0.1)),
       seq(0.4, 1.3, length.out = round(nquar * 0.6)),
       seq(1.3, 4.5, length.out = round(nquar * 0.1))
     ) *
-      ann_mig,
-    pattern == "none" ~ rep(0, nquar)
-  )
+      ann_mig
+  } else if (pattern == "none") {
+    rep(0, nquar)
+  }
   omega <- if (dist) stats::rpois(nquar, omega) else omega
   return(omega)
 }
@@ -80,14 +85,15 @@ generate_mu <- function(nquar, nlatst, pattern, detect_prob) {
   if (pattern == "constant") {
     mu <- matrix(0.2, nrow = nquar, ncol = nlatst + 1)
   } else {
-    mu <- dplyr::case_when(
-      pattern == "differing" ~ matrix(
+    mu <- if (pattern == "differing") {
+      matrix(
         c(0.1, 0.2, 0.2, 0.1, 0.4),
         nrow = nquar,
         ncol = nlatst + 1,
         byrow = TRUE
-      ),
-      pattern == "varying" ~ matrix(
+      )
+    } else if (pattern == "varying") {
+      matrix(
         c(
           seq(0.1, 0.3, length.out = nquar),
           seq(0.2, 0.22, length.out = nquar),
@@ -98,12 +104,12 @@ generate_mu <- function(nquar, nlatst, pattern, detect_prob) {
         nrow = nquar,
         ncol = nlatst + 1
       )
-    )
+    }
   }
   # redistribute mu for those migrating already diagnosed
   # proportional redistribution
   mu[, 1:nlatst] <- mu[, 1:nlatst] +
-      (mu[, nlatst + 1] * (1 - detect_prob)) *
+    (mu[, nlatst + 1] * (1 - detect_prob)) *
       (mu[, 1:nlatst] / rowSums(mu[, 1:nlatst]))
   mu[, nlatst + 1] <- mu[, nlatst + 1] * detect_prob
 

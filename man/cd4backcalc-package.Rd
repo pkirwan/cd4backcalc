@@ -8,6 +8,14 @@
 \description{
 Bayesian, discrete-time, multi-state model used to estimate HIV incidence and undiagnosed HIV prevalence from diagnosis data.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://pkirwan.github.io/cd4backcalc/}
+  \item \url{https://github.com/pkirwan/cd4backcalc}
+}
+
+}
 \author{
 \strong{Maintainer}: Peter Kirwan \email{pdk29@cam.ac.uk} (\href{https://orcid.org/0000-0001-6904-0500}{ORCID})
 

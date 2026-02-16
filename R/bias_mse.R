@@ -163,18 +163,16 @@ mse_plot <- function(
             bias = mean(.data$mse),
             pos = stats::quantile(.data$mse, 0.75) + offset,
             # Format bias based on its magnitude
-            formatted_bias = dplyr::case_when(
-              abs(.data$bias) >= 1000 ~ format(
+            formatted_bias = if (abs(.data$bias) >= 1000) {
+              format(
                 round(.data$bias, 0),
                 big.mark = ","
-              ),
-              abs(.data$bias) >= 1 ~ format(round(.data$bias, 1), nsmall = 1),
-              TRUE ~ format(
-                round(.data$bias, 5),
-                nsmall = 5,
-                scientific = FALSE
               )
-            )
+            } else if (abs(.data$bias) >= 1) {
+              format(round(.data$bias, 1), nsmall = 1)
+            } else {
+              format(round(.data$bias, 5), nsmall = 5, scientific = FALSE)
+            }
           ),
         ggplot2::aes(
           y = .data$pos,
@@ -234,21 +232,16 @@ bias_plot <- function(
             meanbias = mean(.data$bias),
             pos = stats::quantile(.data$bias, 0.75) + offset,
             # Format bias based on its magnitude
-            formatted_bias = dplyr::case_when(
-              abs(.data$meanbias) >= 1000 ~ format(
+            formatted_bias = if (abs(.data$meanbias) >= 1000) {
+              format(
                 round(.data$meanbias, 0),
                 big.mark = ","
-              ),
-              abs(.data$meanbias) >= 1 ~ format(
-                round(.data$meanbias, 1),
-                nsmall = 1
-              ),
-              TRUE ~ format(
-                round(.data$meanbias, 5),
-                nsmall = 5,
-                scientific = FALSE
               )
-            )
+            } else if (abs(.data$meanbias) >= 1) {
+              format(round(.data$meanbias, 1), nsmall = 1)
+            } else {
+              format(round(.data$meanbias, 5), nsmall = 5, scientific = FALSE)
+            }
           ),
         ggplot2::aes(
           y = .data$pos,

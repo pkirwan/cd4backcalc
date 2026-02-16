@@ -19,7 +19,7 @@ sim_remodel <- function(sim_diags, rita = TRUE) {
   stan_data <- sim_diags$stan_data
   sim_data <- sim_diags$sim_data
 
-  # Sum across RITA states if remodeling to CD4-only model
+  # Sum across RITA states if remodelling to CD4-only model
   if (!rita) {
     # Remodel CD4 data
 
