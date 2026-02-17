@@ -100,8 +100,8 @@ hiv_list <- run_backcalc(sim_diags, iter = 5, chains = 1, messages = FALSE, nwor
 #> 
 #> SAMPLING FOR MODEL 'AI_spl' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000573 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 5.73 seconds.
+#> Chain 1: Gradient evaluation took 0.000568 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 5.68 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
