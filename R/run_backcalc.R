@@ -9,7 +9,8 @@
 #' @param inf_model Infection model type (1 = spline, 2 = random walk, 3 = GP).
 #' @param diag_model Diagnosis model type (1 = spline, 2 = random walk).
 #' @param model_seed Seed for model fitting (will be set randomly if NULL).
-#' @param iter Number of iterations for Stan sampling.
+#' @param iter_warmup Number of warmup iterations for Stan sampling.
+#' @param iter_sampling Number of sampling iterations for Stan sampling.
 #' @param adapt_delta Adapt delta parameter for Stan sampling (default is 0.95).
 #' @param max_treedepth Max tree depth for Stan sampling (default is 12).
 #' @param chains Number of chains for Stan sampling.
@@ -22,7 +23,9 @@
 #' @return List of posterior predictive quantities and (optionlly) the stanfit object.
 #' @examples
 #' sim_diags <- simulate_diagnoses(sim_seed = 123)
-#' hiv_list <- run_backcalc(sim_diags, iter = 5, chains = 1, messages = FALSE, nworkers = 1)
+#' hiv_list <- run_backcalc(
+#'  sim_diags, iter_warmup = 10, iter_sampling = 10, chains = 1, messages = FALSE, nworkers = 1
+#' )
 #' @export
 run_backcalc <- function(
   stan_data,
@@ -32,7 +35,8 @@ run_backcalc <- function(
   inf_model = 1,
   diag_model = 1,
   model_seed = NULL,
-  iter = 2000,
+  iter_warmup = 1000,
+  iter_sampling = 1000,
   chains = 4,
   adapt_delta = 0.95,
   max_treedepth = 12,
@@ -66,7 +70,8 @@ run_backcalc <- function(
   fit <- fit_stan_model(
     stan_data = stan_data,
     model_seed = model_seed,
-    iter = iter,
+    iter_warmup = iter_warmup,
+    iter_sampling = iter_sampling,
     adapt_delta = adapt_delta,
     max_treedepth = max_treedepth,
     chains = chains,
@@ -94,7 +99,8 @@ run_backcalc <- function(
 #'
 #' @param stan_data A list of data formatted for Stan.
 #' @param model_seed Seed for model fitting (will be set to stan_data$model_config$model_seed if NULL).
-#' @param iter Number of iterations for Stan sampling.
+#' @param iter_warmup Number of warmup iterations for Stan sampling.
+#' @param iter_sampling Number of sampling iterations for Stan sampling.
 #' @param chains Number of chains for Stan sampling.
 #' @param adapt_delta Adapt delta parameter for Stan sampling (default is 0.95).
 #' @param max_treedepth Max tree depth for Stan sampling (default is 12).
@@ -104,21 +110,22 @@ run_backcalc <- function(
 #' @examples
 #' sim_diags <- simulate_diagnoses(sim_seed = 123)
 #' stan_data <- model_type_prep(sim_diags)
-#' fit <- fit_stan_model(stan_data, iter = 10, chains = 1, refresh = 0, messages = FALSE)
+#' fit <- fit_stan_model(
+#'  stan_data, iter_warmup = 10, iter_sampling = 10, chains = 1, refresh = 0, messages = FALSE
+#' )
 #' @export
 fit_stan_model <- function(
   stan_data,
   model_seed = NULL,
-  iter = 2000,
+  iter_warmup = 1000,
+  iter_sampling = 1000,
   chains = 4,
   adapt_delta = 0.95,
   max_treedepth = 12,
   refresh = 100,
   messages = TRUE
 ) {
-  # rstan options
   options(mc.cores = parallelly::availableCores())
-  rstan::rstan_options(auto_write = TRUE)
 
   # model seed
   if (is.null(model_seed)) {
@@ -132,23 +139,24 @@ fit_stan_model <- function(
   model <- load_stan_model(stan_data$model_config)
 
   # Make pars_save
-  pars_save <- make_pars_save(stan_data$model_config)
+  #pars_save <- make_pars_save(stan_data$model_config)
+
+  model_data <- stan_data[
+    !names(stan_data) %in% c("sim_config", "model_config")
+  ]
 
   # Sample from model
-  fit <- rstan::sampling(
-    model,
-    data = stan_data,
-    iter = iter,
+  fit <- model$sample(
+    data = model_data,
+    iter_warmup = iter_warmup,
+    iter_sampling = iter_sampling,
     chains = chains,
     seed = model_seed,
-    pars = pars_save,
-    control = list(
-      adapt_delta = adapt_delta,
-      max_treedepth = max_treedepth
-    ),
-    save_warmup = FALSE,
+    #pars = pars_save,
+    adapt_delta = adapt_delta,
+    max_treedepth = max_treedepth,
     refresh = refresh,
-    verbose = messages,
+    show_exceptions = messages,
     show_messages = messages
   )
 
@@ -298,28 +306,52 @@ confirm_stan_data <- function(stan_data) {
 #' @param config Configuration object containing model settings.
 #' @return The Stan model object.
 load_stan_model <- function(config) {
-  if (config$age) {
+  model <- if (config$age) {
     if (config$migration && config$rita) {
-      model <- stanmodels$AD_ptens_migration_rita
+      instantiate::stan_package_model(
+        name = "AD_ptens_migration_rita",
+        package = "cd4backcalc"
+      )
     } else if (config$migration) {
-      model <- stanmodels$AD_ptens_migration
+      instantiate::stan_package_model(
+        name = "AD_ptens_migration",
+        package = "cd4backcalc"
+      )
     } else if (config$rita) {
-      model <- stanmodels$AD_ptens_rita
+      instantiate::stan_package_model(
+        name = "AD_ptens_rita",
+        package = "cd4backcalc"
+      )
     } else {
-      model <- stanmodels$AD_ptens
+      instantiate::stan_package_model(
+        name = "AD_ptens",
+        package = "cd4backcalc"
+      )
     }
   } else if (config$migration && config$rita) {
-    model <- stanmodels$AI_spl_migration_rita
+    instantiate::stan_package_model(
+      name = "AI_spl_migration_rita",
+      package = "cd4backcalc"
+    )
   } else if (config$migration) {
-    model <- stanmodels$AI_spl_migration
+    instantiate::stan_package_model(
+      name = "AI_spl_migration",
+      package = "cd4backcalc"
+    )
   } else if (config$rita) {
-    model <- stanmodels$AI_spl_rita
+    instantiate::stan_package_model(
+      name = "AI_spl_rita",
+      package = "cd4backcalc"
+    )
   } else if (
     config$diag_model == 2 || config$inf_model == 2 || config$inf_model == 3
   ) {
-    model <- stanmodels$AI_spl_rw_gp
+    instantiate::stan_package_model(
+      name = "AI_spl_rw_gp",
+      package = "cd4backcalc"
+    )
   } else {
-    model <- stanmodels$AI_spl
+    instantiate::stan_package_model(name = "AI_spl", package = "cd4backcalc")
   }
   return(model)
 }

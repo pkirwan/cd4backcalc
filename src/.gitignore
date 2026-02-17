@@ -3,5 +3,6 @@
 *.dll
 *.h
 *.cc
+*.exe
 Makevars
 Makevars.win

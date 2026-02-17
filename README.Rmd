@@ -26,7 +26,7 @@ The cd4backcalc package provides a user-friendly way to perform Bayesian, discre
 
 CD4 back-calculation is a discrete-time, multi-state Markov model used to represent HIV progression through different states until a diagnosis. The undiagnosed (latent) states in the model represent decreasing CD4 strata, and may include recent HIV acquisition (defined using RITA evidence), migration status, and age group. An illustration of the latent and diagnosed states in a CD4-staged back-calculation model is shown below.
 
-Models are fitted within a Bayesian framework (using rstan), with suitable prior distributions, to estimate HIV incidence and prevalence of undiagnosed HIV over time, as well as the probabilities of diagnosis in each CD4 state.
+Models are fitted within a Bayesian framework (using cmdstanr), with suitable prior distributions, to estimate HIV incidence and prevalence of undiagnosed HIV over time, as well as the probabilities of diagnosis in each CD4 state.
 
 ```{tikz backcalc-model, fig.cap = "Figure: CD4-staged back-calculation model. The model compartments represent undiagnosed HIV (round boxes) and diagnosed HIV or AIDS (square boxes); the $h_j$ arrow represents HIV acquired at each time point ($j$); HIV progression probabilities ($q_i$) vary by CD4 stratum; HIV diagnosis probabilities ($d_{i,j}$) vary by CD4 stratum and time.", fig.ext = 'png', echo=FALSE}
 \usetikzlibrary{shapes,decorations,arrows,calc,arrows.meta,fit,positioning}

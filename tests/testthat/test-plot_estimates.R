@@ -42,7 +42,8 @@ test_that("plots are generated correctly", {
     hiv_list <- run_backcalc(
       stan_data,
       model_seed = 123,
-      iter = 20,
+      iter_warmup = 10,
+      iter_sampling = 10,
       chains = 1,
       refresh = 0,
       messages = FALSE,
@@ -71,7 +72,8 @@ test_that("chained plots are generated correctly", {
     hiv_list <- run_backcalc(
       stan_data,
       model_seed = 123,
-      iter = 20,
+      iter_warmup = 10,
+      iter_sampling = 10,
       chains = 2,
       refresh = 0,
       messages = FALSE,
@@ -92,7 +94,8 @@ test_that("plots are generated correctly for migration model", {
     hiv_list <- run_backcalc(
       stan_data,
       model_seed = 123,
-      iter = 20,
+      iter_warmup = 10,
+      iter_sampling = 10,
       chains = 1,
       refresh = 0,
       messages = FALSE,
@@ -125,7 +128,8 @@ test_that("plots work for migration model lists", {
       hiv_list[[i]] <- run_backcalc(
         stan_data,
         model_seed = 123 + i,
-        iter = 20,
+        iter_warmup = 10,
+      iter_sampling = 10,
         chains = 1,
         refresh = 0,
         messages = FALSE,
@@ -168,7 +172,8 @@ test_that("plots work for rita model lists", {
       hiv_list[[i]] <- run_backcalc(
         stan_data,
         model_seed = 123 + i,
-        iter = 20,
+        iter_warmup = 10,
+      iter_sampling = 10,
         chains = 1,
         refresh = 0,
         messages = FALSE,
@@ -201,7 +206,8 @@ test_that("plots work for migration and rita model lists", {
       hiv_list[[i]] <- run_backcalc(
         stan_data,
         model_seed = 123 + i,
-        iter = 20,
+        iter_warmup = 10,
+      iter_sampling = 10,
         chains = 1,
         refresh = 0,
         messages = FALSE,
@@ -227,7 +233,8 @@ test_that("plots work for age-dependent model", {
     hiv_list <- run_backcalc(
       stan_data,
       model_seed = 123,
-      iter = 10,
+      iter_warmup = 5,
+      iter_sampling = 5,
       chains = 1,
       refresh = 0,
       messages = FALSE,
@@ -262,7 +269,8 @@ test_that("plots work for age-dependent rita model", {
     hiv_list <- run_backcalc(
       stan_data,
       model_seed = 123,
-      iter = 10,
+      iter_warmup = 5,
+      iter_sampling = 5,
       chains = 1,
       refresh = 0,
       messages = FALSE,
@@ -298,7 +306,8 @@ test_that("start_year and overlay of real values works", {
     hiv_list <- run_backcalc(
       stan_data,
       model_seed = 123,
-      iter = 10,
+      iter_warmup = 5,
+      iter_sampling = 5,
       chains = 1,
       refresh = 0,
       messages = FALSE,

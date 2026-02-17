@@ -12,8 +12,11 @@ run_backcalc(
   inf_model = 1,
   diag_model = 1,
   model_seed = NULL,
-  iter = 2000,
+  iter_warmup = 1000,
+  iter_sampling = 1000,
   chains = 4,
+  adapt_delta = 0.95,
+  max_treedepth = 12,
   refresh = 100,
   messages = TRUE,
   start_yr = 0,
@@ -37,9 +40,15 @@ run_backcalc(
 
 \item{model_seed}{Seed for model fitting (will be set randomly if NULL).}
 
-\item{iter}{Number of iterations for Stan sampling.}
+\item{iter_warmup}{Number of warmup iterations for Stan sampling.}
+
+\item{iter_sampling}{Number of sampling iterations for Stan sampling.}
 
 \item{chains}{Number of chains for Stan sampling.}
+
+\item{adapt_delta}{Adapt delta parameter for Stan sampling (default is 0.95).}
+
+\item{max_treedepth}{Max tree depth for Stan sampling (default is 12).}
 
 \item{refresh}{Number of iterations between progress messages.}
 
@@ -61,5 +70,7 @@ This function runs the CD4 back-calculation model using Stan and runs the post-p
 }
 \examples{
 sim_diags <- simulate_diagnoses(sim_seed = 123)
-hiv_list <- run_backcalc(sim_diags, iter = 5, chains = 1, messages = FALSE, nworkers = 1)
+hiv_list <- run_backcalc(
+ sim_diags, iter_warmup = 10, iter_sampling = 10, chains = 1, messages = FALSE, nworkers = 1
+)
 }

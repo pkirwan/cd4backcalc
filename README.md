@@ -24,7 +24,7 @@ evidence), migration status, and age group. An illustration of the
 latent and diagnosed states in a CD4-staged back-calculation model is
 shown below.
 
-Models are fitted within a Bayesian framework (using rstan), with
+Models are fitted within a Bayesian framework (using cmdstanr), with
 suitable prior distributions, to estimate HIV incidence and prevalence
 of undiagnosed HIV over time, as well as the probabilities of diagnosis
 in each CD4 state.

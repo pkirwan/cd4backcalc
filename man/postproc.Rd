@@ -29,7 +29,8 @@ sim_diags <- simulate_diagnoses(sim_seed = 123)
 stan_data <- model_type_prep(sim_diags, model_seed = 123)
 fit <- fit_stan_model(
    stan_data,
-   iter = 10,
+   iter_warmup = 10,
+   iter_sampling = 10,
    chains = 1,
    refresh = 0,
    messages = FALSE
