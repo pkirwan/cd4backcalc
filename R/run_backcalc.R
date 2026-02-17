@@ -10,6 +10,8 @@
 #' @param diag_model Diagnosis model type (1 = spline, 2 = random walk).
 #' @param model_seed Seed for model fitting (will be set randomly if NULL).
 #' @param iter Number of iterations for Stan sampling.
+#' @param adapt_delta Adapt delta parameter for Stan sampling (default is 0.95).
+#' @param max_treedepth Max tree depth for Stan sampling (default is 12).
 #' @param chains Number of chains for Stan sampling.
 #' @param refresh Number of iterations between progress messages.
 #' @param messages Logical indicating whether to show messages during sampling.
@@ -32,6 +34,8 @@ run_backcalc <- function(
   model_seed = NULL,
   iter = 2000,
   chains = 4,
+  adapt_delta = 0.95,
+  max_treedepth = 12,
   refresh = 100,
   messages = TRUE,
   start_yr = 0,
@@ -63,6 +67,8 @@ run_backcalc <- function(
     stan_data = stan_data,
     model_seed = model_seed,
     iter = iter,
+    adapt_delta = adapt_delta,
+    max_treedepth = max_treedepth,
     chains = chains,
     refresh = refresh,
     messages = messages
@@ -90,6 +96,8 @@ run_backcalc <- function(
 #' @param model_seed Seed for model fitting (will be set to stan_data$model_config$model_seed if NULL).
 #' @param iter Number of iterations for Stan sampling.
 #' @param chains Number of chains for Stan sampling.
+#' @param adapt_delta Adapt delta parameter for Stan sampling (default is 0.95).
+#' @param max_treedepth Max tree depth for Stan sampling (default is 12).
 #' @param refresh Number of iterations between progress messages.
 #' @param messages Logical indicating whether to show messages during sampling.
 #' @return A stanfit object containing the results of the model fitting.
@@ -103,6 +111,8 @@ fit_stan_model <- function(
   model_seed = NULL,
   iter = 2000,
   chains = 4,
+  adapt_delta = 0.95,
+  max_treedepth = 12,
   refresh = 100,
   messages = TRUE
 ) {
@@ -133,8 +143,8 @@ fit_stan_model <- function(
     seed = model_seed,
     pars = pars_save,
     control = list(
-      adapt_delta = 0.95,
-      max_treedepth = 12
+      adapt_delta = adapt_delta,
+      max_treedepth = max_treedepth
     ),
     save_warmup = FALSE,
     refresh = refresh,

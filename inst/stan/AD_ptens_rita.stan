@@ -19,6 +19,11 @@ transformed data {
   vector[7] empty_vec1 = rep_vector(0, 7);
   vector[npars_inf - 1] zero_vec = rep_vector(0, npars_inf - 1);
   int nagroup = 4; // number of age groups
+  int np1 = npars_inf - 1;
+  
+  // Pre-split penalty matrices
+  matrix[np1, np1] S1a = S1[1 : np1, 1 : np1];
+  matrix[np1, np1] S1b = S1[1 : np1, npars_inf : (2 * npars_inf - 2)];
   
   // Age-group mapping and fast quarter->year index (birthdays at t = 1, 5, 9, ...)
   array[nage] int age_group_lookup;
@@ -50,18 +55,16 @@ transformed parameters {
   // Infection parameters
   vector[nquar * nage] lambda = X_inf * beta_inf;
   vector<lower=0>[nquar * nage] h = exp(lambda); //vector of expected log responses
-  vector<lower=0>[7] lat_p;
   
   // Diagnosis probabilities
-  row_vector<lower=0>[6] diag_p;
-  array[nquar, nage] row_vector<lower=0>[6] exp_diag; // expected number of diag at time t age a state k
+  array[nquar, nage] row_vector[6] exp_diag; // expected number of diag at time t age a state k
   
   // Expected observations
   matrix[nquar, nage] exp_HIV_dx; // expected number of HIV_age diag at time t age a
   matrix[nquar, nage] exp_AIDS_dx; // expected number of HIV_age diag at time t age a
   array[nquar, nage] simplex[5] exp_p; // proportion of HIV_age diagnoses in state k (time t and age a)
   array[4] matrix[5, nquar] d; // matrix of diagnoses for different ages and age-groups
-  matrix[npars_inf - 1, npars_inf - 1] K1_inv;
+  matrix[np1, np1] K1_inv;
   
   // Expected incidence
   vector[nquar] delta_1;
@@ -73,10 +76,8 @@ transformed parameters {
   
   tau = inv(square(sigma_inf));
   
-  // PRIORS for the tensor product
-  K1_inv = S1[1 : (npars_inf - 1), 1 : (npars_inf - 1)] * tau[1]
-           + S1[1 : (npars_inf - 1), npars_inf : (2 * npars_inf - 2)]
-             * tau[2];
+  // PRIORS for the tensor product (uses pre-split matrices from transformed data)
+  K1_inv = S1a * tau[1] + S1b * tau[2];
   
   // DIAGNOSES
   
@@ -120,9 +121,18 @@ transformed parameters {
     for (a0 in 1 : nage) {
       vector[7] lat;
       vector[7] lat_next;
+      vector[7] lat_p = empty_vec1;
+      row_vector[6] diag_p = empty_vec;
       
-      lat_p = empty_vec1;
-      diag_p = empty_vec;
+      // Progression rates (depend only on age at infection a0, not current time)
+      real q1 = q_age[1, a0];
+      real q2 = q_age[2, a0];
+      real q3 = q_age[3, a0];
+      real q4 = q_age[4, a0];
+      real nq1 = 1 - q1;
+      real nq2 = 1 - q2;
+      real nq3 = 1 - q3;
+      real nq4 = 1 - q4;
       
       // Prevalent infections only at t0 == 1
       if (t0 == 1) {
@@ -139,16 +149,6 @@ transformed parameters {
         real nd3 = 1 - d3;
         real nd4 = 1 - d4;
         real nd5 = 1 - d5;
-        
-        real q1 = q_age[1, a0];
-        real q2 = q_age[2, a0];
-        real q3 = q_age[3, a0];
-        real q4 = q_age[4, a0];
-        
-        real nq1 = 1 - q1;
-        real nq2 = 1 - q2;
-        real nq3 = 1 - q3;
-        real nq4 = 1 - q4;
         
         real v1 = init_prev_age[1, a0];
         real v2 = init_prev_age[2, a0];
@@ -206,17 +206,6 @@ transformed parameters {
           real nd3 = 1 - d3;
           real nd4 = 1 - d4;
           real nd5 = 1 - d5;
-          
-          // Progression is based on age at infection
-          real q1 = q_age[1, a0];
-          real q2 = q_age[2, a0];
-          real q3 = q_age[3, a0];
-          real q4 = q_age[4, a0];
-          
-          real nq1 = 1 - q1;
-          real nq2 = 1 - q2;
-          real nq3 = 1 - q3;
-          real nq4 = 1 - q4;
           
           // diagnosis uses current latent state (before progression)
           // diagnoses (RITA: states 1-3 share d1)

@@ -19,6 +19,11 @@ transformed data {
   vector[4] empty_vec1 = rep_vector(0, 4);
   vector[npars_inf - 1] zero_vec = rep_vector(0, npars_inf - 1);
   int nagroup = 4; // number of age groups
+  int np1 = npars_inf - 1;
+  
+  // Pre-split penalty matrices
+  matrix[np1, np1] S1a = S1[1 : np1, 1 : np1];
+  matrix[np1, np1] S1b = S1[1 : np1, npars_inf : (2 * npars_inf - 2)];
   
   // Age-group mapping and fast quarter->year index (birthdays at t = 1, 5, 9, ...)
   array[nage] int age_group_lookup;
@@ -49,10 +54,8 @@ transformed parameters {
   // Infection parameters
   vector[nquar * nage] lambda = X_inf * beta_inf; // expected infections by time and age
   vector<lower=0>[nquar * nage] h = exp(lambda); //vector of expected log responses
-  vector<lower=0>[4] lat_p;
   
   // Diagnosis probabilities
-  row_vector<lower=0>[5] diag_p;
   array[nquar, nage] row_vector<lower=0>[5] exp_diag; // expected number of diag at time t age a state k
   
   // Expected observations
@@ -72,9 +75,7 @@ transformed parameters {
   tau = inv(square(sigma_inf));
   
   // PRIORS for the tensor product
-  K1_inv = S1[1 : (npars_inf - 1), 1 : (npars_inf - 1)] * tau[1]
-           + S1[1 : (npars_inf - 1), npars_inf : (2 * npars_inf - 2)]
-             * tau[2];
+  K1_inv = S1a * tau[1] + S1b * tau[2];
   
   // DIAGNOSES
   
@@ -116,9 +117,19 @@ transformed parameters {
     for (a0 in 1 : nage) {
       vector[4] lat;
       vector[4] lat_next;
-
-      lat_p = empty_vec1;
-      diag_p = empty_vec;
+      
+      vector[4] lat_p = empty_vec1;
+      row_vector[5] diag_p = empty_vec;
+      
+      // Progression rates (depend only on age at infection a0, not current time)
+      real q1 = q_age[1, a0];
+      real q2 = q_age[2, a0];
+      real q3 = q_age[3, a0];
+      real q4 = q_age[4, a0];
+      real nq1 = 1 - q1;
+      real nq2 = 1 - q2;
+      real nq3 = 1 - q3;
+      real nq4 = 1 - q4;
       
       if (t0 == 1) {
         int ag0 = age_group_lookup[a0];
@@ -131,14 +142,6 @@ transformed parameters {
         real nd2 = 1 - d2;
         real nd3 = 1 - d3;
         real nd4 = 1 - d4;
-        real q1 = q_age[1, a0];
-        real q2 = q_age[2, a0];
-        real q3 = q_age[3, a0];
-        real q4 = q_age[4, a0];
-        real nq1 = 1 - q1;
-        real nq2 = 1 - q2;
-        real nq3 = 1 - q3;
-        real nq4 = 1 - q4;
         
         real v1 = init_prev_age[1, a0];
         real v2 = init_prev_age[2, a0];
@@ -170,7 +173,6 @@ transformed parameters {
       
       if (t0 < nquar) {
         for (t in (t0 + 1) : nquar) {
-          
           int a = min(a0 + year_index[t] - year_index[t0], nage);
           int ag = age_group_lookup[a];
           
@@ -179,20 +181,11 @@ transformed parameters {
           real d2 = d[ag, 2, t];
           real d3 = d[ag, 3, t];
           real d4 = d[ag, 4, t];
+          
           real nd1 = 1 - d1;
           real nd2 = 1 - d2;
           real nd3 = 1 - d3;
           real nd4 = 1 - d4;
-          
-          // Progression is based on age at infection
-          real q1 = q_age[1, a0];
-          real q2 = q_age[2, a0];
-          real q3 = q_age[3, a0];
-          real q4 = q_age[4, a0];
-          real nq1 = 1 - q1;
-          real nq2 = 1 - q2;
-          real nq3 = 1 - q3;
-          real nq4 = 1 - q4;
           
           // diagnosis uses current latent state (before progression)
           exp_diag[t, a, 1] += lat[1] * d1;

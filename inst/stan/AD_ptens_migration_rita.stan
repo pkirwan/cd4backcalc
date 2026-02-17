@@ -47,6 +47,11 @@ transformed data {
   vector[npars_inf - 1] zero_vec = rep_vector(0, npars_inf - 1);
   
   int nagroup = 4;
+  int np1 = npars_inf - 1;
+  
+  // Pre-split penalty matrices
+  matrix[np1, np1] S1a = S1[1 : np1, 1 : np1];
+  matrix[np1, np1] S1b = S1[1 : np1, npars_inf : (2 * npars_inf - 2)];
   
   // Age-group mapping and fast quarter->year index
   array[nage] int age_group_lookup;
@@ -123,9 +128,7 @@ transformed parameters {
   // Tensor product prior precision
   vector<lower=0>[2] tau = inv(square(sigma_inf));
   matrix[npars_inf - 1, npars_inf - 1] K1_inv;
-  K1_inv = S1[1 : (npars_inf - 1), 1 : (npars_inf - 1)] * tau[1]
-           + S1[1 : (npars_inf - 1), npars_inf : (2 * npars_inf - 2)]
-             * tau[2];
+  K1_inv = S1a * tau[1] + S1b * tau[2];
   
   // Migration process
   real<lower=0> sigma_mig = exp(log_sigma_mig);
@@ -207,8 +210,7 @@ transformed parameters {
   vector<lower=0, upper=1>[nquar] detect_prob;
   vector<lower=0>[nquar] true_abroad_dx;
   vector<lower=0>[nquar] exp_ABROAD_dx;
-  matrix<lower=0>[nquar, nage] misclassified_dx = rep_matrix(0, nquar,
-                                                                 nage);
+  matrix<lower=0>[nquar, nage] misclassified_dx = rep_matrix(0, nquar, nage);
   
   for (t in 1 : nquar) {
     detect_prob[t] = inv_logit(detect_logit[t]);
@@ -216,7 +218,7 @@ transformed parameters {
     exp_ABROAD_dx[t] = true_abroad_dx[t] * detect_prob[t];
     for (a in 1 : nage) {
       misclassified_dx[t, a] = true_abroad_dx[t] * (1 - detect_prob[t])
-                                   * abroad_age_prop[t, a];
+                               * abroad_age_prop[t, a];
     }
   }
   
@@ -247,6 +249,16 @@ transformed parameters {
         vector[7] lat_next;
         vector[7] lat_p = empty_vec1;
         
+        // Progression rates (depend only on age at infection a0, not current time)
+        real q1 = q_age[1, a0];
+        real q2 = q_age[2, a0];
+        real q3 = q_age[3, a0];
+        real q4 = q_age[4, a0];
+        real nq1 = 1 - q1;
+        real nq2 = 1 - q2;
+        real nq3 = 1 - q3;
+        real nq4 = 1 - q4;
+        
         // Prevalent infections at t0 == 1
         if (t0 == 1) {
           int ag0 = age_group_lookup[a0];
@@ -261,15 +273,6 @@ transformed parameters {
           real nd3 = 1 - d3;
           real nd4 = 1 - d4;
           real nd5 = 1 - d5;
-          
-          real q1 = q_age[1, a0];
-          real q2 = q_age[2, a0];
-          real q3 = q_age[3, a0];
-          real q4 = q_age[4, a0];
-          real nq1 = 1 - q1;
-          real nq2 = 1 - q2;
-          real nq3 = 1 - q3;
-          real nq4 = 1 - q4;
           
           real v1;
           real v2;
@@ -359,16 +362,6 @@ transformed parameters {
             real nd3 = 1 - d3;
             real nd4 = 1 - d4;
             real nd5 = 1 - d5;
-            
-            // Progression depends on age at entry a0
-            real q1 = q_age[1, a0];
-            real q2 = q_age[2, a0];
-            real q3 = q_age[3, a0];
-            real q4 = q_age[4, a0];
-            real nq1 = 1 - q1;
-            real nq2 = 1 - q2;
-            real nq3 = 1 - q3;
-            real nq4 = 1 - q4;
             
             // Diagnosis occurs before progression (RITA: states 1-3 share d1)
             exp_diag[t, a, y, 1] += (lat[1] + lat[2] + lat[3]) * d1;
