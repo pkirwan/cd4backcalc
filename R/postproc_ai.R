@@ -466,15 +466,15 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
   if (config$migration) {
     temp_HIV_dx_uk <- temp_diags_fun(diagnoses_combined_uk)
     d_to_i_HIV_uk <- diag_to_infec_wrap(temp_HIV_dx_uk)
-    d_to_i_AIDS_uk <- normalize_mat(t(diagnoses_combined_uk$AIDS))
+    d_to_i_AIDS_uk <- normalize_mat(t(diagnoses_combined_uk$AIDS.diagnoses))
 
     temp_HIV_dx_abroad <- temp_diags_fun(diagnoses_combined_m)
     d_to_i_HIV_abroad <- diag_to_infec_wrap(temp_HIV_dx_abroad)
-    d_to_i_AIDS_abroad <- normalize_mat(t(diagnoses_combined_m$AIDS))
+    d_to_i_AIDS_abroad <- normalize_mat(t(diagnoses_combined_m$AIDS.diagnoses))
   } else {
     temp_HIV_dx <- temp_diags_fun(diagnoses)
     d_to_i_HIV <- diag_to_infec_wrap(temp_HIV_dx)
-    d_to_i_AIDS <- normalize_mat(t(diagnoses$AIDS))
+    d_to_i_AIDS <- normalize_mat(t(diagnoses$AIDS.diagnoses))
   }
 
   # Calculate unreported AIDS
@@ -488,20 +488,20 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
   if (config$migration) {
     unreported.AIDS <- stats::rpois(
       nquar,
-      under.report * diagnoses_combined_uk$AIDS[1, ]
+      under.report * diagnoses_combined_uk$AIDS.diagnoses[1, ]
     )
     for (j in 2:nquar) {
       unreported.AIDS <- rbind(
         unreported.AIDS,
-        stats::rpois(nquar, under.report * diagnoses_combined_uk$AIDS[j, ])
+        stats::rpois(nquar, under.report * diagnoses_combined_uk$AIDS.diagnoses[j, ])
       )
     }
   } else {
-    unreported.AIDS <- stats::rpois(nquar, under.report * diagnoses$AIDS[1, ])
+    unreported.AIDS <- stats::rpois(nquar, under.report * diagnoses$AIDS.diagnoses[1, ])
     for (j in 2:nquar) {
       unreported.AIDS <- rbind(
         unreported.AIDS,
-        stats::rpois(nquar, under.report * diagnoses$AIDS[j, ])
+        stats::rpois(nquar, under.report * diagnoses$AIDS.diagnoses[j, ])
       )
     }
   }
@@ -838,15 +838,15 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
   if (config$migration) {
     temp_HIV_dx_uk <- temp_diags_fun(diagnoses_combined_uk)
     d_to_i_HIV_uk <- diag_to_infec_wrap(temp_HIV_dx_uk)
-    d_to_i_AIDS_uk <- normalize_mat(t(diagnoses_combined_uk$AIDS))
+    d_to_i_AIDS_uk <- normalize_mat(t(diagnoses_combined_uk$AIDS.diagnoses))
 
     temp_HIV_dx_abroad <- temp_diags_fun(diagnoses_combined_m)
     d_to_i_HIV_abroad <- diag_to_infec_wrap(temp_HIV_dx_abroad)
-    d_to_i_AIDS_abroad <- normalize_mat(t(diagnoses_combined_m$AIDS))
+    d_to_i_AIDS_abroad <- normalize_mat(t(diagnoses_combined_m$AIDS.diagnoses))
   } else {
     temp_HIV_dx <- temp_diags_fun(diagnoses)
     d_to_i_HIV <- diag_to_infec_wrap(temp_HIV_dx)
-    d_to_i_AIDS <- normalize_mat(t(diagnoses$AIDS))
+    d_to_i_AIDS <- normalize_mat(t(diagnoses$AIDS.diagnoses))
   }
 
   # Calculate unreported AIDS
@@ -858,12 +858,12 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
   }
   unreported.AIDS <- stats::rpois(
     nquar,
-    under.report * diagnoses_combined$AIDS[1, ]
+    under.report * diagnoses_combined$AIDS.diagnoses[1, ]
   )
   for (j in 2:nquar) {
     unreported.AIDS <- rbind(
       unreported.AIDS,
-      stats::rpois(nquar, under.report * diagnoses_combined$AIDS[j, ])
+      stats::rpois(nquar, under.report * diagnoses_combined$AIDS.diagnoses[j, ])
     )
   }
 
