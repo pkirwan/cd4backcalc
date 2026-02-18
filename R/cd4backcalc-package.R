@@ -4,8 +4,6 @@
 #' @importFrom rlang .data
 #' @importFrom Rcpp sourceCpp
 #' @importFrom RcppParallel RcppParallelLibs
-#' @importFrom rstan sampling
-#' @importFrom rstantools rstan_config
 ## usethis namespace: end
 NULL
 

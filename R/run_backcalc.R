@@ -293,35 +293,53 @@ confirm_stan_data <- function(stan_data) {
 
 #' Choose Stan model based on configuration
 #'
-#' This function chooses the appropriate Stan model based on the provided configuration.
+#' This function chooses the appropriate Stan model based on the provided
+#' configuration. The model is compiled at runtime using cmdstanr, with the
+#' compiled binary cached so subsequent calls are fast.
 #'
 #' @param config Configuration object containing model settings.
-#' @return The Stan model object.
+#' @return The Stan model object (a CmdStanModel).
 load_stan_model <- function(config) {
-  if (config$age) {
+  name <- if (config$age) {
     if (config$migration && config$rita) {
-      model <- stanmodels$AD_ptens_migration_rita
+      "AD_ptens_migration_rita"
     } else if (config$migration) {
-      model <- stanmodels$AD_ptens_migration
+      "AD_ptens_migration"
     } else if (config$rita) {
-      model <- stanmodels$AD_ptens_rita
+      "AD_ptens_rita"
     } else {
-      model <- stanmodels$AD_ptens
+      "AD_ptens"
     }
   } else if (config$migration && config$rita) {
-    model <- stanmodels$AI_spl_migration_rita
+    "AI_spl_migration_rita"
   } else if (config$migration) {
-    model <- stanmodels$AI_spl_migration
+    "AI_spl_migration"
   } else if (config$rita) {
-    model <- stanmodels$AI_spl_rita
+    "AI_spl_rita"
   } else if (
     config$diag_model == 2 || config$inf_model == 2 || config$inf_model == 3
   ) {
-    model <- stanmodels$AI_spl_rw_gp
+    "AI_spl_rw_gp"
   } else {
-    model <- stanmodels$AI_spl
+    "AI_spl"
   }
-  return(model)
+
+  # Find the .stan file shipped with the package
+  stan_file <- system.file(
+    "stan", paste0(name, ".stan"),
+    package = "cd4backcalc"
+  )
+  if (!nzchar(stan_file) || !file.exists(stan_file)) {
+    stop(
+      "Stan model file '", name, ".stan' not found in the installed package. ",
+      "The package may need to be reinstalled.",
+      call. = FALSE
+    )
+  }
+
+  # Compile at runtime into tempdir() to ensure the binary lands on a
+  # local filesystem that supports execute permissions
+  cmdstanr::cmdstan_model(stan_file = stan_file, dir = tempdir())
 }
 
 #' Prepare spline basis for back-calculation model
