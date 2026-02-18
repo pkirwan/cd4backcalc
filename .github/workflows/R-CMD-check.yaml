@@ -47,7 +47,12 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
+          dependencies: '"hard"' # do not install packages in Suggests
+          extra-packages: |
+            any::rcmdcheck
+            any::knittr
+            any::rmarkdown
+            any::testthat
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2
