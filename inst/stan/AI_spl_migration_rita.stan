@@ -10,35 +10,47 @@ functions {
       Lambda[i, i] = 1;
     }
     
+    // Cache (1 - d[i, t]) and repeated products to avoid redundant computation
+    real s1 = 1 - d[1, t];
+    real s2 = 1 - d[2, t];
+    real s3 = 1 - d[3, t];
+    real s4 = 1 - d[4, t];
+    real s5 = 1 - d[5, t];
+    // States 1,2,3 all share d[1,t]; cache the two products used across rows
+    real q1s1  = q[1] * s1;
+    real nq1s1 = (1 - q[1]) * s1;
+    real q2s1  = q[2] * s1;
+    real nq2s1 = (1 - q[2]) * s1;
+    
     Lambda[1, 1] = 0;
-    Lambda[1, 2] = (1 - q[1]) * (1 - d[1, t]);
-    Lambda[1, 3] = q[1] * (1 - d[1, t]);
+    Lambda[1, 2] = nq1s1;
+    Lambda[1, 3] = q1s1;
     Lambda[1, 9] = d[1, t];
     
     Lambda[2, 2] = 0;
-    Lambda[2, 4] = (1 - q[1]) * (1 - d[1, t]);
-    Lambda[2, 5] = q[1] * (1 - d[1, t]);
+    Lambda[2, 4] = nq1s1;
+    Lambda[2, 5] = q1s1;
     Lambda[2, 9] = d[1, t];
     
     Lambda[3, 3] = 0;
-    Lambda[3, 5] = (1 - q[2]) * (1 - d[1, t]);
-    Lambda[3, 6] = q[2] * (1 - d[1, t]);
+    Lambda[3, 5] = nq2s1;
+    Lambda[3, 6] = q2s1;
     Lambda[3, 9] = d[1, t];
     
-    Lambda[4, 4] = (1 - q[1]) * (1 - d[2, t]);
-    Lambda[4, 5] = q[1] * (1 - d[2, t]);
+    Lambda[4, 4] = (1 - q[1]) * s2;
+    Lambda[4, 5] = q[1] * s2;
     Lambda[4, 10] = d[2, t];
     
-    Lambda[5, 5] = (1 - q[2]) * (1 - d[3, t]);
-    Lambda[5, 6] = q[2] * (1 - d[3, t]);
+    Lambda[5, 5] = (1 - q[2]) * s3;
+    Lambda[5, 6] = q[2] * s3;
     Lambda[5, 11] = d[3, t];
     
-    Lambda[6, 6] = (1 - q[3]) * (1 - d[4, t]);
-    Lambda[6, 7] = q[3] * (1 - d[4, t]);
+    Lambda[6, 6] = (1 - q[3]) * s4;
+    Lambda[6, 7] = q[3] * s4;
     Lambda[6, 12] = d[4, t];
     
-    Lambda[7, 7] = (1 - q[4]) * (1 - d[5, t]);
-    Lambda[7, 8] = q[4] * (1 - d[5, t]);
+    Lambda[7, 7] = (1 - q[4]) * s5;
+    Lambda[7, 8] = q[4] * s5;
     Lambda[7, 13] = d[5, t];
     
     return Lambda;
@@ -71,7 +83,7 @@ data {
   real<lower=0> eta_sd;
 }
 transformed data {
-  vector[12] zeroes = rep_vector(0, 12);
+  // No pre-computed constants needed
 }
 parameters {
   // Infection parameters
@@ -204,47 +216,31 @@ transformed parameters {
   matrix<lower=0>[nquar, 2] incidence_state_13 = rep_matrix(0, nquar, 2);
   array[nquar, 2] vector[7] prev_mat;
   
-  // Temporary variables
-  vector[13] tmpvec;
-  vector[13] uk_acquired;
-  vector[13] ab_acquired;
-  
   // Initial time period (t=1)
-  vector[13] init_vec = rep_vector(0, 13);
-  init_vec[1] = h[1];
-  
-  tmpvec = append_row(init_prev, zeroes[1 : 6]);
-  
   matrix[13, 13] Lambda1 = tmat_fct(1, q, d);
-  cum_diags[1, 1,  : ] = Lambda1' * tmpvec + init_vec;
+  
+  cum_diags[1, 1,  : ] = Lambda1' * append_row(init_prev, rep_vector(0, 6));
+  cum_diags[1, 1, 1] += h[1];
   
   // Initial migrant group
   p[1] = exp(eta[1]);
-  uk_acquired = rep_vector(0, 13);
-  uk_acquired[1] = h[1] * p[1];
-  ab_acquired = rep_vector(0, 13);
-  ab_acquired[4 : 7] = omega[1] * m[1 : 4, 1];
-  
-  tmpvec = append_row(init_prev_abroad, zeroes[1 : 6]);
-  cum_diags[1, 2,  : ] = Lambda1' * tmpvec + uk_acquired + ab_acquired;
+  cum_diags[1, 2,  : ] = Lambda1' * append_row(init_prev_abroad, rep_vector(0, 6));
+  cum_diags[1, 2, 1] += h[1] * p[1];
+  cum_diags[1, 2, 4 : 7] += omega[1] * m[1 : 4, 1];
   
   // Evolution over time
   for (t in 2 : nquar) {
     matrix[13, 13] Lambda_t = tmat_fct(t, q, d);
     
     // Native group
-    vector[13] inflow = rep_vector(0, 13);
-    inflow[1] = h[t];
-    cum_diags[t, 1,  : ] = Lambda_t' * cum_diags[t - 1, 1,  : ] + inflow;
+    cum_diags[t, 1,  : ] = Lambda_t' * cum_diags[t - 1, 1,  : ];
+    cum_diags[t, 1, 1] += h[t];
     
     // Migrant group
     p[t] = exp(eta[t]);
-    uk_acquired = rep_vector(0, 13);
-    uk_acquired[1] = h[t] * p[t];
-    ab_acquired = rep_vector(0, 13);
-    ab_acquired[4 : 7] = omega[t] * m[1 : 4, t];
-    cum_diags[t, 2,  : ] = Lambda_t' * cum_diags[t - 1, 2,  : ] + uk_acquired
-                           + ab_acquired;
+    cum_diags[t, 2,  : ] = Lambda_t' * cum_diags[t - 1, 2,  : ];
+    cum_diags[t, 2, 1] += h[t] * p[t];
+    cum_diags[t, 2, 4 : 7] += omega[t] * m[1 : 4, t];
   }
   
   // Calculate incidences
