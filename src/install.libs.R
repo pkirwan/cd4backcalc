@@ -34,3 +34,16 @@ callr::r(
   show = TRUE,
   stderr = "2>&1"
 )
+# Set execute permissions on compiled Stan binaries (needed on Linux/macOS)
+if (.Platform$OS.type == "unix") {
+  stan_binaries <- list.files(
+    bin_stan,
+    full.names = TRUE,
+    pattern = "^[^.]+$"  # compiled binaries have no file extension
+  )
+  for (b in stan_binaries) {
+    if (file.exists(b) && !grepl("\\.stan$", b)) {
+      Sys.chmod(b, mode = "0755")
+    }
+  }
+}
