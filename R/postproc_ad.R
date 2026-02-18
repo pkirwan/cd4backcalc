@@ -177,27 +177,27 @@ postproc_ad <- function(
 
   # Indices for diagnosis parameters by age band
   # Stan declaration: array[4] matrix[nquar, 4/5] d  =>  d[ag, t, state]
-  ind_list$d1.ind.1524 <- grep("^d\\[1,[0-9]+,1\\]$", colnames(fit.mat))
-  ind_list$d2.ind.1524 <- grep("^d\\[1,[0-9]+,2\\]$", colnames(fit.mat))
-  ind_list$d3.ind.1524 <- grep("^d\\[1,[0-9]+,3\\]$", colnames(fit.mat))
-  ind_list$d4.ind.1524 <- grep("^d\\[1,[0-9]+,4\\]$", colnames(fit.mat))
-  ind_list$d1.ind.2534 <- grep("^d\\[2,[0-9]+,1\\]$", colnames(fit.mat))
-  ind_list$d2.ind.2534 <- grep("^d\\[2,[0-9]+,2\\]$", colnames(fit.mat))
-  ind_list$d3.ind.2534 <- grep("^d\\[2,[0-9]+,3\\]$", colnames(fit.mat))
-  ind_list$d4.ind.2534 <- grep("^d\\[2,[0-9]+,4\\]$", colnames(fit.mat))
-  ind_list$d1.ind.3544 <- grep("^d\\[3,[0-9]+,1\\]$", colnames(fit.mat))
-  ind_list$d2.ind.3544 <- grep("^d\\[3,[0-9]+,2\\]$", colnames(fit.mat))
-  ind_list$d3.ind.3544 <- grep("^d\\[3,[0-9]+,3\\]$", colnames(fit.mat))
-  ind_list$d4.ind.3544 <- grep("^d\\[3,[0-9]+,4\\]$", colnames(fit.mat))
-  ind_list$d1.ind.45 <- grep("^d\\[4,[0-9]+,1\\]$", colnames(fit.mat))
-  ind_list$d2.ind.45 <- grep("^d\\[4,[0-9]+,2\\]$", colnames(fit.mat))
-  ind_list$d3.ind.45 <- grep("^d\\[4,[0-9]+,3\\]$", colnames(fit.mat))
-  ind_list$d4.ind.45 <- grep("^d\\[4,[0-9]+,4\\]$", colnames(fit.mat))
+  ind_list$d1.ind.1524 <- grep("^d\\[1,[0-9]+,1\\]$", colnames(fit_mat))
+  ind_list$d2.ind.1524 <- grep("^d\\[1,[0-9]+,2\\]$", colnames(fit_mat))
+  ind_list$d3.ind.1524 <- grep("^d\\[1,[0-9]+,3\\]$", colnames(fit_mat))
+  ind_list$d4.ind.1524 <- grep("^d\\[1,[0-9]+,4\\]$", colnames(fit_mat))
+  ind_list$d1.ind.2534 <- grep("^d\\[2,[0-9]+,1\\]$", colnames(fit_mat))
+  ind_list$d2.ind.2534 <- grep("^d\\[2,[0-9]+,2\\]$", colnames(fit_mat))
+  ind_list$d3.ind.2534 <- grep("^d\\[2,[0-9]+,3\\]$", colnames(fit_mat))
+  ind_list$d4.ind.2534 <- grep("^d\\[2,[0-9]+,4\\]$", colnames(fit_mat))
+  ind_list$d1.ind.3544 <- grep("^d\\[3,[0-9]+,1\\]$", colnames(fit_mat))
+  ind_list$d2.ind.3544 <- grep("^d\\[3,[0-9]+,2\\]$", colnames(fit_mat))
+  ind_list$d3.ind.3544 <- grep("^d\\[3,[0-9]+,3\\]$", colnames(fit_mat))
+  ind_list$d4.ind.3544 <- grep("^d\\[3,[0-9]+,4\\]$", colnames(fit_mat))
+  ind_list$d1.ind.45 <- grep("^d\\[4,[0-9]+,1\\]$", colnames(fit_mat))
+  ind_list$d2.ind.45 <- grep("^d\\[4,[0-9]+,2\\]$", colnames(fit_mat))
+  ind_list$d3.ind.45 <- grep("^d\\[4,[0-9]+,3\\]$", colnames(fit_mat))
+  ind_list$d4.ind.45 <- grep("^d\\[4,[0-9]+,4\\]$", colnames(fit_mat))
   if (config$rita) {
-    ind_list$d5.ind.1524 <- grep("^d\\[1,[0-9]+,5\\]$", colnames(fit.mat))
-    ind_list$d5.ind.2534 <- grep("^d\\[2,[0-9]+,5\\]$", colnames(fit.mat))
-    ind_list$d5.ind.3544 <- grep("^d\\[3,[0-9]+,5\\]$", colnames(fit.mat))
-    ind_list$d5.ind.45 <- grep("^d\\[4,[0-9]+,5\\]$", colnames(fit.mat))
+    ind_list$d5.ind.1524 <- grep("^d\\[1,[0-9]+,5\\]$", colnames(fit_mat))
+    ind_list$d5.ind.2534 <- grep("^d\\[2,[0-9]+,5\\]$", colnames(fit_mat))
+    ind_list$d5.ind.3544 <- grep("^d\\[3,[0-9]+,5\\]$", colnames(fit_mat))
+    ind_list$d5.ind.45 <- grep("^d\\[4,[0-9]+,5\\]$", colnames(fit_mat))
   }
 
   # Extract diagnosis probabilities by age band
@@ -299,7 +299,7 @@ postproc_ad <- function(
     d_idx <- array(NA_integer_, dim = c(4, (config$ndiagst - 1), nquar))
     for (ag in 1:4) {
       for (k in 1:(config$ndiagst - 1)) {
-        ind <- grep(sprintf("^d\\[%d,[0-9]+,%d\\]$", ag, k), colnames(fit.mat))
+        ind <- grep(sprintf("^d\\[%d,[0-9]+,%d\\]$", ag, k), colnames(fit_mat))
         if (length(ind) != nquar) {
           stop(sprintf(
             "Could not find d[%d,*,%d] with length nquar=%d.",
