@@ -65,6 +65,15 @@ transformed data {
     age_group_lookup[a0] = min(4, 1 + (a0 - 1) %/% 10);
   }
   
+  // Pre-computed year difference: current age for cohort (t0, a0) at time t
+  // = min(a0 + year_diff[t0, t], nage)
+  array[nquar, nquar] int year_diff;
+  for (t0 in 1 : nquar) {
+    for (t in 1 : nquar) {
+      year_diff[t0, t] = year_index[t] - year_index[t0];
+    }
+  }
+  
   // Derived totals
   array[nquar] int<lower=0> ABROAD;
   for (t in 1 : nquar) {
@@ -139,7 +148,7 @@ transformed parameters {
   matrix<lower=0, upper=1>[nquar, nage] abroad_age_prop;
   for (t in 1 : nquar) {
     real total = ABROAD[t];
-    if (total > 0) {
+    if (total > 1e-6) {
       for (a in 1 : nage) {
         abroad_age_prop[t, a] = ABROAD_age[t, a] / total;
       }
@@ -155,30 +164,17 @@ transformed parameters {
   vector[nquar] delta_4 = alpha_diag_4 + 0.7 * (X_diag * beta_diag_4);
   vector[nquar] delta_5 = alpha_diag_5 + 0.7 * (X_diag * beta_diag_5);
   
-  // Diagnosis probabilities by age group (ag), state (k), and time (t)
-  array[4] matrix<lower=0, upper=1>[5, nquar] d;
+  // Diagnosis probabilities by age group (ag), state (k), and time (t).
+  // Stored as matrix[nquar, 5] so the inner time-loop accesses column k,
+  // which is contiguous in column-major memory (cache-friendly).
+  array[4] matrix<lower=0, upper=1>[nquar, 5] d;
   for (ag in 1 : 4) {
     int ag_offset = (ag - 1) * 5;
-    d[ag, 1,  : ] = to_row_vector(
-                                  inv_logit(
-                                            delta_1
-                                            + alpha_age_diag[ag_offset + 1]));
-    d[ag, 2,  : ] = to_row_vector(
-                                  inv_logit(
-                                            delta_2
-                                            + alpha_age_diag[ag_offset + 2]));
-    d[ag, 3,  : ] = to_row_vector(
-                                  inv_logit(
-                                            delta_3
-                                            + alpha_age_diag[ag_offset + 3]));
-    d[ag, 4,  : ] = to_row_vector(
-                                  inv_logit(
-                                            delta_4
-                                            + alpha_age_diag[ag_offset + 4]));
-    d[ag, 5,  : ] = to_row_vector(
-                                  inv_logit(
-                                            delta_5
-                                            + alpha_age_diag[ag_offset + 5]));
+    d[ag,  : , 1] = inv_logit(delta_1 + alpha_age_diag[ag_offset + 1]);
+    d[ag,  : , 2] = inv_logit(delta_2 + alpha_age_diag[ag_offset + 2]);
+    d[ag,  : , 3] = inv_logit(delta_3 + alpha_age_diag[ag_offset + 3]);
+    d[ag,  : , 4] = inv_logit(delta_4 + alpha_age_diag[ag_offset + 4]);
+    d[ag,  : , 5] = inv_logit(delta_5 + alpha_age_diag[ag_offset + 5]);
   }
   
   // Proportion UK-acquired among migrants
@@ -205,6 +201,13 @@ transformed parameters {
     m[4, t] = remainder;
   }
   
+  // Precompute omega_m[k, t] = omega[t] * m[k, t] (5 compartments x nquar).
+  // Avoids recomputing omega[t0]*m[k,t0] for every a0.
+  matrix[5, nquar] omega_m;
+  for (t in 1 : nquar) {
+    omega_m[ : , t] = m[ : , t] * omega[t];
+  }
+  
   // Misclassification model for abroad diagnoses
   vector[nquar] detect_logit = alpha_detect + 0.5 * (X_mp * beta_detect);
   vector<lower=0, upper=1>[nquar] detect_prob;
@@ -214,12 +217,11 @@ transformed parameters {
   
   for (t in 1 : nquar) {
     detect_prob[t] = inv_logit(detect_logit[t]);
-    true_abroad_dx[t] = omega[t] * m[5, t];
+    true_abroad_dx[t] = omega_m[5, t]; // precomputed omega[t] * m[5, t]
     exp_ABROAD_dx[t] = true_abroad_dx[t] * detect_prob[t];
-    for (a in 1 : nage) {
-      misclassified_dx[t, a] = true_abroad_dx[t] * (1 - detect_prob[t])
-                               * abroad_age_prop[t, a];
-    }
+    // Vectorised row assignment replaces inner a loop
+    misclassified_dx[t,  : ] = true_abroad_dx[t] * (1 - detect_prob[t])
+                               * abroad_age_prop[t,  : ];
   }
   
   // Expected diagnoses by (t, a, y) and diagnosed state (1..5 HIV, 6 AIDS)
@@ -228,10 +230,10 @@ transformed parameters {
   array[nquar, nage, 2] real<lower=0> exp_AIDS_dx;
   array[nquar, nage, 2] simplex[5] exp_p;
   
+  exp_diag = rep_array(empty_vec, nquar, nage, 2);
   for (t in 1 : nquar) {
     for (a in 1 : nage) {
       for (y in 1 : 2) {
-        exp_diag[t, a, y] = empty_vec;
         exp_HIV_dx[t, a, y] = 0;
         exp_AIDS_dx[t, a, y] = 0;
         exp_p[t, a, y] = rep_vector(0.2, 5);
@@ -263,11 +265,12 @@ transformed parameters {
         if (t0 == 1) {
           int ag0 = age_group_lookup[a0];
           
+          // d[ag, t, k] layout: row = time, col = state
           real d1 = d[ag0, 1, 1];
-          real d2 = d[ag0, 2, 1];
-          real d3 = d[ag0, 3, 1];
-          real d4 = d[ag0, 4, 1];
-          real d5 = d[ag0, 5, 1];
+          real d2 = d[ag0, 1, 2];
+          real d3 = d[ag0, 1, 3];
+          real d4 = d[ag0, 1, 4];
+          real d5 = d[ag0, 1, 5];
           real nd1 = 1 - d1;
           real nd2 = 1 - d2;
           real nd3 = 1 - d3;
@@ -322,12 +325,14 @@ transformed parameters {
         real inflow_native = h[(a0 - 1) * nquar + t0];
         real inflow_mig_uk = inflow_native * p[t0];
         
-        // Migrants acquired abroad enter states 4..7 only (no recent states 1..3)
+        // Migrants acquired abroad enter states 4..7 only (no recent states 1..3).
+        // omega_m[k,t0] = omega[t0]*m[k,t0] precomputed; multiply by age proportion.
+        real af = abroad_age_prop[t0, a0];
         vector[7] inflow_mig_ab = rep_vector(0, 7);
-        inflow_mig_ab[4] = omega[t0] * abroad_age_prop[t0, a0] * m[1, t0];
-        inflow_mig_ab[5] = omega[t0] * abroad_age_prop[t0, a0] * m[2, t0];
-        inflow_mig_ab[6] = omega[t0] * abroad_age_prop[t0, a0] * m[3, t0];
-        inflow_mig_ab[7] = omega[t0] * abroad_age_prop[t0, a0] * m[4, t0];
+        inflow_mig_ab[4] = omega_m[1, t0] * af;
+        inflow_mig_ab[5] = omega_m[2, t0] * af;
+        inflow_mig_ab[6] = omega_m[3, t0] * af;
+        inflow_mig_ab[7] = omega_m[4, t0] * af;
         
         if (y == 1) {
           lat[1] = inflow_native + lat_p[1];
@@ -349,14 +354,15 @@ transformed parameters {
         
         if (t0 < nquar) {
           for (t in (t0 + 1) : nquar) {
-            int a = min(a0 + year_index[t] - year_index[t0], nage);
+            int a = min(a0 + year_diff[t0, t], nage);
             int ag = age_group_lookup[a];
             
-            real d1 = d[ag, 1, t];
-            real d2 = d[ag, 2, t];
-            real d3 = d[ag, 3, t];
-            real d4 = d[ag, 4, t];
-            real d5 = d[ag, 5, t];
+            // d[ag, t, k]: column k is contiguous in memory, cache-friendly for varying t
+            real d1 = d[ag, t, 1];
+            real d2 = d[ag, t, 2];
+            real d3 = d[ag, t, 3];
+            real d4 = d[ag, t, 4];
+            real d5 = d[ag, t, 5];
             real nd1 = 1 - d1;
             real nd2 = 1 - d2;
             real nd3 = 1 - d3;

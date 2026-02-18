@@ -10,35 +10,47 @@ functions {
       Lambda[i, i] = 1;
     }
     
+    // Cache (1 - d[i, t]) and repeated products to avoid redundant computation
+    real s1 = 1 - d[1, t];
+    real s2 = 1 - d[2, t];
+    real s3 = 1 - d[3, t];
+    real s4 = 1 - d[4, t];
+    real s5 = 1 - d[5, t];
+    // States 1,2,3 all share d[1,t]; cache the two products used across rows
+    real q1s1 = q[1] * s1;
+    real nq1s1 = (1 - q[1]) * s1;
+    real q2s1 = q[2] * s1;
+    real nq2s1 = (1 - q[2]) * s1;
+    
     Lambda[1, 1] = 0;
-    Lambda[1, 2] = (1 - q[1]) * (1 - d[1, t]);
-    Lambda[1, 3] = q[1] * (1 - d[1, t]);
+    Lambda[1, 2] = nq1s1;
+    Lambda[1, 3] = q1s1;
     Lambda[1, 9] = d[1, t];
     
     Lambda[2, 2] = 0;
-    Lambda[2, 4] = (1 - q[1]) * (1 - d[1, t]);
-    Lambda[2, 5] = q[1] * (1 - d[1, t]);
+    Lambda[2, 4] = nq1s1;
+    Lambda[2, 5] = q1s1;
     Lambda[2, 9] = d[1, t];
     
     Lambda[3, 3] = 0;
-    Lambda[3, 5] = (1 - q[2]) * (1 - d[1, t]);
-    Lambda[3, 6] = q[2] * (1 - d[1, t]);
+    Lambda[3, 5] = nq2s1;
+    Lambda[3, 6] = q2s1;
     Lambda[3, 9] = d[1, t];
     
-    Lambda[4, 4] = (1 - q[1]) * (1 - d[2, t]);
-    Lambda[4, 5] = q[1] * (1 - d[2, t]);
+    Lambda[4, 4] = (1 - q[1]) * s2;
+    Lambda[4, 5] = q[1] * s2;
     Lambda[4, 10] = d[2, t];
     
-    Lambda[5, 5] = (1 - q[2]) * (1 - d[3, t]);
-    Lambda[5, 6] = q[2] * (1 - d[3, t]);
+    Lambda[5, 5] = (1 - q[2]) * s3;
+    Lambda[5, 6] = q[2] * s3;
     Lambda[5, 11] = d[3, t];
     
-    Lambda[6, 6] = (1 - q[3]) * (1 - d[4, t]);
-    Lambda[6, 7] = q[3] * (1 - d[4, t]);
+    Lambda[6, 6] = (1 - q[3]) * s4;
+    Lambda[6, 7] = q[3] * s4;
     Lambda[6, 12] = d[4, t];
     
-    Lambda[7, 7] = (1 - q[4]) * (1 - d[5, t]);
-    Lambda[7, 8] = q[4] * (1 - d[5, t]);
+    Lambda[7, 7] = (1 - q[4]) * s5;
+    Lambda[7, 8] = q[4] * s5;
     Lambda[7, 13] = d[5, t];
     
     return Lambda;
@@ -57,9 +69,6 @@ data {
   int<lower=1> npars_diag;
   matrix[nquar, npars_inf] X_inf;
   matrix[nquar, npars_diag] X_diag;
-}
-transformed data {
-  vector[12] zeroes = rep_vector(0, 12);
 }
 parameters {
   // Infection parameters
@@ -126,17 +135,16 @@ transformed parameters {
   vector[13] init_vec = rep_vector(0, 13);
   init_vec[1] = h[1];
   
-  vector[13] tmpvec = append_row(init_prev, zeroes[1 : 6]);
+  vector[13] tmpvec = append_row(init_prev, rep_vector(0, 6));
   
   matrix[13, 13] Lambda1 = tmat_fct(1, q, d);
   cum_diags[1] = Lambda1' * tmpvec + init_vec;
   
   // Evolution over time
   for (t in 2 : nquar) {
-    vector[13] inflow = rep_vector(0, 13);
-    inflow[1] = h[t];
     matrix[13, 13] Lambda_t = tmat_fct(t, q, d);
-    cum_diags[t] = Lambda_t' * cum_diags[t - 1] + inflow;
+    cum_diags[t] = Lambda_t' * cum_diags[t - 1];
+    cum_diags[t, 1] += h[t];
   }
   
   // Calculate incidences

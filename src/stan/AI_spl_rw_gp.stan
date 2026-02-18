@@ -11,20 +11,26 @@ functions {
       Lambda[i, i] = 1;
     }
     
-    Lambda[1, 1] = (1 - q[1]) * (1 - d[1, t]);
-    Lambda[1, 2] = q[1] * (1 - d[1, t]);
+    // Cache (1 - d[i, t]) to avoid repeated computation
+    real s1 = 1 - d[1, t];
+    real s2 = 1 - d[2, t];
+    real s3 = 1 - d[3, t];
+    real s4 = 1 - d[4, t];
+    
+    Lambda[1, 1] = (1 - q[1]) * s1;
+    Lambda[1, 2] = q[1] * s1;
     Lambda[1, 6] = d[1, t];
     
-    Lambda[2, 2] = (1 - q[2]) * (1 - d[2, t]);
-    Lambda[2, 3] = q[2] * (1 - d[2, t]);
+    Lambda[2, 2] = (1 - q[2]) * s2;
+    Lambda[2, 3] = q[2] * s2;
     Lambda[2, 7] = d[2, t];
     
-    Lambda[3, 3] = (1 - q[3]) * (1 - d[3, t]);
-    Lambda[3, 4] = q[3] * (1 - d[3, t]);
+    Lambda[3, 3] = (1 - q[3]) * s3;
+    Lambda[3, 4] = q[3] * s3;
     Lambda[3, 8] = d[3, t];
     
-    Lambda[4, 4] = (1 - q[4]) * (1 - d[4, t]);
-    Lambda[4, 5] = q[4] * (1 - d[4, t]);
+    Lambda[4, 4] = (1 - q[4]) * s4;
+    Lambda[4, 5] = q[4] * s4;
     Lambda[4, 9] = d[4, t];
     
     return Lambda;
@@ -53,7 +59,6 @@ data {
   real<lower=0> sigma_sq; // Arbitrary noise of GP
 }
 transformed data {
-  vector[8] zeroes = rep_vector(0, 8);
   vector[nquar] mu = rep_vector(0, nquar);
 }
 parameters {
@@ -125,8 +130,6 @@ transformed parameters {
   array[nquar] vector[4] prev_mat;
   
   // Temporary variables
-  vector[9] tmpvec;
-  vector[9] init_vec;
   real<lower=0> inv_rho = inv(rho);
   
   // Initialize h based on infection model
@@ -172,20 +175,16 @@ transformed parameters {
   }
   
   // Initial time period (t=1, y=1)
-  init_vec = rep_vector(0, 9);
-  init_vec[1] = h[1];
-  
-  tmpvec = append_row(init_prev, zeroes[1 : 5]);
-  
+  vector[9] tmpvec = append_row(init_prev, rep_vector(0, 5));
   matrix[9, 9] Lambda1 = tmat_fct(1, q, d);
-  cum_diags[1] = Lambda1' * tmpvec + init_vec;
+  cum_diags[1] = Lambda1' * tmpvec;
+  cum_diags[1, 1] += h[1];
   
   // Evolution over time
   for (t in 2 : nquar) {
-    vector[9] inflow = rep_vector(0, 9);
-    inflow[1] = h[t];
     matrix[9, 9] Lambda_t = tmat_fct(t, q, d);
-    cum_diags[t] = Lambda_t' * cum_diags[t - 1] + inflow;
+    cum_diags[t] = Lambda_t' * cum_diags[t - 1];
+    cum_diags[t, 1] += h[t];
   }
   
   // Calculate incidences

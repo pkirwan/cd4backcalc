@@ -36,6 +36,16 @@ transformed data {
   for (a0 in 1 : nage) {
     age_group_lookup[a0] = min(4, 1 + (a0 - 1) %/% 10);
   }
+  
+  // Pre-computed current-age lookup: age_at_t[t0, t, a0] would be 3D and large,
+  // so store only the year_diff component (independent of a0).
+  // current age for cohort (t0, a0) at time t = min(a0 + year_diff[t0, t], nage)
+  array[nquar, nquar] int year_diff;
+  for (t0 in 1 : nquar) {
+    for (t in 1 : nquar) {
+      year_diff[t0, t] = year_index[t] - year_index[t0];
+    }
+  }
 }
 parameters {
   // Infection parameters
@@ -63,7 +73,7 @@ transformed parameters {
   matrix[nquar, nage] exp_HIV_dx; // expected number of HIV_age diag at time t age a
   matrix[nquar, nage] exp_AIDS_dx; // expected number of HIV_age diag at time t age a
   array[nquar, nage] simplex[5] exp_p; // proportion of HIV_age diagnoses in state k (time t and age a)
-  array[4] matrix[5, nquar] d; // matrix of diagnoses for different ages and age-groups
+  array[4] matrix[nquar, 5] d; // matrix of diagnoses for different ages and age-groups
   matrix[np1, np1] K1_inv;
   
   // Expected incidence
@@ -80,7 +90,6 @@ transformed parameters {
   K1_inv = S1a * tau[1] + S1b * tau[2];
   
   // DIAGNOSES
-  
   // Initializing delta
   delta_1[1] = -3.2 + 0.2 * delta_raw_1[1];
   delta_2[1] = -3.2 + 0.2 * delta_raw_2[1];
@@ -103,28 +112,20 @@ transformed parameters {
   // which has an age and time specific gradient
   for (ag in 1 : nagroup) {
     int ag_offset = (ag - 1) * 5;
-    d[ag, 1,  : ] = to_row_vector(inv_logit(delta_1 + alpha[ag_offset + 1]));
-    d[ag, 2,  : ] = to_row_vector(inv_logit(delta_2 + alpha[ag_offset + 2]));
-    d[ag, 3,  : ] = to_row_vector(inv_logit(delta_3 + alpha[ag_offset + 3]));
-    d[ag, 4,  : ] = to_row_vector(inv_logit(delta_4 + alpha[ag_offset + 4]));
-    d[ag, 5,  : ] = to_row_vector(inv_logit(delta_5 + alpha[ag_offset + 5]));
+    d[ag,  : , 1] = inv_logit(delta_1 + alpha[ag_offset + 1]);
+    d[ag,  : , 2] = inv_logit(delta_2 + alpha[ag_offset + 2]);
+    d[ag,  : , 3] = inv_logit(delta_3 + alpha[ag_offset + 3]);
+    d[ag,  : , 4] = inv_logit(delta_4 + alpha[ag_offset + 4]);
+    d[ag,  : , 5] = inv_logit(delta_5 + alpha[ag_offset + 5]);
   }
   
   // NOW NEED TO CREATE THE TRANSITION MATRICES AND CALCULATE EXPECTED DIAGNOSES
-  for (t in 1 : nquar) {
-    for (a in 1 : nage) {
-      exp_diag[t, a] = empty_vec;
-    }
-  }
+  // Initialise exp_diag to zero
+  exp_diag = rep_array(empty_vec, nquar, nage);
   
   for (t0 in 1 : nquar) {
     for (a0 in 1 : nage) {
-      vector[7] lat;
-      vector[7] lat_next;
-      vector[7] lat_p = empty_vec1;
-      row_vector[6] diag_p = empty_vec;
-      
-      // Progression rates (depend only on age at infection a0, not current time)
+      // Progression rates depend only on age at infection
       real q1 = q_age[1, a0];
       real q2 = q_age[2, a0];
       real q3 = q_age[3, a0];
@@ -134,16 +135,17 @@ transformed parameters {
       real nq3 = 1 - q3;
       real nq4 = 1 - q4;
       
-      // Prevalent infections only at t0 == 1
+      vector[7] lat = empty_vec1;
+      vector[7] lat_next;
+      
+      // At t0 == 1: seed latent state with prevalent infections and record their diagnoses
       if (t0 == 1) {
         int ag0 = age_group_lookup[a0];
-        
         real d1 = d[ag0, 1, 1];
-        real d2 = d[ag0, 2, 1];
-        real d3 = d[ag0, 3, 1];
-        real d4 = d[ag0, 4, 1];
-        real d5 = d[ag0, 5, 1];
-        
+        real d2 = d[ag0, 1, 2];
+        real d3 = d[ag0, 1, 3];
+        real d4 = d[ag0, 1, 4];
+        real d5 = d[ag0, 1, 5];
         real nd1 = 1 - d1;
         real nd2 = 1 - d2;
         real nd3 = 1 - d3;
@@ -158,77 +160,64 @@ transformed parameters {
         real v6 = init_prev_age[6, a0];
         real v7 = init_prev_age[7, a0];
         
-        // diagnoses from prevalent infections at quarter 1 (dx happens first)
-        diag_p[1] = (v1 + v2 + v3) * d1;
-        diag_p[2] = v4 * d2;
-        diag_p[3] = v5 * d3;
-        diag_p[4] = v6 * d4;
-        diag_p[5] = v7 * d5;
-        diag_p[6] = v7 * nd5 * q4;
+        // Diagnoses from prevalent infections at t=1
+        exp_diag[1, a0, 1] += (v1 + v2 + v3) * d1;
+        exp_diag[1, a0, 2] += v4 * d2;
+        exp_diag[1, a0, 3] += v5 * d3;
+        exp_diag[1, a0, 4] += v6 * d4;
+        exp_diag[1, a0, 5] += v7 * d5;
+        exp_diag[1, a0, 6] += v7 * nd5 * q4;
         
-        // survivors after diagnosis and progression
-        lat_p[1] = 0;
-        lat_p[2] = (nd1 * nq1) * v1;
-        lat_p[3] = (nd1 * q1) * v1;
-        lat_p[4] = (nd1 * nq1) * v2 + (nd2 * nq1) * v4;
-        lat_p[5] = (nd1 * q1) * v2 + (nd1 * nq2) * v3 + (nd2 * q1) * v4
-                   + (nd3 * nq2) * v5;
-        lat_p[6] = (nd1 * q2) * v3 + (nd3 * q2) * v5 + (nd4 * nq3) * v6;
-        lat_p[7] = (nd4 * q3) * v6 + (nd5 * nq4) * v7;
-        
-        // record prevalent diagnoses at (t=1, a=a0)
-        exp_diag[1, a0] += diag_p;
+        // Survivors of prevalent pool after diagnosis and progression
+        lat[1] = 0;
+        lat[2] = (nd1 * nq1) * v1;
+        lat[3] = (nd1 * q1) * v1;
+        lat[4] = (nd1 * nq1) * v2 + (nd2 * nq1) * v4;
+        lat[5] = (nd1 * q1) * v2 + (nd1 * nq2) * v3 + (nd2 * q1) * v4
+                 + (nd3 * nq2) * v5;
+        lat[6] = (nd1 * q2) * v3 + (nd3 * q2) * v5 + (nd4 * nq3) * v6;
+        lat[7] = (nd4 * q3) * v6 + (nd5 * nq4) * v7;
       }
       
-      // latent state immediately after t0 inflow (+ any prevalence survivors if t0==1)
-      lat[1] = h[(a0 - 1) * nquar + t0] + lat_p[1];
-      lat[2] = lat_p[2];
-      lat[3] = lat_p[3];
-      lat[4] = lat_p[4];
-      lat[5] = lat_p[5];
-      lat[6] = lat_p[6];
-      lat[7] = lat_p[7];
+      // New infections at t0 enter state 1 (diagnosed only from t0+1 onwards)
+      lat[1] += h[(a0 - 1) * nquar + t0];
       
-      if (t0 < nquar) {
-        for (t in (t0 + 1) : nquar) {
-          int a = min(a0 + year_index[t] - year_index[t0], nage);
-          int ag = age_group_lookup[a];
-          
-          // Diagnosis probabilities based on current age group
-          real d1 = d[ag, 1, t];
-          real d2 = d[ag, 2, t];
-          real d3 = d[ag, 3, t];
-          real d4 = d[ag, 4, t];
-          real d5 = d[ag, 5, t];
-          
-          real nd1 = 1 - d1;
-          real nd2 = 1 - d2;
-          real nd3 = 1 - d3;
-          real nd4 = 1 - d4;
-          real nd5 = 1 - d5;
-          
-          // diagnosis uses current latent state (before progression)
-          // diagnoses (RITA: states 1-3 share d1)
-          exp_diag[t, a, 1] += (lat[1] + lat[2] + lat[3]) * d1;
-          exp_diag[t, a, 2] += lat[4] * d2;
-          exp_diag[t, a, 3] += lat[5] * d3;
-          exp_diag[t, a, 4] += lat[6] * d4;
-          exp_diag[t, a, 5] += lat[7] * d5;
-          exp_diag[t, a, 6] += lat[7] * nd5 * q4;
-          
-          // progression among undiagnosed (states 1-3 always advance: no self-loops)
-          lat_next[1] = 0;
-          lat_next[2] = (nd1 * nq1) * lat[1];
-          lat_next[3] = (nd1 * q1) * lat[1];
-          lat_next[4] = (nd1 * nq1) * lat[2] + (nd2 * nq1) * lat[4];
-          lat_next[5] = (nd1 * q1) * lat[2] + (nd1 * nq2) * lat[3]
-                        + (nd2 * q1) * lat[4] + (nd3 * nq2) * lat[5];
-          lat_next[6] = (nd1 * q2) * lat[3] + (nd3 * q2) * lat[5]
-                        + (nd4 * nq3) * lat[6];
-          lat_next[7] = (nd4 * q3) * lat[6] + (nd5 * nq4) * lat[7];
-          
-          lat = lat_next;
-        }
+      // Propagate cohort (t0, a0) forward from t0+1
+      for (t in (t0 + 1) : nquar) {
+        int a = min(a0 + year_diff[t0, t], nage);
+        int ag = age_group_lookup[a];
+        
+        real d1 = d[ag, t, 1];
+        real d2 = d[ag, t, 2];
+        real d3 = d[ag, t, 3];
+        real d4 = d[ag, t, 4];
+        real d5 = d[ag, t, 5];
+        real nd1 = 1 - d1;
+        real nd2 = 1 - d2;
+        real nd3 = 1 - d3;
+        real nd4 = 1 - d4;
+        real nd5 = 1 - d5;
+        
+        // Diagnoses (RITA: states 1-3 share d1)
+        exp_diag[t, a, 1] += (lat[1] + lat[2] + lat[3]) * d1;
+        exp_diag[t, a, 2] += lat[4] * d2;
+        exp_diag[t, a, 3] += lat[5] * d3;
+        exp_diag[t, a, 4] += lat[6] * d4;
+        exp_diag[t, a, 5] += lat[7] * d5;
+        exp_diag[t, a, 6] += lat[7] * nd5 * q4;
+        
+        // Progression among undiagnosed
+        lat_next[1] = 0;
+        lat_next[2] = (nd1 * nq1) * lat[1];
+        lat_next[3] = (nd1 * q1) * lat[1];
+        lat_next[4] = (nd1 * nq1) * lat[2] + (nd2 * nq1) * lat[4];
+        lat_next[5] = (nd1 * q1) * lat[2] + (nd1 * nq2) * lat[3]
+                      + (nd2 * q1) * lat[4] + (nd3 * nq2) * lat[5];
+        lat_next[6] = (nd1 * q2) * lat[3] + (nd3 * q2) * lat[5]
+                      + (nd4 * nq3) * lat[6];
+        lat_next[7] = (nd4 * q3) * lat[6] + (nd5 * nq4) * lat[7];
+        
+        lat = lat_next;
       }
     }
   }
@@ -250,7 +239,7 @@ transformed parameters {
   for (t in 1 : nquar) {
     for (a in 2 : nage) {
       real total = exp_HIV_dx[t, a];
-      if (total > 0) {
+      if (total > 1e-6) {
         exp_p[t, a] = to_vector(exp_diag[t, a, 1 : 5]) / total;
       } else {
         // safeguard; should be rare outside a==1, but avoids inv(0)
