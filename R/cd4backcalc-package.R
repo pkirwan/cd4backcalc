@@ -4,10 +4,11 @@
 #' @importFrom rlang .data
 #' @importFrom Rcpp sourceCpp
 #' @importFrom RcppParallel RcppParallelLibs
-#' @importFrom instantiate stan_package_model
+#' @importFrom rstan sampling
+#' @importFrom rstantools rstan_config
 ## usethis namespace: end
 NULL
 
 #' @useDynLib cd4backcalc, .registration = TRUE
-#' @keywords internal
+#' @keywords internal 
 "_PACKAGE"

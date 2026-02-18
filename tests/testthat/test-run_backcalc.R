@@ -8,15 +8,14 @@ test_that("cd4-only back-calculation produces a stanfit object", {
       model_seed = 123,
       inf_model = 1, # 1 spline, 2 random walk, 3 gp
       diag_model = 1, # 1 spline, 2 random walk
-      iter_warmup = 5,
-      iter_sampling = 5,
+      iter = 10,
       chains = 1,
       refresh = 0,
       messages = FALSE,
       nworkers = 1
     )
   })
-  expect_r6_class(hiv_list$fit, "CmdStanMCMC")
+  expect_s4_class(hiv_list$fit, "stanfit")
   expect_true("diag_prob" %in% names(hiv_list))
 })
 
@@ -30,15 +29,14 @@ test_that("back-calculation can cope with missing data", {
       model_seed = 123,
       inf_model = 1, # 1 spline, 2 random walk, 3 gp
       diag_model = 1, # 1 spline, 2 random walk
-      iter_warmup = 5,
-      iter_sampling = 5,
+      iter = 10,
       chains = 1,
       refresh = 0,
       messages = FALSE,
       nworkers = 1
     )
   })
-  expect_r6_class(hiv_list$fit, "CmdStanMCMC")
+  expect_s4_class(hiv_list$fit, "stanfit")
   expect_true("diag_prob" %in% names(hiv_list))
 
   # Simulate diagnoses
@@ -50,15 +48,14 @@ test_that("back-calculation can cope with missing data", {
       model_seed = 123,
       inf_model = 1, # 1 spline, 2 random walk, 3 gp
       diag_model = 1, # 1 spline, 2 random walk
-      iter_warmup = 5,
-      iter_sampling = 5,
+      iter = 10,
       chains = 1,
       refresh = 0,
       messages = FALSE,
       nworkers = 1
     )
   })
-  expect_r6_class(hiv_list$fit, "CmdStanMCMC")
+  expect_s4_class(hiv_list$fit, "stanfit")
   expect_true("diag_prob" %in% names(hiv_list))
 })
 
@@ -69,15 +66,14 @@ test_that("migration back-calculation produces a stanfit object", {
     hiv_list <- run_backcalc(
       stan_data,
       model_seed = 123,
-      iter_warmup = 5,
-      iter_sampling = 5,
+      iter = 10,
       chains = 1,
       refresh = 0,
       messages = FALSE,
       nworkers = 1
     )
   })
-  expect_r6_class(hiv_list$fit, "CmdStanMCMC")
+  expect_s4_class(hiv_list$fit, "stanfit")
   expect_true("diag_prob" %in% names(hiv_list))
 })
 
@@ -88,15 +84,14 @@ test_that("rita back-calculation produces a stanfit object", {
     hiv_list <- run_backcalc(
       stan_data,
       model_seed = 123,
-      iter_warmup = 5,
-      iter_sampling = 5,
+      iter = 10,
       chains = 1,
       refresh = 0,
       messages = FALSE,
       nworkers = 1
     )
   })
-  expect_r6_class(hiv_list$fit, "CmdStanMCMC")
+  expect_s4_class(hiv_list$fit, "stanfit")
   expect_true("diag_prob" %in% names(hiv_list))
 })
 
@@ -109,15 +104,14 @@ test_that("rita data with cd4-only back-calculation produces a stanfit object", 
       stan_data,
       rita = FALSE,
       model_seed = 123,
-      iter_warmup = 5,
-      iter_sampling = 5,
+      iter = 10,
       chains = 1,
       refresh = 0,
       messages = FALSE,
       nworkers = 1
     )
   })
-  expect_r6_class(hiv_list$fit, "CmdStanMCMC")
+  expect_s4_class(hiv_list$fit, "stanfit")
   expect_equal(nrow(hiv_list$diag_prob), 120 * 3 * 4) # 120 quarters, 3 quantiles, 4 cd4 states
 })
 
@@ -129,15 +123,14 @@ test_that("age-specific back-calculation runs without error", {
     hiv_list <- run_backcalc(
       stan_data,
       model_seed = 123,
-      iter_warmup = 5,
-      iter_sampling = 5,
+      iter = 10,
       chains = 1,
       refresh = 0,
       messages = FALSE,
       nworkers = 1
     )
   })
-  expect_r6_class(hiv_list$fit, "CmdStanMCMC")
+  expect_s4_class(hiv_list$fit, "stanfit")
   expect_true("diag_prob_age" %in% names(hiv_list))
 })
 
@@ -153,15 +146,14 @@ test_that("age-specific rita back-calculation runs without error", {
     hiv_list <- run_backcalc(
       stan_data,
       model_seed = 123,
-      iter_warmup = 5,
-      iter_sampling = 5,
+      iter = 10,
       chains = 1,
       refresh = 0,
       messages = FALSE,
       nworkers = 1
     )
   })
-  expect_r6_class(hiv_list$fit, "CmdStanMCMC")
+  expect_s4_class(hiv_list$fit, "stanfit")
   expect_true("diag_prob_age" %in% names(hiv_list))
 })
 
@@ -177,15 +169,14 @@ test_that("age-specific migration back-calculation runs without error", {
     hiv_list <- run_backcalc(
       stan_data,
       model_seed = 123,
-      iter_warmup = 5,
-      iter_sampling = 5,
+      iter = 10,
       chains = 1,
       refresh = 0,
       messages = FALSE,
       nworkers = 1
     )
   })
-  expect_r6_class(hiv_list$fit, "CmdStanMCMC")
+  expect_s4_class(hiv_list$fit, "stanfit")
   expect_true("diag_prob_age" %in% names(hiv_list))
 })
 
@@ -202,14 +193,13 @@ test_that("age-specific migration and rita back-calculation runs without error",
     hiv_list <- run_backcalc(
       stan_data,
       model_seed = 123,
-      iter_warmup = 5,
-      iter_sampling = 5,
+      iter = 10,
       chains = 1,
       refresh = 0,
       messages = FALSE,
       nworkers = 1
     )
   })
-  expect_r6_class(hiv_list$fit, "CmdStanMCMC")
+  expect_s4_class(hiv_list$fit, "stanfit")
   expect_true("diag_prob_age" %in% names(hiv_list))
 })

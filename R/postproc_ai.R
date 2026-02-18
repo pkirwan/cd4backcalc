@@ -14,8 +14,7 @@
 #' stan_data <- model_type_prep(sim_diags, model_seed = 123)
 #' fit <- fit_stan_model(
 #'    stan_data,
-#'    iter_warmup = 10,
-#'    iter_sampling = 10,
+#'    iter = 10,
 #'    chains = 1,
 #'    refresh = 0,
 #'    messages = FALSE
@@ -65,18 +64,18 @@ postproc_ai <- function(
   options(future.globals.maxSize = 3000 * 1024^2)
 
   # generate matrix object
-  fit_mat <- fit$draws(format = "matrix")
+  fit_mat <- as.matrix(fit)
 
-  # Precompute column indices once
+  # make fit indices
   idx <- make_fit_indices(fit_mat, stan_data$model_config, stan_data$nquar)
 
   if (chain_results) {
-    iter_per_chain <- nrow(fit_mat) / fit$num_chains()
-    draw_splits <- rep(1:fit$num_chains(), each = iter_per_chain)
+    nchains <- as.integer(fit@sim$chains)
+    draw_splits <- split_draws(nrow(fit_mat), nchains)
 
     hiv_list <- list()
-    for (ch in 1:fit$num_chains()) {
-      draw_ids <- which(draw_splits == ch)
+    for (ch in seq_along(draw_splits)) {
+      draw_ids <- draw_splits[[ch]]
 
       inf_dist <- future.apply::future_sapply(
         draw_ids,
@@ -284,6 +283,25 @@ build_ppq_list <- function(
   out
 }
 
+#' Split draws by chain
+#'
+#' Splits the total number of draws into groups corresponding to each chain.
+#'
+#' @param n_draws Total number of draws.
+#' @param nchains Number of chains.
+#' @return List of indices for each chain.
+split_draws <- function(n_draws, nchains) {
+  nchains <- max(1L, as.integer(nchains))
+  if (nchains > 1) {
+    split(
+      seq_len(n_draws),
+      cut(seq_len(n_draws), breaks = nchains, labels = FALSE)
+    )
+  } else {
+    list(seq_len(n_draws))
+  }
+}
+
 #' Infection distribution by year of diagnosis
 #'
 #' Calculates the distribution of infections by year of diagnosis.
@@ -291,7 +309,7 @@ build_ppq_list <- function(
 #' @param stan_data Data list used in stan model fitting.
 #' @param fit_mat Matrix of posterior samples from stan model.
 #' @param i Index of the posterior sample to process.
-#' @param idx Named list of column indices from [make_fit_indices()].
+#' @param idx Additional index parameter for processing.
 #' @return List containing HIV and AIDS diagnosis infection distributions.
 infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
   if (i %% 10 == 0) {
@@ -325,24 +343,28 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
   }
 
   # Get diagnosis probabilities
-  d1 <- as.numeric(fit_mat[i, idx$d1])
-  d2 <- as.numeric(fit_mat[i, idx$d2])
-  d3 <- as.numeric(fit_mat[i, idx$d3])
-  d4 <- as.numeric(fit_mat[i, idx$d4])
+  d1 <- fit_mat[i, idx$d1]
+  d2 <- fit_mat[i, idx$d2]
+  d3 <- fit_mat[i, idx$d3]
+  d4 <- fit_mat[i, idx$d4]
 
   # Get infections and migrations
-  temp_h <- exp(as.numeric(fit_mat[i, idx$lambda]))
+  temp_h <- exp(fit_mat[i, idx$lambda])
 
   if (config$migration) {
-    temp_omega <- exp(as.numeric(fit_mat[i, idx$gamma]))
-    temp_p <- as.numeric(fit_mat[i, idx$p])
-    temp_m <- matrix(as.numeric(fit_mat[i, idx$m]), nrow = nquar, byrow = TRUE)
+    temp_omega <- exp(fit_mat[i, idx$gamma])
+    temp_p <- fit_mat[i, idx$p]
+    temp_m <- matrix(
+      fit_mat[i, idx$m],
+      nrow = nquar,
+      byrow = TRUE
+    )
     temp_om <- t(temp_m[, 1:4] * temp_omega)
   }
 
   # Calculate diagnoses
   if (config$rita) {
-    d5 <- as.numeric(fit_mat[i, idx$d5])
+    d5 <- fit_mat[i, idx$d5]
     diagnoses <- forward_calculate_rita(
       init_prev,
       temp_h,
@@ -367,7 +389,7 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
 
   if (config$migration) {
     if (config$rita) {
-      d5 <- as.numeric(fit_mat[i, idx$d5])
+      d5 <- fit_mat[i, idx$d5]
       diagnoses_b <- forward_calculate_rita(
         init_prev_abroad / 2,
         temp_h * temp_p,
@@ -444,20 +466,20 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
   if (config$migration) {
     temp_HIV_dx_uk <- temp_diags_fun(diagnoses_combined_uk)
     d_to_i_HIV_uk <- diag_to_infec_wrap(temp_HIV_dx_uk)
-    d_to_i_AIDS_uk <- normalize_mat(t(diagnoses_combined_uk$AIDS.diagnoses))
+    d_to_i_AIDS_uk <- normalize_mat(t(diagnoses_combined_uk$AIDS))
 
     temp_HIV_dx_abroad <- temp_diags_fun(diagnoses_combined_m)
     d_to_i_HIV_abroad <- diag_to_infec_wrap(temp_HIV_dx_abroad)
-    d_to_i_AIDS_abroad <- normalize_mat(t(diagnoses_combined_m$AIDS.diagnoses))
+    d_to_i_AIDS_abroad <- normalize_mat(t(diagnoses_combined_m$AIDS))
   } else {
     temp_HIV_dx <- temp_diags_fun(diagnoses)
     d_to_i_HIV <- diag_to_infec_wrap(temp_HIV_dx)
-    d_to_i_AIDS <- normalize_mat(t(diagnoses$AIDS.diagnoses))
+    d_to_i_AIDS <- normalize_mat(t(diagnoses$AIDS))
   }
 
   # Calculate unreported AIDS
   if (!is.na(idx$under_rep)) {
-    under.report <- 1 - as.numeric(fit_mat[i, idx$under_rep])
+    under.report <- 1 - fit_mat[i, idx$under_rep]
     under.report <- c(rep(0, 88), rep(under.report, nquar - 88))
   } else {
     under.report <- rep(0, nquar)
@@ -466,26 +488,20 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
   if (config$migration) {
     unreported.AIDS <- stats::rpois(
       nquar,
-      under.report * diagnoses_combined_uk$AIDS.diagnoses[1, ]
+      under.report * diagnoses_combined_uk$AIDS[1, ]
     )
     for (j in 2:nquar) {
       unreported.AIDS <- rbind(
         unreported.AIDS,
-        stats::rpois(
-          nquar,
-          under.report * diagnoses_combined_uk$AIDS.diagnoses[j, ]
-        )
+        stats::rpois(nquar, under.report * diagnoses_combined_uk$AIDS[j, ])
       )
     }
   } else {
-    unreported.AIDS <- stats::rpois(
-      nquar,
-      under.report * diagnoses$AIDS.diagnoses[1, ]
-    )
+    unreported.AIDS <- stats::rpois(nquar, under.report * diagnoses$AIDS[1, ])
     for (j in 2:nquar) {
       unreported.AIDS <- rbind(
         unreported.AIDS,
-        stats::rpois(nquar, under.report * diagnoses$AIDS.diagnoses[j, ])
+        stats::rpois(nquar, under.report * diagnoses$AIDS[j, ])
       )
     }
   }
@@ -637,7 +653,7 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
 #' @param stan_data Data list used in stan model fitting.
 #' @param fit_mat Matrix of posterior samples from stan model.
 #' @param i Index of the posterior sample to process.
-#' @param idx Named list of column indices from [make_fit_indices()].
+#' @param idx Additional index parameter for processing.
 #' @return List containing posterior predictive quantities.
 prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
   if (i %% 10 == 0) {
@@ -670,24 +686,28 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
   }
 
   # Get diagnosis probabilities
-  d1 <- as.numeric(fit_mat[i, idx$d1])
-  d2 <- as.numeric(fit_mat[i, idx$d2])
-  d3 <- as.numeric(fit_mat[i, idx$d3])
-  d4 <- as.numeric(fit_mat[i, idx$d4])
+  d1 <- fit_mat[i, idx$d1]
+  d2 <- fit_mat[i, idx$d2]
+  d3 <- fit_mat[i, idx$d3]
+  d4 <- fit_mat[i, idx$d4]
 
   # Get infections and migrations
-  temp_h <- exp(as.numeric(fit_mat[i, idx$lambda]))
+  temp_h <- exp(fit_mat[i, idx$lambda])
 
   if (config$migration) {
-    temp_omega <- exp(as.numeric(fit_mat[i, idx$gamma]))
-    temp_p <- as.numeric(fit_mat[i, idx$p])
-    temp_m <- matrix(as.numeric(fit_mat[i, idx$m]), nrow = nquar, byrow = TRUE)
+    temp_omega <- exp(fit_mat[i, idx$gamma])
+    temp_p <- fit_mat[i, idx$p]
+    temp_m <- matrix(
+      fit_mat[i, idx$m],
+      nrow = nquar,
+      byrow = TRUE
+    )
     temp_om <- t(temp_m[, 1:4] * temp_omega)
   }
 
   # Calculate diagnoses
   if (config$rita) {
-    d5 <- as.numeric(fit_mat[i, idx$d5])
+    d5 <- fit_mat[i, idx$d5]
     diagnoses <- forward_calculate_rita(
       init_prev,
       temp_h,
@@ -709,10 +729,10 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
       q = stan_data$q
     )
   }
-
+  
   if (config$migration) {
     if (config$rita) {
-      d5 <- as.numeric(fit_mat[i, idx$d5])
+      d5 <- fit_mat[i, idx$d5]
       diagnoses_b <- forward_calculate_rita(
         init_prev_abroad,
         temp_h * temp_p,
@@ -818,32 +838,32 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
   if (config$migration) {
     temp_HIV_dx_uk <- temp_diags_fun(diagnoses_combined_uk)
     d_to_i_HIV_uk <- diag_to_infec_wrap(temp_HIV_dx_uk)
-    d_to_i_AIDS_uk <- normalize_mat(t(diagnoses_combined_uk$AIDS.diagnoses))
+    d_to_i_AIDS_uk <- normalize_mat(t(diagnoses_combined_uk$AIDS))
 
     temp_HIV_dx_abroad <- temp_diags_fun(diagnoses_combined_m)
     d_to_i_HIV_abroad <- diag_to_infec_wrap(temp_HIV_dx_abroad)
-    d_to_i_AIDS_abroad <- normalize_mat(t(diagnoses_combined_m$AIDS.diagnoses))
+    d_to_i_AIDS_abroad <- normalize_mat(t(diagnoses_combined_m$AIDS))
   } else {
     temp_HIV_dx <- temp_diags_fun(diagnoses)
     d_to_i_HIV <- diag_to_infec_wrap(temp_HIV_dx)
-    d_to_i_AIDS <- normalize_mat(t(diagnoses$AIDS.diagnoses))
+    d_to_i_AIDS <- normalize_mat(t(diagnoses$AIDS))
   }
 
   # Calculate unreported AIDS
   if (!is.na(idx$under_rep)) {
-    under.report <- 1 - as.numeric(fit_mat[i, idx$under_rep])
+    under.report <- 1 - fit_mat[i, idx$under_rep]
     under.report <- c(rep(0, 88), rep(under.report, nquar - 88))
   } else {
     under.report <- rep(0, nquar)
   }
   unreported.AIDS <- stats::rpois(
     nquar,
-    under.report * diagnoses_combined$AIDS.diagnoses[1, ]
+    under.report * diagnoses_combined$AIDS[1, ]
   )
   for (j in 2:nquar) {
     unreported.AIDS <- rbind(
       unreported.AIDS,
-      stats::rpois(nquar, under.report * diagnoses_combined$AIDS.diagnoses[j, ])
+      stats::rpois(nquar, under.report * diagnoses_combined$AIDS[j, ])
     )
   }
 

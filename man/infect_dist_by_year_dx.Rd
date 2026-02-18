@@ -13,7 +13,7 @@ infect_dist_by_year_dx(stan_data, fit_mat, i, idx)
 
 \item{i}{Index of the posterior sample to process.}
 
-\item{idx}{Named list of column indices from \code{\link[=make_fit_indices]{make_fit_indices()}}.}
+\item{idx}{Additional index parameter for processing.}
 }
 \value{
 List containing HIV and AIDS diagnosis infection distributions.

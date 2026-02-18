@@ -6,8 +6,7 @@ test_that("mse_list and plots are generated correctly", {
     hiv_list <- run_backcalc(
       stan_data,
       model_seed = 123,
-      iter_warmup = 10,
-      iter_sampling = 10,
+      iter = 20,
       chains = 1,
       refresh = 0,
       messages = FALSE,
@@ -31,8 +30,7 @@ test_that("mse_list and plots are generated correctly for migration model", {
     hiv_list <- run_backcalc(
       stan_data,
       model_seed = 123,
-      iter_warmup = 10,
-      iter_sampling = 10,
+      iter = 20,
       chains = 1,
       refresh = 0,
       messages = FALSE,
@@ -56,8 +54,7 @@ test_that("mse_list and plots work for lists", {
       hiv_list[[i]] <- run_backcalc(
         stan_data,
         model_seed = 123 + i,
-        iter_warmup = 10,
-      iter_sampling = 10,
+        iter = 20,
         chains = 1,
         refresh = 0,
         messages = FALSE,

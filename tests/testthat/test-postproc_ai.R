@@ -10,14 +10,13 @@ test_that("cd4-only post-processing works", {
   suppressWarnings({
     fit <- fit_stan_model(
       stan_data,
-      iter_warmup = 10,
-      iter_sampling = 10,
-      chains = 2,
+      iter = 20,
+      chains = 1,
       refresh = 0,
       messages = FALSE
     )
   })
-  expect_r6_class(fit, "CmdStanMCMC")
+  expect_s4_class(fit, "stanfit")
 
   # Post-process fitted model to obtain posterior predictive
   hiv_list <- postproc(
@@ -52,14 +51,13 @@ test_that("migration post-processing works", {
   suppressWarnings({
     fit <- fit_stan_model(
       stan_data,
-      iter_warmup = 10,
-      iter_sampling = 10,
+      iter = 20,
       chains = 1,
       refresh = 0,
       messages = FALSE
     )
   })
-  expect_r6_class(fit, "CmdStanMCMC")
+  expect_s4_class(fit, "stanfit")
 
   # Post-process fitted model to obtain posterior predictive
   hiv_list <- postproc(
@@ -84,14 +82,13 @@ test_that("rita post-processing works", {
   suppressWarnings({
     fit <- fit_stan_model(
       stan_data,
-      iter_warmup = 10,
-      iter_sampling = 10,
+      iter = 20,
       chains = 1,
       refresh = 0,
       messages = FALSE
     )
   })
-  expect_r6_class(fit, "CmdStanMCMC")
+  expect_s4_class(fit, "stanfit")
 
   # Post-process fitted model to obtain posterior predictive
   hiv_list <- postproc(
@@ -117,14 +114,13 @@ test_that("migration and rita post-processing works", {
   suppressWarnings({
     fit <- fit_stan_model(
       stan_data,
-      iter_warmup = 10,
-      iter_sampling = 10,
+      iter = 20,
       chains = 1,
       refresh = 0,
       messages = FALSE
     )
   })
-  expect_r6_class(fit, "CmdStanMCMC")
+  expect_s4_class(fit, "stanfit")
 
   # Post-process fitted model to obtain posterior predictive
   hiv_list <- postproc(
@@ -148,14 +144,13 @@ test_that("age-specific post-processing works", {
   suppressWarnings({
     fit <- fit_stan_model(
       stan_data,
-      iter_warmup = 5,
-      iter_sampling = 5,
+      iter = 10,
       chains = 1,
       refresh = 0,
       messages = FALSE
     )
   })
-  expect_r6_class(fit, "CmdStanMCMC")
+  expect_s4_class(fit, "stanfit")
 
   # Post-process fitted model to obtain posterior predictive
   hiv_list <- postproc(
@@ -184,14 +179,13 @@ test_that("age-specific rita post-processing works", {
   suppressWarnings({
     fit <- fit_stan_model(
       stan_data,
-      iter_warmup = 5,
-      iter_sampling = 5,
+      iter = 10,
       chains = 1,
       refresh = 0,
       messages = FALSE
     )
   })
-  expect_r6_class(fit, "CmdStanMCMC")
+  expect_s4_class(fit, "stanfit")
 
   # Post-process fitted model to obtain posterior predictive
   hiv_list <- postproc(
@@ -217,14 +211,13 @@ test_that("age-specific migration model fit works", {
   suppressWarnings({
     fit <- fit_stan_model(
       stan_data,
-      iter_warmup = 5,
-      iter_sampling = 5,
+      iter = 10,
       chains = 1,
       refresh = 0,
       messages = FALSE
     )
   })
-  expect_r6_class(fit, "CmdStanMCMC")
+  expect_s4_class(fit, "stanfit")
 
   # Post-process fitted model to obtain posterior predictive
   hiv_list <- postproc(
@@ -252,14 +245,13 @@ test_that("age-specific rita migration model fit works", {
   suppressWarnings({
     fit <- fit_stan_model(
       stan_data,
-      iter_warmup = 5,
-      iter_sampling = 5,
+      iter = 10,
       chains = 1,
       refresh = 0,
       messages = FALSE
     )
   })
-  expect_r6_class(fit, "CmdStanMCMC")
+  expect_s4_class(fit, "stanfit")
 
   # Post-process fitted model to obtain posterior predictive
   hiv_list <- postproc(

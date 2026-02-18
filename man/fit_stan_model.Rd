@@ -7,11 +7,8 @@
 fit_stan_model(
   stan_data,
   model_seed = NULL,
-  iter_warmup = 1000,
-  iter_sampling = 1000,
+  iter = 2000,
   chains = 4,
-  adapt_delta = 0.95,
-  max_treedepth = 12,
   refresh = 100,
   messages = TRUE
 )
@@ -21,15 +18,9 @@ fit_stan_model(
 
 \item{model_seed}{Seed for model fitting (will be set to stan_data$model_config$model_seed if NULL).}
 
-\item{iter_warmup}{Number of warmup iterations for Stan sampling.}
-
-\item{iter_sampling}{Number of sampling iterations for Stan sampling.}
+\item{iter}{Number of iterations for Stan sampling.}
 
 \item{chains}{Number of chains for Stan sampling.}
-
-\item{adapt_delta}{Adapt delta parameter for Stan sampling (default is 0.95).}
-
-\item{max_treedepth}{Max tree depth for Stan sampling (default is 12).}
 
 \item{refresh}{Number of iterations between progress messages.}
 
@@ -44,7 +35,5 @@ This function runs the CD4 back-calculation model using Stan.
 \examples{
 sim_diags <- simulate_diagnoses(sim_seed = 123)
 stan_data <- model_type_prep(sim_diags)
-fit <- fit_stan_model(
- stan_data, iter_warmup = 10, iter_sampling = 10, chains = 1, refresh = 0, messages = FALSE
-)
+fit <- fit_stan_model(stan_data, iter = 10, chains = 1, refresh = 0, messages = FALSE)
 }

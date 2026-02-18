@@ -389,7 +389,7 @@ prev.fct <- function(
 
 #' Function to get diagnosis matrix per iteration
 #'
-#' @param fit_mat A matrix of posterior samples from the fitted model.
+#' @param fit.mat A matrix of posterior samples from the fitted model.
 #' @param iter The iteration number to extract data for.
 #' @param age.dx.flag Logical flag indicating if age-specific diagnoses are considered.
 #' @param age.dx.spl.flag Logical flag indicating if age-specific diagnoses with splines are considered.
@@ -399,7 +399,7 @@ prev.fct <- function(
 #' @param ind_list A list of indices for diagnosis data extraction.
 #' @return A diagnosis matrix for the specified iteration.
 d.mat.iter <- function(
-  fit_mat,
+  fit.mat,
   iter,
   age.dx.flag,
   age.dx.spl.flag,
@@ -410,56 +410,56 @@ d.mat.iter <- function(
 ) {
   if (!age.dx.flag) {
     d.mat <- matrix(NA, nrow = 4, ncol = nt)
-    d.mat[1, ] <- fit_mat[iter, ind_list$d1.ind]
-    d.mat[2, ] <- fit_mat[iter, ind_list$d2.ind]
-    d.mat[3, ] <- fit_mat[iter, ind_list$d3.ind]
-    d.mat[4, ] <- fit_mat[iter, ind_list$d4.ind]
+    d.mat[1, ] <- fit.mat[iter, ind_list$d1.ind]
+    d.mat[2, ] <- fit.mat[iter, ind_list$d2.ind]
+    d.mat[3, ] <- fit.mat[iter, ind_list$d3.ind]
+    d.mat[4, ] <- fit.mat[iter, ind_list$d4.ind]
   } else {
     if (!age.dx.spl.flag) {
       if (rita.flag) {
         d.mat <- array(NA, dim = c(5, nt, 4))
-        d.mat[5, , 1] <- fit_mat[iter, ind_list$d5.ind.1524]
-        d.mat[5, , 2] <- fit_mat[iter, ind_list$d5.ind.2534]
-        d.mat[5, , 3] <- fit_mat[iter, ind_list$d5.ind.3544]
-        d.mat[5, , 4] <- fit_mat[iter, ind_list$d5.ind.45]
+        d.mat[5, , 1] <- fit.mat[iter, ind_list$d5.ind.1524]
+        d.mat[5, , 2] <- fit.mat[iter, ind_list$d5.ind.2534]
+        d.mat[5, , 3] <- fit.mat[iter, ind_list$d5.ind.3544]
+        d.mat[5, , 4] <- fit.mat[iter, ind_list$d5.ind.45]
       } else {
         d.mat <- array(NA, dim = c(4, nt, 4)) ## array to be consistent with gof_iter_fct in stancppfcts_simpleperv_agediag.cpp
       }
-      d.mat[1, , 1] <- fit_mat[iter, ind_list$d1.ind.1524]
-      d.mat[2, , 1] <- fit_mat[iter, ind_list$d2.ind.1524]
-      d.mat[3, , 1] <- fit_mat[iter, ind_list$d3.ind.1524]
-      d.mat[4, , 1] <- fit_mat[iter, ind_list$d4.ind.1524]
-      d.mat[1, , 2] <- fit_mat[iter, ind_list$d1.ind.2534]
-      d.mat[2, , 2] <- fit_mat[iter, ind_list$d2.ind.2534]
-      d.mat[3, , 2] <- fit_mat[iter, ind_list$d3.ind.2534]
-      d.mat[4, , 2] <- fit_mat[iter, ind_list$d4.ind.2534]
-      d.mat[1, , 3] <- fit_mat[iter, ind_list$d1.ind.3544]
-      d.mat[2, , 3] <- fit_mat[iter, ind_list$d2.ind.3544]
-      d.mat[3, , 3] <- fit_mat[iter, ind_list$d3.ind.3544]
-      d.mat[4, , 3] <- fit_mat[iter, ind_list$d4.ind.3544]
-      d.mat[1, , 4] <- fit_mat[iter, ind_list$d1.ind.45]
-      d.mat[2, , 4] <- fit_mat[iter, ind_list$d2.ind.45]
-      d.mat[3, , 4] <- fit_mat[iter, ind_list$d3.ind.45]
-      d.mat[4, , 4] <- fit_mat[iter, ind_list$d4.ind.45]
+      d.mat[1, , 1] <- fit.mat[iter, ind_list$d1.ind.1524]
+      d.mat[2, , 1] <- fit.mat[iter, ind_list$d2.ind.1524]
+      d.mat[3, , 1] <- fit.mat[iter, ind_list$d3.ind.1524]
+      d.mat[4, , 1] <- fit.mat[iter, ind_list$d4.ind.1524]
+      d.mat[1, , 2] <- fit.mat[iter, ind_list$d1.ind.2534]
+      d.mat[2, , 2] <- fit.mat[iter, ind_list$d2.ind.2534]
+      d.mat[3, , 2] <- fit.mat[iter, ind_list$d3.ind.2534]
+      d.mat[4, , 2] <- fit.mat[iter, ind_list$d4.ind.2534]
+      d.mat[1, , 3] <- fit.mat[iter, ind_list$d1.ind.3544]
+      d.mat[2, , 3] <- fit.mat[iter, ind_list$d2.ind.3544]
+      d.mat[3, , 3] <- fit.mat[iter, ind_list$d3.ind.3544]
+      d.mat[4, , 3] <- fit.mat[iter, ind_list$d4.ind.3544]
+      d.mat[1, , 4] <- fit.mat[iter, ind_list$d1.ind.45]
+      d.mat[2, , 4] <- fit.mat[iter, ind_list$d2.ind.45]
+      d.mat[3, , 4] <- fit.mat[iter, ind_list$d3.ind.45]
+      d.mat[4, , 4] <- fit.mat[iter, ind_list$d4.ind.45]
     } else {
       d.mat <- array(NA, dim = c(4, nt, nage))
       d.mat[1, , ] <- matrix(
-        fit_mat[iter, ind_list$d1.ind],
+        fit.mat[iter, ind_list$d1.ind],
         nrow = nt,
         ncol = nage
       )
       d.mat[2, , ] <- matrix(
-        fit_mat[iter, ind_list$d2.ind],
+        fit.mat[iter, ind_list$d2.ind],
         nrow = nt,
         ncol = nage
       )
       d.mat[3, , ] <- matrix(
-        fit_mat[iter, ind_list$d3.ind],
+        fit.mat[iter, ind_list$d3.ind],
         nrow = nt,
         ncol = nage
       )
       d.mat[4, , ] <- matrix(
-        fit_mat[iter, ind_list$d4.ind],
+        fit.mat[iter, ind_list$d4.ind],
         nrow = nt,
         ncol = nage
       )

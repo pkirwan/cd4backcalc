@@ -198,56 +198,42 @@ plot_diagnostics <- function(hiv_list, ntraces = 4) {
     stop("No fitted model found in hiv_list.")
   }
 
-  draws <- fit$draws(format = "matrix")
-
   # log incidence
-  p1 <- bayesplot::mcmc_trace(
-    draws,
-    pars = colnames(draws)[sort(sample(
-      grep("^lambda\\[", colnames(draws)),
-      ntraces
-    ))],
-    facet_args = list(nrow = 1)
+  p1 <- rstan::traceplot(
+    fit,
+    pars = names(fit)[sort(sample(grep("^lambda\\[", names(fit)), ntraces))],
+    nrow = 1
   )
   # log posterior density
-  p2 <- bayesplot::mcmc_trace(draws, pars = "lp__")
+  p2 <- rstan::traceplot(fit, pars = "lp__")
 
-  if (any(grepl("gamma", colnames(draws)))) {
+  if (any(grepl("gamma", names(fit)))) {
     # detection probabilities
-    p3 <- bayesplot::mcmc_trace(
-      draws,
-      pars = colnames(draws)[sort(sample(
-        grep("^detect_prob\\[", colnames(draws)),
+    p3 <- rstan::traceplot(
+      fit,
+      pars = names(fit)[sort(sample(
+        grep("^detect_prob\\[", names(fit)),
         ntraces
       ))],
-      facet_args = list(nrow = 1)
+      nrow = 1
     )
     # proportion of UK-acquired who are migrants
-    p4 <- bayesplot::mcmc_trace(
-      draws,
-      pars = colnames(draws)[sort(sample(
-        grep("^p\\[", colnames(draws)),
-        ntraces
-      ))],
-      facet_args = list(nrow = 1)
+    p4 <- rstan::traceplot(
+      fit,
+      pars = names(fit)[sort(sample(grep("^p\\[", names(fit)), ntraces))],
+      nrow = 1
     )
     # log migration incidence
-    p5 <- bayesplot::mcmc_trace(
-      draws,
-      pars = colnames(draws)[sort(sample(
-        grep("^gamma\\[", colnames(draws)),
-        ntraces
-      ))],
-      facet_args = list(nrow = 1)
+    p5 <- rstan::traceplot(
+      fit,
+      pars = names(fit)[sort(sample(grep("^gamma\\[", names(fit)), ntraces))],
+      nrow = 1
     )
     # migration probabilities
-    p6 <- bayesplot::mcmc_trace(
-      draws,
-      pars = colnames(draws)[sort(sample(
-        grep("^m\\[", colnames(draws)),
-        ntraces
-      ))],
-      facet_args = list(nrow = 1)
+    p6 <- rstan::traceplot(
+      fit,
+      pars = names(fit)[sort(sample(grep("^m\\[", names(fit)), ntraces))],
+      nrow = 1
     )
 
     p0 <- patchwork::wrap_plots(
