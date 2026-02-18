@@ -23,20 +23,33 @@ if (!file.exists(bin)) {
   dir.create(bin, recursive = TRUE, showWarnings = FALSE)
 }
 bin_stan <- file.path(bin, "stan")
-fs::dir_copy(path = "stan", new_path = bin_stan)
+
+# Compile Stan models in a temp directory to avoid permission issues
+# that occur when compiling directly in the package install directory.
+# Copying files into the install directory can strip execute bits on Linux.
+tmp_stan <- file.path(tempdir(), "stan_compile")
+if (dir.exists(tmp_stan)) unlink(tmp_stan, recursive = TRUE)
+fs::dir_copy(path = "stan", new_path = tmp_stan)
 callr::r(
-  func = function(bin_stan) {
-    # Ensure compiled Stan model binaries get execute permissions.
-    # R CMD INSTALL may use a restrictive umask that strips the
-    # execute bit from binaries created by CmdStan's make/g++.
-    if (.Platform$OS.type == "unix") {
-      Sys.umask("0022")
-    }
+  func = function(tmp_stan) {
     instantiate::stan_package_compile(
-      models = instantiate::stan_package_model_files(path = bin_stan)
+      models = instantiate::stan_package_model_files(path = tmp_stan)
     )
   },
-  args = list(bin_stan = bin_stan),
+  args = list(tmp_stan = tmp_stan),
   show = TRUE,
   stderr = "2>&1"
 )
+
+# Copy compiled output to the final package directory
+fs::dir_copy(path = tmp_stan, new_path = bin_stan)
+
+# Restore execute permissions on compiled Stan binaries (file copy can
+# strip the execute bit on Linux/macOS)
+if (.Platform$OS.type == "unix") {
+  stan_bins <- list.files(bin_stan, full.names = TRUE)
+  stan_bins <- stan_bins[!grepl("\\.", basename(stan_bins))]
+  for (b in stan_bins) {
+    Sys.chmod(b, mode = "0755")
+  }
+}
