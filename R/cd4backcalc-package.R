@@ -4,7 +4,6 @@
 #' @importFrom rlang .data
 #' @importFrom Rcpp sourceCpp
 #' @importFrom RcppParallel RcppParallelLibs
-#' @importFrom instantiate stan_package_model
 ## usethis namespace: end
 NULL
 

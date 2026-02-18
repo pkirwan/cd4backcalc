@@ -301,59 +301,53 @@ confirm_stan_data <- function(stan_data) {
 
 #' Choose Stan model based on configuration
 #'
-#' This function chooses the appropriate Stan model based on the provided configuration.
+#' This function chooses the appropriate Stan model based on the provided
+#' configuration. The model is compiled at runtime using cmdstanr, with the
+#' compiled binary cached so subsequent calls are fast.
 #'
 #' @param config Configuration object containing model settings.
-#' @return The Stan model object.
+#' @return The Stan model object (a CmdStanModel).
 load_stan_model <- function(config) {
-  model <- if (config$age) {
+  name <- if (config$age) {
     if (config$migration && config$rita) {
-      instantiate::stan_package_model(
-        name = "AD_ptens_migration_rita",
-        package = "cd4backcalc"
-      )
+      "AD_ptens_migration_rita"
     } else if (config$migration) {
-      instantiate::stan_package_model(
-        name = "AD_ptens_migration",
-        package = "cd4backcalc"
-      )
+      "AD_ptens_migration"
     } else if (config$rita) {
-      instantiate::stan_package_model(
-        name = "AD_ptens_rita",
-        package = "cd4backcalc"
-      )
+      "AD_ptens_rita"
     } else {
-      instantiate::stan_package_model(
-        name = "AD_ptens",
-        package = "cd4backcalc"
-      )
+      "AD_ptens"
     }
   } else if (config$migration && config$rita) {
-    instantiate::stan_package_model(
-      name = "AI_spl_migration_rita",
-      package = "cd4backcalc"
-    )
+    "AI_spl_migration_rita"
   } else if (config$migration) {
-    instantiate::stan_package_model(
-      name = "AI_spl_migration",
-      package = "cd4backcalc"
-    )
+    "AI_spl_migration"
   } else if (config$rita) {
-    instantiate::stan_package_model(
-      name = "AI_spl_rita",
-      package = "cd4backcalc"
-    )
+    "AI_spl_rita"
   } else if (
     config$diag_model == 2 || config$inf_model == 2 || config$inf_model == 3
   ) {
-    instantiate::stan_package_model(
-      name = "AI_spl_rw_gp",
-      package = "cd4backcalc"
-    )
+    "AI_spl_rw_gp"
   } else {
-    instantiate::stan_package_model(name = "AI_spl", package = "cd4backcalc")
+    "AI_spl"
   }
-  return(model)
+
+  # Find the .stan file shipped with the package
+  stan_file <- system.file(
+    "stan", paste0(name, ".stan"),
+    package = "cd4backcalc"
+  )
+  if (!nzchar(stan_file) || !file.exists(stan_file)) {
+    stop(
+      "Stan model file '", name, ".stan' not found in the installed package. ",
+      "The package may need to be reinstalled.",
+      call. = FALSE
+    )
+  }
+
+  # Compile at runtime into tempdir() to ensure the binary lands on a
+  # local filesystem that supports execute permissions
+  cmdstanr::cmdstan_model(stan_file = stan_file, dir = tempdir())
 }
 
 #' Prepare spline basis for back-calculation model
