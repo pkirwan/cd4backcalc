@@ -48,9 +48,7 @@ fit <- fit_stan_model(
    refresh = 0,
    messages = FALSE
 )
-#> Warning: 1 of 1 chains had an E-BFMI less than 0.3.
-#> See https://mc-stan.org/misc/warnings for details.
+#> Error: CmdStan path has not been set yet. See ?set_cmdstan_path.
 hiv_list <- postproc(fit, stan_data, start_yr = 0, nworkers = 1)
-#> Iteration Number =  10 
-#> Iteration Number =  10 
+#> Error: object 'fit' not found
 ```

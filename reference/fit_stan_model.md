@@ -69,6 +69,5 @@ stan_data <- model_type_prep(sim_diags)
 fit <- fit_stan_model(
  stan_data, iter_warmup = 10, iter_sampling = 10, chains = 1, refresh = 0, messages = FALSE
 )
-#> Warning: 9 of 10 (90.0%) transitions ended with a divergence.
-#> See https://mc-stan.org/misc/warnings for details.
+#> Error: CmdStan path has not been set yet. See ?set_cmdstan_path.
 ```
