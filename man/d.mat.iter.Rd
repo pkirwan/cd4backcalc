@@ -5,7 +5,7 @@
 \title{Function to get diagnosis matrix per iteration}
 \usage{
 d.mat.iter(
-  fit.mat,
+  fit_mat,
   iter,
   age.dx.flag,
   age.dx.spl.flag,
@@ -16,7 +16,7 @@ d.mat.iter(
 )
 }
 \arguments{
-\item{fit.mat}{A matrix of posterior samples from the fitted model.}
+\item{fit_mat}{A matrix of posterior samples from the fitted model.}
 
 \item{iter}{The iteration number to extract data for.}
 
