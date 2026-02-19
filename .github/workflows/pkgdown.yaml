@@ -31,17 +31,22 @@ jobs:
         with:
           use-public-rspm: true
 
-      - name: Install CmdStan
-        shell: Rscript {0}
+      - name: Add Stan repository
         run: |
-          install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOption("repos")))
-          cmdstanr::check_cmdstan_toolchain(fix = TRUE)
-          cmdstanr::install_cmdstan()
+          cat('\noptions(repos = c("https://mc-stan.org/r-packages/", getOption("repos")))\n',
+              file = "~/.Rprofile", append = TRUE)
+        shell: Rscript {0}
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::pkgdown, local::.
           needs: website
+
+      - name: Install CmdStan
+        shell: Rscript {0}
+        run: |
+          cmdstanr::check_cmdstan_toolchain(fix = TRUE)
+          cmdstanr::install_cmdstan()
 
       - name: Build site
         run: pkgdown::build_site_github_pages(new_process = FALSE, install = FALSE)

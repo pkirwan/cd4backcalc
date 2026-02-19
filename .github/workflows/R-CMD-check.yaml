@@ -47,12 +47,11 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      - name: Install CmdStan
-        shell: Rscript {0}
+      - name: Add Stan repository
         run: |
-          install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOption("repos")))
-          cmdstanr::check_cmdstan_toolchain(fix = TRUE)
-          cmdstanr::install_cmdstan()
+          cat('\noptions(repos = c("https://mc-stan.org/r-packages/", getOption("repos")))\n',
+              file = "~/.Rprofile", append = TRUE)
+        shell: Rscript {0}
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
@@ -62,6 +61,12 @@ jobs:
             any::rmarkdown
             any::testthat
           needs: check
+
+      - name: Install CmdStan
+        shell: Rscript {0}
+        run: |
+          cmdstanr::check_cmdstan_toolchain(fix = TRUE)
+          cmdstanr::install_cmdstan()
 
       - uses: r-lib/actions/check-r-package@v2
         with:
