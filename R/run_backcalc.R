@@ -345,9 +345,16 @@ load_stan_model <- function(config) {
     )
   }
 
-  # Compile at runtime into tempdir() to ensure the binary lands on a
-  # local filesystem that supports execute permissions
-  cmdstanr::cmdstan_model(stan_file = stan_file, dir = tempdir())
+  # On Unix the package library may live on a filesystem (e.g. NFS) that
+  # does not support execute permissions, so compile into tempdir().
+  
+  # On Windows this is not an issue, so we let cmdstanr cache the binary
+  # next to the .stan file for faster subsequent loads.
+  if (.Platform$OS.type == "unix") {
+    cmdstanr::cmdstan_model(stan_file = stan_file, dir = tempdir())
+  } else {
+    cmdstanr::cmdstan_model(stan_file = stan_file)
+  }
 }
 
 #' Prepare spline basis for back-calculation model
