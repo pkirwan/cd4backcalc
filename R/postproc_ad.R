@@ -65,61 +65,59 @@ postproc_ad <- function(
   q_levels <- c("2.5%", "50%", "mean", "97.5%")
 
   ### Fit summaries ###
-  fit.mat <- as.matrix(fit)
-  fit.summ <- rstan::summary(fit)[[1]]
+  fit_mat <- fit$draws(format = "matrix")
 
   # Flags for the model considered
   ageprobs.flag <- ifelse(
-    length(grep("^d\\[", colnames(fit.mat))) == nquar * 4,
+    length(grep("^d\\[", colnames(fit_mat))) == nquar * 4,
     FALSE,
     TRUE
   )
   ageprobs.spl.flag <- ifelse(
-    length(grep("^d\\[", colnames(fit.mat))) == nquar * 4 * nage,
+    length(grep("^d\\[", colnames(fit_mat))) == nquar * 4 * nage,
     TRUE,
     FALSE
   )
   urep.flag <- ifelse(
-    ("under_rep" %in% colnames(fit.mat)) == TRUE,
+    ("under_rep" %in% colnames(fit_mat)) == TRUE,
     TRUE,
     FALSE
   )
 
   ## Lack of convergence and sampling diagnostics
-  out$conv.chk <- length(fit.summ[, 10][fit.summ[, 10] > 1.05]) == 0
-  sampler.params <- rstan::get_sampler_params(fit, inc_warmup = FALSE)
-  out$n.divg <- sum(sapply(sampler.params, function(x) x[, 5]))
-  out$time <- max(apply(rstan::get_elapsed_time(fit), 1, sum))
+  out$conv.chk <- fit$diagnostic_summary()$ebfmi > 0.3
+  out$n.divg <- sum(fit$diagnostic_summary()$num_divergent)
+  out$time <- fit$time()$total
 
   ### INCIDENCE ESTIMATES ###
 
   # Splines - beta: spline pars, gamma = X*beta
-  beta.ind <- grep("beta_inf", colnames(fit.mat))
-  tau.ind <- grep("tau", colnames(fit.mat))
+  beta.ind <- grep("beta_inf", colnames(fit_mat))
+  tau.ind <- grep("tau", colnames(fit_mat))
   x <- stan_data$X_inf
 
-  beta_draws <- fit.mat[, beta.ind, drop = FALSE]
+  beta_draws <- fit_mat[, beta.ind, drop = FALSE]
   if (!is.matrix(x)) {
     x <- as.matrix(x)
   }
   infs <- beta_draws %*% t(x)
 
   if (length(tau.ind) > 1) {
-    tau <- apply(fit.mat[, tau.ind], 2, get_quantiles)
+    tau <- apply(fit_mat[, tau.ind], 2, get_quantiles)
   } else {
-    tau <- get_quantiles(fit.mat[, tau.ind])
+    tau <- get_quantiles(fit_mat[, tau.ind])
   }
 
   # Posterior means of parameter of interest
   out$tau <- tau
-  alpha.ind <- grep("alpha", colnames(fit.mat))
-  sigma2.ind <- grep("vardelta", colnames(fit.mat))
+  alpha.ind <- grep("alpha", colnames(fit_mat))
+  sigma2.ind <- grep("vardelta", colnames(fit_mat))
 
   if (length(alpha.ind) != 0) {
-    out$alpha <- fit.mat[, alpha.ind]
+    out$alpha <- fit_mat[, alpha.ind]
   }
   if (length(sigma2.ind) != 0) {
-    out$sigma2 <- fit.mat[, sigma2.ind]
+    out$sigma2 <- fit_mat[, sigma2.ind]
   }
 
   # Posterior mean for all time and ages
@@ -212,7 +210,7 @@ postproc_ad <- function(
       idx_name <- sprintf("d%i.ind.%s", state, age_band)
       idx <- ind_list[[idx_name]]
 
-      q <- apply(fit.mat[, idx, drop = FALSE], 2, get_quantiles)
+      q <- apply(fit_mat[, idx, drop = FALSE], 2, get_quantiles)
 
       tibble::as_tibble(t(q)) |>
         dplyr::mutate(
@@ -238,35 +236,53 @@ postproc_ad <- function(
     )
 
   # Delta parameters (age progression rates)
-  delta1.ind <- grep("delta_1", colnames(fit.mat))
-  delta2.ind <- grep("delta_2", colnames(fit.mat))
-  delta3.ind <- grep("delta_3", colnames(fit.mat))
-  delta4.ind <- grep("delta_4", colnames(fit.mat))
+  delta1.ind <- grep("delta_1", colnames(fit_mat))
+  delta2.ind <- grep("delta_2", colnames(fit_mat))
+  delta3.ind <- grep("delta_3", colnames(fit_mat))
+  delta4.ind <- grep("delta_4", colnames(fit_mat))
 
-  out$delta1.q <- apply(fit.mat[, delta1.ind], 2, get_quantiles)
-  out$delta2.q <- apply(fit.mat[, delta2.ind], 2, get_quantiles)
-  out$delta3.q <- apply(fit.mat[, delta3.ind], 2, get_quantiles)
-  out$delta4.q <- apply(fit.mat[, delta4.ind], 2, get_quantiles)
+  out$delta1.q <- apply(fit_mat[, delta1.ind], 2, get_quantiles)
+  out$delta2.q <- apply(fit_mat[, delta2.ind], 2, get_quantiles)
+  out$delta3.q <- apply(fit_mat[, delta3.ind], 2, get_quantiles)
+  out$delta4.q <- apply(fit_mat[, delta4.ind], 2, get_quantiles)
 
   if (config$rita) {
-    delta5.ind <- grep("delta_5", colnames(fit.mat))
-    out$delta5.q <- apply(fit.mat[, delta5.ind], 2, get_quantiles)
+    delta5.ind <- grep("delta_5", colnames(fit_mat))
+    out$delta5.q <- apply(fit_mat[, delta5.ind], 2, get_quantiles)
   }
 
   ### GENERATE PREVALENCE AND DIAGNOSIS ARRAYS ###
 
   if (config$migration) {
     # Expected diagnoses from Stan transformed parameters
-    exp_values <- rstan::extract(
-      fit,
-      pars = c("exp_HIV_dx", "exp_AIDS_dx", "exp_p", "misclassified_dx"),
-      permuted = TRUE
-    )
+    # Extract columns from fit_mat and reshape into arrays
+    ndraws <- nrow(fit_mat)
+    ny <- 2 # UK and abroad
 
-    exp_HIV_dx <- exp_values$exp_HIV_dx # [draw, t, a, y]
-    exp_AIDS_dx <- exp_values$exp_AIDS_dx # [draw, t, a, y]
-    exp_p <- exp_values$exp_p # [draw, t, a, y, cd4]
-    mis_dx <- exp_values$misclassified_dx # [draw, t, a]
+    hiv_dx_idx <- grep("^exp_HIV_dx\\[", colnames(fit_mat))
+    exp_HIV_dx <- array(
+      fit_mat[, hiv_dx_idx],
+      dim = c(ndraws, nquar, nage, ny)
+    ) # [draw, t, a, y]
+
+    aids_dx_idx <- grep("^exp_AIDS_dx\\[", colnames(fit_mat))
+    exp_AIDS_dx <- array(
+      fit_mat[, aids_dx_idx],
+      dim = c(ndraws, nquar, nage, ny)
+    ) # [draw, t, a, y]
+
+    ncd4 <- config$ndiagst - 1
+    p_idx <- grep("^exp_p\\[", colnames(fit_mat))
+    exp_p <- array(
+      fit_mat[, p_idx],
+      dim = c(ndraws, nquar, nage, ny, ncd4)
+    ) # [draw, t, a, y, cd4]
+
+    mis_dx_idx <- grep("^misclassified_dx\\[", colnames(fit_mat))
+    mis_dx <- array(
+      fit_mat[, mis_dx_idx],
+      dim = c(ndraws, nquar, nage)
+    ) # [draw, t, a]
 
     # HIV/AIDS arrays as (t, age, draw), summed over y
     HIV <- aperm(apply(exp_HIV_dx, c(1, 2, 3), sum), c(2, 3, 1))
@@ -274,8 +290,8 @@ postproc_ad <- function(
 
     # Apply under-reporting to AIDS if present
     if (urep.flag) {
-      urep.vec <- fit.mat[, "under_rep"]
-      AIDS <- simplify2array(lapply(seq_len(nrow(fit.mat)), function(i) {
+      urep.vec <- fit_mat[, "under_rep"]
+      AIDS <- simplify2array(lapply(seq_len(nrow(fit_mat)), function(i) {
         urep.fct(urep.vec[i], AIDS[,, i], urep.flag = TRUE, nt = nquar)
       }))
     }
@@ -295,7 +311,7 @@ postproc_ad <- function(
       }
     }
 
-    # Build d-cube indices (agegrp, state, t) from fit.mat colnames, then per draw create (state,t,agegrp)
+    # Build d-cube indices (agegrp, state, t) from fit_mat colnames, then per draw create (state,t,agegrp)
     d_idx <- array(NA_integer_, dim = c(4, (config$ndiagst - 1), nquar))
     for (ag in 1:4) {
       for (k in 1:(config$ndiagst - 1)) {
@@ -313,9 +329,9 @@ postproc_ad <- function(
     }
 
     # Omega, p, m indices
-    omega.ind <- grep("^omega\\[", colnames(fit.mat))
-    p.ind <- grep("^p\\[", colnames(fit.mat))
-    m.ind <- grep("^m\\[", colnames(fit.mat))
+    omega.ind <- grep("^omega\\[", colnames(fit_mat))
+    p.ind <- grep("^p\\[", colnames(fit_mat))
+    m.ind <- grep("^m\\[", colnames(fit_mat))
 
     if (length(omega.ind) != nquar) {
       stop("omega[...] not found or wrong length.")
@@ -337,20 +353,20 @@ postproc_ad <- function(
     ) +
       matrix(stan_data$init_prev_abroad_age, nrow = config$nlatst, ncol = nage)
 
-    exp.prev <- lapply(seq_len(nrow(fit.mat)), function(i) {
+    exp.prev <- lapply(seq_len(nrow(fit_mat)), function(i) {
       # d_cube: 4/5 (ndiagst - 1) x nquar (time) x 4 (agegrp)
       d_cube <- array(NA_real_, dim = c(config$ndiagst - 1, nquar, 4))
       for (ag in 1:4) {
         for (k in 1:(config$ndiagst - 1)) {
-          d_cube[k, , ag] <- fit.mat[i, d_idx[ag, k, ]]
+          d_cube[k, , ag] <- fit_mat[i, d_idx[ag, k, ]]
         }
       }
 
-      omega_i <- fit.mat[i, omega.ind]
-      p_i <- fit.mat[i, p.ind]
+      omega_i <- fit_mat[i, omega.ind]
+      p_i <- fit_mat[i, p.ind]
 
       # m_mat: 5 x nquar (rows are k=1..5)
-      m_mat <- matrix(fit.mat[i, m.ind], nrow = 5, ncol = nquar)
+      m_mat <- matrix(fit_mat[i, m.ind], nrow = 5, ncol = nquar)
 
       if (config$rita) {
         prev_iter_fct_migration_rita(
@@ -404,11 +420,11 @@ postproc_ad <- function(
     )
 
     # Expected diagnoses
-    exp.diags <- lapply(1:nrow(fit.mat), function(i) {
+    exp.diags <- lapply(1:nrow(fit_mat), function(i) {
       g.fct(
         exp(infs[i, ]),
         d.mat.iter(
-          fit.mat,
+          fit_mat,
           i,
           age.dx.flag = ageprobs.flag,
           age.dx.spl.flag = ageprobs.spl.flag,
@@ -425,11 +441,11 @@ postproc_ad <- function(
     })
 
     # Expected prevalence
-    exp.prev <- lapply(1:nrow(fit.mat), function(i) {
+    exp.prev <- lapply(1:nrow(fit_mat), function(i) {
       p.fct(
         exp(infs[i, ]),
         d.mat.iter(
-          fit.mat,
+          fit_mat,
           i,
           age.dx.flag = ageprobs.flag,
           age.dx.spl.flag = ageprobs.spl.flag,
@@ -532,8 +548,8 @@ postproc_ad <- function(
     ### (With real-data always)
     aids_slice <- ifelse(config$rita, 6, 5)
     if (urep.flag) {
-      urep.vec <- fit.mat[, "under_rep"]
-      AIDS <- simplify2array(lapply(1:nrow(fit.mat), function(i) {
+      urep.vec <- fit_mat[, "under_rep"]
+      AIDS <- simplify2array(lapply(1:nrow(fit_mat), function(i) {
         urep.fct(
           urep.vec[i],
           exp.diags.arr[,, aids_slice, i],
@@ -806,9 +822,9 @@ postproc_ad <- function(
   ### MIGRATION OUTPUTS (AD migration model) ###
   if (config$migration) {
     # migration (omega[t])
-    omega.ind <- grep("^omega\\[", colnames(fit.mat))
+    omega.ind <- grep("^omega\\[", colnames(fit_mat))
 
-    omega.draws <- fit.mat[, omega.ind, drop = FALSE]
+    omega.draws <- fit_mat[, omega.ind, drop = FALSE]
     omega.q <- apply(omega.draws, 2, get_quantiles)
 
     # omega is total migration
@@ -832,8 +848,8 @@ postproc_ad <- function(
     )
 
     migration_prob_df <- lapply(seq_len(5), function(k) {
-      mk.ind <- grep(sprintf("^m\\[%d,", k), colnames(fit.mat))
-      mk.q <- apply(fit.mat[, mk.ind, drop = FALSE], 2, get_quantiles)
+      mk.ind <- grep(sprintf("^m\\[%d,", k), colnames(fit_mat))
+      mk.q <- apply(fit_mat[, mk.ind, drop = FALSE], 2, get_quantiles)
 
       make_tibble(
         mk.q,
@@ -852,8 +868,8 @@ postproc_ad <- function(
     out$migration_prob <- dplyr::bind_rows(migration_prob_df)
 
     # transfers (omega[t] * m[5,t])
-    m5.ind <- grep("^m\\[5,", colnames(fit.mat))
-    m5.draws <- fit.mat[, m5.ind, drop = FALSE]
+    m5.ind <- grep("^m\\[5,", colnames(fit_mat))
+    m5.draws <- fit_mat[, m5.ind, drop = FALSE]
     transfers.draws <- omega.draws * m5.draws
     transfers.q <- apply(transfers.draws, 2, get_quantiles)
 
@@ -879,8 +895,8 @@ postproc_ad <- function(
     #   dplyr::filter(.data$age_band == "all")
 
     # ratio_abroad_uk (p[t])
-    p.ind <- grep("^p\\[", colnames(fit.mat))
-    p.draws <- fit.mat[, p.ind, drop = FALSE]
+    p.ind <- grep("^p\\[", colnames(fit_mat))
+    p.draws <- fit_mat[, p.ind, drop = FALSE]
 
     p.q <- apply(p.draws, 2, get_quantiles)
     out$ratio_abroad_uk <- make_tibble(
@@ -891,8 +907,8 @@ postproc_ad <- function(
     )
 
     # detect_prob (detect_prob[t])
-    detect.ind <- grep("^detect_prob\\[", colnames(fit.mat))
-    detect.draws <- fit.mat[, detect.ind, drop = FALSE]
+    detect.ind <- grep("^detect_prob\\[", colnames(fit_mat))
+    detect.draws <- fit_mat[, detect.ind, drop = FALSE]
 
     detect.q <- apply(detect.draws, 2, get_quantiles)
     out$detect_prob <- make_tibble(
