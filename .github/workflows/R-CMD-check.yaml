@@ -47,12 +47,6 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      - name: Add Stan repository
-        run: |
-          cat('\noptions(repos = c("https://mc-stan.org/r-packages/", getOption("repos")))\n',
-              file = "~/.Rprofile", append = TRUE)
-        shell: Rscript {0}
-
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: |
