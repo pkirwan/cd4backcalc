@@ -21,9 +21,9 @@ transformed data {
   int nagroup = 4; // number of age groups
   int np1 = npars_inf - 1;
   
-  // Pre-split penalty matrices
-  matrix[np1, np1] S1a = S1[1 : np1, 1 : np1];
-  matrix[np1, np1] S1b = S1[1 : np1, npars_inf : (2 * npars_inf - 2)];
+  // Pre-split penalty matrices (symmetrized to avoid fp noise)
+  matrix[np1, np1] S1a = 0.5 * (S1[1 : np1, 1 : np1] + S1[1 : np1, 1 : np1]');
+  matrix[np1, np1] S1b = 0.5 * (S1[1 : np1, npars_inf : (2 * npars_inf - 2)] + S1[1 : np1, npars_inf : (2 * npars_inf - 2)]');
   
   // Age-group mapping and fast quarter->year index (birthdays at t = 1, 5, 9, ...)
   array[nage] int age_group_lookup;
@@ -72,7 +72,6 @@ transformed parameters {
   matrix[nquar, nage] exp_AIDS_dx; // expected number of HIV_age diag at time t age a
   array[nquar, nage] simplex[4] exp_p; // proportion of HIV_age diagnoses in state k (time t and age a)
   array[4] matrix[nquar, 4] d; // matrix of diagnoses for different ages and age-groups
-  matrix[npars_inf - 1, npars_inf - 1] K1_inv;
   
   // Expected incidence
   vector[nquar] delta_1;
@@ -82,9 +81,6 @@ transformed parameters {
   vector<lower=0>[2] tau; // smoothing parameters
   
   tau = inv(square(sigma_inf));
-  
-  // PRIORS for the tensor product
-  K1_inv = S1a * tau[1] + S1b * tau[2];
   
   // DIAGNOSES
   
@@ -235,7 +231,9 @@ model {
   sigma_inf ~ student_t(4, 0, 200); // Weakly informative priors
   
   beta_inf[1] ~ normal(0, 30); // 30 s.d corresponding to precision given in JAGS
-  beta_inf[2 : npars_inf] ~ multi_normal_prec(zero_vec, K1_inv);
+  
+  matrix[np1, np1] K1_prec = S1a * tau[1] + S1b * tau[2];
+  beta_inf[2 : npars_inf] ~ multi_normal_prec(zero_vec, K1_prec);
   
   vardelta ~ gamma(1, 8); // prior for logit random walk
   

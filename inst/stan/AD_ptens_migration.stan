@@ -51,9 +51,9 @@ transformed data {
   int nagroup = 4; // number of age groups
   int np1 = npars_inf - 1;
   
-  // Pre-split penalty matrices
-  matrix[np1, np1] S1a = S1[1 : np1, 1 : np1];
-  matrix[np1, np1] S1b = S1[1 : np1, npars_inf : (2 * npars_inf - 2)];
+  // Pre-split penalty matrices (symmetrized to avoid fp noise)
+  matrix[np1, np1] S1a = 0.5 * (S1[1 : np1, 1 : np1] + S1[1 : np1, 1 : np1]');
+  matrix[np1, np1] S1b = 0.5 * (S1[1 : np1, npars_inf : (2 * npars_inf - 2)] + S1[1 : np1, npars_inf : (2 * npars_inf - 2)]');
   
   // Age-group mapping and fast quarter->year index (birthdays at t = 1, 5, 9, ...)
   array[nage] int age_group_lookup;
@@ -135,8 +135,6 @@ transformed parameters {
   
   // Tensor product prior precision
   vector<lower=0>[2] tau = inv(square(sigma_inf));
-  matrix[npars_inf - 1, npars_inf - 1] K1_inv;
-  K1_inv = S1a * tau[1] + S1b * tau[2];
   
   // Migration process
   real<lower=0> sigma_mig = exp(log_sigma_mig);
@@ -405,8 +403,10 @@ transformed parameters {
 model {
   // Priors for infection surface
   sigma_inf ~ student_t(4, 0, 200);
+  
   beta_inf[1] ~ normal(0, 30);
-  beta_inf[2 : npars_inf] ~ multi_normal_prec(zero_vec, K1_inv);
+  matrix[np1, np1] K1_prec = S1a * tau[1] + S1b * tau[2];
+  beta_inf[2 : npars_inf] ~ multi_normal_prec(zero_vec, K1_prec);
   
   // Migration priors
   beta_mig[1] ~ normal(4, 1);
