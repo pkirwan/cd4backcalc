@@ -37,9 +37,9 @@ stan_data <- simulate_diagnoses(migration = FALSE, rita = FALSE, age = FALSE)
 
 Next, the `run_backcalc` function is used to fit the back-calculation
 model to the simulated diagnosis data using the specified model
-configuration. The model fitting uses the rstan package and additional
-options can be passed to control the MCMC sampling process (e.g. number
-of iterations, number of chains, etc).
+configuration. The model fitting uses the cmdstanr package and
+additional options can be passed to control the MCMC sampling process
+(e.g. number of iterations, number of chains, etc).
 
 ``` r
 ## fit model
@@ -48,8 +48,8 @@ hiv_list <- run_backcalc(stan_data)
 
 ## Assessing convergence
 
-Convergence of the MCMC chains can be assessed using the `rstan` package
-functions such as `traceplot` and `stan_rhat`. Additionally, the
+Convergence of the MCMC chains can be assessed using the `cmdstanr`
+package functions such as `traceplot` and `stan_rhat`. Additionally, the
 `cd4backcalc` package provides a convenience function `plot_diagnostics`
 to plot key diagnostics for the fitted model.
 

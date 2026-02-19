@@ -42,8 +42,11 @@
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">fit_stan_model</span><span class="op">(</span></span>
 <span>  <span class="va">stan_data</span>,</span>
 <span>  model_seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  iter <span class="op">=</span> <span class="fl">2000</span>,</span>
+<span>  iter_warmup <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>  iter_sampling <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>  chains <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>  adapt_delta <span class="op">=</span> <span class="fl">0.95</span>,</span>
+<span>  max_treedepth <span class="op">=</span> <span class="fl">12</span>,</span>
 <span>  refresh <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  messages <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -61,12 +64,24 @@
 <dd><p>Seed for model fitting (will be set to stan_data$model_config$model_seed if NULL).</p></dd>
 
 
-<dt id="arg-iter">iter<a class="anchor" aria-label="anchor" href="#arg-iter"></a></dt>
-<dd><p>Number of iterations for Stan sampling.</p></dd>
+<dt id="arg-iter-warmup">iter_warmup<a class="anchor" aria-label="anchor" href="#arg-iter-warmup"></a></dt>
+<dd><p>Number of warmup iterations for Stan sampling.</p></dd>
+
+
+<dt id="arg-iter-sampling">iter_sampling<a class="anchor" aria-label="anchor" href="#arg-iter-sampling"></a></dt>
+<dd><p>Number of sampling iterations for Stan sampling.</p></dd>
 
 
 <dt id="arg-chains">chains<a class="anchor" aria-label="anchor" href="#arg-chains"></a></dt>
 <dd><p>Number of chains for Stan sampling.</p></dd>
+
+
+<dt id="arg-adapt-delta">adapt_delta<a class="anchor" aria-label="anchor" href="#arg-adapt-delta"></a></dt>
+<dd><p>Adapt delta parameter for Stan sampling (default is 0.95).</p></dd>
+
+
+<dt id="arg-max-treedepth">max_treedepth<a class="anchor" aria-label="anchor" href="#arg-max-treedepth"></a></dt>
+<dd><p>Max tree depth for Stan sampling (default is 12).</p></dd>
 
 
 <dt id="arg-refresh">refresh<a class="anchor" aria-label="anchor" href="#arg-refresh"></a></dt>
@@ -86,11 +101,11 @@
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">sim_diags</span> <span class="op">&lt;-</span> <span class="fu"><a href="simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>sim_seed <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">stan_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="model_type_prep.html">model_type_prep</a></span><span class="op">(</span><span class="va">sim_diags</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">fit_stan_model</span><span class="op">(</span><span class="va">stan_data</span>, iter <span class="op">=</span> <span class="fl">10</span>, chains <span class="op">=</span> <span class="fl">1</span>, refresh <span class="op">=</span> <span class="fl">0</span>, messages <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>There were 5 divergent transitions after warmup. See</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> to find out why this is a problem and how to eliminate them.</span>
-<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Examine the pairs() plot to diagnose sampling problems</span>
+<span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">fit_stan_model</span><span class="op">(</span></span></span>
+<span class="r-in"><span> <span class="va">stan_data</span>, iter_warmup <span class="op">=</span> <span class="fl">10</span>, iter_sampling <span class="op">=</span> <span class="fl">10</span>, chains <span class="op">=</span> <span class="fl">1</span>, refresh <span class="op">=</span> <span class="fl">0</span>, messages <span class="op">=</span> <span class="cn">FALSE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Warning: 9 of 10 (90.0%) transitions ended with a divergence.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> See https://mc-stan.org/misc/warnings for details.</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

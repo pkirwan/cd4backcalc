@@ -135,8 +135,6 @@
   type.
 - [`simulate_diagnoses()`](https://pkirwan.github.io/cd4backcalc/reference/simulate_diagnoses.md)
   : Simulate HIV Epidemic Data
-- [`split_draws()`](https://pkirwan.github.io/cd4backcalc/reference/split_draws.md)
-  : Split draws by chain
 - [`stan_model_config()`](https://pkirwan.github.io/cd4backcalc/reference/stan_model_config.md)
   : Define configuration for fitting back-calculation model
 - [`tidy_bind()`](https://pkirwan.github.io/cd4backcalc/reference/tidy_bind.md)

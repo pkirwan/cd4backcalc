@@ -14,7 +14,7 @@ evidence), migration status, and age group. An illustration of the
 latent and diagnosed states in a CD4-staged back-calculation model is
 shown below.
 
-Models are fitted within a Bayesian framework (using rstan), with
+Models are fitted within a Bayesian framework (using cmdstanr), with
 suitable prior distributions, to estimate HIV incidence and prevalence
 of undiagnosed HIV over time, as well as the probabilities of diagnosis
 in each CD4 state.
@@ -50,8 +50,14 @@ devtools::install_github("pkirwan/cd4backcalc", auth_token = "github_pat_YOUR_TO
 
 ### System requirements for installation
 
-- Windows users will require Rtools to compile the Stan models, see:
-  <https://cran.r-project.org/bin/windows/Rtools/>.
+- The cd4backcalc package requires the R package
+  [cmdstanr](https://mc-stan.org/cmdstanr/) (not available on CRAN) and
+  the command-line interface to Stan,
+  [CmdStan](https://mc-stan.org/docs/cmdstan-guide/). See instructions
+  at: [Getting started with
+  CmdStanR](https://mc-stan.org/cmdstanr/articles/cmdstanr.html).
+- Windows users will additionally require Rtools to compile the Stan
+  models, see: <https://cran.r-project.org/bin/windows/Rtools/>.
 - MacOS users will require the correct GNU Fortran compiler, see:
   <https://mac.r-project.org/tools/>.
 
@@ -260,8 +266,6 @@ longer when using the age-dependent models.
   type.
 - [`simulate_diagnoses()`](https://pkirwan.github.io/cd4backcalc/reference/simulate_diagnoses.md)
   : Simulate HIV Epidemic Data
-- [`split_draws()`](https://pkirwan.github.io/cd4backcalc/reference/split_draws.md)
-  : Split draws by chain
 - [`stan_model_config()`](https://pkirwan.github.io/cd4backcalc/reference/stan_model_config.md)
   : Define configuration for fitting back-calculation model
 - [`tidy_bind()`](https://pkirwan.github.io/cd4backcalc/reference/tidy_bind.md)

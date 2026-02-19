@@ -8,8 +8,11 @@ This function runs the CD4 back-calculation model using Stan.
 fit_stan_model(
   stan_data,
   model_seed = NULL,
-  iter = 2000,
+  iter_warmup = 1000,
+  iter_sampling = 1000,
   chains = 4,
+  adapt_delta = 0.95,
+  max_treedepth = 12,
   refresh = 100,
   messages = TRUE
 )
@@ -26,13 +29,25 @@ fit_stan_model(
   Seed for model fitting (will be set to
   stan_data\$model_config\$model_seed if NULL).
 
-- iter:
+- iter_warmup:
 
-  Number of iterations for Stan sampling.
+  Number of warmup iterations for Stan sampling.
+
+- iter_sampling:
+
+  Number of sampling iterations for Stan sampling.
 
 - chains:
 
   Number of chains for Stan sampling.
+
+- adapt_delta:
+
+  Adapt delta parameter for Stan sampling (default is 0.95).
+
+- max_treedepth:
+
+  Max tree depth for Stan sampling (default is 12).
 
 - refresh:
 
@@ -51,9 +66,9 @@ A stanfit object containing the results of the model fitting.
 ``` r
 sim_diags <- simulate_diagnoses(sim_seed = 123)
 stan_data <- model_type_prep(sim_diags)
-fit <- fit_stan_model(stan_data, iter = 10, chains = 1, refresh = 0, messages = FALSE)
-#> Warning: There were 5 divergent transitions after warmup. See
-#> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
-#> to find out why this is a problem and how to eliminate them.
-#> Warning: Examine the pairs() plot to diagnose sampling problems
+fit <- fit_stan_model(
+ stan_data, iter_warmup = 10, iter_sampling = 10, chains = 1, refresh = 0, messages = FALSE
+)
+#> Warning: 9 of 10 (90.0%) transitions ended with a divergence.
+#> See https://mc-stan.org/misc/warnings for details.
 ```

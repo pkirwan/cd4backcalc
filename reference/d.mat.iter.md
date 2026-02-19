@@ -6,7 +6,7 @@ Function to get diagnosis matrix per iteration
 
 ``` r
 d.mat.iter(
-  fit.mat,
+  fit_mat,
   iter,
   age.dx.flag,
   age.dx.spl.flag,
@@ -19,7 +19,7 @@ d.mat.iter(
 
 ## Arguments
 
-- fit.mat:
+- fit_mat:
 
   A matrix of posterior samples from the fitted model.
 

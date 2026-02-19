@@ -24,7 +24,8 @@ infect_dist_by_year_dx(stan_data, fit_mat, i, idx)
 
 - idx:
 
-  Additional index parameter for processing.
+  Named list of column indices from
+  [`make_fit_indices()`](https://pkirwan.github.io/cd4backcalc/reference/make_fit_indices.md).
 
 ## Value
 

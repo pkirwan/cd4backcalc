@@ -93,9 +93,9 @@ configuration to simulate HIV diagnoses over time.</p>
 </h2>
 <p>Next, the <code>run_backcalc</code> function is used to fit the
 back-calculation model to the simulated diagnosis data using the
-specified model configuration. The model fitting uses the rstan package
-and additional options can be passed to control the MCMC sampling
-process (e.g. number of iterations, number of chains, etc).</p>
+specified model configuration. The model fitting uses the cmdstanr
+package and additional options can be passed to control the MCMC
+sampling process (e.g. number of iterations, number of chains, etc).</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## fit model</span></span>
 <span><span class="va">hiv_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">stan_data</span><span class="op">)</span></span></code></pre></div>
@@ -104,8 +104,8 @@ process (e.g. number of iterations, number of chains, etc).</p>
 <h2 id="assessing-convergence">Assessing convergence<a class="anchor" aria-label="anchor" href="#assessing-convergence"></a>
 </h2>
 <p>Convergence of the MCMC chains can be assessed using the
-<code>rstan</code> package functions such as <code>traceplot</code> and
-<code>stan_rhat</code>. Additionally, the <code>cd4backcalc</code>
+<code>cmdstanr</code> package functions such as <code>traceplot</code>
+and <code>stan_rhat</code>. Additionally, the <code>cd4backcalc</code>
 package provides a convenience function <code>plot_diagnostics</code> to
 plot key diagnostics for the fitted model.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
