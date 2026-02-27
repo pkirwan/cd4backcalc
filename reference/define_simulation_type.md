@@ -59,3 +59,6 @@ List of available simulation types:
 
 - "combo_3_no_migration": Similar to "combo_3" but without migration
   effects.
+
+- "combo_4": As "combo_3" but with different incidence and migration
+  patterns.
