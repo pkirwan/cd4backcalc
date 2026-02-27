@@ -14,7 +14,7 @@ generate_infections <- function(
   dist = TRUE
 ) {
   # check pattern
-  stopifnot(pattern %in% c("varying", "constant", "increasing"))
+  stopifnot(pattern %in% c("varying", "varying_1", "constant", "increasing"))
 
   ann_inf <- target_inf / nquar
   infs <- if (pattern == "varying") {
@@ -22,8 +22,17 @@ generate_infections <- function(
       seq(1.2, 2, length.out = round(nquar * 0.1)),
       seq(2, 1.4, length.out = round(nquar * 4 / 15)),
       seq(1.4, 1, length.out = round(nquar * 0.2)),
-      seq(1, 0.3, length.out = round(nquar * 2 / 15)),
-      seq(0.3, 0.1, length.out = round(nquar * 0.3))
+      seq(1, 0.5, length.out = round(nquar * 2 / 15)),
+      seq(0.5, 0.4, length.out = round(nquar * 0.3))
+    ) *
+      ann_inf
+  } else if (pattern == "varying_1") {
+    c(
+      seq(0.5, 0.6, length.out = round(nquar * 0.1)),
+      seq(0.6, 0.6, length.out = round(nquar * 4 / 15)),
+      seq(0.6, 0.5, length.out = round(nquar * 0.2)),
+      seq(0.5, 0.4, length.out = round(nquar * 2 / 15)),
+      seq(0.4, 0.45, length.out = round(nquar * 0.3))
     ) *
       ann_inf
   } else if (pattern == "constant") {
@@ -51,7 +60,7 @@ generate_infections <- function(
 generate_omega <- function(nquar, pattern, target_mig = 12000, dist = TRUE) {
   # check pattern
   stopifnot(pattern %in% c("constant", "increasing", "step_change", "none"))
-  ann_mig = target_mig / nquar
+  ann_mig <- target_mig / nquar
   omega <- if (pattern == "constant") {
     rep(ann_mig, nquar)
   } else if (pattern == "increasing") {
@@ -61,8 +70,8 @@ generate_omega <- function(nquar, pattern, target_mig = 12000, dist = TRUE) {
       seq(0.4, 0.4, length.out = round(nquar * 0.1)),
       seq(0.4, 1.2, length.out = round(nquar * 0.1)),
       seq(1.2, 0.4, length.out = round(nquar * 0.1)),
-      seq(0.4, 1.3, length.out = round(nquar * 0.6)),
-      seq(1.3, 4.5, length.out = round(nquar * 0.1))
+      seq(0.4, 1.3, length.out = round(nquar * 0.55)),
+      seq(1.3, 4.5, length.out = round(nquar * 0.15))
     ) *
       ann_mig
   } else if (pattern == "none") {

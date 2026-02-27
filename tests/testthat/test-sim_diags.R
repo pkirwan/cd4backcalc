@@ -103,7 +103,7 @@ test_that("different sim_type produces expected results", {
   )
   expect_equal(
     sim_diags$stan_data$HIV[1],
-    1686
+    1678
   )
 })
 
@@ -112,30 +112,43 @@ test_that("cd4_completeness and rita_completeness parameters affect simulated da
     nquar = 40,
     sim_seed = 123,
     sim_type = "combo_3",
-    cd4_completeness = 0.5
+    cd4_completeness = 1
   )
   expect_equal(
     sim_diags$stan_data$CD4[1],
-    395
-  )
-  expect_equal(
-    sim_diags$stan_data$CD4_age[1],
-    7
+    383
   )
 
-  sim_diags_rita <- simulate_diagnoses(
+  sim_diags <- simulate_diagnoses(
     nquar = 40,
     sim_seed = 123,
     sim_type = "combo_3",
     cd4_completeness = 0.5
   )
   expect_equal(
+    sim_diags$stan_data$CD4[1],
+    166
+  )
+  expect_equal(
+    sim_diags$stan_data$CD4_age[1],
+    3
+  )
+
+  sim_diags_rita <- simulate_diagnoses(
+    nquar = 40,
+    sim_seed = 123,
+    sim_type = "combo_3",
+    rita = TRUE,
+    cd4_completeness = 1,
+    rita_completeness = 1
+  )
+  expect_equal(
     sim_diags_rita$stan_data$CD4[1],
-    395
+    507
   )
   expect_equal(
     sim_diags_rita$stan_data$CD4_age[1],
-    7
+    10
   )
 
   sim_diags_rita_cd4 <- simulate_diagnoses(
@@ -143,15 +156,49 @@ test_that("cd4_completeness and rita_completeness parameters affect simulated da
     nquar = 40,
     sim_type = "combo_3",
     rita = TRUE,
-    cd4_completeness = 0.8,
+    cd4_completeness = 1,
     rita_completeness = 0.5
   )
   expect_equal(
     sim_diags_rita_cd4$stan_data$CD4[1],
-    258
+    268
   )
   expect_equal(
     sim_diags_rita_cd4$stan_data$CD4_age[1],
     5
+  )
+
+  sim_diags_rita_cd4 <- simulate_diagnoses(
+    sim_seed = 123,
+    nquar = 40,
+    sim_type = "combo_3",
+    rita = TRUE,
+    cd4_completeness = 0.5,
+    rita_completeness = 1
+  )
+  expect_equal(
+    sim_diags_rita_cd4$stan_data$CD4[1],
+    268
+  )
+  expect_equal(
+    sim_diags_rita_cd4$stan_data$CD4_age[1],
+    5
+  )
+
+  sim_diags_rita_cd4 <- simulate_diagnoses(
+    sim_seed = 123,
+    nquar = 40,
+    sim_type = "combo_3",
+    rita = TRUE,
+    cd4_completeness = 0.5,
+    rita_completeness = 0.5
+  )
+  expect_equal(
+    sim_diags_rita_cd4$stan_data$CD4[1],
+    143
+  )
+  expect_equal(
+    sim_diags_rita_cd4$stan_data$CD4_age[1],
+    2
   )
 })

@@ -1,24 +1,53 @@
 test_that("simulated plots are generated correctly", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123)
+  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, migration = TRUE, sim_type = "combo_3")
   # Generate plots of key quantities
   p1 <- plot_simulations(stan_data, "incidence")
   p2 <- plot_simulations(stan_data, "undiag_prev")
   p3 <- plot_simulations(stan_data, "diag_prob")
   p4 <- plot_simulations(stan_data, "diagnoses")
+  p5 <- plot_simulations(stan_data, "undiag_migration")
   expect_s3_class(p1, "ggplot")
   expect_s3_class(p2, "ggplot")
   expect_s3_class(p3, "ggplot")
   expect_s3_class(p4, "ggplot")
+  expect_s3_class(p5, "ggplot")
+})
+
+test_that("simulated plots are generated correctly", {
+  # Simulate diagnoses
+  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, migration = TRUE, sim_type = "combo_4")
+  # Generate plots of key quantities
+  p1 <- plot_simulations(stan_data, "incidence")
+  p2 <- plot_simulations(stan_data, "undiag_prev")
+  p3 <- plot_simulations(stan_data, "diag_prob")
+  p4 <- plot_simulations(stan_data, "diagnoses")
+  p5 <- plot_simulations(stan_data, "undiag_migration")
+  expect_s3_class(p1, "ggplot")
+  expect_s3_class(p2, "ggplot")
+  expect_s3_class(p3, "ggplot")
+  expect_s3_class(p4, "ggplot")
+  expect_s3_class(p5, "ggplot")
 })
 
 test_that("simulated plots are generated correctly for migration_prob", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, migration = TRUE, m_pattern = "varying")
+  stan_data <- simulate_diagnoses(
+    nquar = 40,
+    sim_seed = 123,
+    migration = TRUE,
+    m_pattern = "varying"
+  )
   # Generate plots of key quantities
   p1 <- plot_simulations(stan_data, "migration_prob")
   expect_s3_class(p1, "ggplot")
-  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, migration = TRUE, rita = TRUE, m_pattern = "varying")
+  stan_data <- simulate_diagnoses(
+    nquar = 40,
+    sim_seed = 123,
+    migration = TRUE,
+    rita = TRUE,
+    m_pattern = "varying"
+  )
   # Generate plots of key quantities
   p2 <- plot_simulations(stan_data, "migration_prob")
   expect_s3_class(p2, "ggplot")
@@ -129,7 +158,7 @@ test_that("plots work for migration model lists", {
         stan_data,
         model_seed = 123 + i,
         iter_warmup = 10,
-      iter_sampling = 10,
+        iter_sampling = 10,
         chains = 1,
         refresh = 0,
         messages = FALSE,
@@ -173,7 +202,7 @@ test_that("plots work for rita model lists", {
         stan_data,
         model_seed = 123 + i,
         iter_warmup = 10,
-      iter_sampling = 10,
+        iter_sampling = 10,
         chains = 1,
         refresh = 0,
         messages = FALSE,
@@ -198,7 +227,13 @@ test_that("plots work for rita model lists", {
 
 test_that("plots work for migration and rita model lists", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, rita = TRUE, migration = TRUE, m_pattern = "varying")
+  stan_data <- simulate_diagnoses(
+    nquar = 40,
+    sim_seed = 123,
+    rita = TRUE,
+    migration = TRUE,
+    m_pattern = "varying"
+  )
   # Fit back-calculation model
   hiv_list <- list()
   for (i in 1:2) {
@@ -207,7 +242,7 @@ test_that("plots work for migration and rita model lists", {
         stan_data,
         model_seed = 123 + i,
         iter_warmup = 10,
-      iter_sampling = 10,
+        iter_sampling = 10,
         chains = 1,
         refresh = 0,
         messages = FALSE,
@@ -263,7 +298,12 @@ test_that("plots work for age-dependent model", {
 
 test_that("plots work for age-dependent rita model", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, age = TRUE, rita = TRUE)
+  stan_data <- simulate_diagnoses(
+    nquar = 40,
+    sim_seed = 123,
+    age = TRUE,
+    rita = TRUE
+  )
   # Fit back-calculation model
   suppressWarnings({
     hiv_list <- run_backcalc(
@@ -300,7 +340,13 @@ test_that("plots work for age-dependent rita model", {
 
 test_that("start_year and overlay of real values works", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, age = TRUE, rita = TRUE, migration = TRUE)
+  stan_data <- simulate_diagnoses(
+    nquar = 40,
+    sim_seed = 123,
+    age = TRUE,
+    rita = TRUE,
+    migration = TRUE
+  )
   # Fit back-calculation model
   suppressWarnings({
     hiv_list <- run_backcalc(

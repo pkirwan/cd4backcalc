@@ -35,5 +35,6 @@ List of available simulation types:
 \item "combo_2": Combination of varying infections, step change migration, varying diagnosis probabilities, and increasing proportion UK.
 \item "combo_3": Combination of varying infections, step change migration, varying diagnosis probabilities, increasing proportion UK, and varying migration probabilities.
 \item "combo_3_no_migration": Similar to "combo_3" but without migration effects.
+\item "combo_4": As "combo_3" but with different incidence and migration patterns.
 }
 }

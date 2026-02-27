@@ -135,6 +135,7 @@ define_sim_config <- function(
 #' - "combo_2": Combination of varying infections, step change migration, varying diagnosis probabilities, and increasing proportion UK.
 #' - "combo_3": Combination of varying infections, step change migration, varying diagnosis probabilities, increasing proportion UK, and varying migration probabilities.
 #' - "combo_3_no_migration": Similar to "combo_3" but without migration effects.
+#' - "combo_4": As "combo_3" but with different incidence and migration patterns.
 #'
 #' @param config Configuration list to modify.
 #' @param sim_type Type of simulation to define patterns for.
@@ -156,7 +157,7 @@ define_simulation_type <- function(config, sim_type = "constant") {
     "combo_2",
     "combo_3",
     "combo_3_no_migration",
-    "constant_miss_cd4"
+    "combo_4"
   )
   if (!sim_type %in% valid_sim_types) {
     stop(
@@ -192,7 +193,7 @@ define_simulation_type <- function(config, sim_type = "constant") {
     config$p_pattern <- "increasing"
   } else if (sim_type == "combo_3") {
     config$h_pattern <- "varying"
-    config$o_pattern <- "step_change"
+    config$o_pattern <- "increasing"
     config$d_pattern <- "varying"
     config$p_pattern <- "increasing"
     config$m_pattern <- "varying"
@@ -201,12 +202,12 @@ define_simulation_type <- function(config, sim_type = "constant") {
     config$o_pattern <- "none"
     config$d_pattern <- "varying"
     config$p_pattern <- "increasing"
-  }
-
-  if (grepl("miss_cd4", sim_type)) {
-    config$cd4_completeness <- 0.8
-  } else {
-    config$cd4_completeness <- 1
+  } else if (sim_type == "combo_4") {
+    config$h_pattern <- "varying_1"
+    config$o_pattern <- "step_change"
+    config$d_pattern <- "varying"
+    config$p_pattern <- "increasing"
+    config$m_pattern <- "varying"
   }
 
   return(config)
