@@ -52,14 +52,27 @@ postproc_ad <- function(
     )
   }
 
-  # Define age bands
-  age_bands <- list(
-    all = c(15, 66),
-    `1524` = c(15, 24),
-    `2534` = c(25, 34),
-    `3544` = c(35, 44),
-    `45` = c(45, 66)
+  # Define age bands dynamically based on nage
+  # Each age index corresponds to a single year: index 1 = age 15, ..., index nage = age 14+nage
+  max_age <- 14L + nage
+
+  # Standard decade bands (matching Stan's 4 age groups)
+  std_age_bands <- list(
+    `1524` = c(15L, 24L),
+    `2534` = c(25L, 34L),
+    `3544` = c(35L, 44L),
+    `45` = c(45L, 66L)
   )
+
+  age_bands <- list(all = c(15L, max_age))
+  for (age_band in names(std_age_bands)) {
+    band <- std_age_bands[[age_band]]
+    lower_band <- band[1]
+    upper_band <- min(band[2], max_age)
+    if (lower_band <= max_age) {
+      age_bands[[age_band]] <- c(lower_band, upper_band)
+    }
+  }
 
   # Define quartiles
   q_levels <- c("2.5%", "50%", "mean", "97.5%")
@@ -198,9 +211,9 @@ postproc_ad <- function(
     ind_list$d5.ind.45 <- grep("^d\\[4,[0-9]+,5\\]$", colnames(fit_mat))
   }
 
-  # Extract diagnosis probabilities by age band
+  # Extract diagnosis probabilities by age band (only populated bands)
   diag_grid <- tidyr::crossing(
-    age_band = names(age_bands)[2:5],
+    age_band = names(age_bands)[-1],
     state = 1:length(diag_states)
   )
 
