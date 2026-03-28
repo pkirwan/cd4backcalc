@@ -5,7 +5,15 @@ Box plots of mean squared error (MSE).
 ## Usage
 
 ``` r
-mse_plot(hiv_list, quantity = "incidence", offset = 0.1, lab = TRUE)
+mse_plot(
+  hiv_list,
+  hiv_list_2 = NULL,
+  quantity = "incidence",
+  offset = 0.1,
+  lab = TRUE,
+  model_1_name = "Model 1",
+  model_2_name = "Model 2"
+)
 ```
 
 ## Arguments
@@ -14,6 +22,11 @@ mse_plot(hiv_list, quantity = "incidence", offset = 0.1, lab = TRUE)
 
   A list returned from the `postproc` function containing model
   estimates.
+
+- hiv_list_2:
+
+  A second list returned from the `postproc` function for comparison
+  (default is NULL).
 
 - quantity:
 
@@ -27,6 +40,14 @@ mse_plot(hiv_list, quantity = "incidence", offset = 0.1, lab = TRUE)
 - lab:
 
   A logical indicating whether to add labels.
+
+- model_1_name:
+
+  The name of the first model for labeling (default is "Model 1").
+
+- model_2_name:
+
+  The name of the second model for labeling (default is "Model 2").
 
 ## Value
 
