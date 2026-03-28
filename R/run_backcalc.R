@@ -79,8 +79,6 @@ run_backcalc <- function(
     messages = messages
   )
 
-  gc() # clean up memory before post-processing
-
   # post-process
   hiv_list <- postproc(fit, stan_data, start_yr, nworkers, chain_results)
 

@@ -40,10 +40,27 @@ get_estimates <- function(hiv_list, var) {
   estimates <- purrr::map(seq_along(hiv_list), function(i) {
     x <- hiv_list[[i]]
     group_label <- if (!is.null(x$group)) x$group else paste0("Model ", i)
-    x[[var]] |>
-      tibble::as_tibble() |>
-      dplyr::mutate(group = group_label) |>
-      tidyr::pivot_wider(names_from = "quartile", values_from = "value")
+
+    estimate_tbl <- x[[var]] |>
+      tibble::as_tibble()
+
+    if (all(c("quartile", "value") %in% names(estimate_tbl))) {
+      estimate_tbl <- estimate_tbl |>
+        tidyr::pivot_wider(names_from = "quartile", values_from = "value")
+    } else {
+      quantile_cols <- intersect(c("2.5%", "50%", "mean", "97.5%"), names(estimate_tbl))
+      if (length(quantile_cols) == 0) {
+        stop(
+          sprintf(
+            "Estimate '%s' must contain either quartile/value columns or summary columns.",
+            var
+          )
+        )
+      }
+    }
+
+    estimate_tbl |>
+      dplyr::mutate(group = group_label)
   }) |>
     purrr::list_rbind()
   return(estimates)

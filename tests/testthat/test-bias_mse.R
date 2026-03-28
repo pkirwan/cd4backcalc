@@ -55,9 +55,9 @@ test_that("mse_list and plots are generated correctly for dual fits", {
   # Test extraction and plotting functions
   mse_list <- make_mse_list(hiv_list)
   # expect_true(mse_list$incidence_bias[1, 8] == -1146)
-  p1 <- mse_plot(hiv_list, hiv_list_2, quantity = "incidence", model_1_name = "Fit 1", model_2_name = "Fit 2")
+  p1 <- mse_plot(hiv_list, quantity = "incidence", hiv_list_2 = hiv_list_2, model_1_name = "Fit 1", model_2_name = "Fit 2")
   expect_s3_class(p1, "ggplot")
-  p2 <- bias_plot(hiv_list, hiv_list_2, quantity = "incidence", model_1_name = "Fit 1", model_2_name = "Fit 2")
+  p2 <- bias_plot(hiv_list, quantity = "incidence", hiv_list_2 = hiv_list_2, model_1_name = "Fit 1", model_2_name = "Fit 2")
   expect_s3_class(p2, "ggplot")
 })
 

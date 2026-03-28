@@ -6,10 +6,10 @@
 \usage{
 bias_plot(
   hiv_list,
-  hiv_list_2 = NULL,
   quantity = "incidence",
   offset = 0.1,
   lab = TRUE,
+  hiv_list_2 = NULL,
   model_1_name = "Model 1",
   model_2_name = "Model 2"
 )
@@ -17,13 +17,13 @@ bias_plot(
 \arguments{
 \item{hiv_list}{A list returned from the \code{postproc} function containing model estimates.}
 
-\item{hiv_list_2}{A second list returned from the \code{postproc} function for comparison (default is NULL).}
-
 \item{quantity}{The quantity to plot bias for (default is "incidence", other options are "undiag_migration", "ratio_abroad_uk", and "mp").}
 
 \item{offset}{The offset for text labels.}
 
 \item{lab}{A logical indicating whether to add labels.}
+
+\item{hiv_list_2}{A second list returned from the \code{postproc} function for comparison (default is NULL).}
 
 \item{model_1_name}{The name of the first model for labeling (default is "Model 1").}
 
