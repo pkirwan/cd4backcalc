@@ -8,10 +8,10 @@ optionally compared to the simulated values.
 ``` r
 plot_estimates(
   hiv_list,
-  hiv_list_2 = NULL,
   quantity,
   start_year = 0,
   chain_results = FALSE,
+  hiv_list_2 = NULL,
   model_1_name = "Model 1",
   model_2_name = "Model 2"
 )
@@ -23,11 +23,6 @@ plot_estimates(
 
   A list returned from the `postproc` function containing model
   estimates.
-
-- hiv_list_2:
-
-  An optional second list of model estimates for comparison (default is
-  NULL).
 
 - quantity:
 
@@ -44,6 +39,11 @@ plot_estimates(
 
   A logical indicating whether to plot chain-by-chain estimates (default
   is FALSE).
+
+- hiv_list_2:
+
+  An optional second list of model estimates for comparison (default is
+  NULL).
 
 - model_1_name:
 

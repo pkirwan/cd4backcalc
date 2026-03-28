@@ -7,10 +7,10 @@ Box plots of bias.
 ``` r
 bias_plot(
   hiv_list,
-  hiv_list_2 = NULL,
   quantity = "incidence",
   offset = 0.1,
   lab = TRUE,
+  hiv_list_2 = NULL,
   model_1_name = "Model 1",
   model_2_name = "Model 2"
 )
@@ -22,11 +22,6 @@ bias_plot(
 
   A list returned from the `postproc` function containing model
   estimates.
-
-- hiv_list_2:
-
-  A second list returned from the `postproc` function for comparison
-  (default is NULL).
 
 - quantity:
 
@@ -40,6 +35,11 @@ bias_plot(
 - lab:
 
   A logical indicating whether to add labels.
+
+- hiv_list_2:
+
+  A second list returned from the `postproc` function for comparison
+  (default is NULL).
 
 - model_1_name:
 
