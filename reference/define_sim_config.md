@@ -161,7 +161,7 @@ define_sim_config(h_pattern = "constant")
 #> [1] "constant"
 #> 
 #> $sim_seed
-#> [1] 2137934383
+#> [1] 346871191
 #> 
 #> $dist
 #> [1] TRUE

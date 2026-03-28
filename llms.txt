@@ -44,8 +44,9 @@ for instructions.
 You can then install the development version of cd4backcalc with:
 
 ``` r
-# install.packages("devtools")
-devtools::install_github("pkirwan/cd4backcalc", auth_token = "github_pat_YOUR_TOKEN_HERE")
+# install.packages(c("pak", "gitcreds"))
+gitcreds::gitcreds_set() # set your PAT in the prompt
+pak::pak("pkirwan/cd4backcalc")
 ```
 
 ### System requirements for installation
