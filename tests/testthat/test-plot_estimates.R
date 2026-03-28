@@ -93,6 +93,48 @@ test_that("plots are generated correctly", {
   expect_s3_class(p4, "ggplot")
 })
 
+test_that("dual plots are generated correctly", {
+  # Simulate diagnoses
+  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123)
+  # Fit back-calculation model
+  suppressWarnings({
+    hiv_list <- run_backcalc(
+      stan_data,
+      model_seed = 123,
+      iter_warmup = 10,
+      iter_sampling = 10,
+      chains = 1,
+      refresh = 0,
+      messages = FALSE,
+      nworkers = 1
+    )
+  })
+  suppressWarnings({
+    hiv_list_2 <- run_backcalc(
+      stan_data,
+      model_seed = 1234,
+      iter_warmup = 10,
+      iter_sampling = 10,
+      chains = 1,
+      refresh = 0,
+      messages = FALSE,
+      nworkers = 1
+    )
+  })
+  # plot diagnostics
+  p0 <- plot_diagnostics(hiv_list)
+  expect_s3_class(p0, "ggplot")
+  # Generate plots of key quantities
+  p1 <- plot_estimates(hiv_list, hiv_list_2, "incidence", model_1_name = "Model A", model_2_name = "Model B")
+  p2 <- plot_estimates(hiv_list, hiv_list_2, "undiag_prev", model_1_name = "Model A", model_2_name = "Model B")
+  p3 <- plot_estimates(hiv_list, hiv_list_2, "diag_prob", model_1_name = "Model A", model_2_name = "Model B")
+  p4 <- plot_estimates(hiv_list, hiv_list_2, "diagnoses", model_1_name = "Model A", model_2_name = "Model B")
+  expect_s3_class(p1, "ggplot")
+  expect_s3_class(p2, "ggplot")
+  expect_s3_class(p3, "ggplot")
+  expect_s3_class(p4, "ggplot")
+})
+
 test_that("chained plots are generated correctly", {
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123)

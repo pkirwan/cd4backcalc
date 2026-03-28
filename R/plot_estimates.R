@@ -18,13 +18,19 @@ plot_simulations <- function(
   p1 <- sim_estimates |>
     ggplot2::ggplot() +
     ggplot2::aes(.data$year, .data$value, group = .data$group) +
-    ggplot2::geom_point(color = "purple") +
+    ggplot2::geom_point(color = "mediumorchid") +
     ggplot2::labs(
       title = plot_title,
       x = "Year",
       y = plot_title
     ) +
-    ggplot2::theme_bw()
+    ggplot2::theme_classic() +
+    ggplot2::scale_x_continuous(
+      expand = c(0, 0)
+    ) +
+    ggplot2::theme(
+      panel.grid.minor = ggplot2::element_line(color = "grey80")
+    )
 
   p1 <- do_facetting(p1, quantity)
 
@@ -36,16 +42,22 @@ plot_simulations <- function(
 #' Generate a ggplot2 object plotting estimated quantities over time, optionally compared to the simulated values.
 #'
 #' @param hiv_list A list returned from the `postproc` function containing model estimates.
+#' @param hiv_list_2 An optional second list of model estimates for comparison (default is NULL).
 #' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "undiag_migration", "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "ratio_abroad_uk", and "detect_prob".
 #' @param start_year An integer specifying the starting year for the x-axis (default is 0).
 #' @param chain_results A logical indicating whether to plot chain-by-chain estimates (default is FALSE).
+#' @param model_1_name A string specifying the name of the first model for the legend (default is "Model 1").
+#' @param model_2_name A string specifying the name of the second model for the legend (default is "Model 2").
 #' @return A ggplot2 object.
 #' @export
 plot_estimates <- function(
   hiv_list,
+  hiv_list_2 = NULL,
   quantity,
   start_year = 0,
-  chain_results = FALSE
+  chain_results = FALSE,
+  model_1_name = "Model 1",
+  model_2_name = "Model 2"
 ) {
   # make hiv_list a list of lists if not already
   if (
@@ -53,6 +65,27 @@ plot_estimates <- function(
       !("incidence_1" %in% names(hiv_list[[1]]))
   ) {
     hiv_list <- list(hiv_list)
+  }
+
+  if (!is.null(hiv_list_2)) {
+    if (
+      !("incidence" %in% names(hiv_list_2[[1]])) &&
+        !("incidence_1" %in% names(hiv_list_2[[1]]))
+    ) {
+      hiv_list_2 <- list(hiv_list_2)
+    }
+    # add group variable to hiv_list_2 estimates
+    hiv_list_2 <- lapply(hiv_list_2, function(x) {
+      x$group <- model_2_name
+      return(x)
+    })
+    # add group variable to hiv_list estimates
+    hiv_list <- lapply(hiv_list, function(x) {
+      x$group <- model_1_name
+      return(x)
+    })
+    # combine hiv_list and hiv_list_2 into one list
+    hiv_list <- c(hiv_list, hiv_list_2)
   }
 
   plot_title <- paste0("Estimated ", get_plot_title(quantity))
@@ -126,30 +159,69 @@ plot_estimates <- function(
       x = .data$year + start_year,
       y = .data$`50%`,
       color = .data$group,
+      fill = .data$group,
       group = .data$group
     ) +
-    ggplot2::scale_linetype_manual(values = c(2, 1, 2)) +
     ggplot2::geom_line(
       ggplot2::aes(y = .data$`2.5%`),
-      linetype = "dashed",
-      color = "gray"
+      linewidth = 0.6,
+      alpha = 0.5
     ) +
     ggplot2::geom_line(
       ggplot2::aes(y = .data$`97.5%`),
-      linetype = "dashed",
-      color = "gray"
+      linewidth = 0.6,
+      alpha = 0.5
     ) +
-    ggplot2::geom_line() +
+    ggplot2::geom_ribbon(
+      ggplot2::aes(ymin = .data$`2.5%`, ymax = .data$`97.5%`),
+      alpha = 0.2
+    ) +
+    ggplot2::geom_line(linewidth = 1) +
     ggplot2::labs(
       title = plot_title,
       x = "Year",
       y = plot_title,
       color = ""
     ) +
-    ggplot2::scale_color_manual(
-      values = c(rep("purple", length(unique(quantiles$group))), "black")
+    ggplot2::theme_classic() +
+    ggplot2::scale_x_continuous(
+      expand = c(0, 0)
     ) +
-    ggplot2::theme_bw()
+    ggplot2::theme(
+      legend.position = "bottom",
+      panel.grid.major = ggplot2::element_line(color = "grey80")
+    )
+
+  # if two models plotted, add legend for model comparison
+  if (!is.null(hiv_list_2)) {
+    model_colors <- stats::setNames(
+      c("mediumorchid", "coral"),
+      c(model_1_name, model_2_name)
+    )
+    p1 <- p1 +
+      ggplot2::scale_color_manual(
+        values = model_colors,
+        name = ""
+      ) +
+      ggplot2::scale_fill_manual(
+        values = model_colors,
+        name = ""
+      )
+  } else {
+    p1 <- p1 +
+      ggplot2::scale_color_manual(
+        values = c(
+          rep("mediumorchid", length(unique(quantiles$group))),
+          "black"
+        )
+      ) +
+      ggplot2::scale_fill_manual(
+        values = c(
+          rep("mediumorchid", length(unique(quantiles$group))),
+          "black"
+        )
+      )
+  }
 
   # add simulated values if data were simulated
   # simulated values are the same for all iterations, so just use first
@@ -159,7 +231,8 @@ plot_estimates <- function(
       ggplot2::geom_point(
         data = sim_estimates,
         ggplot2::aes(y = .data$value),
-        size = 0.4
+        size = 1,
+        color = "darkcyan"
       )
   } else if (quantity %in% c("diagnoses", "diagnoses_age", "transfers")) {
     # add observed diagnoses if real data
@@ -168,7 +241,8 @@ plot_estimates <- function(
       ggplot2::geom_point(
         data = observed_data,
         ggplot2::aes(y = .data$value),
-        size = 0.4
+        size = 1,
+        color = "darkcyan"
       )
   }
 

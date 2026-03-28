@@ -111,25 +111,42 @@ make_mse_list <- function(
 #' Box plots of mean squared error (MSE).
 #'
 #' @param hiv_list A list returned from the `postproc` function containing model estimates.
+#' @param hiv_list_2 A second list returned from the `postproc` function for comparison (default is NULL).
 #' @param quantity The quantity to plot MSE for (default is "incidence", other options are "undiag_migration", "ratio_abroad_uk", and "mp").
 #' @param offset The offset for text labels.
 #' @param lab A logical indicating whether to add labels.
+#' @param model_1_name The name of the first model for labeling (default is "Model 1").
+#' @param model_2_name The name of the second model for labeling (default is "Model 2").
 #' @return A ggplot object of the MSE box plot.
 #' @export
 mse_plot <- function(
   hiv_list,
+  hiv_list_2 = NULL,
   quantity = "incidence",
   offset = 0.1,
-  lab = TRUE
+  lab = TRUE,
+  model_1_name = "Model 1",
+  model_2_name = "Model 2"
 ) {
   data <- make_mse_list(
     hiv_list
   )[[paste0(quantity, "_mse")]]
 
+  if (!is.null(hiv_list_2)) {
+    data_2 <- make_mse_list(
+      hiv_list_2
+    )[[paste0(quantity, "_mse")]]
+
+    data <- dplyr::bind_rows(
+      data |> dplyr::mutate(group = model_1_name),
+      data_2 |> dplyr::mutate(group = model_2_name)
+    )
+  }
+
   # create box plot
   p1 <- data |>
     ggplot2::ggplot() +
-    ggplot2::aes(x = .data$group, y = .data$mse) +
+    ggplot2::aes(x = .data$group, y = .data$mse, color = .data$group) +
     ggplot2::geom_boxplot(
       coef = 1.5,
       alpha = 0.2,
@@ -148,11 +165,19 @@ mse_plot <- function(
       breaks = scales::pretty_breaks(),
       labels = scales::label_comma()
     ) +
-    ggplot2::theme_bw() +
+    ggplot2::theme_classic() +
     ggplot2::theme(
-      legend.position = "none",
-      panel.grid.minor = ggplot2::element_blank()
+      legend.position = "none"
     )
+
+  if (!is.null(hiv_list_2)) {
+    p1 <- p1 +
+      ggplot2::scale_color_manual(
+        values = c("mediumorchid3", "coral1"),
+        name = "Model",
+        labels = c(model_1_name, model_2_name)
+      )
+  }
 
   if (lab) {
     p1 <- p1 +
@@ -188,24 +213,41 @@ mse_plot <- function(
 #' Box plots of bias.
 #'
 #' @param hiv_list A list returned from the `postproc` function containing model estimates.
+#' @param hiv_list_2 A second list returned from the `postproc` function for comparison (default is NULL).
 #' @param quantity The quantity to plot bias for (default is "incidence", other options are "undiag_migration", "ratio_abroad_uk", and "mp").
 #' @param offset The offset for text labels.
 #' @param lab A logical indicating whether to add labels.
+#' @param model_1_name The name of the first model for labeling (default is "Model 1").
+#' @param model_2_name The name of the second model for labeling (default is "Model 2").
 #' @return A ggplot object of the bias box plot.
 #' @export
 bias_plot <- function(
   hiv_list,
+  hiv_list_2 = NULL,
   quantity = "incidence",
   offset = 0.1,
-  lab = TRUE
+  lab = TRUE,
+  model_1_name = "Model 1",
+  model_2_name = "Model 2"
 ) {
   data <- make_mse_list(
     hiv_list
   )[[paste0(quantity, "_bias")]]
 
+  if (!is.null(hiv_list_2)) {
+    data_2 <- make_mse_list(
+      hiv_list_2
+    )[[paste0(quantity, "_bias")]]
+
+    data <- dplyr::bind_rows(
+      data |> dplyr::mutate(group = model_1_name),
+      data_2 |> dplyr::mutate(group = model_2_name)
+    )
+  }
+
   p1 <- data |>
     ggplot2::ggplot() +
-    ggplot2::aes(x = .data$group, y = .data$bias) +
+    ggplot2::aes(x = .data$group, y = .data$bias, color = .data$group) +
     ggplot2::geom_hline(yintercept = 0, colour = "grey") +
     ggplot2::geom_boxplot(coef = Inf, alpha = 0.2, width = 0.4) +
     ggplot2::labs(
@@ -217,11 +259,19 @@ bias_plot <- function(
       breaks = scales::pretty_breaks(),
       labels = scales::label_comma()
     ) +
-    ggplot2::theme_bw() +
+    ggplot2::theme_classic() +
     ggplot2::theme(
-      legend.position = "none",
-      panel.grid.minor = ggplot2::element_blank()
+      legend.position = "none"
     )
+
+  if (!is.null(hiv_list_2)) {
+    p1 <- p1 +
+      ggplot2::scale_color_manual(
+        values = c("mediumorchid3", "coral1"),
+        name = "Model",
+        labels = c(model_1_name, model_2_name)
+      )
+  }
 
   if (lab) {
     p1 <- p1 +
