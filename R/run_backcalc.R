@@ -297,6 +297,37 @@ confirm_stan_data <- function(stan_data) {
   return(NULL)
 }
 
+#' Determine the CmdStan executable cache directory
+#'
+#' This helper picks a writable location for compiled CmdStan executables.
+#' It prefers a job-local temporary directory to avoid failures from shared
+#' home-directory caches on batch systems, and allows an explicit override via
+#' the `CD4BACKCALC_CMDSTAN_DIR` environment variable.
+#'
+#' @return The absolute path to a writable directory for CmdStan executables.
+#' @noRd
+stan_model_cache_dir <- function() {
+  override_dir <- Sys.getenv("CD4BACKCALC_CMDSTAN_DIR", unset = "")
+  if (nzchar(override_dir)) {
+    dir.create(override_dir, recursive = TRUE, showWarnings = FALSE)
+    return(normalizePath(override_dir, winslash = "/", mustWork = FALSE))
+  }
+
+  temp_cache_dir <- file.path(tempdir(), "cd4backcalc-cmdstan")
+  dir.create(temp_cache_dir, recursive = TRUE, showWarnings = FALSE)
+
+  if (dir.exists(temp_cache_dir) && file.access(temp_cache_dir, 2) == 0) {
+    return(normalizePath(temp_cache_dir, winslash = "/", mustWork = FALSE))
+  }
+
+  user_cache_dir <- file.path(
+    tools::R_user_dir("cd4backcalc", which = "cache"),
+    "cmdstan"
+  )
+  dir.create(user_cache_dir, recursive = TRUE, showWarnings = FALSE)
+  normalizePath(user_cache_dir, winslash = "/", mustWork = FALSE)
+}
+
 #' Choose Stan model based on configuration
 #'
 #' This function chooses the appropriate Stan model based on the provided
@@ -346,11 +377,11 @@ load_stan_model <- function(config) {
     )
   }
 
-  # Compile the model using cmdstanr, saved in the default cmdstanr model cache directory,
-  # this addresses an execute permissions issue on some systems
+  # Prefer a job-local cache to avoid failures from shared home-directory caches
+  # on batch systems, while still allowing an explicit override when needed.
   cmdstanr::cmdstan_model(
     stan_file = stan_file,
-    dir = cmdstanr::cmdstan_default_install_path()
+    dir = stan_model_cache_dir()
   )
 }
 
