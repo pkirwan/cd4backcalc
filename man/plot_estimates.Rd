@@ -4,16 +4,30 @@
 \alias{plot_estimates}
 \title{Plot estimated model quantities}
 \usage{
-plot_estimates(hiv_list, quantity, start_year = 0, chain_results = FALSE)
+plot_estimates(
+  hiv_list,
+  hiv_list_2 = NULL,
+  quantity,
+  start_year = 0,
+  chain_results = FALSE,
+  model_1_name = "Model 1",
+  model_2_name = "Model 2"
+)
 }
 \arguments{
 \item{hiv_list}{A list returned from the \code{postproc} function containing model estimates.}
+
+\item{hiv_list_2}{An optional second list of model estimates for comparison (default is NULL).}
 
 \item{quantity}{A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "undiag_migration", "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "ratio_abroad_uk", and "detect_prob".}
 
 \item{start_year}{An integer specifying the starting year for the x-axis (default is 0).}
 
 \item{chain_results}{A logical indicating whether to plot chain-by-chain estimates (default is FALSE).}
+
+\item{model_1_name}{A string specifying the name of the first model for the legend (default is "Model 1").}
+
+\item{model_2_name}{A string specifying the name of the second model for the legend (default is "Model 2").}
 }
 \value{
 A ggplot2 object.

@@ -4,16 +4,30 @@
 \alias{mse_plot}
 \title{Box plots of mean squared error (MSE).}
 \usage{
-mse_plot(hiv_list, quantity = "incidence", offset = 0.1, lab = TRUE)
+mse_plot(
+  hiv_list,
+  hiv_list_2 = NULL,
+  quantity = "incidence",
+  offset = 0.1,
+  lab = TRUE,
+  model_1_name = "Model 1",
+  model_2_name = "Model 2"
+)
 }
 \arguments{
 \item{hiv_list}{A list returned from the \code{postproc} function containing model estimates.}
+
+\item{hiv_list_2}{A second list returned from the \code{postproc} function for comparison (default is NULL).}
 
 \item{quantity}{The quantity to plot MSE for (default is "incidence", other options are "undiag_migration", "ratio_abroad_uk", and "mp").}
 
 \item{offset}{The offset for text labels.}
 
 \item{lab}{A logical indicating whether to add labels.}
+
+\item{model_1_name}{The name of the first model for labeling (default is "Model 1").}
+
+\item{model_2_name}{The name of the second model for labeling (default is "Model 2").}
 }
 \value{
 A ggplot object of the MSE box plot.
