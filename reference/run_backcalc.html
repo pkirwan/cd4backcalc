@@ -29,7 +29,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Run CD4 back-calculation model</h1>
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.0.3/R/run_backcalc.R" class="external-link"><code>R/run_backcalc.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/main/R/run_backcalc.R" class="external-link"><code>R/run_backcalc.R</code></a></small>
       <div class="d-none name"><code>run_backcalc.Rd</code></div>
     </div>
 
@@ -57,7 +57,9 @@
 <span>  start_yr <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  nworkers <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  chain_results <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  return_fit <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  return_fit <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  checkpoint_dir <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  iter_per_chunk <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -136,10 +138,21 @@
 <dt id="arg-return-fit">return_fit<a class="anchor" aria-label="anchor" href="#arg-return-fit"></a></dt>
 <dd><p>Logical indicating whether to return the fit object</p></dd>
 
+
+<dt id="arg-checkpoint-dir">checkpoint_dir<a class="anchor" aria-label="anchor" href="#arg-checkpoint-dir"></a></dt>
+<dd><p>Directory for saving/loading checkpoints.
+If <code>NULL</code> (default), no checkpointing is performed.</p></dd>
+
+
+<dt id="arg-iter-per-chunk">iter_per_chunk<a class="anchor" aria-label="anchor" href="#arg-iter-per-chunk"></a></dt>
+<dd><p>Number of sampling iterations per chunk when
+checkpointing.  If <code>NULL</code>, all sampling iterations are run in a
+single chunk.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>List of posterior predictive quantities and (optionlly) the stanfit object.</p>
+    <p>List of posterior predictive quantities and (optionally) the stanfit object.</p>
     </div>
 
     <div class="section level2">

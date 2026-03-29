@@ -144,6 +144,8 @@ longer when using the age-dependent models.
   : Build posterior predictive quantities list
 - [`confirm_stan_data()`](https://pkirwan.github.io/cd4backcalc/reference/confirm_stan_data.md)
   : Confirm stan_data validity
+- [`create_stan_inits()`](https://pkirwan.github.io/cd4backcalc/reference/create_stan_inits.md)
+  : Create initial values for Stan from a fitted model
 - [`d.mat.iter()`](https://pkirwan.github.io/cd4backcalc/reference/d.mat.iter.md)
   : Function to get diagnosis matrix per iteration
 - [`define_sim_config()`](https://pkirwan.github.io/cd4backcalc/reference/define_sim_config.md)

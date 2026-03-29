@@ -24,7 +24,9 @@ run_backcalc(
   start_yr = 0,
   nworkers = 1,
   chain_results = FALSE,
-  return_fit = TRUE
+  return_fit = TRUE,
+  checkpoint_dir = NULL,
+  iter_per_chunk = NULL
 )
 ```
 
@@ -102,9 +104,19 @@ run_backcalc(
 
   Logical indicating whether to return the fit object
 
+- checkpoint_dir:
+
+  Directory for saving/loading checkpoints. If `NULL` (default), no
+  checkpointing is performed.
+
+- iter_per_chunk:
+
+  Number of sampling iterations per chunk when checkpointing. If `NULL`,
+  all sampling iterations are run in a single chunk.
+
 ## Value
 
-List of posterior predictive quantities and (optionlly) the stanfit
+List of posterior predictive quantities and (optionally) the stanfit
 object.
 
 ## Examples

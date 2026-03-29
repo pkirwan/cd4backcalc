@@ -1,6 +1,10 @@
 # Run CD4 back-calculation model
 
-This function runs the CD4 back-calculation model using Stan.
+This function runs the CD4 back-calculation model using Stan. When
+`checkpoint_dir` is provided, fitting is split into a warmup phase
+followed by one or more sampling chunks of size `iter_per_chunk`. After
+each chunk a checkpoint is written so that a timed-out SLURM job can be
+resubmitted and will resume from the last completed chunk.
 
 ## Usage
 
@@ -14,7 +18,9 @@ fit_stan_model(
   adapt_delta = 0.95,
   max_treedepth = 12,
   refresh = 100,
-  messages = TRUE
+  messages = TRUE,
+  checkpoint_dir = NULL,
+  iter_per_chunk = NULL
 )
 ```
 
@@ -57,9 +63,20 @@ fit_stan_model(
 
   Logical indicating whether to show messages during sampling.
 
+- checkpoint_dir:
+
+  Directory for saving/loading checkpoints. If `NULL` (default), no
+  checkpointing is performed.
+
+- iter_per_chunk:
+
+  Number of sampling iterations per chunk when checkpointing. If `NULL`,
+  all sampling iterations are run in a single chunk.
+
 ## Value
 
-A stanfit object containing the results of the model fitting.
+A CmdStanFit object (without checkpointing) or a
+`cd4backcalc_combined_fit` object (with checkpointing).
 
 ## Examples
 
