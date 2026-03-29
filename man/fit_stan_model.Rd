@@ -13,7 +13,9 @@ fit_stan_model(
   adapt_delta = 0.95,
   max_treedepth = 12,
   refresh = 100,
-  messages = TRUE
+  messages = TRUE,
+  checkpoint_dir = NULL,
+  iter_per_chunk = NULL
 )
 }
 \arguments{
@@ -34,12 +36,25 @@ fit_stan_model(
 \item{refresh}{Number of iterations between progress messages.}
 
 \item{messages}{Logical indicating whether to show messages during sampling.}
+
+\item{checkpoint_dir}{Directory for saving/loading checkpoints.
+If \code{NULL} (default), no checkpointing is performed.}
+
+\item{iter_per_chunk}{Number of sampling iterations per chunk when
+checkpointing.  If \code{NULL}, all sampling iterations are run in a
+single chunk.}
 }
 \value{
-A stanfit object containing the results of the model fitting.
+A CmdStanFit object (without checkpointing) or a
+\code{cd4backcalc_combined_fit} object (with checkpointing).
 }
 \description{
 This function runs the CD4 back-calculation model using Stan.
+When \code{checkpoint_dir} is provided, fitting is split into a warmup
+phase followed by one or more sampling chunks of size
+\code{iter_per_chunk}.
+After each chunk a checkpoint is written so that a timed-out SLURM job
+can be resubmitted and will resume from the last completed chunk.
 }
 \examples{
 sim_diags <- simulate_diagnoses(sim_seed = 123)

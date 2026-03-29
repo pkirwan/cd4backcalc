@@ -3,6 +3,7 @@
 export(D_mat)
 export(Q_mat)
 export(bias_plot)
+export(create_stan_inits)
 export(define_sim_config)
 export(define_simulation_type)
 export(epi_mat)

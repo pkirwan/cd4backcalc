@@ -20,7 +20,12 @@
 #' @param nworkers Number of parallel workers to use.
 #' @param chain_results Logical indicating whether to return results by chain.
 #' @param return_fit Logical indicating whether to return the fit object
-#' @return List of posterior predictive quantities and (optionlly) the stanfit object.
+#' @param checkpoint_dir Directory for saving/loading checkpoints.
+#'   If \code{NULL} (default), no checkpointing is performed.
+#' @param iter_per_chunk Number of sampling iterations per chunk when
+#'   checkpointing.  If \code{NULL}, all sampling iterations are run in a
+#'   single chunk.
+#' @return List of posterior predictive quantities and (optionally) the stanfit object.
 #' @examples
 #' sim_diags <- simulate_diagnoses(sim_seed = 123)
 #' hiv_list <- run_backcalc(
@@ -45,7 +50,9 @@ run_backcalc <- function(
   start_yr = 0,
   nworkers = 1,
   chain_results = FALSE,
-  return_fit = TRUE
+  return_fit = TRUE,
+  checkpoint_dir = NULL,
+  iter_per_chunk = NULL
 ) {
   # Check if sim_diags object has been provided
   if ("stan_data" %in% names(stan_data)) {
@@ -76,7 +83,9 @@ run_backcalc <- function(
     max_treedepth = max_treedepth,
     chains = chains,
     refresh = refresh,
-    messages = messages
+    messages = messages,
+    checkpoint_dir = checkpoint_dir,
+    iter_per_chunk = iter_per_chunk
   )
 
   # post-process
@@ -94,6 +103,11 @@ run_backcalc <- function(
 #' Run CD4 back-calculation model
 #'
 #' This function runs the CD4 back-calculation model using Stan.
+#' When \code{checkpoint_dir} is provided, fitting is split into a warmup
+#' phase followed by one or more sampling chunks of size
+#' \code{iter_per_chunk}.
+#' After each chunk a checkpoint is written so that a timed-out SLURM job
+#' can be resubmitted and will resume from the last completed chunk.
 #'
 #' @param stan_data A list of data formatted for Stan.
 #' @param model_seed Seed for model fitting (will be set to stan_data$model_config$model_seed if NULL).
@@ -104,7 +118,13 @@ run_backcalc <- function(
 #' @param max_treedepth Max tree depth for Stan sampling (default is 12).
 #' @param refresh Number of iterations between progress messages.
 #' @param messages Logical indicating whether to show messages during sampling.
-#' @return A stanfit object containing the results of the model fitting.
+#' @param checkpoint_dir Directory for saving/loading checkpoints.
+#'   If \code{NULL} (default), no checkpointing is performed.
+#' @param iter_per_chunk Number of sampling iterations per chunk when
+#'   checkpointing.  If \code{NULL}, all sampling iterations are run in a
+#'   single chunk.
+#' @return A CmdStanFit object (without checkpointing) or a
+#'   \code{cd4backcalc_combined_fit} object (with checkpointing).
 #' @examples
 #' sim_diags <- simulate_diagnoses(sim_seed = 123)
 #' stan_data <- model_type_prep(sim_diags)
@@ -121,7 +141,9 @@ fit_stan_model <- function(
   adapt_delta = 0.95,
   max_treedepth = 12,
   refresh = 100,
-  messages = TRUE
+  messages = TRUE,
+  checkpoint_dir = NULL,
+  iter_per_chunk = NULL
 ) {
   options(mc.cores = parallelly::availableCores())
 
@@ -136,29 +158,155 @@ fit_stan_model <- function(
   # Load appropriate model
   model <- load_stan_model(stan_data$model_config)
 
-  # Make pars_save
-  #pars_save <- make_pars_save(stan_data$model_config)
-
   model_data <- stan_data[
     !names(stan_data) %in% c("sim_config", "model_config")
   ]
 
-  # Sample from model
-  fit <- model$sample(
-    data = model_data,
-    iter_warmup = iter_warmup,
-    iter_sampling = iter_sampling,
-    chains = chains,
-    seed = model_seed,
-    #pars = pars_save,
-    adapt_delta = adapt_delta,
-    max_treedepth = max_treedepth,
-    refresh = refresh,
-    show_exceptions = messages,
-    show_messages = messages
-  )
+  # ---- Non-checkpoint path (original behaviour) ----
+  if (is.null(checkpoint_dir)) {
+    fit <- model$sample(
+      data = model_data,
+      iter_warmup = iter_warmup,
+      iter_sampling = iter_sampling,
+      chains = chains,
+      seed = model_seed,
+      adapt_delta = adapt_delta,
+      max_treedepth = max_treedepth,
+      refresh = refresh,
+      show_exceptions = messages,
+      show_messages = messages
+    )
+    return(fit)
+  }
 
-  return(fit)
+  # ---- Checkpoint path ----
+  if (is.null(iter_per_chunk)) {
+    iter_per_chunk <- iter_sampling
+  }
+
+  cp <- load_checkpoint(checkpoint_dir)
+  draws_list <- if (!is.null(cp)) cp$draws_list else list()
+  diagnostics_list <- if (!is.null(cp)) cp$diagnostics_list else list()
+  total_time <- if (!is.null(cp)) cp$total_time else 0
+
+  # Phase 1: Warmup in chunks (only if no checkpoint or still in warmup)
+  if (is.null(cp) || cp$phase == "warmup") {
+    warmup_done <- if (!is.null(cp)) cp$warmup_done else 0L
+
+    while (warmup_done < iter_warmup) {
+      this_chunk <- min(iter_per_chunk, iter_warmup - warmup_done)
+      message(
+        "Checkpoint: warmup chunk ",
+        warmup_done + 1, "-", warmup_done + this_chunk,
+        " of ", iter_warmup, "..."
+      )
+
+      # First warmup chunk: fresh start; subsequent chunks: seed from
+      # previous adaptation state but keep adaptation enabled so the
+      # sampler continues tuning.
+      if (warmup_done == 0) {
+        fit <- model$sample(
+          data = model_data,
+          iter_warmup = this_chunk,
+          iter_sampling = 0,
+          chains = chains,
+          seed = model_seed,
+          adapt_delta = adapt_delta,
+          max_treedepth = max_treedepth,
+          refresh = refresh,
+          show_exceptions = messages,
+          show_messages = messages,
+          save_warmup = TRUE,
+          sig_figs = 18
+        )
+      } else {
+        fit <- model$sample(
+          data = model_data,
+          iter_warmup = this_chunk,
+          iter_sampling = 0,
+          chains = chains,
+          seed = model_seed,
+          adapt_delta = adapt_delta,
+          max_treedepth = max_treedepth,
+          inv_metric = cp$inv_metric,
+          step_size = cp$step_size,
+          init = cp$init,
+          refresh = refresh,
+          show_exceptions = messages,
+          show_messages = messages,
+          save_warmup = TRUE,
+          sig_figs = 18
+        )
+      }
+
+      warmup_done <- warmup_done + this_chunk
+      total_time <- total_time + fit$time()$total
+
+      if (warmup_done < iter_warmup) {
+        # More warmup to go — stay in warmup phase
+        save_checkpoint(
+          checkpoint_dir, fit, "warmup", warmup_done, 0L,
+          draws_list, diagnostics_list, total_time
+        )
+      } else {
+        # Warmup complete — transition to sampling phase
+        save_checkpoint(
+          checkpoint_dir, fit, "sampling", warmup_done, 0L,
+          draws_list, diagnostics_list, total_time
+        )
+      }
+      cp <- load_checkpoint(checkpoint_dir)
+      message("Checkpoint: ", warmup_done, "/", iter_warmup, " warmup iterations complete.")
+    }
+  }
+
+  # Phase 2: Sampling in chunks
+  sampling_done <- cp$sampling_done
+
+  while (sampling_done < iter_sampling) {
+    this_chunk <- min(iter_per_chunk, iter_sampling - sampling_done)
+    message(
+      "Checkpoint: sampling chunk ",
+      sampling_done + 1, "-", sampling_done + this_chunk,
+      " of ", iter_sampling, "..."
+    )
+
+    fit <- model$sample(
+      data = model_data,
+      iter_warmup = 0,
+      iter_sampling = this_chunk,
+      chains = chains,
+      seed = model_seed,
+      adapt_engaged = FALSE,
+      inv_metric = cp$inv_metric,
+      step_size = cp$step_size,
+      init = cp$init,
+      refresh = refresh,
+      show_exceptions = messages,
+      show_messages = messages,
+      sig_figs = 18
+    )
+
+    sampling_done <- sampling_done + this_chunk
+    draws_list <- append(draws_list, list(fit$draws()))
+    diagnostics_list <- append(
+      diagnostics_list, list(fit$diagnostic_summary())
+    )
+    total_time <- total_time + fit$time()$total
+
+    save_checkpoint(
+      checkpoint_dir, fit, "sampling", warmup_done = iter_warmup,
+      sampling_done, draws_list, diagnostics_list, total_time
+    )
+    cp <- load_checkpoint(checkpoint_dir)
+    message("Checkpoint: ", sampling_done, "/", iter_sampling, " sampling iterations complete.")
+  }
+
+  # Combine draws from all chunks into a single fit-like object
+  if (length(draws_list) == 1) {
+    return(fit)
+  }
+  create_combined_fit(fit, draws_list, diagnostics_list, chains, total_time)
 }
 
 #' Define configuration for fitting back-calculation model

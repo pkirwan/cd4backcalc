@@ -22,7 +22,9 @@ run_backcalc(
   start_yr = 0,
   nworkers = 1,
   chain_results = FALSE,
-  return_fit = TRUE
+  return_fit = TRUE,
+  checkpoint_dir = NULL,
+  iter_per_chunk = NULL
 )
 }
 \arguments{
@@ -61,9 +63,16 @@ run_backcalc(
 \item{chain_results}{Logical indicating whether to return results by chain.}
 
 \item{return_fit}{Logical indicating whether to return the fit object}
+
+\item{checkpoint_dir}{Directory for saving/loading checkpoints.
+If \code{NULL} (default), no checkpointing is performed.}
+
+\item{iter_per_chunk}{Number of sampling iterations per chunk when
+checkpointing.  If \code{NULL}, all sampling iterations are run in a
+single chunk.}
 }
 \value{
-List of posterior predictive quantities and (optionlly) the stanfit object.
+List of posterior predictive quantities and (optionally) the stanfit object.
 }
 \description{
 This function runs the CD4 back-calculation model using Stan and runs the post-processing.

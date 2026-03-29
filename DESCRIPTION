@@ -23,6 +23,7 @@ Imports:
     mgcv,
     parallelly,
     patchwork,
+    posterior,
     purrr (>= 1.0.0),
     Rcpp,
     RcppParallel,
