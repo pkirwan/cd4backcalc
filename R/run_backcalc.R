@@ -204,6 +204,11 @@ fit_stan_model <- function(
       # First warmup chunk: fresh start; subsequent chunks: seed from
       # previous adaptation state but keep adaptation enabled so the
       # sampler continues tuning.
+      # For resumed chunks we skip the init_buffer (step size already
+      # tuned) and, for non-final chunks, also skip the term_buffer so
+      # that all iterations go to mass-matrix adaptation windows.
+      is_last_warmup <- (warmup_done + this_chunk >= iter_warmup)
+
       if (warmup_done == 0) {
         fit <- model$sample(
           data = model_data,
@@ -228,6 +233,8 @@ fit_stan_model <- function(
           seed = model_seed,
           adapt_delta = adapt_delta,
           max_treedepth = max_treedepth,
+          init_buffer = 0,
+          term_buffer = if (is_last_warmup) NULL else 0,
           inv_metric = cp$inv_metric,
           step_size = cp$step_size,
           init = cp$init,

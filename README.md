@@ -123,7 +123,9 @@ options. The table below shows the options which should be used for each
 combination of RITA evidence, migration status, and age structure.
 
 N.B. Due to the increased complexity, fitting times can be substantially
-longer when using the age-dependent models.
+longer when using the age-dependent models. On resource-constrained 
+systems, "checkpointing" is available to fit these models to real data in 
+stages, see the documentation for `run_backcalc()` for details.
 
 | Model | Age-independent | Age-dependent |
 |:---|:--:|:--:|

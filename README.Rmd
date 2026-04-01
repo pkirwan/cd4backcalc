@@ -126,7 +126,7 @@ The cd4backcalc package includes several pre-compiled models which can be used t
 
 The functions in the package are designed to work with all model variants, with the appropriate model selected based on user-specified options. The table below shows the options which should be used for each combination of RITA evidence, migration status, and age structure.
 
-N.B. Due to the increased complexity, fitting times can be substantially longer when using the age-dependent models.
+N.B. Due to the increased complexity, fitting times can be substantially longer when using the age-dependent models. On resource-constrained systems, "checkpointing" is available to fit these models to real data in stages, see the documentation for `run_backcalc()` for details.
 
 ```{r supported-models-table, echo=FALSE}
 
