@@ -159,17 +159,16 @@ plot_estimates <- function(
       x = .data$year + start_year,
       y = .data$`50%`,
       color = .data$group,
-      fill = .data$group,
-      group = .data$group
+      fill = .data$group
     ) +
     ggplot2::geom_line(
       ggplot2::aes(y = .data$`2.5%`),
-      linewidth = 0.6,
+      linewidth = 0.5,
       alpha = 0.5
     ) +
     ggplot2::geom_line(
       ggplot2::aes(y = .data$`97.5%`),
-      linewidth = 0.6,
+      linewidth = 0.5,
       alpha = 0.5
     ) +
     ggplot2::geom_ribbon(
@@ -181,7 +180,8 @@ plot_estimates <- function(
       title = plot_title,
       x = "Year",
       y = plot_title,
-      color = ""
+      color = "",
+      fill = ""
     ) +
     ggplot2::theme_classic() +
     ggplot2::scale_x_continuous(
@@ -195,8 +195,8 @@ plot_estimates <- function(
   # if two models plotted, add legend for model comparison
   if (!is.null(hiv_list_2)) {
     model_colors <- stats::setNames(
-      c("mediumorchid", "coral"),
-      c(model_1_name, model_2_name)
+      c("mediumorchid", "coral", "darkcyan"),
+      c(model_1_name, model_2_name, "Simulated values")
     )
     p1 <- p1 +
       ggplot2::scale_color_manual(
@@ -212,14 +212,16 @@ plot_estimates <- function(
       ggplot2::scale_color_manual(
         values = c(
           rep("mediumorchid", length(unique(quantiles$group))),
-          "black"
-        )
+          "darkcyan"
+        ),
+        name = ""
       ) +
       ggplot2::scale_fill_manual(
         values = c(
           rep("mediumorchid", length(unique(quantiles$group))),
-          "black"
-        )
+          "darkcyan"
+        ),
+        name = ""
       )
   }
 
@@ -231,8 +233,7 @@ plot_estimates <- function(
       ggplot2::geom_point(
         data = sim_estimates,
         ggplot2::aes(y = .data$value),
-        size = 1,
-        color = "darkcyan"
+        size = 1
       )
   } else if (quantity %in% c("diagnoses", "diagnoses_age", "transfers")) {
     # add observed diagnoses if real data
@@ -241,8 +242,7 @@ plot_estimates <- function(
       ggplot2::geom_point(
         data = observed_data,
         ggplot2::aes(y = .data$value),
-        size = 1,
-        color = "darkcyan"
+        size = 1
       )
   }
 
@@ -282,6 +282,10 @@ plot_diagnostics <- function(hiv_list, ntraces = 4) {
       ntraces
     ))],
     facet_args = list(nrow = 1)
+  ) + 
+  # fewer x-axis ticks for better readability
+  ggplot2::scale_x_continuous(
+    breaks = scales::pretty_breaks(n = 4)
   )
   # log posterior density
   p2 <- bayesplot::mcmc_trace(draws, pars = "lp__")
@@ -333,14 +337,14 @@ plot_diagnostics <- function(hiv_list, ntraces = 4) {
       p6,
       ncol = 1,
       heights = c(2, 2, 2, 2, 2, 1)
-    )
+    ) & ggplot2::theme(text = ggplot2::element_text(family = "sans"))
   } else {
     p0 <- patchwork::wrap_plots(
       p1,
       p2,
       ncol = 1,
       heights = c(2, 1)
-    )
+    ) & ggplot2::theme(text = ggplot2::element_text(family = "sans"))
   }
 
   return(p0)

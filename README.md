@@ -85,31 +85,31 @@ plot_simulations(sim_diags, quantity = "incidence")
 ``` r
 # run back-calculation model on simulated data
 # default is 2000 iterations and 4 chains
-hiv_list <- run_backcalc(sim_diags)
+model_1 <- run_backcalc(sim_diags)
 
 # check convergence
-plot_diagnostics(hiv_list)
+plot_diagnostics(model_1)
 ```
 
 <img src="man/figures/README-simulate-data-2.png" width="100%" />
 
 ``` r
-# check goodness of fit
-bias_plot(hiv_list, quantity = "incidence")
+# check goodness of fit to simulated data
+bias_plot(model_1, quantity = "incidence")
 ```
 
 <img src="man/figures/README-simulate-data-3.png" width="100%" />
 
 ``` r
 # plot estimates compared to simulated values
-plot_estimates(hiv_list, quantity = "incidence")
+plot_estimates(model_1, quantity = "incidence")
 ```
 
 <img src="man/figures/README-simulate-data-4.png" width="100%" />
 
 ## Supported models
 
-The cd4backcalc package includes several pre-compiled models which can
+The cd4backcalc package includes several models, written in Stan, which can
 be used to fit the back-calculation model to real or simulated diagnosis
 data under different scenarios:
 
@@ -122,14 +122,15 @@ variants, with the appropriate model selected based on user-specified
 options. The table below shows the options which should be used for each
 combination of RITA evidence, migration status, and age structure.
 
-N.B. Due to the increased complexity, fitting times can be substantially
-longer when using the age-dependent models. On resource-constrained 
-systems, "checkpointing" is available to fit these models to real data in 
-stages, see the documentation for `run_backcalc()` for details.
-
 | Model | Age-independent | Age-dependent |
 |:---|:--:|:--:|
 | CD4 | rita = FALSE, migration = FALSE, age = FALSE | rita = FALSE, migration = FALSE, age = TRUE |
 | CD4 + RITA | rita = TRUE, migration = FALSE, age = FALSE | rita = TRUE, migration = FALSE, age = TRUE |
 | CD4 + Migration | rita = FALSE, migration = TRUE, age = FALSE | rita = FALSE, migration = TRUE, age = TRUE |
 | CD4 + RITA + Migration | rita = TRUE, migration = TRUE, age = FALSE | rita = TRUE, migration = TRUE, age = TRUE |
+
+N.B. Due to the increased complexity, fitting times can be substantially
+longer when using the age-dependent models. On resource-constrained
+systems, "checkpointing" is available to fit these models in stages, 
+saving and reloading intermediate results, see the documentation for 
+`run_backcalc()` for details.
