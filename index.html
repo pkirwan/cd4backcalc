@@ -122,7 +122,7 @@ Figure: CD4-staged back-calculation model. The model compartments represent undi
 <li>With or without migration</li>
 </ul>
 <p>The functions in the package are designed to work with all model variants, with the appropriate model selected based on user-specified options. The table below shows the options which should be used for each combination of RITA evidence, migration status, and age structure.</p>
-<p>N.B. Due to the increased complexity, fitting times can be substantially longer when using the age-dependent models.</p>
+<p>N.B. Due to the increased complexity, fitting times can be substantially longer when using the age-dependent models. On resource-constrained systems, “checkpointing” is available to fit these models to real data in stages, see the documentation for <code><a href="reference/run_backcalc.html">run_backcalc()</a></code> for details.</p>
 <table class="table">
 <colgroup>
 <col width="33%">
