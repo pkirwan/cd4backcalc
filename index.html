@@ -98,31 +98,30 @@ Figure: CD4-staged back-calculation model. The model compartments represent undi
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># run back-calculation model on simulated data</span></span>
 <span><span class="co"># default is 2000 iterations and 4 chains</span></span>
-<span><span class="va">hiv_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_diags</span><span class="op">)</span></span>
+<span><span class="va">model_1</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_diags</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># check convergence</span></span>
-<span><span class="fu"><a href="reference/plot_diagnostics.html">plot_diagnostics</a></span><span class="op">(</span><span class="va">hiv_list</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="reference/plot_diagnostics.html">plot_diagnostics</a></span><span class="op">(</span><span class="va">model_1</span><span class="op">)</span></span></code></pre></div>
 <p><img src="reference/figures/README-simulate-data-2.png" width="100%"></p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># check goodness of fit</span></span>
-<span><span class="fu"><a href="reference/bias_plot.html">bias_plot</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># check goodness of fit to simulated data</span></span>
+<span><span class="fu"><a href="reference/bias_plot.html">bias_plot</a></span><span class="op">(</span><span class="va">model_1</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="reference/figures/README-simulate-data-3.png" width="100%"></p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># plot estimates compared to simulated values</span></span>
-<span><span class="fu"><a href="reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">model_1</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="reference/figures/README-simulate-data-4.png" width="100%"></p>
 </div>
 <div class="section level2">
 <h2 id="supported-models">Supported models<a class="anchor" aria-label="anchor" href="#supported-models"></a>
 </h2>
-<p>The cd4backcalc package includes several pre-compiled models which can be used to fit the back-calculation model to real or simulated diagnosis data under different scenarios:</p>
+<p>The cd4backcalc package includes several models, written in Stan, which can be used to fit the back-calculation model to real or simulated diagnosis data under different scenarios:</p>
 <ul>
 <li>Age-independent or age-dependent</li>
 <li>CD4-only or CD4 + RITA data</li>
 <li>With or without migration</li>
 </ul>
 <p>The functions in the package are designed to work with all model variants, with the appropriate model selected based on user-specified options. The table below shows the options which should be used for each combination of RITA evidence, migration status, and age structure.</p>
-<p>N.B. Due to the increased complexity, fitting times can be substantially longer when using the age-dependent models. On resource-constrained systems, “checkpointing” is available to fit these models to real data in stages, see the documentation for <code><a href="reference/run_backcalc.html">run_backcalc()</a></code> for details.</p>
 <table class="table">
 <colgroup>
 <col width="33%">
@@ -157,6 +156,7 @@ Figure: CD4-staged back-calculation model. The model compartments represent undi
 </tr>
 </tbody>
 </table>
+<p>N.B. Due to the increased complexity, fitting times can be substantially longer when using the age-dependent models. On resource-constrained systems, “checkpointing” is available to fit these models in stages, saving and reloading intermediate results, see the documentation for <code><a href="reference/run_backcalc.html">run_backcalc()</a></code> for details.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
