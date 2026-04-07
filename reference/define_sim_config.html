@@ -19,6 +19,17 @@ The number of latent and diagnosis states will be inferred from the simulation s
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../articles/cd4backcalc.html">Get started</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Getting started</h6></li>
+    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/model-types.html">Model types</a></li>
+    <li><a class="dropdown-item" href="../articles/analysing-results.html">Analysing results</a></li>
+    <li><a class="dropdown-item" href="../articles/checkpointing.html">Checkpointing and long runs</a></li>
+  </ul></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/pkirwan/cd4backcalc/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -170,138 +181,6 @@ The number of latent and diagnosis states will be inferred from the simulation s
     <p>Configuration list.</p>
     </div>
 
-    <div class="section level2">
-    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">define_sim_config</span><span class="op">(</span>h_pattern <span class="op">=</span> <span class="st">"constant"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $h_pattern</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "constant"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $o_pattern</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "none"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $d_pattern</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "constant"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $p_pattern</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "constant"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $m_pattern</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "constant"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $r_pattern</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "none"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $a_pattern</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "constant"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $sim_seed</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 346871191</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $dist</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $migration</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $rita</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $age</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $nquar</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 120</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $nage</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 52</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $nlatst</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 4</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $ndiagst</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $q</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.0976 0.1150 0.1160 0.1480</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $q_age</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         [,1]  [,2]  [,3]  [,4]</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [2,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [3,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [4,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [5,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [6,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [8,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [9,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [10,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [11,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [12,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [13,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [14,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [15,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [16,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [17,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [18,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [19,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [20,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [21,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [22,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [23,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [24,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [25,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [26,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [27,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [28,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [29,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [30,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [31,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [32,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [33,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [34,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [35,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [36,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [37,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [38,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [39,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [40,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [41,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [42,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [43,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [44,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [45,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [46,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [47,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [48,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [49,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [50,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [51,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [52,] 0.0976 0.115 0.116 0.148</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $target_inf</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 90000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $target_mig</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 12000</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $init_props</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 7.00 3.50 1.75 0.50</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $init_props_abroad</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1.75 2.25 2.25 1.25</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $abroad_prop</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0.2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $cd4_completeness</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> $rita_completeness</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-</code></pre></div>
-    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

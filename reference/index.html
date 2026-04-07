@@ -17,6 +17,17 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../articles/cd4backcalc.html">Get started</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Getting started</h6></li>
+    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
+    <li><a class="dropdown-item" href="../articles/model-types.html">Model types</a></li>
+    <li><a class="dropdown-item" href="../articles/analysing-results.html">Analysing results</a></li>
+    <li><a class="dropdown-item" href="../articles/checkpointing.html">Checkpointing and long runs</a></li>
+  </ul></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/pkirwan/cd4backcalc/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -32,9 +43,9 @@
     </div>
 
     <div class="section level2">
-      <h2 id="all-functions">All functions<a class="anchor" aria-label="anchor" href="#all-functions"></a></h2>
+      <h2 id="simulation">Simulation<a class="anchor" aria-label="anchor" href="#simulation"></a></h2>
 
-
+      <div class="section-desc"><p>Simulate HIV diagnosis data for model fitting</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -43,38 +54,33 @@
 
       <dl><dt>
 
-          <code><a href="D_mat.html">D_mat()</a></code>
+          <code><a href="simulate_diagnoses.html">simulate_diagnoses()</a></code>
 
         </dt>
-        <dd>Generate D Matrix</dd>
+        <dd>Simulate HIV Epidemic Data</dd>
 
         <dt>
 
-          <code><a href="Q_mat.html">Q_mat()</a></code>
+          <code><a href="sim_remodel.html">sim_remodel()</a></code>
 
         </dt>
-        <dd>Generate Q Matrix</dd>
+        <dd>Remodel the simulated diagnosis data for fitting a different model type.</dd>
+      </dl></div><div class="section level2">
+      <h2 id="model-fitting">Model fitting<a class="anchor" aria-label="anchor" href="#model-fitting"></a></h2>
 
-        <dt>
+      <div class="section-desc"><p>Fit and configure CD4-staged back-calculation models</p></div>
 
-          <code><a href="bias_plot.html">bias_plot()</a></code>
+      <dl></dl></div><div class="section level2">
 
-        </dt>
-        <dd>Box plots of bias.</dd>
 
-        <dt>
 
-          <code><a href="build_ppq_list.html">build_ppq_list()</a></code>
 
-        </dt>
-        <dd>Build posterior predictive quantities list</dd>
+      <dl><dt>
 
-        <dt>
-
-          <code><a href="confirm_stan_data.html">confirm_stan_data()</a></code>
+          <code><a href="run_backcalc.html">run_backcalc()</a></code>
 
         </dt>
-        <dd>Confirm stan_data validity</dd>
+        <dd>Run CD4 back-calculation model</dd>
 
         <dt>
 
@@ -82,309 +88,17 @@
 
         </dt>
         <dd>Create initial values for Stan from a fitted model</dd>
+      </dl></div><div class="section level2">
+      <h2 id="visualisation">Visualisation<a class="anchor" aria-label="anchor" href="#visualisation"></a></h2>
 
-        <dt>
+      <div class="section-desc"><p>Plot model estimates, diagnostics, and goodness of fit</p></div>
 
-          <code><a href="d.mat.iter.html">d.mat.iter()</a></code>
+      <dl></dl></div><div class="section level2">
 
-        </dt>
-        <dd>Function to get diagnosis matrix per iteration</dd>
 
-        <dt>
 
-          <code><a href="define_sim_config.html">define_sim_config()</a></code>
 
-        </dt>
-        <dd>Define simulation configuration</dd>
-
-        <dt>
-
-          <code><a href="define_simulation_type.html">define_simulation_type()</a></code>
-
-        </dt>
-        <dd>Define simulation type</dd>
-
-        <dt>
-
-          <code><a href="detect.prob.df.html">detect.prob.df()</a></code>
-
-        </dt>
-        <dd>Detection probabilities dataframe</dd>
-
-        <dt>
-
-          <code><a href="diag.prob.df.html">diag.prob.df()</a></code>
-
-        </dt>
-        <dd>Diagnosis probabilities dataframe</dd>
-
-        <dt>
-
-          <code><a href="diagnoses.df.html">diagnoses.df()</a></code>
-
-        </dt>
-        <dd>Diagnoses dataframe</dd>
-
-        <dt>
-
-          <code><a href="do_facetting.html">do_facetting()</a></code>
-
-        </dt>
-        <dd>Helper function to do facetting for plots</dd>
-
-        <dt>
-
-          <code><a href="epi_mat.html">epi_mat()</a></code>
-
-        </dt>
-        <dd>Simulate epidemic over time</dd>
-
-        <dt>
-
-          <code><a href="extract_real_data.html">extract_real_data()</a></code>
-
-        </dt>
-        <dd>Extract real data for plotting</dd>
-
-        <dt>
-
-          <code><a href="extract_simulated_quantity.html">extract_simulated_quantity()</a></code>
-
-        </dt>
-        <dd>Extract simulated quantities based on the provided configuration.</dd>
-
-        <dt>
-
-          <code><a href="fit_stan_model.html">fit_stan_model()</a></code>
-
-        </dt>
-        <dd>Run CD4 back-calculation model</dd>
-
-        <dt>
-
-          <code><a href="generate_age_dist.html">generate_age_dist()</a></code>
-
-        </dt>
-        <dd>Generate age distributions</dd>
-
-        <dt>
-
-          <code><a href="generate_diagnosis_probs.html">generate_diagnosis_probs()</a></code>
-
-        </dt>
-        <dd>Generate diagnosis probability patterns</dd>
-
-        <dt>
-
-          <code><a href="generate_infections.html">generate_infections()</a></code>
-
-        </dt>
-        <dd>Generate infections according to specified pattern</dd>
-
-        <dt>
-
-          <code><a href="generate_migration.html">generate_migration()</a></code>
-
-        </dt>
-        <dd>Generate migration combining omega and mu</dd>
-
-        <dt>
-
-          <code><a href="generate_mu.html">generate_mu()</a></code>
-
-        </dt>
-        <dd>Generate migration probability patterns</dd>
-
-        <dt>
-
-          <code><a href="generate_omega.html">generate_omega()</a></code>
-
-        </dt>
-        <dd>Generate migration patterns</dd>
-
-        <dt>
-
-          <code><a href="generate_ratio_abroad_uk.html">generate_ratio_abroad_uk()</a></code>
-
-        </dt>
-        <dd>Generate proportion UK patterns</dd>
-
-        <dt>
-
-          <code><a href="get_bias.html">get_bias()</a></code>
-
-        </dt>
-        <dd>Get bias between HIV model estimates and simulation results.</dd>
-
-        <dt>
-
-          <code><a href="get_bias_strata.html">get_bias_strata()</a></code>
-
-        </dt>
-        <dd>Get bias between HIV model estimates and simulation results for strata.</dd>
-
-        <dt>
-
-          <code><a href="get_estimates.html">get_estimates()</a></code>
-
-        </dt>
-        <dd>Get estimates from HIV model results for plotting.</dd>
-
-        <dt>
-
-          <code><a href="get_init_prev.html">get_init_prev()</a></code>
-
-        </dt>
-        <dd>Get initial prevalence matrix to provide to age-dependent model</dd>
-
-        <dt>
-
-          <code><a href="get_mse.html">get_mse()</a></code>
-
-        </dt>
-        <dd>Get mean squared error (MSE) list for HIV model estimates.</dd>
-
-        <dt>
-
-          <code><a href="get_plot_title.html">get_plot_title()</a></code>
-
-        </dt>
-        <dd>Helper function to make plot titles</dd>
-
-        <dt>
-
-          <code><a href="get_quantiles.html">get_quantiles()</a></code>
-
-        </dt>
-        <dd>Function to get quantiles</dd>
-
-        <dt>
-
-          <code><a href="get_sims.html">get_sims()</a></code>
-
-        </dt>
-        <dd>Get simulation data for plotting.</dd>
-
-        <dt>
-
-          <code><a href="gof.fct.html">gof.fct()</a></code>
-
-        </dt>
-        <dd>Function to get posterior functions of goodness of fit</dd>
-
-        <dt>
-
-          <code><a href="incidence.df.html">incidence.df()</a></code>
-
-        </dt>
-        <dd>Incidence dataframe</dd>
-
-        <dt>
-
-          <code><a href="infect_dist_by_year_dx.html">infect_dist_by_year_dx()</a></code>
-
-        </dt>
-        <dd>Infection distribution by year of diagnosis</dd>
-
-        <dt>
-
-          <code><a href="infs.fct.html">infs.fct()</a></code>
-
-        </dt>
-        <dd>Function to get posterior functions of incidence</dd>
-
-        <dt>
-
-          <code><a href="infs.fct.qt.html">infs.fct.qt()</a></code>
-
-        </dt>
-        <dd>Function to get posterior functions of incidence</dd>
-
-        <dt>
-
-          <code><a href="invlogit.html">invlogit()</a></code>
-
-        </dt>
-        <dd>Inverse logit function Computes the inverse logit transformation of a numeric vector.</dd>
-
-        <dt>
-
-          <code><a href="load_stan_model.html">load_stan_model()</a></code>
-
-        </dt>
-        <dd>Choose Stan model based on configuration</dd>
-
-        <dt>
-
-          <code><a href="logit.html">logit()</a></code>
-
-        </dt>
-        <dd>Logit function Computes the logit transformation of a numeric vector.</dd>
-
-        <dt>
-
-          <code><a href="make_fit_indices.html">make_fit_indices()</a></code>
-
-        </dt>
-        <dd>Make fit indices</dd>
-
-        <dt>
-
-          <code><a href="make_mse_list.html">make_mse_list()</a></code>
-
-        </dt>
-        <dd>Make a list of mean squared error (MSE) values for HIV model estimates.</dd>
-
-        <dt>
-
-          <code><a href="make_pars_save.html">make_pars_save()</a></code>
-
-        </dt>
-        <dd>Make parameters to save based on configuration</dd>
-
-        <dt>
-
-          <code><a href="make_tibble.html">make_tibble()</a></code>
-
-        </dt>
-        <dd>Function to convert a matrix to a tibble</dd>
-
-        <dt>
-
-          <code><a href="migration.prob.df.html">migration.prob.df()</a></code>
-
-        </dt>
-        <dd>Migration probabilities dataframe</dd>
-
-        <dt>
-
-          <code><a href="model_type_prep.html">model_type_prep()</a></code>
-
-        </dt>
-        <dd>Prepare spline basis for back-calculation model</dd>
-
-        <dt>
-
-          <code><a href="mse_plot.html">mse_plot()</a></code>
-
-        </dt>
-        <dd>Box plots of mean squared error (MSE).</dd>
-
-        <dt>
-
-          <code><a href="peak.fct.html">peak.fct()</a></code>
-
-        </dt>
-        <dd>Function to identify the peak in infection in the last x years</dd>
-
-        <dt>
-
-          <code><a href="plot_diagnostics.html">plot_diagnostics()</a></code>
-
-        </dt>
-        <dd>Plot diagnostics for fitted model</dd>
-
-        <dt>
+      <dl><dt>
 
           <code><a href="plot_estimates.html">plot_estimates()</a></code>
 
@@ -400,173 +114,57 @@
 
         <dt>
 
-          <code><a href="postproc.html">postproc()</a></code>
+          <code><a href="plot_diagnostics.html">plot_diagnostics()</a></code>
 
         </dt>
-        <dd>Post-processing model fit</dd>
+        <dd>Plot diagnostics for fitted model</dd>
 
         <dt>
 
-          <code><a href="postproc_ad.html">postproc_ad()</a></code>
+          <code><a href="bias_plot.html">bias_plot()</a></code>
 
         </dt>
-        <dd>Post-process the age-dependent model fit</dd>
+        <dd>Box plots of bias.</dd>
 
         <dt>
 
-          <code><a href="postproc_ai.html">postproc_ai()</a></code>
+          <code><a href="mse_plot.html">mse_plot()</a></code>
 
         </dt>
-        <dd>Post-process age-independent model fit</dd>
+        <dd>Box plots of mean squared error (MSE).</dd>
+      </dl></div><div class="section level2">
+      <h2 id="data-extraction">Data extraction<a class="anchor" aria-label="anchor" href="#data-extraction"></a></h2>
+
+      <div class="section-desc"><p>Extract model estimates and data for custom analysis</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="get_estimates.html">get_estimates()</a></code>
+
+        </dt>
+        <dd>Get estimates from HIV model results for plotting.</dd>
 
         <dt>
 
-          <code><a href="prev.fct.html">prev.fct()</a></code>
+          <code><a href="extract_simulated_quantity.html">extract_simulated_quantity()</a></code>
 
         </dt>
-        <dd>Function to get posterior functions of prevalence</dd>
+        <dd>Extract simulated quantities based on the provided configuration.</dd>
 
         <dt>
 
-          <code><a href="prev_by_year_infection.html">prev_by_year_infection()</a></code>
+          <code><a href="extract_real_data.html">extract_real_data()</a></code>
 
         </dt>
-        <dd>Prevalence distribution by year of infection</dd>
-
-        <dt>
-
-          <code><a href="ratio_abroad_uk.df.html">ratio_abroad_uk.df()</a></code>
-
-        </dt>
-        <dd>Prop UK dataframe</dd>
-
-        <dt>
-
-          <code><a href="round_array_preserve.html">round_array_preserve()</a></code>
-
-        </dt>
-        <dd>Array rounding function to preserve totals</dd>
-
-        <dt>
-
-          <code><a href="round_fields.html">round_fields()</a></code>
-
-        </dt>
-        <dd>Round specified fields in an epidemic object</dd>
-
-        <dt>
-
-          <code><a href="round_matrix_preserve.html">round_matrix_preserve()</a></code>
-
-        </dt>
-        <dd>Matrix rounding function to preserve totals</dd>
-
-        <dt>
-
-          <code><a href="round_preserve.html">round_preserve()</a></code>
-
-        </dt>
-        <dd>Controlled rounding function to preserve totals</dd>
-
-        <dt>
-
-          <code><a href="run_backcalc.html">run_backcalc()</a></code>
-
-        </dt>
-        <dd>Run CD4 back-calculation model</dd>
-
-        <dt>
-
-          <code><a href="shape.fct.html">shape.fct()</a></code>
-
-        </dt>
-        <dd>Function for the shape of incidence curve</dd>
-
-        <dt>
-
-          <code><a href="sim_remodel.html">sim_remodel()</a></code>
-
-        </dt>
-        <dd>Remodel the simulated diagnosis data for fitting a different model type.</dd>
-
-        <dt>
-
-          <code><a href="simulate_diagnoses.html">simulate_diagnoses()</a></code>
-
-        </dt>
-        <dd>Simulate HIV Epidemic Data</dd>
-
-        <dt>
-
-          <code><a href="stan_model_config.html">stan_model_config()</a></code>
-
-        </dt>
-        <dd>Define configuration for fitting back-calculation model</dd>
-
-        <dt>
-
-          <code><a href="tidy_bind.html">tidy_bind()</a></code>
-
-        </dt>
-        <dd>Helper function to bind tidy data frames</dd>
-
-        <dt>
-
-          <code><a href="total.migration.df.html">total.migration.df()</a></code>
-
-        </dt>
-        <dd>Migration dataframe</dd>
-
-        <dt>
-
-          <code><a href="transfers.df.html">transfers.df()</a></code>
-
-        </dt>
-        <dd>Transfers dataframe</dd>
-
-        <dt>
-
-          <code><a href="trend.fct.html">trend.fct()</a></code>
-
-        </dt>
-        <dd>Function to identify the trend in infection in the last x years</dd>
-
-        <dt>
-
-          <code><a href="undiag.prev.df.html">undiag.prev.df()</a></code>
-
-        </dt>
-        <dd>Undiagnosed prevalence dataframe</dd>
-
-        <dt>
-
-          <code><a href="undx.migration.df.html">undx.migration.df()</a></code>
-
-        </dt>
-        <dd>Undiagnosed migration dataframe</dd>
-
-        <dt>
-
-          <code><a href="urep.fct.html">urep.fct()</a></code>
-
-        </dt>
-        <dd>Function to deal with under-reporting of AIDS diagnoses</dd>
-
-        <dt>
-
-          <code><a href="validate_sim_data.html">validate_sim_data()</a></code>
-
-        </dt>
-        <dd>Validate simulation</dd>
-
-        <dt>
-
-          <code><a href="validate_stan_data.html">validate_stan_data()</a></code>
-
-        </dt>
-        <dd>Validate Stan data</dd>
+        <dd>Extract real data for plotting</dd>
       </dl></div>
-  </main></div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">

@@ -2,8 +2,12 @@ pandoc: 3.1.11
 pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
+  articles/analysing-results: analysing-results.html
   cd4backcalc: cd4backcalc.html
-last_built: 2026-04-01T10:51Z
+  articles/checkpointing: checkpointing.html
+  articles/getting-started: getting-started.html
+  articles/model-types: model-types.html
+last_built: 2026-04-07T16:35Z
 urls:
   reference: https://pkirwan.github.io/cd4backcalc/reference
   article: https://pkirwan.github.io/cd4backcalc/articles

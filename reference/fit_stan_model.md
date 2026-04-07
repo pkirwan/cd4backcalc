@@ -81,10 +81,11 @@ A CmdStanFit object (without checkpointing) or a
 ## Examples
 
 ``` r
+if (FALSE) { # \dontrun{
 sim_diags <- simulate_diagnoses(sim_seed = 123)
 stan_data <- model_type_prep(sim_diags)
 fit <- fit_stan_model(
  stan_data, iter_warmup = 10, iter_sampling = 10, chains = 1, refresh = 0, messages = FALSE
 )
-#> Error: CmdStan path has not been set yet. See ?set_cmdstan_path.
+} # }
 ```
