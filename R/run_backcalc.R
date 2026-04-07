@@ -126,12 +126,14 @@ run_backcalc <- function(
 #' @return A CmdStanFit object (without checkpointing) or a
 #'   \code{cd4backcalc_combined_fit} object (with checkpointing).
 #' @examples
+#' \dontrun{
 #' sim_diags <- simulate_diagnoses(sim_seed = 123)
 #' stan_data <- model_type_prep(sim_diags)
 #' fit <- fit_stan_model(
 #'  stan_data, iter_warmup = 10, iter_sampling = 10, chains = 1, refresh = 0, messages = FALSE
 #' )
-#' @export
+#' }
+#' @keywords internal
 fit_stan_model <- function(
   stan_data,
   model_seed = NULL,
@@ -556,7 +558,7 @@ load_stan_model <- function(config) {
 #' @param knots Number of knots for the spline (default is 10).
 #' @param penalty Order of the penalty for the spline (default is 2).
 #' @return The augmented stan_data list with spline design matrices and prior information.
-#' @export
+#' @keywords internal
 model_type_prep <- function(
   stan_data,
   migration = NULL,
@@ -716,7 +718,7 @@ model_type_prep <- function(
 #'
 #' @param config Configuration object containing model settings.
 #' @return A character vector of parameter names to save.
-#' @export
+#' @keywords internal
 make_pars_save <- function(config) {
   # basic parameters to save
   pars_save <- c(

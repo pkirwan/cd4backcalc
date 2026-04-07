@@ -1,0 +1,278 @@
+---
+title: "Model types"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+The `cd4backcalc` package supports eight model configurations combining CD4-only or CD4 + RITA data, with or without migration, and age-independent or age-dependent structures. This article shows how to simulate data and fit each variant.
+
+## Supported models
+
+```{r table, echo=FALSE}
+grid <- tibble::tribble(
+  ~Model, ~`Age-independent`, ~`Age-dependent`,
+  "CD4", "`rita=FALSE, migration=FALSE, age=FALSE`", "`rita=FALSE, migration=FALSE, age=TRUE`",
+  "CD4 + RITA", "`rita=TRUE, migration=FALSE, age=FALSE`", "`rita=TRUE, migration=FALSE, age=TRUE`",
+  "CD4 + Migration", "`rita=FALSE, migration=TRUE, age=FALSE`", "`rita=FALSE, migration=TRUE, age=TRUE`",
+  "CD4 + RITA + Migration", "`rita=TRUE, migration=TRUE, age=FALSE`", "`rita=TRUE, migration=TRUE, age=TRUE`"
+)
+knitr::kable(grid, align = "lcc")
+```
+
+The `rita`, `migration`, and `age` flags are passed to both `simulate_diagnoses()` and `run_backcalc()`. When fitting to real data these flags are passed to `run_backcalc()` only.
+
+## CD4-only model (basic)
+
+The simplest model uses CD4 count at diagnosis as the only evidence.
+
+```{tikz backcalc-model, fig.cap = "Figure: CD4-staged back-calculation model. The model compartments represent undiagnosed HIV (round boxes) and diagnosed HIV or AIDS (square boxes); the $h_j$ arrow represents HIV acquired at each time point ($j$); HIV progression probabilities ($q_i$) vary by CD4 stratum; HIV diagnosis probabilities ($d_{i,j}$) vary by CD4 stratum and time.", fig.ext = 'png', echo=FALSE}
+\usetikzlibrary{shapes,decorations,arrows,calc,arrows.meta,fit,positioning}
+\tikzset{
+    -Latex,auto,node distance =1 cm and 1 cm,semithick,
+    state/.style ={rectangle, draw, minimum width = 0.7 cm},
+    rstate/.style = {rectangle, draw, minimum width = 0.7 cm, rounded corners = 0.2cm},
+    point/.style = {circle, draw, inner sep=0.04cm,fill,node contents={}},
+    bidirected/.style={Latex-Latex,solid},
+    el/.style = {inner sep=2pt, align=left, sloped},
+    every picture/.style={line width=0.75pt}
+}
+\begin{tikzpicture}
+    % Nodes
+    \node[] (m0) at (0,0) {};
+    
+    \node[rstate, align=center] (e1) [right = 11mm of m0] {CD4$\geq$500\\($e_{1,j}$)};
+    \node[rstate, align=center] (e2) [right = 11mm of e1] {CD4 350-499\\($e_{2,j}$)};
+    \node[rstate, align=center] (e3) [right = 11mm of e2] {CD4 200-349\\($e_{3,j}$)};
+    \node[rstate, align=center] (e4) [right = 11mm of e3] {CD4$<$200\\($e_{4,j}$)};
+
+    \node[state, align=center] (d1) [below = of e1] {CD4$\geq$500\\($\mu_{1,j}$)};
+    \node[state, align=center] (d2) [below = of e2] {CD4 350-499\\($\mu_{2,j}$)};
+    \node[state, align=center] (d3) [below = of e3] {CD4 200-349\\($\mu_{3,j}$)};
+    \node[state, align=center] (d4) [below = of e4] {CD4$<$200\\($\mu_{4,j}$)};
+    \node[state, align=center] (d5) [right = 11mm of e4] {AIDS\\($\mu_{5,j}$)};
+    
+    % Edges
+    
+    \path (m0) edge node[above] {$h_j$} (e1);
+    \path (e1) edge node[] {$q_1$} (e2);
+    \path (e2) edge node[] {$q_2$} (e3);
+    \path (e3) edge node[] {$q_3$} (e4);
+    \path (e4) edge node[] {$q_4$} (d5);
+
+    \path (e1) edge[] node['] {$d_{1,j}$} (d1);
+    \path (e2) edge[] node['] {$d_{2,j}$} (d2);
+    \path (e3) edge[] node['] {$d_{4,j}$} (d3);
+    \path (e4) edge[] node['] {$d_{5,j}$} (d4);
+
+\end{tikzpicture}
+```
+
+This model can be fitted with:
+
+```{r cd4-only, eval=FALSE}
+library(cd4backcalc)
+
+sim_cd4 <- simulate_diagnoses(h_pattern = "increasing")
+fit_cd4 <- run_backcalc(sim_cd4)
+plot_estimates(fit_cd4, quantity = "incidence")
+```
+
+## Adding RITA evidence
+
+RITA (Recent Infection Testing Algorithm) provides additional information on recent infections, improving incidence estimation:
+
+```{tikz rita-model, fig.cap = "Figure: Dual biomarker back-calculation model with recent incidence assay and non-recent incidence assay CD4-staged states. Time, $j$, is indexed by $T$ disjoint, consecutive intervals $(t_{j-1}, t_j], j = 1, ..., T$. Rounded boxes indicate latent states, square boxes indicate diagnosed states. Solid lines indicate HIV progression. Dashed lines indicate transition from latent to diagnosed state. A/w = Acquired within, mo. = months.", fig.ext = 'png', echo=FALSE}
+\usetikzlibrary{shapes,decorations,arrows,calc,arrows.meta,fit,positioning}
+\tikzset{
+    -Latex,auto,node distance =1 cm and 1 cm,semithick,
+    state/.style ={rectangle, draw, minimum width = 0.7 cm},
+    rstate/.style = {rectangle, draw, minimum width = 0.7 cm, rounded corners = 0.2cm},
+    point/.style = {circle, draw, inner sep=0.04cm,fill,node contents={}},
+    bidirected/.style={Latex-Latex,solid},
+    el/.style = {inner sep=2pt, align=left, sloped},
+    every picture/.style={line width=0.75pt}
+}
+\begin{tikzpicture}
+    % Nodes
+    \node[] (n0) at (0,0) {};
+    \node[rstate, align=center] (a1) [right = of n0] {A/w 0-3 mo.\\$\left(e_{1,j}\right)$};
+    \node[rstate, align=center] (a2) [below = of a1] {A/w 3-6 mo.\\$\left(e_{2,j}\right)$};
+    \node[rstate, align=center] (a3) [right = 10mm of a2] {A/w 3-6 mo.\\$\left(e_{3,j}\right)$};
+    \node[state, align=center] (r1) [right = 50mm of a1] {Recently acquired \\ HIV ($\leq$6 months)\\$\left(\mu_{1,j}\right)$};
+
+    \node[rstate, align=center] (n1) [below = of a2] {CD4$\geq$500\\$\left(e_{4,j}\right)$};
+    \node[rstate, align=center] (n2) [right = 12mm of n1] {CD4 350-499\\$\left(e_{5,j}\right)$};
+    \node[rstate, align=center] (n3) [right = of n2] {CD4 200-349\\$\left(e_{6,j}\right)$};
+    \node[rstate, align=center] (n4) [right = of n3] {CD4$<$200\\$\left(e_{7,j}\right)$};
+    \node[state, align=center] (n5) [right = of n4] {AIDS\\$\left(\mu_{6,j}\right)$};
+    \node[state, align=center] (n6) [below = of n1] {Non-recent HIV \\ (>6 months) and \\CD4$\geq$500\\$\left(\mu_{2,j}\right)$};
+    \node[state, align=center] (n7) [below = of n2] {Non-recent HIV \\ (>6 months) and \\CD4 350-499\\$\left(\mu_{3,j}\right)$};
+    \node[state, align=center] (n8) [below = of n3] {Non-recent HIV \\ (>6 months) and \\CD4 200-349\\$\left(\mu_{4,j}\right)$};
+    \node[state, align=center] (n9) [below = of n4] {Non-recent HIV \\ (>6 months) and \\CD4$<$200\\$\left(\mu_{5,j}\right)$};
+    % Edges
+    \path (n0) edge node[above] {$h_{j}$} (a1);
+
+    \path (a1) edge node[', scale = 0.8] {$1-q_1$} (a2);
+    \path (a1) edge node[pos = 0.7, scale = 0.8] {$q_1$} (a3);
+    \path (a2) edge node[', scale = 0.8] {$1-q_1$} (n1);
+    \path (a2) edge node[scale = 0.8] {$q_1$} (n2);
+    \path (a3) edge node[pos = 0.75, scale = 0.8] {$1-q_2$} (n2);
+    \path (a3) edge node[scale = 0.8] {$q_2$} (n3);
+    \path (a1) edge[dashed, bend left=20] node[scale = 0.8] {$d_{1,j}$} (r1);
+    \path (a2) edge[dashed, bend left=25] node[scale = 0.8] {$d_{1,j}$} (r1);
+    \path (a3) edge[dashed, bend left=20] node[pos = 0.4, scale = 0.8] {$d_{1,j}$} (r1);
+
+    \path (n1) edge node[scale = 0.8] {$q_1$} (n2);
+    \path (n2) edge node[scale = 0.8] {$q_2$} (n3);
+    \path (n3) edge node[scale = 0.8] {$q_3$} (n4);
+    \path (n4) edge node[scale = 0.8] {$q_4$} (n5);
+    \path (n1) edge[dashed] node[', scale = 0.8] {$d_{2,j}$} (n6);
+    \path (n2) edge[dashed] node[', scale = 0.8] {$d_{3,j}$} (n7);
+    \path (n3) edge[dashed] node[', scale = 0.8] {$d_{4,j}$} (n8);
+    \path (n4) edge[dashed] node[', scale = 0.8] {$d_{5,j}$} (n9);
+\end{tikzpicture}
+```
+
+```{r rita, eval=FALSE}
+sim_rita <- simulate_diagnoses(rita = TRUE, h_pattern = "increasing")
+fit_rita <- run_backcalc(sim_rita)
+plot_estimates(fit_rita, quantity = "incidence")
+```
+
+## Adding migration
+
+When migration data is available, the model can distinguish between infections acquired in the UK and abroad, and estimate undiagnosed migration.
+
+```{tikz migration-model, fig.cap = "Figure: CD4-staged back-calculation model including migration transitions. Rounded boxes indicate latent states, square boxes indicate diagnosed states. Solid lines indicate HIV progression and transition from latent to diagnosed state; dashed line is HIV acquisition among individuals born in the UK, dotted lines are HIV acquisition or migration arrivals among individuals born abroad.", fig.ext = 'png', echo=FALSE}
+\usetikzlibrary{shapes,decorations,arrows,calc,arrows.meta,fit,positioning}
+\tikzset{
+    -Latex,auto,node distance =1 cm and 1 cm,semithick,
+    state/.style ={rectangle, draw, minimum width = 0.7 cm},
+    rstate/.style = {rectangle, draw, minimum width = 0.7 cm, rounded corners = 0.2cm},
+    point/.style = {circle, draw, inner sep=0.04cm,fill,node contents={}},
+    bidirected/.style={Latex-Latex,solid},
+    el/.style = {inner sep=2pt, align=left, sloped},
+    every picture/.style={line width=0.75pt}
+}
+\begin{tikzpicture}
+    % Nodes
+    \node[] (m0) at (0,0) {};
+    
+    \node[rstate, align=center] (e1) [right = 11mm of m0] {CD4$\geq$500\\$\left(e_{1,j}\right)$};
+    \node[rstate, align=center] (e2) [right = 11mm of e1] {CD4 350-499\\$\left(e_{2,j}\right)$};
+    \node[rstate, align=center] (e3) [right = 11mm of e2] {CD4 200-349\\$\left(e_{3,j}\right)$};
+    \node[rstate, align=center] (e4) [right = 11mm of e3] {CD4$<$200\\$\left(e_{4,j}\right)$};
+
+    \node[state, align=center] (d1) [below = of e1] {CD4$\geq$500\\$\left(\mu_{1,j}\right)$};
+    \node[state, align=center] (d2) [below = of e2] {CD4 350-499\\$\left(\mu_{2,j}\right)$};
+    \node[state, align=center] (d3) [below = of e3] {CD4 200-349\\$\left(\mu_{3,j}\right)$};
+    \node[state, align=center] (d4) [below = of e4] {CD4$<$200\\$\left(\mu_{4,j}\right)$};
+    \node[state, align=center] (d5) [right = 11mm of e4] {AIDS\\$\left(\mu_{5,j}\right)$};
+
+    \node[] (i1) [above = of e1] {};
+    \node[] (i2) [above = of e2] {};
+    \node[] (i3) [above = of e3] {};
+    \node[] (i4) [above = of e4] {};
+    \node[state, align=center] (m1) [above right = 15mm and -4mm of e2] {Transfers\\of care from\\abroad\\$\left(\mu_{6,j}\right)$};
+    \node[] (i5) [above = of m1] {};
+    
+    % Edges
+    
+    \path (m0) edge[dashed, transform canvas={yshift=2mm}] node[above] {$h_{j}$} (e1);
+    \path (m0) edge[dotted, transform canvas={yshift=-2mm}] node[below] {$p_jh_{j}$} (e1);
+    \path (e1) edge node[] {$q_1$} (e2);
+    \path (e2) edge node[] {$q_2$} (e3);
+    \path (e3) edge node[] {$q_3$} (e4);
+    \path (e4) edge node[] {$q_4$} (d5);
+
+    \path (e1) edge[] node['] {$d_{1,j}$} (d1);
+    \path (e2) edge[] node['] {$d_{2,j}$} (d2);
+    \path (e3) edge[] node['] {$d_{3,j}$} (d3);
+    \path (e4) edge[] node['] {$d_{4,j}$} (d4);
+
+    \path (i1) edge[dotted] node[] {$\omega_{j} m_{1,j}$} (e1);
+    \path (i2) edge[dotted] node[] {$\omega_{j} m_{2,j}$} (e2);
+    \path (i3) edge[dotted] node[] {$\omega_{j} m_{3,j}$} (e3);
+    \path (i4) edge[dotted] node[] {$\omega_{j} m_{4,j}$} (e4);
+    \path (i5) edge[dotted] node[] {$\omega_{j} \left(1 - \sum_{i=1}^{4} m_{i,j}\right)$} (m1);
+
+  \end{tikzpicture}
+```
+
+```{r migration, eval=FALSE}
+sim_mig <- simulate_diagnoses(migration = TRUE, h_pattern = "increasing")
+fit_mig <- run_backcalc(sim_mig)
+
+# migration-specific outputs
+plot_estimates(fit_mig, quantity = "undiag_migration")
+plot_estimates(fit_mig, quantity = "migration_prob")
+plot_estimates(fit_mig, quantity = "ratio_abroad_uk")
+plot_estimates(fit_mig, quantity = "transfers")
+plot_estimates(fit_mig, quantity = "detect_prob")
+```
+
+## Age-dependent models
+
+Age-dependent models stratify incidence and prevalence by age group. These models are more complex and take substantially longer to fit:
+
+```{r age, eval=FALSE}
+sim_age <- simulate_diagnoses(age = TRUE, h_pattern = "increasing")
+fit_age <- run_backcalc(sim_age)
+
+# age-specific outputs
+plot_estimates(fit_age, quantity = "incidence_age")
+plot_estimates(fit_age, quantity = "undiag_prev_age")
+plot_estimates(fit_age, quantity = "diagnoses_age")
+
+# aggregate estimates are also available
+plot_estimates(fit_age, quantity = "incidence")
+```
+
+For age-dependent models on resource-constrained systems, checkpointing is recommended — see `vignette("checkpointing")`.
+
+## Full model (CD4 + RITA + migration + age)
+
+All features can be combined:
+
+```{r full, eval=FALSE}
+sim_full <- simulate_diagnoses(
+  rita = TRUE, migration = TRUE, age = TRUE,
+  h_pattern = "increasing"
+)
+fit_full <- run_backcalc(sim_full)
+```
+
+## Remodelling data
+
+If your data was collected with RITA evidence but you want to fit a CD4-only model (e.g. for comparison), use `sim_remodel()` to restructure the data:
+
+```{r remodel, eval=FALSE}
+# simulate with RITA
+sim_rita <- simulate_diagnoses(rita = TRUE)
+
+# remodel to CD4-only format
+sim_cd4 <- sim_remodel(sim_rita, rita = FALSE)
+
+# fit as CD4-only model
+fit_cd4 <- run_backcalc(sim_cd4, rita = FALSE)
+```
+
+## Simulation types
+
+For reproducible simulation studies, pre-defined simulation types combine multiple parameter patterns. These are specified via the `sim_type` argument:
+
+```{r sim-types, eval=FALSE}
+# combo_3: varying infections + step-change migration + varying diagnosis +
+#          increasing proportion UK + varying migration probabilities
+sim_c3 <- simulate_diagnoses(sim_type = "combo_3", migration = TRUE)
+
+# combo_4: alternative incidence and migration patterns
+sim_c4 <- simulate_diagnoses(sim_type = "combo_4", migration = TRUE)
+```
+
+Available simulation types include: `"constant"`, `"h_increasing"`, `"h_varying"`, `"o_increasing"`, `"o_step_change"`, `"d_varying"`, `"p_increasing"`, `"m_differing"`, `"m_varying"`, `"combo_1"` through `"combo_4"`, and `"combo_3_no_migration"`.

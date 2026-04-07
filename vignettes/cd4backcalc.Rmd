@@ -14,7 +14,12 @@ knitr::opts_chunk$set(
 )
 ```
 
-This vignette demonstrates how to use the `cd4backcalc` package to simulate HIV diagnosis data and fit a CD4-staged back-calculation model.
+This vignette demonstrates a quick overview of the `cd4backcalc` package. For detailed guides, see the [package website](https://pkirwan.github.io/cd4backcalc/):
+
+- [Getting started](https://pkirwan.github.io/cd4backcalc/articles/getting-started.html) — full walkthrough of simulation, fitting, and plotting.
+- [Model types](https://pkirwan.github.io/cd4backcalc/articles/model-types.html) — RITA, migration, and age-dependent models.
+- [Analysing results](https://pkirwan.github.io/cd4backcalc/articles/analysing-results.html) — extracting estimates, comparing models, and all available quantities.
+- [Checkpointing](https://pkirwan.github.io/cd4backcalc/articles/checkpointing.html) — fitting large models in stages.
 
 ```{r setup, eval=FALSE}
 library(cd4backcalc)
@@ -22,9 +27,7 @@ library(cd4backcalc)
 
 ## Simulate data
 
-To demonstrate the process of fitting a back-calculation model we need to first simulate some diagnosis data. Data are simulated by propagating a number of HIV infections through the back-calculation model to generate diagnoses over time.
-
-We can define a simulation configuration using the `define_sim_config` function. This function allows us to specify whether to include migration status, RITA status, and/or age groups in the simulation, as well as varying the patterns for each of the model parameters, e.g. `h_pattern` which controls the pattern of HIV incidence over time can be set to "constant", "linear", or "quadratic". 
+The `simulate_diagnoses()` function generates HIV diagnosis data by propagating infections through the back-calculation model. Key options include whether to include migration, RITA evidence, and/or age structure.
 
 In case real data are being used, then the simulation step can be skipped, and the migration, rita, and age parameters can be passed directly to the `run_backcalc` function with the formatted `stan_data`.
 

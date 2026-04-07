@@ -16,3 +16,4 @@ A character vector of parameter names to save.
 This function generates a vector of parameter names to save from the Stan model
 based on the provided configuration.
 }
+\keyword{internal}

@@ -84,6 +84,4 @@ Configuration list.
 Defines the patterns for various parameters in the epidemic simulation.
 The number of latent and diagnosis states will be inferred from the simulation specification.
 }
-\examples{
-define_sim_config(h_pattern = "constant")
-}
+\keyword{internal}

@@ -25,6 +25,7 @@ This function decides which post-processing routine needs to be run
 and passes the relevant data and arguments.
 }
 \examples{
+\dontrun{
 sim_diags <- simulate_diagnoses(sim_seed = 123)
 stan_data <- model_type_prep(sim_diags, model_seed = 123)
 fit <- fit_stan_model(
@@ -37,3 +38,5 @@ fit <- fit_stan_model(
 )
 hiv_list <- postproc(fit, stan_data, start_yr = 0, nworkers = 1)
 }
+}
+\keyword{internal}

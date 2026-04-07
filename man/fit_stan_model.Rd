@@ -57,9 +57,12 @@ After each chunk a checkpoint is written so that a timed-out SLURM job
 can be resubmitted and will resume from the last completed chunk.
 }
 \examples{
+\dontrun{
 sim_diags <- simulate_diagnoses(sim_seed = 123)
 stan_data <- model_type_prep(sim_diags)
 fit <- fit_stan_model(
  stan_data, iter_warmup = 10, iter_sampling = 10, chains = 1, refresh = 0, messages = FALSE
 )
 }
+}
+\keyword{internal}

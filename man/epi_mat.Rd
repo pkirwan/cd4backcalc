@@ -24,6 +24,7 @@ A list containing matrices of latent and diagnosed states over time, as well as 
 Simulates the epidemic over a specified number of time quarters using the provided Q and D matrices, initial latent state, and new infections.
 }
 \examples{
+\dontrun{
 config <- define_sim_config(nquar = 10)
 q_age <- matrix(rep(c(0.0976, 0.115, 0.116, 0.148), 52), nrow = 52, byrow = TRUE)
 d_probs <- matrix(rep(0.1, 40), nrow = 10)
@@ -38,3 +39,5 @@ lat_init[, 1] <- c(40, 30, 20, 10)
 h <- array(matrix(rep(10, 20), nrow = 10), dim = c(52, 10, 4))
 epi_mat(Q_l, D_l, h, lat_init, config)
 }
+}
+\keyword{internal}

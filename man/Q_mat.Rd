@@ -41,9 +41,12 @@ Latent state 6: 350 < CD4 < 200, HIV acquired more than 6 months ago
 Latent state 7: CD4 < 200, HIV acquired more than 6 months ago
 }
 \examples{
+\dontrun{
 q_age <- matrix(rep(c(0.2, 0.3, 0.4, 0.5), 52), nrow = 52, byrow = TRUE)
 d_probs <- matrix(rep(0.1, 40), nrow = 10)
 Q_mat(t = 10, d_probs, q_age, nlatst = 4, nage = 52, rita = FALSE)
 d_probs <- matrix(rep(0.1, 50), nrow = 10)
 Q_mat(t = 10, d_probs, q_age, nlatst = 7, nage = 52, rita = TRUE)
 }
+}
+\keyword{internal}

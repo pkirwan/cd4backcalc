@@ -45,3 +45,4 @@ The augmented stan_data list with spline design matrices and prior information.
 This function prepares the spline basis and augments the stan_data list
 with the design matrices for the back-calculation model.
 }
+\keyword{internal}

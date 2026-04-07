@@ -2,3 +2,95 @@ url: https://pkirwan.github.io/cd4backcalc/
 template:
   bootstrap: 5
 
+reference:
+  - title: Simulation
+    desc: Simulate HIV diagnosis data for model fitting
+    contents:
+      - simulate_diagnoses
+      - sim_remodel
+
+  - title: Model fitting
+    desc: Fit and configure CD4-staged back-calculation models
+    contents:
+      - run_backcalc
+      - create_stan_inits
+
+  - title: Visualisation
+    desc: Plot model estimates, diagnostics, and goodness of fit
+    contents:
+      - plot_estimates
+      - plot_simulations
+      - plot_diagnostics
+      - bias_plot
+      - mse_plot
+
+  - title: Data extraction
+    desc: Extract model estimates and data for custom analysis
+    contents:
+      - get_estimates
+      - extract_simulated_quantity
+      - extract_real_data
+
+  - title: internal
+    contents:
+      - has_keyword("internal")
+      - cd4backcalc-package
+      - starts_with("build_")
+      - starts_with("confirm_")
+      - starts_with("d.mat")
+      - starts_with("define_")
+      - matches("prob.df")
+      - starts_with("diagnoses")
+      - starts_with("do_")
+      - starts_with("generate_")
+      - starts_with("get_bias")
+      - starts_with("get_init")
+      - starts_with("get_mse")
+      - starts_with("get_plot")
+      - starts_with("get_quantiles")
+      - starts_with("gof")
+      - starts_with("incidence")
+      - starts_with("infect_")
+      - starts_with("infs")
+      - starts_with("inv")
+      - starts_with("load_")
+      - starts_with("logit")
+      - starts_with("make_fit")
+      - starts_with("make_tibble")
+      - starts_with("peak")
+      - starts_with("postproc")
+      - starts_with("prev")
+      - starts_with("ratio_")
+      - starts_with("round_")
+      - starts_with("shape")
+      - starts_with("stan_")
+      - starts_with("tidy_")
+      - starts_with("total.")
+      - starts_with("transfers")
+      - starts_with("trend")
+      - starts_with("undiag")
+      - starts_with("undx.")
+      - starts_with("urep")
+      - starts_with("validate")
+      - D_mat
+      - Q_mat
+      - epi_mat
+      - fit_stan_model
+      - get_sims
+      - make_mse_list
+      - make_pars_save
+      - model_type_prep
+
+articles:
+  - title: Getting started
+    navbar: Getting started
+    contents:
+      - "`articles/getting-started`"
+
+  - title: Guides
+    navbar: Guides
+    contents:
+      - "`articles/model-types`"
+      - "`articles/analysing-results`"
+      - "`articles/checkpointing`"
+

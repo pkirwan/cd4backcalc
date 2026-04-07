@@ -60,7 +60,7 @@ get_mse <- function(bias_df) {
 #'
 #' @param hiv_list A list of HIV model results.
 #' @return A list of bias and MSE values for incidence, migration, proportion of UK-acquired infections that are migrants, and migration probabilities.
-#' @export
+#' @keywords internal
 make_mse_list <- function(
   hiv_list
 ) {
@@ -154,8 +154,8 @@ mse_plot <- function(
       outliers = FALSE
     ) +
     ggplot2::labs(
-      title = paste0(
-        "Mean Squared Error of estimated ",
+      title = paste(
+        "Mean Squared Error of estimated",
         get_plot_title(quantity)
       ),
       x = "",
@@ -251,7 +251,7 @@ bias_plot <- function(
     ggplot2::geom_hline(yintercept = 0, colour = "grey") +
     ggplot2::geom_boxplot(coef = Inf, alpha = 0.2, width = 0.4) +
     ggplot2::labs(
-      title = paste("Bias in estimated ", get_plot_title(quantity)),
+      title = paste("Bias in estimated", get_plot_title(quantity)),
       x = "",
       y = "Difference"
     ) +

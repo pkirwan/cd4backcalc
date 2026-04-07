@@ -5,7 +5,7 @@
 #' @param var2 The sub-variable to extract.
 #' @param plot_years Number of years in the plot.
 #' @return A data frame of simulation results for plotting.
-#' @export
+#' @keywords internal
 get_sims <- function(sim_list, var, var2, plot_years = 29.75) {
   # make sim_list a list of lists if not already
   if (!("stan_data" %in% names(sim_list[[1]]))) {

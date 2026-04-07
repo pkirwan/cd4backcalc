@@ -10,6 +10,7 @@
 #' @param chain_results Logical indicating whether to return results by chain.
 #' @return List of posterior predictive quantities.
 #' @examples
+#' \dontrun{
 #' sim_diags <- simulate_diagnoses(sim_seed = 123)
 #' stan_data <- model_type_prep(sim_diags, model_seed = 123)
 #' fit <- fit_stan_model(
@@ -21,7 +22,8 @@
 #'    messages = FALSE
 #' )
 #' hiv_list <- postproc(fit, stan_data, start_yr = 0, nworkers = 1)
-#' @export
+#' }
+#' @keywords internal
 postproc <- function(
   fit,
   stan_data,
@@ -45,7 +47,7 @@ postproc <- function(
 #' @param nworkers Number of parallel workers to use.
 #' @param chain_results Logical indicating whether to return results by chain.
 #' @return List of posterior predictive quantities.
-#' @export
+#' @keywords internal
 postproc_ai <- function(
   fit,
   stan_data,

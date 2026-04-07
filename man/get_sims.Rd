@@ -21,3 +21,4 @@ A data frame of simulation results for plotting.
 \description{
 Get simulation data for plotting.
 }
+\keyword{internal}

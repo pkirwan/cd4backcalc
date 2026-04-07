@@ -38,3 +38,4 @@ List of available simulation types:
 \item "combo_4": As "combo_3" but with different incidence and migration patterns.
 }
 }
+\keyword{internal}

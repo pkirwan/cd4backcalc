@@ -27,9 +27,7 @@
 #' @param cd4_completeness CD4 completeness.
 #' @param rita_completeness RITA completeness.
 #' @return Configuration list.
-#' @examples
-#' define_sim_config(h_pattern = "constant")
-#' @export
+#' @keywords internal
 define_sim_config <- function(
   h_pattern = "constant",
   o_pattern = "constant",
@@ -140,7 +138,7 @@ define_sim_config <- function(
 #' @param config Configuration list to modify.
 #' @param sim_type Type of simulation to define patterns for.
 #' @return Configuration list for the specified simulation type.
-#' @export
+#' @keywords internal
 define_simulation_type <- function(config, sim_type = "constant") {
   # check sim_type is valid
   valid_sim_types <- c(
@@ -239,12 +237,14 @@ define_simulation_type <- function(config, sim_type = "constant") {
 #' @param rita Logical indicating whether RITA-specific logic should be applied.
 #' @return Q matrix.
 #' @examples
+#' \dontrun{
 #' q_age <- matrix(rep(c(0.2, 0.3, 0.4, 0.5), 52), nrow = 52, byrow = TRUE)
 #' d_probs <- matrix(rep(0.1, 40), nrow = 10)
 #' Q_mat(t = 10, d_probs, q_age, nlatst = 4, nage = 52, rita = FALSE)
 #' d_probs <- matrix(rep(0.1, 50), nrow = 10)
 #' Q_mat(t = 10, d_probs, q_age, nlatst = 7, nage = 52, rita = TRUE)
-#' @export
+#' }
+#' @keywords internal
 Q_mat <- function(t, d_probs, q_age, nlatst, nage = 52, rita = FALSE) {
   out <- array(0, dim = c(nage, nlatst, nlatst))
 
@@ -299,12 +299,14 @@ Q_mat <- function(t, d_probs, q_age, nlatst, nage = 52, rita = FALSE) {
 #' @param rita Logical indicating whether RITA-specific logic should be applied.
 #' @return D matrix.
 #' @examples
+#' \dontrun{
 #' d_probs <- matrix(rep(0.1, 40), nrow = 10)
 #' q_age <- matrix(rep(c(0.2, 0.3, 0.4, 0.5), 52), nrow = 52, byrow = TRUE)
 #' D_mat(t = 10, d_probs = d_probs, q_age, nlatst = 4, ndiagst = 5, nage = 52, rita = FALSE)
 #' d_probs <- matrix(rep(0.1, 50), nrow = 10)
 #' D_mat(t = 10, d_probs = d_probs, q_age, nlatst = 7, ndiagst = 6, nage = 52, rita = TRUE)
-#' @export
+#' }
+#' @keywords internal
 D_mat <- function(t, d_probs, q_age, nlatst, ndiagst, nage = 52, rita = FALSE) {
   out <- array(0, dim = c(nage, nlatst, ndiagst))
 
@@ -334,6 +336,7 @@ D_mat <- function(t, d_probs, q_age, nlatst, ndiagst, nage = 52, rita = FALSE) {
 #' @param config Configuration list containing simulation parameters.
 #' @return A list containing matrices of latent and diagnosed states over time, as well as detailed quarterly records.
 #' @examples
+#' \dontrun{
 #' config <- define_sim_config(nquar = 10)
 #' q_age <- matrix(rep(c(0.0976, 0.115, 0.116, 0.148), 52), nrow = 52, byrow = TRUE)
 #' d_probs <- matrix(rep(0.1, 40), nrow = 10)
@@ -347,7 +350,8 @@ D_mat <- function(t, d_probs, q_age, nlatst, ndiagst, nage = 52, rita = FALSE) {
 #' lat_init[, 1] <- c(40, 30, 20, 10)
 #' h <- array(matrix(rep(10, 20), nrow = 10), dim = c(52, 10, 4))
 #' epi_mat(Q_l, D_l, h, lat_init, config)
-#' @export
+#' }
+#' @keywords internal
 epi_mat <- function(Q_l, D_l, h, lat_init, config) {
   ### Epidemics loop
 
