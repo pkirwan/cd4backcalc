@@ -86,20 +86,34 @@ sim_diags <- simulate_diagnoses(h_pattern = "increasing")
 
 # visualise simulated data
 plot_simulations(sim_diags, quantity = "incidence")
+```
 
+<img src="man/figures/README-simulate-data-1.png" width="100%" />
+
+``` r
 # run back-calculation model on simulated data
 # default is 1000 warmup iterations, 1000 sampling iterations, and 4 chains
 model_1 <- run_backcalc(sim_diags)
 
 # check convergence
 plot_diagnostics(model_1)
+```
 
+<img src="man/figures/README-simulate-data-2.png" width="100%" />
+
+``` r
 # check goodness of fit to simulated values
 bias_plot(model_1, quantity = "incidence")
+```
 
+<img src="man/figures/README-simulate-data-3.png" width="100%" />
+
+``` r
 # plot estimates compared to simulated values
 plot_estimates(model_1, quantity = "incidence")
 ```
+
+<img src="man/figures/README-simulate-data-4.png" width="100%" />
 
 ## Supported models
 
