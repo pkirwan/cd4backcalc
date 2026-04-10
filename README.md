@@ -45,8 +45,11 @@ HIV diagnosis probabilities ($d_{i,j}$) vary by CD4 stratum and time.
 
 ## Installation
 
-Before installation you will need to set up a Personal Access Token (PAT) in Github with "Contents" and "Metadata" permissions for this repository.
-See [here](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) for instructions. 
+Before installation you will need to set up a Personal Access Token
+(PAT) in Github with “Contents” and “Metadata” permissions for this
+repository. See
+[here](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token)
+for instructions.
 
 You can then install the development version of cd4backcalc with:
 
@@ -58,11 +61,16 @@ pak::pak("pkirwan/cd4backcalc")
 
 ### System requirements for installation
 
-- The cd4backcalc package requires the R package [cmdstanr](https://mc-stan.org/cmdstanr/) (not available on CRAN) and the command-line interface to Stan, [CmdStan](https://mc-stan.org/docs/cmdstan-guide/). See instructions at: [Getting started with CmdStanR](https://mc-stan.org/cmdstanr/articles/cmdstanr.html).
-- Windows users will additionally require Rtools to compile the Stan models, see:
-  <https://cran.r-project.org/bin/windows/Rtools/>.
-- MacOS users will require the correct GNU Fortran compiler, see:
-  <https://mac.r-project.org/tools/>.
+The cd4backcalc package requires the R package
+[cmdstanr](https://mc-stan.org/cmdstanr/) (not available on CRAN) and
+the command-line interface to Stan,
+[CmdStan](https://mc-stan.org/docs/cmdstan-guide/). See instructions at:
+[Getting started with
+CmdStanR](https://mc-stan.org/cmdstanr/articles/cmdstanr.html). -
+Windows users will additionally require Rtools to compile the Stan
+models, see: <https://cran.r-project.org/bin/windows/Rtools/>. - MacOS
+users will require the correct GNU Fortran compiler, see:
+<https://mac.r-project.org/tools/>.
 
 ## Usage
 
@@ -78,40 +86,26 @@ sim_diags <- simulate_diagnoses(h_pattern = "increasing")
 
 # visualise simulated data
 plot_simulations(sim_diags, quantity = "incidence")
-```
 
-<img src="man/figures/README-simulate-data-1.png" width="100%" />
-
-``` r
 # run back-calculation model on simulated data
-# default is 2000 iterations and 4 chains
+# default is 1000 warmup iterations, 1000 sampling iterations, and 4 chains
 model_1 <- run_backcalc(sim_diags)
 
 # check convergence
 plot_diagnostics(model_1)
-```
 
-<img src="man/figures/README-simulate-data-2.png" width="100%" />
-
-``` r
-# check goodness of fit to simulated data
+# check goodness of fit to simulated values
 bias_plot(model_1, quantity = "incidence")
-```
 
-<img src="man/figures/README-simulate-data-3.png" width="100%" />
-
-``` r
 # plot estimates compared to simulated values
 plot_estimates(model_1, quantity = "incidence")
 ```
 
-<img src="man/figures/README-simulate-data-4.png" width="100%" />
-
 ## Supported models
 
-The cd4backcalc package includes several models, written in Stan, which can
-be used to fit the back-calculation model to real or simulated diagnosis
-data under different scenarios:
+The cd4backcalc package includes several models, written in Stan, which
+can be used to fit the back-calculation model to real or simulated
+diagnosis data under different scenarios:
 
 - Age-independent or age-dependent
 - CD4-only or CD4 + RITA data
@@ -129,4 +123,9 @@ combination of RITA evidence, migration status, and age structure.
 | CD4 + Migration | rita = FALSE, migration = TRUE, age = FALSE | rita = FALSE, migration = TRUE, age = TRUE |
 | CD4 + RITA + Migration | rita = TRUE, migration = TRUE, age = FALSE | rita = TRUE, migration = TRUE, age = TRUE |
 
-N.B. Due to the increased complexity, fitting times can be substantially longer when using the age-dependent models. On resource-constrained systems, "checkpointing" is available to fit these models in stages, saving and reloading intermediate results, see [vignette("checkpointing")](https://pkirwan.github.io/cd4backcalc/articles/checkpointing.html) for details.
+N.B. Due to the increased complexity, fitting times can be substantially
+longer when using the age-dependent models. On resource-constrained
+systems, “checkpointing” is available to fit these models in stages,
+saving and reloading intermediate results, see
+[vignette(“checkpointing”)](https://pkirwan.github.io/cd4backcalc/articles/checkpointing.html)
+for details.

@@ -111,7 +111,7 @@ mse_plot(hiv_list, quantity = "incidence")
 
 ## Comparing two models
 
-Both `plot_estimates()`, `bias_plot()`, and `mse_plot()` accept a second model for side-by-side comparison:
+`plot_estimates()`, `bias_plot()`, and `mse_plot()` all accept a second model for side-by-side comparison:
 
 ```{r compare-two, eval=FALSE}
 sim_diags <- simulate_diagnoses(rita = TRUE, h_pattern = "increasing")

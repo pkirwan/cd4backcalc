@@ -82,11 +82,6 @@ reference:
       - model_type_prep
 
 articles:
-  - title: Getting started
-    navbar: Getting started
-    contents:
-      - "`articles/getting-started`"
-
   - title: Guides
     navbar: Guides
     contents:

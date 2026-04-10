@@ -109,7 +109,7 @@ plot_estimates(fit_age, quantity = "diagnoses_age")
 plot_estimates(fit_age, quantity = "incidence")
 ```
 
-For age-dependent models on resource-constrained systems, checkpointing is recommended — see `vignette("checkpointing")`.
+For age-dependent models on resource-constrained systems, checkpointing is recommended — see [Checkpointing](checkpointing.html).
 
 ## Remodelling data
 
