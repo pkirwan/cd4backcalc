@@ -183,7 +183,7 @@ Extract model estimates and data for custom analysis
 
 # Articles
 
-### Guides
+### Articles
 
 - [Model
   types](https://pkirwan.github.io/cd4backcalc/articles/model-types.md):

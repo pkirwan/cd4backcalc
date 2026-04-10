@@ -1,6 +1,6 @@
 # Articles
 
-### Guides
+### Articles
 
 - [Model
   types](https://pkirwan.github.io/cd4backcalc/articles/model-types.md):
