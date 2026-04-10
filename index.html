@@ -99,20 +99,24 @@ Figure: CD4-staged back-calculation model. The model compartments represent undi
 <span><span class="va">sim_diags</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>h_pattern <span class="op">=</span> <span class="st">"increasing"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># visualise simulated data</span></span>
-<span><span class="fu"><a href="reference/plot_simulations.html">plot_simulations</a></span><span class="op">(</span><span class="va">sim_diags</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># run back-calculation model on simulated data</span></span>
+<span><span class="fu"><a href="reference/plot_simulations.html">plot_simulations</a></span><span class="op">(</span><span class="va">sim_diags</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-simulate-data-1.png" width="100%"></p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># run back-calculation model on simulated data</span></span>
 <span><span class="co"># default is 1000 warmup iterations, 1000 sampling iterations, and 4 chains</span></span>
 <span><span class="va">model_1</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_diags</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># check convergence</span></span>
-<span><span class="fu"><a href="reference/plot_diagnostics.html">plot_diagnostics</a></span><span class="op">(</span><span class="va">model_1</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># check goodness of fit to simulated values</span></span>
-<span><span class="fu"><a href="reference/bias_plot.html">bias_plot</a></span><span class="op">(</span><span class="va">model_1</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># plot estimates compared to simulated values</span></span>
+<span><span class="fu"><a href="reference/plot_diagnostics.html">plot_diagnostics</a></span><span class="op">(</span><span class="va">model_1</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-simulate-data-2.png" width="100%"></p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># check goodness of fit to simulated values</span></span>
+<span><span class="fu"><a href="reference/bias_plot.html">bias_plot</a></span><span class="op">(</span><span class="va">model_1</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-simulate-data-3.png" width="100%"></p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># plot estimates compared to simulated values</span></span>
 <span><span class="fu"><a href="reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">model_1</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="reference/figures/README-simulate-data-4.png" width="100%"></p>
 </div>
 <div class="section level2">
 <h2 id="supported-models">Supported models<a class="anchor" aria-label="anchor" href="#supported-models"></a>
