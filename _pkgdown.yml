@@ -82,8 +82,6 @@ reference:
       - model_type_prep
 
 articles:
-  - title: Guides
-    navbar: Guides
     contents:
       - "`articles/model-types`"
       - "`articles/analysing-results`"

@@ -31,7 +31,7 @@ The `rita`, `migration`, and `age` flags are passed to both `simulate_diagnoses(
 The simplest model uses CD4 count at diagnosis as the only evidence.
 
 <div class="figure">
-<img src="figures/backcalc-model-1.png" alt="Figure: CD4-staged back-calculation model." width="80%" />
+<img src="figures/backcalc-model-1.png" alt="Figure: CD4-staged back-calculation model." width="100%" />
 <p class="caption">
 Figure: CD4-staged back-calculation model. The model compartments
 represent undiagnosed HIV (round boxes) and diagnosed HIV or AIDS
@@ -56,7 +56,7 @@ plot_estimates(fit_cd4, quantity = "incidence")
 RITA (Recent Infection Testing Algorithm) provides additional information on recent infections, improving incidence estimation:
 
 <div class="figure">
-<img src="figures/rita-model-1.png" alt="Figure: Dual biomarker back-calculation model with recent incidence assay and non-recent incidence assay CD4-staged states." width="80%" />
+<img src="figures/rita-model-1.png" alt="Figure: Dual biomarker back-calculation model with recent incidence assay and non-recent incidence assay CD4-staged states." width="100%" />
 <p class="caption">
 Figure: Dual biomarker back-calculation model with `recent incidence assay' and `non-recent incidence assay' CD4-staged states. Time, $j$, is indexed by $T$ disjoint, consecutive intervals $(t_{j-1}, t_j], \, j=1,\dots, T$. Rounded boxes indicate latent states, square boxes indicate diagnosed states. Solid lines indicate HIV progression. Dashed lines indicate transition from latent to diagnosed state. A/w = Acquired within, mo. = months.
 </p>
@@ -73,7 +73,7 @@ plot_estimates(fit_rita, quantity = "incidence")
 When migration data is available, the model can distinguish between infections acquired in the UK and abroad, and estimate undiagnosed migration.
 
 <div class="figure">
-<img src="figures/migration-model-1.png" alt="Figure: CD4-staged back-calculation model including migration transitions." width="80%" />
+<img src="figures/migration-model-1.png" alt="Figure: CD4-staged back-calculation model including migration transitions." width="100%" />
 <p class="caption">
 CD4-staged back-calculation model including migration transitions. Rounded boxes indicate latent states, square boxes indicate diagnosed states. Solid lines indicate HIV progression and transition from latent to diagnosed state; dashed line is HIV acquisition among individuals born in the UK, dotted lines are HIV acquisition or migration arrivals among individuals born abroad.
 </p>
