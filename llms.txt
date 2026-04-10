@@ -130,8 +130,8 @@ combination of RITA evidence, migration status, and age structure.
 N.B. Due to the increased complexity, fitting times can be substantially
 longer when using the age-dependent models. On resource-constrained
 systems, “checkpointing” is available to fit these models in stages,
-saving and reloading intermediate results, see the documentation for
-[`run_backcalc()`](https://pkirwan.github.io/cd4backcalc/reference/run_backcalc.md)
+saving and reloading intermediate results, see
+[vignette(“checkpointing”)](https://pkirwan.github.io/cd4backcalc/articles/checkpointing.html)
 for details.
 
 # Package index
