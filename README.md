@@ -129,8 +129,4 @@ combination of RITA evidence, migration status, and age structure.
 | CD4 + Migration | rita = FALSE, migration = TRUE, age = FALSE | rita = FALSE, migration = TRUE, age = TRUE |
 | CD4 + RITA + Migration | rita = TRUE, migration = TRUE, age = FALSE | rita = TRUE, migration = TRUE, age = TRUE |
 
-N.B. Due to the increased complexity, fitting times can be substantially
-longer when using the age-dependent models. On resource-constrained
-systems, "checkpointing" is available to fit these models in stages, 
-saving and reloading intermediate results, see the documentation for 
-`run_backcalc()` for details.
+N.B. Due to the increased complexity, fitting times can be substantially longer when using the age-dependent models. On resource-constrained systems, "checkpointing" is available to fit these models in stages, saving and reloading intermediate results, see [vignette("checkpointing")](https://pkirwan.github.io/cd4backcalc/articles/checkpointing.html) for details.

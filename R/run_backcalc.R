@@ -187,6 +187,7 @@ fit_stan_model <- function(
   }
 
   cp <- load_checkpoint(checkpoint_dir)
+  if (!is.null(cp)) cp <- pad_checkpoint_chains(cp, chains)
   draws_list <- if (!is.null(cp)) cp$draws_list else list()
   diagnostics_list <- if (!is.null(cp)) cp$diagnostics_list else list()
   total_time <- if (!is.null(cp)) cp$total_time else 0
@@ -265,6 +266,7 @@ fit_stan_model <- function(
         )
       }
       cp <- load_checkpoint(checkpoint_dir)
+      cp <- pad_checkpoint_chains(cp, chains)
       message("Checkpoint: ", warmup_done, "/", iter_warmup, " warmup iterations complete.")
     }
   }
@@ -308,6 +310,7 @@ fit_stan_model <- function(
       sampling_done, draws_list, diagnostics_list, total_time
     )
     cp <- load_checkpoint(checkpoint_dir)
+    cp <- pad_checkpoint_chains(cp, chains)
     message("Checkpoint: ", sampling_done, "/", iter_sampling, " sampling iterations complete.")
   }
 

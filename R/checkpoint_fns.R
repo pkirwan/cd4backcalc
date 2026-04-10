@@ -122,6 +122,34 @@ load_checkpoint <- function(checkpoint_dir) {
   env$checkpoint
 }
 
+#' Pad checkpoint chain data to match the requested number of chains
+#'
+#' When a chain fails during a sampling chunk, the checkpoint will have
+#' fewer inits, inverse metrics, and step sizes than requested. This
+#' function fills in missing entries by recycling from surviving chains
+#' so that sampling can resume with the full chain count.
+#'
+#' @param cp A checkpoint list from \code{load_checkpoint}.
+#' @param chains The requested number of chains.
+#' @return The checkpoint list with padded init, inv_metric, and step_size.
+#' @noRd
+pad_checkpoint_chains <- function(cp, chains) {
+  if (is.null(cp)) return(cp)
+  n_available <- length(cp$init)
+  if (n_available >= chains) return(cp)
+
+  warning(
+    "Checkpoint has ", n_available, " chain(s) but ", chains,
+    " requested. Padding missing chains from surviving chain states."
+  )
+
+  idx <- rep_len(seq_len(n_available), chains)
+  cp$init <- cp$init[idx]
+  cp$inv_metric <- unname(cp$inv_metric)[idx]
+  cp$step_size <- cp$step_size[idx]
+  cp
+}
+
 #' Create a combined fit-like object from multiple sampling chunks
 #'
 #' After chunked sampling, this function binds draws from all chunks and
@@ -137,7 +165,38 @@ load_checkpoint <- function(checkpoint_dir) {
 #' @noRd
 create_combined_fit <- function(last_fit, draws_list, diagnostics_list,
                                 n_chains, total_time) {
-  all_draws <- posterior::bind_draws(draws_list, along = "iteration")
+  # Handle chain dropout: merge draws per-chain, allowing chunks to have
+  # different chain counts.  Each chunk's chains are relabelled 1..K so
+  # bind_draws will match by chain id.  Chunks with fewer chains simply
+  # contribute fewer draws for the higher-numbered chains.
+  # We store the result as draws_df because draws_array cannot represent
+  # ragged iteration counts across chains.
+  chunk_chains <- vapply(draws_list, function(d) dim(d)[2], integer(1))
+  if (min(chunk_chains) < max(chunk_chains)) {
+    warning(
+      "Chain count varies across sampling chunks (",
+      paste(chunk_chains, collapse = ", "), "). ",
+      "Merging per-chain; some chains will have fewer total draws."
+    )
+    max_chains <- max(chunk_chains)
+    df_parts <- vector("list", max_chains)
+    for (ch in seq_len(max_chains)) {
+      ch_draws <- lapply(
+        which(chunk_chains >= ch),
+        function(j) posterior::subset_draws(draws_list[[j]], chain = ch)
+      )
+      merged_ch <- posterior::bind_draws(ch_draws, along = "iteration")
+      df <- posterior::as_draws_df(merged_ch)
+      df$.chain <- ch
+      df_parts[[ch]] <- df
+    }
+    all_draws <- do.call(rbind, df_parts)
+    all_draws$.draw <- seq_len(nrow(all_draws))
+    all_draws <- posterior::as_draws_df(all_draws)
+    n_chains <- max_chains
+  } else {
+    all_draws <- posterior::bind_draws(draws_list, along = "iteration")
+  }
 
   # Aggregate diagnostics: sum counts, keep last EBFMI as approximation
   agg_diag <- diagnostics_list[[1]]
