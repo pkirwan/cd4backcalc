@@ -82,6 +82,8 @@ reference:
       - model_type_prep
 
 articles:
+  - title: Articles
+    navbar: ~
     contents:
       - "`articles/model-types`"
       - "`articles/analysing-results`"
