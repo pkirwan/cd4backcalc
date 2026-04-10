@@ -37,9 +37,6 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Getting started</h6></li>
-    <li><a class="dropdown-item" href="articles/getting-started.html">Getting started</a></li>
-    <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
     <li><a class="dropdown-item" href="articles/model-types.html">Model types</a></li>
     <li><a class="dropdown-item" href="articles/analysing-results.html">Analysing results</a></li>
@@ -88,11 +85,7 @@ Figure: CD4-staged back-calculation model. The model compartments represent undi
 <div class="section level3">
 <h3 id="system-requirements-for-installation">System requirements for installation<a class="anchor" aria-label="anchor" href="#system-requirements-for-installation"></a>
 </h3>
-<ul>
-<li>The cd4backcalc package requires the R package <a href="https://mc-stan.org/cmdstanr/" class="external-link">cmdstanr</a> (not available on CRAN) and the command-line interface to Stan, <a href="https://mc-stan.org/docs/cmdstan-guide/" class="external-link">CmdStan</a>. See instructions at: <a href="https://mc-stan.org/cmdstanr/articles/cmdstanr.html" class="external-link">Getting started with CmdStanR</a>.</li>
-<li>Windows users will additionally require Rtools to compile the Stan models, see: <a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link uri">https://cran.r-project.org/bin/windows/Rtools/</a>.</li>
-<li>MacOS users will require the correct GNU Fortran compiler, see: <a href="https://mac.r-project.org/tools/" class="external-link uri">https://mac.r-project.org/tools/</a>.</li>
-</ul>
+<p>The cd4backcalc package requires the R package <a href="https://mc-stan.org/cmdstanr/" class="external-link">cmdstanr</a> (not available on CRAN) and the command-line interface to Stan, <a href="https://mc-stan.org/docs/cmdstan-guide/" class="external-link">CmdStan</a>. See instructions at: <a href="https://mc-stan.org/cmdstanr/articles/cmdstanr.html" class="external-link">Getting started with CmdStanR</a>. - Windows users will additionally require Rtools to compile the Stan models, see: <a href="https://cran.r-project.org/bin/windows/Rtools/" class="external-link uri">https://cran.r-project.org/bin/windows/Rtools/</a>. - MacOS users will require the correct GNU Fortran compiler, see: <a href="https://mac.r-project.org/tools/" class="external-link uri">https://mac.r-project.org/tools/</a>.</p>
 </div>
 </div>
 <div class="section level2">
@@ -106,24 +99,20 @@ Figure: CD4-staged back-calculation model. The model compartments represent undi
 <span><span class="va">sim_diags</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>h_pattern <span class="op">=</span> <span class="st">"increasing"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># visualise simulated data</span></span>
-<span><span class="fu"><a href="reference/plot_simulations.html">plot_simulations</a></span><span class="op">(</span><span class="va">sim_diags</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-simulate-data-1.png" width="100%"></p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># run back-calculation model on simulated data</span></span>
-<span><span class="co"># default is 2000 iterations and 4 chains</span></span>
+<span><span class="fu"><a href="reference/plot_simulations.html">plot_simulations</a></span><span class="op">(</span><span class="va">sim_diags</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># run back-calculation model on simulated data</span></span>
+<span><span class="co"># default is 1000 warmup iterations, 1000 sampling iterations, and 4 chains</span></span>
 <span><span class="va">model_1</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_diags</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># check convergence</span></span>
-<span><span class="fu"><a href="reference/plot_diagnostics.html">plot_diagnostics</a></span><span class="op">(</span><span class="va">model_1</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-simulate-data-2.png" width="100%"></p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># check goodness of fit to simulated data</span></span>
-<span><span class="fu"><a href="reference/bias_plot.html">bias_plot</a></span><span class="op">(</span><span class="va">model_1</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-simulate-data-3.png" width="100%"></p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># plot estimates compared to simulated values</span></span>
+<span><span class="fu"><a href="reference/plot_diagnostics.html">plot_diagnostics</a></span><span class="op">(</span><span class="va">model_1</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># check goodness of fit to simulated values</span></span>
+<span><span class="fu"><a href="reference/bias_plot.html">bias_plot</a></span><span class="op">(</span><span class="va">model_1</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># plot estimates compared to simulated values</span></span>
 <span><span class="fu"><a href="reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">model_1</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="reference/figures/README-simulate-data-4.png" width="100%"></p>
 </div>
 <div class="section level2">
 <h2 id="supported-models">Supported models<a class="anchor" aria-label="anchor" href="#supported-models"></a>

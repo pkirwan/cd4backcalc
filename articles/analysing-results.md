@@ -120,12 +120,11 @@ mse_plot(hiv_list, quantity = "incidence")
 
 ## Comparing two models
 
-Both
 [`plot_estimates()`](https://pkirwan.github.io/cd4backcalc/reference/plot_estimates.md),
 [`bias_plot()`](https://pkirwan.github.io/cd4backcalc/reference/bias_plot.md),
 and
 [`mse_plot()`](https://pkirwan.github.io/cd4backcalc/reference/mse_plot.md)
-accept a second model for side-by-side comparison:
+all accept a second model for side-by-side comparison:
 
 ``` r
 sim_diags <- simulate_diagnoses(rita = TRUE, h_pattern = "increasing")

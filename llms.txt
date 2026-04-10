@@ -51,16 +51,16 @@ pak::pak("pkirwan/cd4backcalc")
 
 ### System requirements for installation
 
-- The cd4backcalc package requires the R package
-  [cmdstanr](https://mc-stan.org/cmdstanr/) (not available on CRAN) and
-  the command-line interface to Stan,
-  [CmdStan](https://mc-stan.org/docs/cmdstan-guide/). See instructions
-  at: [Getting started with
-  CmdStanR](https://mc-stan.org/cmdstanr/articles/cmdstanr.html).
-- Windows users will additionally require Rtools to compile the Stan
-  models, see: <https://cran.r-project.org/bin/windows/Rtools/>.
-- MacOS users will require the correct GNU Fortran compiler, see:
-  <https://mac.r-project.org/tools/>.
+The cd4backcalc package requires the R package
+[cmdstanr](https://mc-stan.org/cmdstanr/) (not available on CRAN) and
+the command-line interface to Stan,
+[CmdStan](https://mc-stan.org/docs/cmdstan-guide/). See instructions at:
+[Getting started with
+CmdStanR](https://mc-stan.org/cmdstanr/articles/cmdstanr.html). -
+Windows users will additionally require Rtools to compile the Stan
+models, see: <https://cran.r-project.org/bin/windows/Rtools/>. - MacOS
+users will require the correct GNU Fortran compiler, see:
+<https://mac.r-project.org/tools/>.
 
 ## Usage
 
@@ -76,34 +76,20 @@ sim_diags <- simulate_diagnoses(h_pattern = "increasing")
 
 # visualise simulated data
 plot_simulations(sim_diags, quantity = "incidence")
-```
 
-![](reference/figures/README-simulate-data-1.png)
-
-``` r
 # run back-calculation model on simulated data
-# default is 2000 iterations and 4 chains
+# default is 1000 warmup iterations, 1000 sampling iterations, and 4 chains
 model_1 <- run_backcalc(sim_diags)
 
 # check convergence
 plot_diagnostics(model_1)
-```
 
-![](reference/figures/README-simulate-data-2.png)
-
-``` r
-# check goodness of fit to simulated data
+# check goodness of fit to simulated values
 bias_plot(model_1, quantity = "incidence")
-```
 
-![](reference/figures/README-simulate-data-3.png)
-
-``` r
 # plot estimates compared to simulated values
 plot_estimates(model_1, quantity = "incidence")
 ```
-
-![](reference/figures/README-simulate-data-4.png)
 
 ## Supported models
 
@@ -182,11 +168,6 @@ Extract model estimates and data for custom analysis
   : Extract real data for plotting
 
 # Articles
-
-### Getting started
-
-- [Getting
-  started](https://pkirwan.github.io/cd4backcalc/articles/getting-started.md):
 
 ### Guides
 

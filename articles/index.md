@@ -1,10 +1,5 @@
 # Articles
 
-### Getting started
-
-- [Getting
-  started](https://pkirwan.github.io/cd4backcalc/articles/getting-started.md):
-
 ### Guides
 
 - [Model

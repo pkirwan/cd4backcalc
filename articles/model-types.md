@@ -116,7 +116,8 @@ plot_estimates(fit_age, quantity = "incidence")
 ```
 
 For age-dependent models on resource-constrained systems, checkpointing
-is recommended — see `vignette("checkpointing")`.
+is recommended — see
+[Checkpointing](https://pkirwan.github.io/cd4backcalc/articles/checkpointing.md).
 
 ## Remodelling data
 
