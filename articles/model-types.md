@@ -55,13 +55,9 @@ information on recent infections, improving incidence estimation:
 assay and non-recent incidence assay CD4-staged
 states.](figures/rita-model-1.png)
 
-Figure: Dual biomarker back-calculation model with
-`recent incidence assay' and`non-recent incidence assay’ CD4-staged
-states. Time, $j$, is indexed by $T$ disjoint, consecutive intervals
-$(t_{j - 1},t_{j}\rbrack,\, j = 1,\ldots,T$. Rounded boxes indicate
-latent states, square boxes indicate diagnosed states. Solid lines
-indicate HIV progression. Dashed lines indicate transition from latent
-to diagnosed state. A/w = Acquired within, mo. = months.
+Figure: Dual biomarker back-calculation model with recent incidence
+assay and non-recent incidence assay CD4-staged states. A/w = Acquired
+within, mo. = months.
 
 ``` r
 sim_rita <- simulate_diagnoses(rita = TRUE, h_pattern = "increasing")
@@ -78,12 +74,11 @@ migration.
 ![Figure: CD4-staged back-calculation model including migration
 transitions.](figures/migration-model-1.png)
 
-CD4-staged back-calculation model including migration transitions.
-Rounded boxes indicate latent states, square boxes indicate diagnosed
-states. Solid lines indicate HIV progression and transition from latent
-to diagnosed state; dashed line is HIV acquisition among individuals
-born in the UK, dotted lines are HIV acquisition or migration arrivals
-among individuals born abroad.
+CD4-staged back-calculation model including migration transitions. Solid
+lines indicate HIV progression and transition from latent to diagnosed
+states; dashed line is HIV acquisition among individuals born in the UK,
+dotted lines are HIV acquisition or migration arrivals among individuals
+born abroad.
 
 ``` r
 sim_mig <- simulate_diagnoses(migration = TRUE, h_pattern = "increasing")
