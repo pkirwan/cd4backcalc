@@ -59,6 +59,8 @@ plot_estimates <- function(
   model_1_name = "Model 1",
   model_2_name = "Model 2"
 ) {
+  hiv_list <- purrr::compact(hiv_list)
+  if (length(hiv_list) == 0) stop("All entries in hiv_list are NULL.")
   # make hiv_list a list of lists if not already
   if (
     !("incidence" %in% names(hiv_list[[1]])) &&
@@ -67,6 +69,12 @@ plot_estimates <- function(
     hiv_list <- list(hiv_list)
   }
 
+  if (!is.null(hiv_list_2)) {
+    hiv_list_2 <- purrr::compact(hiv_list_2)
+    if (length(hiv_list_2) == 0) {
+      hiv_list_2 <- NULL
+    }
+  }
   if (!is.null(hiv_list_2)) {
     if (
       !("incidence" %in% names(hiv_list_2[[1]])) &&
@@ -159,7 +167,8 @@ plot_estimates <- function(
       x = .data$year + start_year,
       y = .data$`50%`,
       color = .data$group,
-      fill = .data$group
+      fill = .data$group,
+      group = interaction(.data$group, .data$iteration)
     ) +
     ggplot2::geom_line(
       ggplot2::aes(y = .data$`2.5%`),
@@ -226,13 +235,13 @@ plot_estimates <- function(
   }
 
   # add simulated values if data were simulated
-  # simulated values are the same for all iterations, so just use first
+  # use deterministic (expected) values so comparison is against lambda, not rpois(lambda)
   if ("sim_data" %in% names(hiv_list[[1]])) {
-    sim_estimates <- extract_simulated_quantity(hiv_list[[1]], quantity)
+    sim_estimates <- extract_simulated_quantity(hiv_list[[1]], quantity, deterministic = TRUE)
     p1 <- p1 +
       ggplot2::geom_point(
         data = sim_estimates,
-        ggplot2::aes(y = .data$value),
+        ggplot2::aes(y = .data$value, group = .data$group),
         size = 1
       )
   } else if (quantity %in% c("diagnoses", "diagnoses_age", "transfers")) {
@@ -241,7 +250,7 @@ plot_estimates <- function(
     p1 <- p1 +
       ggplot2::geom_point(
         data = observed_data,
-        ggplot2::aes(y = .data$value),
+        ggplot2::aes(y = .data$value, group = .data$group),
         size = 1
       )
   }
@@ -260,6 +269,8 @@ plot_estimates <- function(
 #' @return A ggplot2 object containing diagnostic plots.
 #' @export
 plot_diagnostics <- function(hiv_list, ntraces = 4) {
+  hiv_list <- purrr::compact(hiv_list)
+  if (length(hiv_list) == 0) stop("All entries in hiv_list are NULL.")
   # check if hiv_list is a list of results or a single result
   if ("fit" %in% names(hiv_list[[1]])) {
     fit <- hiv_list[[1]]$fit

@@ -61,7 +61,8 @@ pak::pak("pkirwan/cd4backcalc")
 
 ### System requirements for installation
 
-The cd4backcalc package requires the R package [cmdstanr](https://mc-stan.org/cmdstanr/) (not available on CRAN) and the command-line interface to Stan, [CmdStan](https://mc-stan.org/docs/cmdstan-guide/). See instructions at: [Getting started with CmdStanR](https://mc-stan.org/cmdstanr/articles/cmdstanr.html). 
+The cd4backcalc package requires the R package [cmdstanr](https://mc-stan.org/cmdstanr/) (not available on CRAN) and the command-line interface to Stan, [CmdStan](https://mc-stan.org/docs/cmdstan-guide/). See instructions at: [Getting started with CmdStanR](https://mc-stan.org/cmdstanr/articles/cmdstanr.html).
+
 - Windows users will additionally require Rtools to compile the Stan models, see: <https://cran.r-project.org/bin/windows/Rtools/>. 
 - MacOS users will require the correct GNU Fortran compiler, see: <https://mac.r-project.org/tools/>.
 

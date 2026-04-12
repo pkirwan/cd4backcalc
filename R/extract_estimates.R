@@ -7,6 +7,8 @@
 #' @return A data frame of simulation results for plotting.
 #' @keywords internal
 get_sims <- function(sim_list, var, var2, plot_years = 29.75) {
+  sim_list <- purrr::compact(sim_list)
+  if (length(sim_list) == 0) return(tibble::tibble())
   # make sim_list a list of lists if not already
   if (!("stan_data" %in% names(sim_list[[1]]))) {
     sim_list <- list(sim_list)
@@ -32,6 +34,8 @@ get_sims <- function(sim_list, var, var2, plot_years = 29.75) {
 #' @return A data frame of model estimates for plotting.
 #' @export
 get_estimates <- function(hiv_list, var) {
+  hiv_list <- purrr::compact(hiv_list)
+  if (length(hiv_list) == 0) return(tibble::tibble())
   # make hiv_list a list of lists if not already
   if (!("incidence" %in% names(hiv_list[[1]])) && !("incidence_1" %in% names(hiv_list[[1]]))) {
     hiv_list <- list(hiv_list)
@@ -60,7 +64,7 @@ get_estimates <- function(hiv_list, var) {
     }
 
     estimate_tbl |>
-      dplyr::mutate(group = group_label)
+      dplyr::mutate(group = group_label, iteration = i)
   }) |>
     purrr::list_rbind()
   return(estimates)
@@ -70,9 +74,37 @@ get_estimates <- function(hiv_list, var) {
 #'
 #' @param sim_diags The simulated diagnosis data containing stan_data and sim_data.
 #' @param quantity The quantity to extract.
+#' @param deterministic Logical indicating whether to re-run the simulation deterministically (dist = FALSE) to obtain the expected values (lambda) rather than the stochastic realisation. Useful for bias/MSE calculations across multiple seeds (default is FALSE).
 #' @return A list of model estimates including undiagnosed prevalence, incidence, migration, diagnosis probabilities, diagnoses, migration probabilities, proportion of UK-acquired infections that are migrants, transfers of care, and CD4 strata.
 #' @export
-extract_simulated_quantity <- function(sim_diags, quantity) {
+extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALSE) {
+  if (deterministic) {
+    sim_config <- sim_diags$stan_data$sim_config
+    sim_diags <- simulate_diagnoses(
+      h_pattern = sim_config$h_pattern,
+      o_pattern = sim_config$o_pattern,
+      d_pattern = sim_config$d_pattern,
+      p_pattern = sim_config$p_pattern,
+      m_pattern = sim_config$m_pattern,
+      r_pattern = sim_config$r_pattern,
+      a_pattern = sim_config$a_pattern,
+      sim_seed = sim_config$sim_seed,
+      dist = FALSE,
+      migration = sim_config$migration,
+      rita = sim_config$rita,
+      age = sim_config$age,
+      nquar = sim_config$nquar,
+      nage = sim_config$nage,
+      q = sim_config$q,
+      target_inf = sim_config$target_inf,
+      target_mig = sim_config$target_mig,
+      init_props = sim_config$init_props,
+      init_props_abroad = sim_config$init_props_abroad,
+      abroad_prop = sim_config$abroad_prop,
+      cd4_completeness = 1,
+      rita_completeness = 1
+    )
+  }
   stan_data <- sim_diags$stan_data
   sim_data <- sim_diags$sim_data
 

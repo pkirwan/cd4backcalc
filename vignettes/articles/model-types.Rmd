@@ -58,7 +58,7 @@ RITA (Recent Infection Testing Algorithm) provides additional information on rec
 <div class="figure">
 <img src="figures/rita-model-1.png" alt="Figure: Dual biomarker back-calculation model with recent incidence assay and non-recent incidence assay CD4-staged states." width="100%" />
 <p class="caption">
-Figure: Dual biomarker back-calculation model with `recent incidence assay' and `non-recent incidence assay' CD4-staged states. Time, $j$, is indexed by $T$ disjoint, consecutive intervals $(t_{j-1}, t_j], \, j=1,\dots, T$. Rounded boxes indicate latent states, square boxes indicate diagnosed states. Solid lines indicate HIV progression. Dashed lines indicate transition from latent to diagnosed state. A/w = Acquired within, mo. = months.
+Figure: Dual biomarker back-calculation model with recent incidence assay and non-recent incidence assay CD4-staged states. A/w = Acquired within, mo. = months.
 </p>
 </div>
 
@@ -75,7 +75,7 @@ When migration data is available, the model can distinguish between infections a
 <div class="figure">
 <img src="figures/migration-model-1.png" alt="Figure: CD4-staged back-calculation model including migration transitions." width="100%" />
 <p class="caption">
-CD4-staged back-calculation model including migration transitions. Rounded boxes indicate latent states, square boxes indicate diagnosed states. Solid lines indicate HIV progression and transition from latent to diagnosed state; dashed line is HIV acquisition among individuals born in the UK, dotted lines are HIV acquisition or migration arrivals among individuals born abroad.
+CD4-staged back-calculation model including migration transitions. Solid lines indicate HIV progression and transition from latent to diagnosed states; dashed line is HIV acquisition among individuals born in the UK, dotted lines are HIV acquisition or migration arrivals among individuals born abroad.
 </p>
 </div>
 
