@@ -5,7 +5,7 @@ Extract simulated quantities based on the provided configuration.
 ## Usage
 
 ``` r
-extract_simulated_quantity(sim_diags, quantity)
+extract_simulated_quantity(sim_diags, quantity, deterministic = FALSE)
 ```
 
 ## Arguments
@@ -17,6 +17,13 @@ extract_simulated_quantity(sim_diags, quantity)
 - quantity:
 
   The quantity to extract.
+
+- deterministic:
+
+  Logical indicating whether to re-run the simulation deterministically
+  (dist = FALSE) to obtain the expected values (lambda) rather than the
+  stochastic realisation. Useful for bias/MSE calculations across
+  multiple seeds (default is FALSE).
 
 ## Value
 
