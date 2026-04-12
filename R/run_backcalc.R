@@ -499,9 +499,9 @@ stan_model_cache_dir <- function() {
 load_stan_model <- function(config) {
   name <- if (config$age) {
     if (config$migration && config$rita) {
-      "AD_ptens_migration_rita_softmax"
+      "AD_ptens_migration_rita"
     } else if (config$migration) {
-      "AD_ptens_migration_softmax"
+      "AD_ptens_migration"
     } else if (config$rita) {
       "AD_ptens_rita"
     } else {
