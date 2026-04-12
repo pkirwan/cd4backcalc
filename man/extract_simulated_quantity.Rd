@@ -4,12 +4,14 @@
 \alias{extract_simulated_quantity}
 \title{Extract simulated quantities based on the provided configuration.}
 \usage{
-extract_simulated_quantity(sim_diags, quantity)
+extract_simulated_quantity(sim_diags, quantity, deterministic = FALSE)
 }
 \arguments{
 \item{sim_diags}{The simulated diagnosis data containing stan_data and sim_data.}
 
 \item{quantity}{The quantity to extract.}
+
+\item{deterministic}{Logical indicating whether to re-run the simulation deterministically (dist = FALSE) to obtain the expected values (lambda) rather than the stochastic realisation. Useful for bias/MSE calculations across multiple seeds (default is FALSE).}
 }
 \value{
 A list of model estimates including undiagnosed prevalence, incidence, migration, diagnosis probabilities, diagnoses, migration probabilities, proportion of UK-acquired infections that are migrants, transfers of care, and CD4 strata.
