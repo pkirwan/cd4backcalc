@@ -501,7 +501,7 @@ load_stan_model <- function(config) {
     if (config$migration && config$rita) {
       "AD_ptens_migration_rita"
     } else if (config$migration) {
-      "AD_ptens_migration"
+      "AD_ptens_migration_softmax"
     } else if (config$rita) {
       "AD_ptens_rita"
     } else {
