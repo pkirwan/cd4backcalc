@@ -176,7 +176,7 @@ transformed parameters {
   vector[nquar] eta = alpha_cob + 0.5 * (X_cob * beta_cob);
   vector<lower=0>[nquar] p;
   
-  // Migration probabilities into compartments
+  // Migration probabilities into compartments (softmax, reference = compartment 4)
   vector[nquar] theta_1 = alpha_mp[2] + X_mp * beta_mp_1;
   vector[nquar] theta_2 = alpha_mp[3] + X_mp * beta_mp_2;
   vector[nquar] theta_3 = alpha_mp[4] + X_mp * beta_mp_3;
@@ -184,16 +184,13 @@ transformed parameters {
   matrix<lower=0>[5, nquar] m;
   
   for (t in 1 : nquar) {
-    real remainder = 1.0;
-    m[5, t] = inv_logit(theta_5[t]) * remainder;
-    remainder -= m[5, t];
-    m[1, t] = inv_logit(theta_1[t]) * remainder;
-    remainder -= m[1, t];
-    m[2, t] = inv_logit(theta_2[t]) * remainder;
-    remainder -= m[2, t];
-    m[3, t] = inv_logit(theta_3[t]) * remainder;
-    remainder -= m[3, t];
-    m[4, t] = remainder;
+    vector[5] logits;
+    logits[1] = theta_1[t];
+    logits[2] = theta_2[t];
+    logits[3] = theta_3[t];
+    logits[4] = 0;  // reference category
+    logits[5] = theta_5[t];
+    m[ : , t] = softmax(logits);
   }
   
   // Precompute omega_m[k, t] = omega[t] * m[k, t] (5 compartments x nquar).
