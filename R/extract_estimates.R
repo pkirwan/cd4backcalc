@@ -67,6 +67,25 @@ get_estimates <- function(hiv_list, var) {
       dplyr::mutate(group = group_label, iteration = i)
   }) |>
     purrr::list_rbind()
+
+  # Remap age_band labels to match simulated quantity labels
+  if ("age_band" %in% names(estimates)) {
+    age_band_map <- c(
+      "1524" = "15-24",
+      "2534" = "25-34",
+      "3544" = "35-44",
+      "45" = "45+"
+    )
+    estimates <- estimates |>
+      dplyr::mutate(
+        age_band = dplyr::if_else(
+          as.character(.data$age_band) %in% names(age_band_map),
+          age_band_map[as.character(.data$age_band)],
+          as.character(.data$age_band)
+        )
+      )
+  }
+
   return(estimates)
 }
 
@@ -109,7 +128,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
   sim_data <- sim_diags$sim_data
 
   plot_years <- stan_data$nquar / 4 - 0.25
-  age_group_labels <- c("1524", "2534", "3544", "45")
+  age_group_labels <- c("15-24", "25-34", "35-44", "45+")
 
   # Create data frames for each basic quantity
   undiag_prev <- if (stan_data$sim_config$migration) {
@@ -118,44 +137,44 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
         rowSums(sim_data$epi_uk_abroad$lat) +
         rowSums(sim_data$epi_abroad$lat),
       year = seq(0, plot_years, by = 0.25),
-      group = "Simulated values"
+      group = "Parameter values"
     )
   } else {
     tibble::tibble(
       value = rowSums(sim_data$epi_uk$lat) +
         rowSums(sim_data$epi_uk_abroad$lat),
       year = seq(0, plot_years, by = 0.25),
-      group = "Simulated values"
+      group = "Parameter values"
     )
   }
   incidence <- tibble::tibble(
     value = sim_data$infs[, 1],
     year = seq(0, plot_years, by = 0.25),
-    group = "Simulated values"
+    group = "Parameter values"
   )
   undiag_migration <- tibble::tibble(
     # (1 / detect_prob) - 1 = (1 - detect_prob) * (1 / detect_prob)
     value = rowSums(sim_data$m[, 1:stan_data$sim_config$nlatst]) -
       (stan_data$ABROAD * ((1 / sim_data$detect_prob) - 1)),
     year = seq(0, plot_years, by = 0.25),
-    group = "Simulated values"
+    group = "Parameter values"
   )
   all_migration <- tibble::tibble(
     value = sim_data$omega,
     year = seq(0, plot_years, by = 0.25),
-    group = "Simulated values"
+    group = "Parameter values"
   )
   diagnoses <- if (stan_data$sim_config$migration) {
     tibble::tibble(
       value = rowSums(stan_data$HIV) + rowSums(stan_data$AIDS),
       year = seq(0, plot_years, by = 0.25),
-      group = "Simulated values"
+      group = "Parameter values"
     )
   } else {
     tibble::tibble(
       value = stan_data$HIV + stan_data$AIDS,
       year = seq(0, plot_years, by = 0.25),
-      group = "Simulated values"
+      group = "Parameter values"
     )
   }
   diag_prob <- if (stan_data$sim_config$rita) {
@@ -172,7 +191,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
         ),
         each = stan_data$nquar
       ),
-      group = "Simulated values"
+      group = "Parameter values"
     ) |>
       dplyr::mutate(
         strata = factor(
@@ -194,7 +213,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
         c("CD4>=500", "CD4 350-499", "CD4 200-349", "CD4<200"),
         each = stan_data$nquar
       ),
-      group = "Simulated values"
+      group = "Parameter values"
     ) |>
       dplyr::mutate(
         strata = factor(
@@ -233,7 +252,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
           c(1, 2),
           sum
         )),
-        group = "Simulated values",
+        group = "Parameter values",
         age_band = cut(
           .data$age,
           breaks = c(15, 25, 35, 45, 100),
@@ -256,7 +275,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
     ) |>
       dplyr::mutate(
         value = as.vector(sim_data$infs_age[,, 1]),
-        group = "Simulated values",
+        group = "Parameter values",
         age_band = cut(
           .data$age,
           breaks = c(15, 25, 35, 45, 100),
@@ -288,7 +307,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
           ) -
             t(stan_data$ABROAD_age * ((1 / sim_data$detect_prob) - 1))
         ),
-        group = "Simulated values",
+        group = "Parameter values",
         age_band = cut(
           .data$age,
           breaks = c(15, 25, 35, 45, 100),
@@ -311,7 +330,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
     ) |>
       dplyr::mutate(
         value = as.vector(sim_data$omega_age),
-        group = "Simulated values",
+        group = "Parameter values",
         age_band = cut(
           .data$age,
           breaks = c(15, 25, 35, 45, 100),
@@ -343,7 +362,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
           apply(stan_data$HIV_age, c(1, 2), sum) +
             apply(stan_data$AIDS_age, c(1, 2), sum)
         ),
-        group = "Simulated values",
+        group = "Parameter values",
         age_band = cut(
           .data$age,
           breaks = c(15, 25, 35, 45, 100),
@@ -378,7 +397,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
         ),
         each = stan_data$nquar
       ),
-      group = "Simulated values"
+      group = "Parameter values"
     ) |>
       dplyr::mutate(
         value = dplyr::if_else(is.na(.data$value), 0, .data$value),
@@ -397,13 +416,13 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
     out <- tibble::tibble(
       value = sim_data$ratio_abroad_uk,
       year = seq(0, plot_years, by = 0.25),
-      group = "Simulated values"
+      group = "Parameter values"
     )
   } else if (quantity == "transfers") {
     out <- tibble::tibble(
       value = stan_data$ABROAD * (1 / sim_data$detect_prob),
       year = seq(0, plot_years, by = 0.25),
-      group = "Simulated values"
+      group = "Parameter values"
     )
   } else if (quantity == "cd4_strata") {
     out <- if (stan_data$sim_config$rita) {
@@ -415,7 +434,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
           `CD4 200-349` = rowSums(stan_data$CD4[,, 4]),
           `CD4<200` = rowSums(stan_data$CD4[,, 5]),
           year = seq(0, plot_years, by = 0.25),
-          group = "Simulated values"
+          group = "Parameter values"
         )
       } else {
         tibble::tibble(
@@ -425,7 +444,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
           `CD4 200-349` = stan_data$CD4[, 4],
           `CD4<200` = stan_data$CD4[, 5],
           year = seq(0, plot_years, by = 0.25),
-          group = "Simulated values"
+          group = "Parameter values"
         )
       }
     } else if (stan_data$sim_config$migration) {
@@ -435,7 +454,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
         `CD4 200-349` = rowSums(stan_data$CD4[,, 3]),
         `CD4<200` = rowSums(stan_data$CD4[,, 4]),
         year = seq(0, plot_years, by = 0.25),
-        group = "Simulated values"
+        group = "Parameter values"
       )
     } else {
       tibble::tibble(
@@ -444,7 +463,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
         `CD4 200-349` = stan_data$CD4[, 3],
         `CD4<200` = stan_data$CD4[, 4],
         year = seq(0, plot_years, by = 0.25),
-        group = "Simulated values"
+        group = "Parameter values"
       )
     }
 
@@ -458,7 +477,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
     out <- tibble::tibble(
       value = sim_data$detect_prob,
       year = seq(0, plot_years, by = 0.25),
-      group = "Simulated values"
+      group = "Parameter values"
     )
   }
   return(out)
@@ -473,7 +492,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
 extract_real_data <- function(hiv_list, quantity) {
   stan_data <- hiv_list$stan_data
   plot_years <- stan_data$nquar / 4 - 0.25
-  age_group_labels <- c("1524", "2534", "3544", "45")
+  age_group_labels <- c("15-24", "25-34", "35-44", "45+")
 
   diagnoses <- if (stan_data$model_config$migration) {
     tibble::tibble(

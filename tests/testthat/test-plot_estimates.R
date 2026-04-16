@@ -55,7 +55,7 @@ test_that("simulated plots are generated correctly for migration_prob", {
 
 test_that("simulated age plots are generated correctly", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, age = TRUE)
+  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, age = TRUE, sim_type = "combo_3")
   # Generate plots of key quantities
   p1 <- plot_simulations(stan_data, "incidence_age")
   p2 <- plot_simulations(stan_data, "undiag_prev_age")

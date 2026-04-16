@@ -332,17 +332,16 @@ generate_age_dist <- function(
   } else if (pattern == "wedge") {
     age_dist <- matrix(
       c(
-        seq(0.2, 1.8, length.out = nage / 2),
-        seq(1.8, 0.2, length.out = nage / 2)
+        seq(0.2, 1.8, length.out = nage / 8 * 2),
+        seq(1.8, 0.2, length.out = nage / 8 * 6)
       ),
       ncol = nquar,
       nrow = nage
     )
   } else if (pattern == "varying_wedge") {
-    peak_age = stats::rpois(
-      nquar,
-      (seq(peak_start, peak_end, length.out = nquar))
-    )
+    # currently doesn't pass the test of preserving totals to diagnoses
+    peak_age <- round(seq(peak_start, peak_end, length.out = nquar))
+    peak_age <- pmin(pmax(peak_age, 1L), nage - 1L)
     age_dist <- matrix(0, ncol = nquar, nrow = nage)
     for (i in 1:nquar) {
       age_dist[, i] <- c(
@@ -351,6 +350,16 @@ generate_age_dist <- function(
       )
     }
   }
+
+  # Compensate for unequal age group widths so that wider groups
+  # (group 4 = ages 45-66, 22 single-year ages) don't dominate narrower
+  # groups (groups 1-3, 10 ages each). Each age is weighted by the
+  # inverse of the number of ages in its group.
+  group_sizes <- c(rep(10, 3), nage - 30)
+  age_group_idx <- c(rep(1, 10), rep(2, 10), rep(3, 10), rep(4, nage - 30))
+  compensation <- 1 / group_sizes[age_group_idx]
+  age_dist <- age_dist * compensation
+
   # normalize age distribution
   age_dist <- age_dist / colSums(age_dist)
   # transpose matrix

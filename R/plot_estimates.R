@@ -15,6 +15,12 @@ plot_simulations <- function(
   plot_title <- paste0("Simulated ", plot_title)
   sim_estimates <- extract_simulated_quantity(sim_diags, quantity)
 
+  # exclude "all" age_band from age-facetted plots
+  if ("age_band" %in% names(sim_estimates) && grepl("_age$", quantity)) {
+    sim_estimates <- sim_estimates |>
+      dplyr::filter(.data$age_band != "all")
+  }
+
   p1 <- sim_estimates |>
     ggplot2::ggplot() +
     ggplot2::aes(.data$year, .data$value, group = .data$group) +
@@ -48,6 +54,7 @@ plot_simulations <- function(
 #' @param hiv_list_2 An optional second list of model estimates for comparison (default is NULL).
 #' @param model_1_name A string specifying the name of the first model for the legend (default is "Model 1").
 #' @param model_2_name A string specifying the name of the second model for the legend (default is "Model 2").
+#' @param credible_intervals A logical indicating whether to plot 95% credible intervals (default is TRUE).
 #' @return A ggplot2 object.
 #' @export
 plot_estimates <- function(
@@ -57,7 +64,8 @@ plot_estimates <- function(
   chain_results = FALSE,
   hiv_list_2 = NULL,
   model_1_name = "Model 1",
-  model_2_name = "Model 2"
+  model_2_name = "Model 2",
+  credible_intervals = TRUE
 ) {
   hiv_list <- purrr::compact(hiv_list)
   if (length(hiv_list) == 0) stop("All entries in hiv_list are NULL.")
@@ -161,6 +169,15 @@ plot_estimates <- function(
       )
   }
 
+  # exclude "all" age_band from age-facetted plots
+  if (
+    "age_band" %in% names(quantiles) &&
+      grepl("_age$", quantity)
+  ) {
+    quantiles <- quantiles |>
+      dplyr::filter(.data$age_band != "all")
+  }
+
   p1 <- quantiles |>
     ggplot2::ggplot() +
     ggplot2::aes(
@@ -169,26 +186,41 @@ plot_estimates <- function(
       color = .data$group,
       fill = .data$group,
       group = interaction(.data$group, .data$iteration)
-    ) +
-    ggplot2::geom_line(
-      ggplot2::aes(y = .data$`2.5%`),
-      linewidth = 0.5,
-      alpha = 0.5
-    ) +
-    ggplot2::geom_line(
-      ggplot2::aes(y = .data$`97.5%`),
-      linewidth = 0.5,
-      alpha = 0.5
-    ) +
-    ggplot2::geom_ribbon(
-      ggplot2::aes(ymin = .data$`2.5%`, ymax = .data$`97.5%`),
-      alpha = 0.2
-    ) +
-    ggplot2::geom_line(linewidth = 1) +
+    )
+
+  if (credible_intervals) {
+    p1 <- p1 +
+      ggplot2::geom_line(
+        ggplot2::aes(y = .data$`2.5%`),
+        linewidth = 0.5,
+        alpha = 0.5
+      ) +
+      ggplot2::geom_line(
+        ggplot2::aes(y = .data$`97.5%`),
+        linewidth = 0.5,
+        alpha = 0.5
+      ) +
+      ggplot2::geom_ribbon(
+        ggplot2::aes(ymin = .data$`2.5%`, ymax = .data$`97.5%`),
+        alpha = 0.2
+      )
+  }
+
+  p1 <- p1 +
+    ggplot2::geom_line(linewidth = 1, alpha = 0.7) +
     ggplot2::labs(
       title = plot_title,
       x = "Year",
-      y = plot_title,
+      # remove "by CD4 strata" and "by age" from y-axis label for better readability
+      y = sub(
+        "^(.)", "\\U\\1",
+        gsub(
+          ", by CD4 strata| by age|, by CD4 strata and age|Estimated ",
+          "",
+          get_plot_title(quantity)
+        ),
+        perl = TRUE
+      ),
       color = "",
       fill = ""
     ) +
@@ -204,8 +236,8 @@ plot_estimates <- function(
   # if two models plotted, add legend for model comparison
   if (!is.null(hiv_list_2)) {
     model_colors <- stats::setNames(
-      c("mediumorchid", "coral", "darkcyan"),
-      c(model_1_name, model_2_name, "Simulated values")
+      c("mediumorchid", "coral", "springgreen"),
+      c(model_1_name, model_2_name, "Parameter values")
     )
     p1 <- p1 +
       ggplot2::scale_color_manual(
@@ -221,14 +253,14 @@ plot_estimates <- function(
       ggplot2::scale_color_manual(
         values = c(
           rep("mediumorchid", length(unique(quantiles$group))),
-          "darkcyan"
+          "springgreen"
         ),
         name = ""
       ) +
       ggplot2::scale_fill_manual(
         values = c(
           rep("mediumorchid", length(unique(quantiles$group))),
-          "darkcyan"
+          "springgreen"
         ),
         name = ""
       )
@@ -238,6 +270,10 @@ plot_estimates <- function(
   # use deterministic (expected) values so comparison is against lambda, not rpois(lambda)
   if ("sim_data" %in% names(hiv_list[[1]])) {
     sim_estimates <- extract_simulated_quantity(hiv_list[[1]], quantity, deterministic = TRUE)
+    if ("age_band" %in% names(sim_estimates) && grepl("_age$", quantity)) {
+      sim_estimates <- sim_estimates |>
+        dplyr::filter(.data$age_band != "all")
+    }
     p1 <- p1 +
       ggplot2::geom_point(
         data = sim_estimates,
@@ -247,11 +283,15 @@ plot_estimates <- function(
   } else if (quantity %in% c("diagnoses", "diagnoses_age", "transfers")) {
     # add observed diagnoses if real data
     observed_data <- extract_real_data(hiv_list[[1]], quantity)
+    if ("age_band" %in% names(observed_data) && grepl("_age$", quantity)) {
+      observed_data <- observed_data |>
+        dplyr::filter(.data$age_band != "all")
+    }
     p1 <- p1 +
       ggplot2::geom_point(
         data = observed_data,
         ggplot2::aes(y = .data$value, group = .data$group),
-        size = 1
+        size = 1.1
       )
   }
 
@@ -397,7 +437,7 @@ get_plot_title <- function(quantity) {
   } else if (quantity == "diagnoses_age") {
     "HIV diagnoses by age"
   } else if (quantity == "diag_prob_age") {
-    "HIV diagnosis probabilities by CD4 strata and age"
+    "HIV diagnosis probabilities, by CD4 strata and age"
   } else if (quantity == "incidence_trend") {
     "HIV incidence trend by age"
   } else if (quantity == "peak_incidence") {
@@ -429,7 +469,8 @@ do_facetting <- function(p1, quantity) {
     p1 <- p1 +
       ggplot2::scale_y_continuous(
         limits = c(0, NA),
-        expand = ggplot2::expansion(mult = c(0, 0.05))
+        expand = ggplot2::expansion(mult = c(0, 0.05)),
+        labels = scales::comma
       )
   }
 
@@ -460,8 +501,8 @@ do_facetting <- function(p1, quantity) {
   if (quantity %in% c("diag_prob_age", "migration_prob_age")) {
     p1 <- p1 +
       ggplot2::facet_grid(
-        cols = ggplot2::vars(.data$strata),
-        rows = ggplot2::vars(.data$age_band),
+        rows = ggplot2::vars(.data$strata),
+        cols = ggplot2::vars(.data$age_band),
         scales = "free_y"
       )
   }

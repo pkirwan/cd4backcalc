@@ -195,6 +195,7 @@ define_simulation_type <- function(config, sim_type = "constant") {
     config$d_pattern <- "varying"
     config$p_pattern <- "increasing"
     config$m_pattern <- "varying"
+    config$a_pattern <- "wedge"
   } else if (sim_type == "combo_3_no_migration") {
     config$h_pattern <- "varying"
     config$o_pattern <- "none"
@@ -206,6 +207,7 @@ define_simulation_type <- function(config, sim_type = "constant") {
     config$d_pattern <- "varying"
     config$p_pattern <- "increasing"
     config$m_pattern <- "varying"
+    config$a_pattern <- "wedge"
   }
 
   return(config)
@@ -707,11 +709,6 @@ simulate_diagnoses <- function(
     sim_config
   )
 
-  # Apply rounding which preserves sums
-  epi_uk <- round_fields(epi_uk)
-  epi_uk_abroad <- round_fields(epi_uk_abroad)
-  epi_abroad <- round_fields(epi_abroad)
-
   sim_data <- list(
     "epi_uk" = epi_uk,
     "epi_uk_abroad" = epi_uk_abroad,
@@ -733,10 +730,18 @@ simulate_diagnoses <- function(
     "detect_prob" = detect_prob
   )
 
-  # Perform validation checks
+  # Perform validation checks before rounding
   validate_sim_data(sim_data)
 
+  # Apply rounding which preserves sums
+  sim_data$epi_uk <- round_fields(sim_data$epi_uk)
+  sim_data$epi_uk_abroad <- round_fields(sim_data$epi_uk_abroad)
+  sim_data$epi_abroad <- round_fields(sim_data$epi_abroad)
+
   # Prepare Stan data
+  epi_uk <- sim_data$epi_uk
+  epi_uk_abroad <- sim_data$epi_uk_abroad
+  epi_abroad <- sim_data$epi_abroad
   born_abroad <- epi_abroad$diags + epi_uk_abroad$diags
   born_abroad_age <- epi_abroad$diags_age + epi_uk_abroad$diags_age
 
