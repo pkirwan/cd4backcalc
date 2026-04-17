@@ -110,8 +110,3 @@ plot_estimates(hiv_list, quantity = "incidence") +
 - See [Model types](https://pkirwan.github.io/cd4backcalc/articles/model-types.html) for fitting models with RITA evidence, migration, and age structure.
 - See [Analysing results](https://pkirwan.github.io/cd4backcalc/articles/analysing-results.html) for extracting estimates, comparing models, and the full set of available quantities.
 - See [Checkpointing](https://pkirwan.github.io/cd4backcalc/articles/checkpointing.html) for fitting large models in stages on resource-constrained systems.
-
-## References
-
-- Birrell PJ, Chadborn TR, Gill ON, Delpech VC, et al. (2012). Estimating trends in incidence, time-to-diagnosis and undiagnosed prevalence using a CD4-based Bayesian back-calculation. _Stat. Commun. Infect. Dis._ 4(1). doi: [10.1515/1948-4690.1055](https://doi.org/10.1515/1948-4690.1055).
-- Brizzi F, Birrell PJ, Plummer MT, Kirwan PD, et al. (2019). Extending Bayesian back-calculation to estimate age and time specific HIV incidence. _Lifetime Data Anal._ 25(4), pp.757-780. doi: [10.1007/s10985-019-09465-1](https://doi.org/10.1007/s10985-019-09465-1).
