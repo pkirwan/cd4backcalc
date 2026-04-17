@@ -24,8 +24,9 @@ only.
 
 ## CD4-only model
 
-The simplest model uses CD4 count at diagnosis as the only evidence, see
-Birrell et al. (2012).
+The CD4-only, age-independent model uses CD4 count at diagnosis and
+known HIV progression probabilities to estimate incidence and
+undiagnosed prevalence, see Birrell et al. (2012).
 
 ![Figure: CD4-staged back-calculation
 model.](figures/backcalc-model-1.png)
@@ -49,9 +50,11 @@ plot_estimates(fit_cd4, quantity = "incidence")
 
 ## Age-dependent models
 
-Age-dependent models stratify incidence and prevalence by age group, see
-Brizzi et al. (2019). These models are more complex than the CD4-only
-model (age-independent) model, and take substantially longer to fit.
+Age-dependent models stratify HIV incidence and prevalence by age group,
+see Brizzi et al. (2019). These models take substantially longer to fit
+due to the increased number of parameters. Checkpointing is available
+for fitting age-dependent models on resource-constrained systems — see
+[Checkpointing](https://pkirwan.github.io/cd4backcalc/articles/checkpointing.md).
 
 ![Figure: Age-dependent CD4 back-calculation
 model.](figures/agedep-model-1.png)
@@ -73,17 +76,15 @@ plot_estimates(fit_age, quantity = "diagnoses_age")
 plot_estimates(fit_age, quantity = "incidence")
 ```
 
-For age-dependent models on resource-constrained systems, checkpointing
-is recommended — see
-[Checkpointing](https://pkirwan.github.io/cd4backcalc/articles/checkpointing.md).
-
 ## Adding RITA evidence
 
-RITA (Recent Infection Testing Algorithm) provides additional
-information on recent infections, which can improve the estimation of
-incidence and undiagnosed prevalence. Both CD4-only and age-dependent
-models can be extended to include RITA evidence, see Kirwan et
-al. (2026).
+Evidence from RITA (Recent Infection Testing Algorithm) testing can
+provide additional information on recent HIV acquisition, improving the
+precision of incidence and undiagnosed prevalence estimates,
+particularly for recent time periods and in populations with a high
+proportion of recent diagnoses. Both the age-independent and
+age-dependent models can be extended to include RITA evidence, see
+Kirwan et al. (2026).
 
 ![Figure: Dual biomarker back-calculation model with recent incidence
 assay and non-recent incidence assay CD4-staged
@@ -99,22 +100,22 @@ fit_rita <- run_backcalc(sim_rita)
 plot_estimates(fit_rita, quantity = "incidence")
 ```
 
-## Adding migration
+## Migration-adjusted models
 
-When migration data is available, the model can distinguish between
-infections acquired in the UK and abroad, and estimate undiagnosed
-migration. Both CD4-only and age-dependent models can be extended to
-include migration transitions, and models with RITA evidence can be
-extended to include migration, see Kirwan et al. (2026).
+The migration-adjusted model uses information on country of birth to
+distinguish between HIV acquired in the UK and abroad, and estimate
+trends in migration. Both the age-independent and age-dependent models
+can be extended to include migration transitions, as well as models with
+RITA evidence, see Kirwan et al. (2026).
 
-![Figure: CD4-staged back-calculation model including migration
-transitions.](figures/migration-model-1.png)
+![Figure: Migration-adjusted CD4-staged back-calculation
+model.](figures/migration-model-1.png)
 
-CD4-staged back-calculation model including migration transitions. Solid
-lines indicate HIV progression and transition from latent to diagnosed
-states; dashed line is HIV acquisition among individuals born in the UK,
-dotted lines are HIV acquisition or migration arrivals among individuals
-born abroad.
+Migration-adjusted CD4-staged back-calculation model. Solid lines
+indicate HIV progression and transition from latent to diagnosed states;
+dashed line is HIV acquisition among individuals born in the UK, dotted
+lines are HIV acquisition or migration arrivals among individuals born
+abroad.
 
 ``` r
 sim_mig <- simulate_diagnoses(migration = TRUE, h_pattern = "increasing")
@@ -153,8 +154,9 @@ combine multiple parameter patterns. These are specified via the
 `sim_type` argument:
 
 ``` r
-# combo_3: varying infections + step-change migration + varying diagnosis +
-#          increasing proportion UK + varying migration probabilities
+# combo_3: varying acquisition + step-change migration + varying diagnosis +
+#          increasing proportion UK + varying migration probabilities +
+#          non-uniform age distribution
 sim_c3 <- simulate_diagnoses(sim_type = "combo_3", migration = TRUE)
 
 # combo_4: alternative incidence and migration patterns
