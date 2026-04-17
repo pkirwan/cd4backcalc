@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -114,10 +114,10 @@ flags are passed to both <code><a href="../reference/simulate_diagnoses.html">si
 passed to <code><a href="../reference/run_backcalc.html">run_backcalc()</a></code> only.</p>
 </div>
 <div class="section level2">
-<h2 id="cd4-only-model-basic">CD4-only model (basic)<a class="anchor" aria-label="anchor" href="#cd4-only-model-basic"></a>
+<h2 id="cd4-only-model">CD4-only model<a class="anchor" aria-label="anchor" href="#cd4-only-model"></a>
 </h2>
-<p>The simplest model uses CD4 count at diagnosis as the only
-evidence.</p>
+<p>The simplest model uses CD4 count at diagnosis as the only evidence,
+see Birrell et al. (2012).</p>
 <div class="figure">
 <img src="figures/backcalc-model-1.png" alt="Figure: CD4-staged back-calculation model." width="100%"><p class="caption">
 Figure: CD4-staged back-calculation model. The model compartments
@@ -142,54 +142,22 @@ vary by CD4 stratum and time.
 <span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_cd4</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="adding-rita-evidence">Adding RITA evidence<a class="anchor" aria-label="anchor" href="#adding-rita-evidence"></a>
+<h2 id="age-dependent-models">Age-dependent models<a class="anchor" aria-label="anchor" href="#age-dependent-models"></a>
 </h2>
-<p>RITA (Recent Infection Testing Algorithm) provides additional
-information on recent infections, improving incidence estimation:</p>
+<p>Age-dependent models stratify incidence and prevalence by age group,
+see Brizzi et al. (2019). These models are more complex than the
+CD4-only model (age-independent) model, and take substantially longer to
+fit.</p>
 <div class="figure">
-<img src="figures/rita-model-1.png" alt="Figure: Dual biomarker back-calculation model with recent incidence assay and non-recent incidence assay CD4-staged states." width="100%"><p class="caption">
-Figure: Dual biomarker back-calculation model with recent incidence
-assay and non-recent incidence assay CD4-staged states. A/w = Acquired
-within, mo. = months.
+<img src="figures/agedep-model-1.png" alt="Figure: Age-dependent CD4 back-calculation model." width="100%"><p class="caption">
+Figure: Age-dependent CD4 back-calculation model with
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>
+representing the current age-category and
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>k</mi><mn>0</mn></msub><annotation encoding="application/x-tex">k_0</annotation></semantics></math>
+representing the age category at HIV acquisition.
 </p>
 </div>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sim_rita</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>rita <span class="op">=</span> <span class="cn">TRUE</span>, h_pattern <span class="op">=</span> <span class="st">"increasing"</span><span class="op">)</span></span>
-<span><span class="va">fit_rita</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_rita</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_rita</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="adding-migration">Adding migration<a class="anchor" aria-label="anchor" href="#adding-migration"></a>
-</h2>
-<p>When migration data is available, the model can distinguish between
-infections acquired in the UK and abroad, and estimate undiagnosed
-migration.</p>
-<div class="figure">
-<img src="figures/migration-model-1.png" alt="Figure: CD4-staged back-calculation model including migration transitions." width="100%"><p class="caption">
-CD4-staged back-calculation model including migration transitions. Solid
-lines indicate HIV progression and transition from latent to diagnosed
-states; dashed line is HIV acquisition among individuals born in the UK,
-dotted lines are HIV acquisition or migration arrivals among individuals
-born abroad.
-</p>
-</div>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sim_mig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>migration <span class="op">=</span> <span class="cn">TRUE</span>, h_pattern <span class="op">=</span> <span class="st">"increasing"</span><span class="op">)</span></span>
-<span><span class="va">fit_mig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_mig</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># migration-specific outputs</span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"undiag_migration"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"migration_prob"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"ratio_abroad_uk"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"transfers"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"detect_prob"</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="age-dependent-models">Age-dependent models<a class="anchor" aria-label="anchor" href="#age-dependent-models"></a>
-</h2>
-<p>Age-dependent models stratify incidence and prevalence by age group.
-These models are more complex and take substantially longer to fit:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sim_age</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>age <span class="op">=</span> <span class="cn">TRUE</span>, h_pattern <span class="op">=</span> <span class="st">"increasing"</span><span class="op">)</span></span>
 <span><span class="va">fit_age</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_age</span><span class="op">)</span></span>
 <span></span>
@@ -202,6 +170,54 @@ These models are more complex and take substantially longer to fit:</p>
 <span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_age</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
 <p>For age-dependent models on resource-constrained systems,
 checkpointing is recommended — see <a href="checkpointing.html">Checkpointing</a>.</p>
+</div>
+<div class="section level2">
+<h2 id="adding-rita-evidence">Adding RITA evidence<a class="anchor" aria-label="anchor" href="#adding-rita-evidence"></a>
+</h2>
+<p>RITA (Recent Infection Testing Algorithm) provides additional
+information on recent infections, which can improve the estimation of
+incidence and undiagnosed prevalence. Both CD4-only and age-dependent
+models can be extended to include RITA evidence, see Kirwan et
+al. (2026).</p>
+<div class="figure">
+<img src="figures/rita-model-1.png" alt="Figure: Dual biomarker back-calculation model with recent incidence assay and non-recent incidence assay CD4-staged states." width="100%"><p class="caption">
+Figure: Dual biomarker back-calculation model with recent incidence
+assay and non-recent incidence assay CD4-staged states. A/w = Acquired
+within, mo. = months.
+</p>
+</div>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sim_rita</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>rita <span class="op">=</span> <span class="cn">TRUE</span>, h_pattern <span class="op">=</span> <span class="st">"increasing"</span><span class="op">)</span></span>
+<span><span class="va">fit_rita</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_rita</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_rita</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="adding-migration">Adding migration<a class="anchor" aria-label="anchor" href="#adding-migration"></a>
+</h2>
+<p>When migration data is available, the model can distinguish between
+infections acquired in the UK and abroad, and estimate undiagnosed
+migration. Both CD4-only and age-dependent models can be extended to
+include migration transitions, and models with RITA evidence can be
+extended to include migration, see Kirwan et al. (2026).</p>
+<div class="figure">
+<img src="figures/migration-model-1.png" alt="Figure: CD4-staged back-calculation model including migration transitions." width="100%"><p class="caption">
+CD4-staged back-calculation model including migration transitions. Solid
+lines indicate HIV progression and transition from latent to diagnosed
+states; dashed line is HIV acquisition among individuals born in the UK,
+dotted lines are HIV acquisition or migration arrivals among individuals
+born abroad.
+</p>
+</div>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sim_mig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>migration <span class="op">=</span> <span class="cn">TRUE</span>, h_pattern <span class="op">=</span> <span class="st">"increasing"</span><span class="op">)</span></span>
+<span><span class="va">fit_mig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_mig</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># migration-specific outputs</span></span>
+<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"undiag_migration"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"migration_prob"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"ratio_abroad_uk"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"transfers"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"detect_prob"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="remodelling-data">Remodelling data<a class="anchor" aria-label="anchor" href="#remodelling-data"></a>
@@ -236,9 +252,28 @@ combine multiple parameter patterns. These are specified via the
 <code>"h_increasing"</code>, <code>"h_varying"</code>,
 <code>"o_increasing"</code>, <code>"o_step_change"</code>,
 <code>"d_varying"</code>, <code>"p_increasing"</code>,
-<code>"m_differing"</code>, <code>"m_varying"</code>,
-<code>"combo_1"</code> through <code>"combo_4"</code>, and
-<code>"combo_3_no_migration"</code>.</p>
+<code>"m_differing"</code>, <code>"m_varying"</code>, and
+<code>"combo_1"</code> through <code>"combo_4"</code>.</p>
+</div>
+<div class="section level2">
+<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+</h2>
+<ul>
+<li>Birrell PJ, Chadborn TR, Gill ON, Delpech VC, et al. (2012).
+Estimating trends in incidence, time-to-diagnosis and undiagnosed
+prevalence using a CD4-based Bayesian back-calculation. <em>Stat.
+Commun. Infect. Dis.</em> 4(1). doi: <a href="https://doi.org/10.1515/1948-4690.1055" class="external-link">10.1515/1948-4690.1055</a>.</li>
+<li>Brizzi F, Birrell PJ, Plummer MT, Kirwan PD, et al. (2019).
+Extending Bayesian back-calculation to estimate age and time specific
+HIV incidence. <em>Lifetime Data Anal.</em> 25(4), pp.757-780. doi: <a href="https://doi.org/10.1007/s10985-019-09465-1" class="external-link">10.1007/s10985-019-09465-1</a>.</li>
+<li>Kirwan PD, Presanis A, Birrell PJ, et al. (2026). Extending a
+Bayesian back-calculation model for HIV incidence to include biomarkers
+of recent acquisition. (in press).</li>
+<li>Kirwan PD, Presanis A, Birrell PJ, et al. (2026). HIV incidence
+among gay and bisexual men in England, Wales, and Northern Ireland:
+estimates from a migration-adjusted CD4-staged HIV back-calculation
+model. (in press).</li>
+</ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

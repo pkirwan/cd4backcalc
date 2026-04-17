@@ -128,15 +128,3 @@ plot_estimates(hiv_list, quantity = "incidence") +
 - See
   [Checkpointing](https://pkirwan.github.io/cd4backcalc/articles/checkpointing.html)
   for fitting large models in stages on resource-constrained systems.
-
-## References
-
-- Birrell PJ, Chadborn TR, Gill ON, Delpech VC, et al. (2012).
-  Estimating trends in incidence, time-to-diagnosis and undiagnosed
-  prevalence using a CD4-based Bayesian back-calculation. *Stat. Commun.
-  Infect. Dis.* 4(1). doi:
-  [10.1515/1948-4690.1055](https://doi.org/10.1515/1948-4690.1055).
-- Brizzi F, Birrell PJ, Plummer MT, Kirwan PD, et al. (2019). Extending
-  Bayesian back-calculation to estimate age and time specific HIV
-  incidence. *Lifetime Data Anal.* 25(4), pp.757-780. doi:
-  [10.1007/s10985-019-09465-1](https://doi.org/10.1007/s10985-019-09465-1).

@@ -22,9 +22,10 @@ When fitting to real data these flags are passed to
 [`run_backcalc()`](https://pkirwan.github.io/cd4backcalc/reference/run_backcalc.md)
 only.
 
-## CD4-only model (basic)
+## CD4-only model
 
-The simplest model uses CD4 count at diagnosis as the only evidence.
+The simplest model uses CD4 count at diagnosis as the only evidence, see
+Birrell et al. (2012).
 
 ![Figure: CD4-staged back-calculation
 model.](figures/backcalc-model-1.png)
@@ -46,10 +47,43 @@ fit_cd4 <- run_backcalc(sim_cd4)
 plot_estimates(fit_cd4, quantity = "incidence")
 ```
 
+## Age-dependent models
+
+Age-dependent models stratify incidence and prevalence by age group, see
+Brizzi et al. (2019). These models are more complex than the CD4-only
+model (age-independent) model, and take substantially longer to fit.
+
+![Figure: Age-dependent CD4 back-calculation
+model.](figures/agedep-model-1.png)
+
+Figure: Age-dependent CD4 back-calculation model with $k$ representing
+the current age-category and $k_{0}$ representing the age category at
+HIV acquisition.
+
+``` r
+sim_age <- simulate_diagnoses(age = TRUE, h_pattern = "increasing")
+fit_age <- run_backcalc(sim_age)
+
+# age-specific outputs
+plot_estimates(fit_age, quantity = "incidence_age")
+plot_estimates(fit_age, quantity = "undiag_prev_age")
+plot_estimates(fit_age, quantity = "diagnoses_age")
+
+# aggregate estimates are also available
+plot_estimates(fit_age, quantity = "incidence")
+```
+
+For age-dependent models on resource-constrained systems, checkpointing
+is recommended — see
+[Checkpointing](https://pkirwan.github.io/cd4backcalc/articles/checkpointing.md).
+
 ## Adding RITA evidence
 
 RITA (Recent Infection Testing Algorithm) provides additional
-information on recent infections, improving incidence estimation:
+information on recent infections, which can improve the estimation of
+incidence and undiagnosed prevalence. Both CD4-only and age-dependent
+models can be extended to include RITA evidence, see Kirwan et
+al. (2026).
 
 ![Figure: Dual biomarker back-calculation model with recent incidence
 assay and non-recent incidence assay CD4-staged
@@ -69,7 +103,9 @@ plot_estimates(fit_rita, quantity = "incidence")
 
 When migration data is available, the model can distinguish between
 infections acquired in the UK and abroad, and estimate undiagnosed
-migration.
+migration. Both CD4-only and age-dependent models can be extended to
+include migration transitions, and models with RITA evidence can be
+extended to include migration, see Kirwan et al. (2026).
 
 ![Figure: CD4-staged back-calculation model including migration
 transitions.](figures/migration-model-1.png)
@@ -91,28 +127,6 @@ plot_estimates(fit_mig, quantity = "ratio_abroad_uk")
 plot_estimates(fit_mig, quantity = "transfers")
 plot_estimates(fit_mig, quantity = "detect_prob")
 ```
-
-## Age-dependent models
-
-Age-dependent models stratify incidence and prevalence by age group.
-These models are more complex and take substantially longer to fit:
-
-``` r
-sim_age <- simulate_diagnoses(age = TRUE, h_pattern = "increasing")
-fit_age <- run_backcalc(sim_age)
-
-# age-specific outputs
-plot_estimates(fit_age, quantity = "incidence_age")
-plot_estimates(fit_age, quantity = "undiag_prev_age")
-plot_estimates(fit_age, quantity = "diagnoses_age")
-
-# aggregate estimates are also available
-plot_estimates(fit_age, quantity = "incidence")
-```
-
-For age-dependent models on resource-constrained systems, checkpointing
-is recommended — see
-[Checkpointing](https://pkirwan.github.io/cd4backcalc/articles/checkpointing.md).
 
 ## Remodelling data
 
@@ -149,5 +163,24 @@ sim_c4 <- simulate_diagnoses(sim_type = "combo_4", migration = TRUE)
 
 Available simulation types include: `"constant"`, `"h_increasing"`,
 `"h_varying"`, `"o_increasing"`, `"o_step_change"`, `"d_varying"`,
-`"p_increasing"`, `"m_differing"`, `"m_varying"`, `"combo_1"` through
-`"combo_4"`, and `"combo_3_no_migration"`.
+`"p_increasing"`, `"m_differing"`, `"m_varying"`, and `"combo_1"`
+through `"combo_4"`.
+
+## References
+
+- Birrell PJ, Chadborn TR, Gill ON, Delpech VC, et al. (2012).
+  Estimating trends in incidence, time-to-diagnosis and undiagnosed
+  prevalence using a CD4-based Bayesian back-calculation. *Stat. Commun.
+  Infect. Dis.* 4(1). doi:
+  [10.1515/1948-4690.1055](https://doi.org/10.1515/1948-4690.1055).
+- Brizzi F, Birrell PJ, Plummer MT, Kirwan PD, et al. (2019). Extending
+  Bayesian back-calculation to estimate age and time specific HIV
+  incidence. *Lifetime Data Anal.* 25(4), pp.757-780. doi:
+  [10.1007/s10985-019-09465-1](https://doi.org/10.1007/s10985-019-09465-1).
+- Kirwan PD, Presanis A, Birrell PJ, et al. (2026). Extending a Bayesian
+  back-calculation model for HIV incidence to include biomarkers of
+  recent acquisition. (in press).
+- Kirwan PD, Presanis A, Birrell PJ, et al. (2026). HIV incidence among
+  gay and bisexual men in England, Wales, and Northern Ireland:
+  estimates from a migration-adjusted CD4-staged HIV back-calculation
+  model. (in press).

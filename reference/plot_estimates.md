@@ -13,7 +13,8 @@ plot_estimates(
   chain_results = FALSE,
   hiv_list_2 = NULL,
   model_1_name = "Model 1",
-  model_2_name = "Model 2"
+  model_2_name = "Model 2",
+  credible_intervals = TRUE
 )
 ```
 
@@ -54,6 +55,11 @@ plot_estimates(
 
   A string specifying the name of the second model for the legend
   (default is "Model 2").
+
+- credible_intervals:
+
+  A logical indicating whether to plot 95% credible intervals (default
+  is TRUE).
 
 ## Value
 
