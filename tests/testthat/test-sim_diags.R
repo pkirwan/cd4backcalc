@@ -2,7 +2,7 @@ test_that("basic simulation produces expected HIV data", {
   sim_diags <- simulate_diagnoses(sim_seed = 123)
   expect_equal(
     sim_diags$stan_data$HIV[1],
-    604
+    606
   )
 })
 
@@ -10,7 +10,7 @@ test_that("migration simulation produces expected HIV data", {
   sim_diags <- simulate_diagnoses(sim_seed = 123, migration = TRUE)
   expect_equal(
     sim_diags$stan_data$HIV[1, 1],
-    601
+    599
   )
   expect_equal(
     sim_diags$sim_data$omega[1],
@@ -30,11 +30,11 @@ test_that("age-specific simulation produces expected HIV data", {
   sim_diags <- simulate_diagnoses(sim_seed = 123, age = TRUE)
   expect_equal(
     sim_diags$stan_data$HIV[1],
-    604
+    606
   )
   expect_equal(
     sim_diags$stan_data$HIV_age[1],
-    11
+    17
   )
 })
 
@@ -46,7 +46,7 @@ test_that("age-specific rita simulation produces expected HIV data", {
   )
   expect_equal(
     sim_diags$stan_data$HIV_age[1],
-    10
+    16
   )
 })
 
@@ -54,11 +54,11 @@ test_that("age-specific migration simulation produces expected HIV data", {
   sim_diags <- simulate_diagnoses(sim_seed = 123, age = TRUE, migration = TRUE)
   expect_equal(
     sim_diags$stan_data$HIV[1, 1],
-    601
+    599
   )
   expect_equal(
     sim_diags$stan_data$HIV_age[1, 1, 1],
-    11
+    14
   )
   expect_equal(
     sim_diags$stan_data$ABROAD,
@@ -79,11 +79,11 @@ test_that("age-specific migration and rita simulation produces expected HIV data
   )
   expect_equal(
     sim_diags$stan_data$HIV[1, 1],
-    586
+    584
   )
   expect_equal(
     sim_diags$stan_data$HIV_age[1, 1, 1],
-    11
+    14
   )
   expect_equal(
     sim_diags$stan_data$ABROAD,
@@ -103,7 +103,7 @@ test_that("different sim_type produces expected results", {
   )
   expect_equal(
     sim_diags$stan_data$HIV[1],
-    1678
+    1683
   )
 })
 
@@ -144,11 +144,11 @@ test_that("cd4_completeness and rita_completeness parameters affect simulated da
   )
   expect_equal(
     sim_diags_rita$stan_data$CD4[1],
-    507
+    501
   )
   expect_equal(
     sim_diags_rita$stan_data$CD4_age[1],
-    10
+    8
   )
 
   sim_diags_rita_cd4 <- simulate_diagnoses(
@@ -161,11 +161,11 @@ test_that("cd4_completeness and rita_completeness parameters affect simulated da
   )
   expect_equal(
     sim_diags_rita_cd4$stan_data$CD4[1],
-    268
+    264
   )
   expect_equal(
     sim_diags_rita_cd4$stan_data$CD4_age[1],
-    5
+    4
   )
 
   sim_diags_rita_cd4 <- simulate_diagnoses(
@@ -178,11 +178,11 @@ test_that("cd4_completeness and rita_completeness parameters affect simulated da
   )
   expect_equal(
     sim_diags_rita_cd4$stan_data$CD4[1],
-    268
+    264
   )
   expect_equal(
     sim_diags_rita_cd4$stan_data$CD4_age[1],
-    5
+    4
   )
 
   sim_diags_rita_cd4 <- simulate_diagnoses(
@@ -195,7 +195,7 @@ test_that("cd4_completeness and rita_completeness parameters affect simulated da
   )
   expect_equal(
     sim_diags_rita_cd4$stan_data$CD4[1],
-    143
+    141
   )
   expect_equal(
     sim_diags_rita_cd4$stan_data$CD4_age[1],

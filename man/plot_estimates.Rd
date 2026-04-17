@@ -11,7 +11,8 @@ plot_estimates(
   chain_results = FALSE,
   hiv_list_2 = NULL,
   model_1_name = "Model 1",
-  model_2_name = "Model 2"
+  model_2_name = "Model 2",
+  credible_intervals = TRUE
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ plot_estimates(
 \item{model_1_name}{A string specifying the name of the first model for the legend (default is "Model 1").}
 
 \item{model_2_name}{A string specifying the name of the second model for the legend (default is "Model 2").}
+
+\item{credible_intervals}{A logical indicating whether to plot 95\% credible intervals (default is TRUE).}
 }
 \value{
 A ggplot2 object.

@@ -1,3 +1,5 @@
+# for local testing use Sys.setenv(CD4BACKCALC_CMDSTAN_DIR = cmdstanr::cmdstan_default_install_path()) to avoid re-compiling the model each time
+
 test_that("cd4-only back-calculation produces a stanfit object", {
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(sim_seed = 123)
@@ -170,7 +172,8 @@ test_that("age-specific migration back-calculation runs without error", {
     sim_seed = 123,
     nquar = 40,
     age = TRUE,
-    migration = TRUE
+    migration = TRUE,
+    sim_type = "combo_3"
   )
   # Test run_backcalc
   suppressWarnings({
@@ -195,7 +198,8 @@ test_that("age-specific migration and rita back-calculation runs without error",
     nquar = 40,
     age = TRUE,
     migration = TRUE,
-    rita = TRUE
+    rita = TRUE,
+    sim_type = "combo_3"
   )
   # Test run_backcalc
   suppressWarnings({

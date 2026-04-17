@@ -387,8 +387,11 @@ transformed parameters {
             denom -= misclassified_dx[t, a];
           }
           
-          if (denom > 0) {
-            exp_p[t, a, y] = to_vector(exp_diag[t, a, y, 1 : 4]) / denom;
+          if (denom > 1e-10) {
+            // Add small epsilon to avoid exact zeros in the simplex,
+            // which cause NaN via 0*log(0) in the multinomial likelihood
+            vector[4] raw_p = to_vector(exp_diag[t, a, y, 1 : 4]) + 1e-12;
+            exp_p[t, a, y] = raw_p / sum(raw_p);
           } else {
             exp_p[t, a, y] = rep_vector(0.25, 4);
           }

@@ -214,7 +214,10 @@ transformed parameters {
     for (a in 2 : nage) {
       real total = exp_HIV_dx[t, a];
       if (total > 1e-6) {
-        exp_p[t, a] = to_vector(exp_diag[t, a, 1 : 4]) / total;
+        // Add small epsilon to avoid exact zeros in the simplex,
+        // which cause NaN via 0*log(0) in the multinomial likelihood
+        vector[4] raw_p = to_vector(exp_diag[t, a, 1 : 4]) + 1e-12;
+        exp_p[t, a] = raw_p / sum(raw_p);
       } else {
         // safeguard; should be rare outside a==1, but avoids inv(0)
         exp_p[t, a] = rep_vector(0.25, 4);
