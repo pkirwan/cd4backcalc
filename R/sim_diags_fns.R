@@ -20,8 +20,7 @@ generate_infections <- function(
   infs <- if (pattern == "varying") {
     c(
       seq(1.2, 2, length.out = round(nquar * 0.1)),
-      seq(2, 1.4, length.out = round(nquar * 4 / 15)),
-      seq(1.4, 1, length.out = round(nquar * 0.2)),
+      seq(2, 1, length.out = round(nquar * 7 / 15)),
       seq(1, 0.5, length.out = round(nquar * 2 / 15)),
       seq(0.5, 0.4, length.out = round(nquar * 0.3))
     ) *
@@ -40,6 +39,7 @@ generate_infections <- function(
   } else if (pattern == "increasing") {
     seq(0.5, 1.5, length.out = nquar) * ann_inf
   }
+  infs <- stats::loess(infs ~ seq_along(infs), span = 0.4)$fitted
   infs <- if (dist) stats::rpois(nquar, infs) else infs
   h <- matrix(
     c(infs, rep(0, nquar * (nlatst))),
@@ -71,12 +71,13 @@ generate_omega <- function(nquar, pattern, target_mig = 12000, dist = TRUE) {
       seq(0.4, 1.2, length.out = round(nquar * 0.1)),
       seq(1.2, 0.4, length.out = round(nquar * 0.1)),
       seq(0.4, 1.3, length.out = round(nquar * 0.55)),
-      seq(1.3, 4.5, length.out = round(nquar * 0.15))
+      seq(1.35, 4.5, length.out = round(nquar * 0.15))
     ) *
       ann_mig
   } else if (pattern == "none") {
     rep(0, nquar)
   }
+  omega <- stats::loess(omega ~ seq_along(omega), span = 0.4)$fitted
   omega <- if (dist) stats::rpois(nquar, omega) else omega
   return(omega)
 }
@@ -86,9 +87,9 @@ generate_omega <- function(nquar, pattern, target_mig = 12000, dist = TRUE) {
 #' @param nquar Number of time quarters.
 #' @param nlatst Number of latent states.
 #' @param pattern Pattern type for mu ("constant", "differing", "varying").
-#' @param detect_prob Vector of detection probabilities for those migrating already diagnosed.
+#' @param dist Logical indicating whether to add logit-scale noise.
 #' @return Matrix of mu values over time.
-generate_mu <- function(nquar, nlatst, pattern, detect_prob) {
+generate_mu <- function(nquar, nlatst, pattern, dist = FALSE) {
   # check pattern
   stopifnot(pattern %in% c("constant", "differing", "varying"))
   if (pattern == "constant") {
@@ -107,7 +108,7 @@ generate_mu <- function(nquar, nlatst, pattern, detect_prob) {
           seq(0.1, 0.3, length.out = nquar),
           seq(0.2, 0.22, length.out = nquar),
           seq(0.25, 0.15, length.out = nquar),
-          seq(0.3, 0.05, length.out = nquar),
+          seq(0.2, 0.05, length.out = nquar),
           seq(0.2, 0.4, length.out = nquar)
         ),
         nrow = nquar,
@@ -115,15 +116,25 @@ generate_mu <- function(nquar, nlatst, pattern, detect_prob) {
       )
     }
   }
-  # redistribute mu for those migrating already diagnosed
-  # proportional redistribution
-  mu[, 1:nlatst] <- mu[, 1:nlatst] +
-    (mu[, nlatst + 1] * (1 - detect_prob)) *
-      (mu[, 1:nlatst] / rowSums(mu[, 1:nlatst]))
-  mu[, nlatst + 1] <- mu[, nlatst + 1] * detect_prob
 
-  # normalize mu
-  mu <- mu / rowSums(mu)
+  if (dist) {
+    sigma <- 0.1
+    # Add noise on logit scale with compartment nlatst as reference,
+    # matching Stan's softmax parameterization
+    log_mu <- log(mu)
+    logits <- sweep(log_mu, 1, log_mu[, nlatst])
+    noise_idx <- setdiff(seq_len(nlatst + 1), nlatst)
+    logits[, noise_idx] <- logits[, noise_idx] +
+      matrix(
+        stats::rnorm(nquar * length(noise_idx), 0, sigma),
+        nrow = nquar
+      )
+    exp_logits <- exp(logits)
+    mu <- exp_logits / rowSums(exp_logits)
+  } else {
+    mu <- mu / rowSums(mu)
+  }
+
   return(mu)
 }
 
@@ -211,9 +222,9 @@ generate_diagnosis_probs <- function(
       }
     } else if (pattern == "varying") {
       # Initialize first value
-      start_values <- c(logit(0.02), logit(0.05), logit(0.10), logit(0.25))
-      mid_values <- c(logit(0.03), logit(0.04), logit(0.07), logit(0.35))
-      end_values <- c(logit(0.10), logit(0.08), logit(0.07), logit(0.3))
+      start_values <- c(logit(0.02), logit(0.05), logit(0.07), logit(0.20))
+      mid_values <- c(logit(0.03), logit(0.05), logit(0.07), logit(0.21))
+      end_values <- c(logit(0.08), logit(0.08), logit(0.10), logit(0.22))
 
       logit_d_probs[, 1] <- stats::rnorm(
         nquar,
@@ -249,7 +260,11 @@ generate_diagnosis_probs <- function(
       )
       if (rita) {
         logit_d_probs <- cbind(
-          seq(logit(0.1), logit(0.25), length.out = nquar),
+          stats::rnorm(
+            nquar,
+            seq(logit(0.1), logit(0.18), length.out = nquar),
+            sigma
+          ),
           logit_d_probs
         )
       }
@@ -271,9 +286,9 @@ generate_diagnosis_probs <- function(
       }
     } else if (pattern == "varying") {
       # Initialize first value
-      start_values <- c(logit(0.02), logit(0.05), logit(0.10), logit(0.25))
-      mid_values <- c(logit(0.03), logit(0.04), logit(0.07), logit(0.35))
-      end_values <- c(logit(0.10), logit(0.08), logit(0.07), logit(0.3))
+      start_values <- c(logit(0.02), logit(0.05), logit(0.07), logit(0.20))
+      mid_values <- c(logit(0.03), logit(0.05), logit(0.07), logit(0.21))
+      end_values <- c(logit(0.08), logit(0.08), logit(0.10), logit(0.22))
       d_probs <- matrix(
         invlogit(c(
           c(
@@ -298,7 +313,7 @@ generate_diagnosis_probs <- function(
       )
       if (rita) {
         d_probs <- cbind(
-          seq(0.1, 0.25, length.out = nquar),
+          seq(0.1, 0.18, length.out = nquar),
           d_probs
         )
       }
@@ -351,14 +366,14 @@ generate_age_dist <- function(
     }
   }
 
-  # Compensate for unequal age group widths so that wider groups
-  # (group 4 = ages 45-66, 22 single-year ages) don't dominate narrower
-  # groups (groups 1-3, 10 ages each). Each age is weighted by the
-  # inverse of the number of ages in its group.
-  group_sizes <- c(rep(10, 3), nage - 30)
-  age_group_idx <- c(rep(1, 10), rep(2, 10), rep(3, 10), rep(4, nage - 30))
-  compensation <- 1 / group_sizes[age_group_idx]
-  age_dist <- age_dist * compensation
+  # When nage > 40, compensate for unequal age group widths so that wider groups
+  # don't dominate narrower groups
+  if (nage > 40) {
+    group_sizes <- c(rep(10, 3), nage - 30)
+    age_group_idx <- c(rep(1, 10), rep(2, 10), rep(3, 10), rep(4, nage - 30))
+    compensation <- 1 / group_sizes[age_group_idx]
+    age_dist <- age_dist * compensation
+  }
 
   # normalize age distribution
   age_dist <- age_dist / colSums(age_dist)

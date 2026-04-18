@@ -205,7 +205,7 @@ mse_plot <- function(
           y = .data$pos,
           label = paste0("PMSE: ", .data$formatted_bias),
         ),
-        nudge_x = 0.3,
+        nudge_x = 0.4,
         size = 4
       )
   }

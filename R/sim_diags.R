@@ -544,18 +544,16 @@ simulate_diagnoses <- function(
     sim_config$nquar,
     4,
     sim_config$m_pattern,
-    rep(1, sim_config$nquar)
+    sim_config$dist
   )
 
   # detection probabilities for those migrating already diagnosed
-  detect_prob <- rep(0.8, sim_config$nquar)
-  # mu_detect are the migration probabilities after accounting for detection probabilities
-  mu_detect <- generate_mu(
-    sim_config$nquar,
-    4,
-    sim_config$m_pattern,
-    detect_prob
-  )
+  # In Stan: detect_prob[t] = inv_logit(alpha_detect + 0.5 * X_mp * beta_detect)
+  if (sim_config$dist) {
+    detect_prob <- invlogit(stats::rnorm(sim_config$nquar, logit(0.8), 0.1))
+  } else {
+    detect_prob <- rep(0.8, sim_config$nquar)
+  }
 
   if (sim_config$rita) {
     # pad first three columns with zeros for RITA states
@@ -564,19 +562,18 @@ simulate_diagnoses <- function(
       matrix(0, nrow = sim_config$nquar, ncol = 3),
       mu
     )
-    mu_detect <- cbind(
-      matrix(0, nrow = sim_config$nquar, ncol = 3),
-      mu_detect
-    )
   }
 
   # m is a matrix of dimension [nquar, nlatst + 1] with the last column being those
-  # who migrate already diagnosed
+  # who migrate already diagnosed (total, before detection split).
+  # Use true mu (not mu_detect) to match the Stan model, which handles
+  # misclassification separately via detect_prob rather than redistributing
+  # undetected abroad diagnoses into CD4 states.
   m <- generate_migration(
     sim_config$nquar,
     sim_config$nlatst,
     omega,
-    mu_detect,
+    mu,
     sim_config$dist
   )
   d_probs <- generate_diagnosis_probs(
@@ -686,6 +683,34 @@ simulate_diagnoses <- function(
   # Useful to store omega by age for diagnostics
   omega_age <- omega * agedist_abroad
 
+  # Split compartment 5 (total diagnosed migrants) into detected (ABROAD) and
+  # misclassified, matching the Stan model's misclassification decomposition:
+  #   ABROAD[t]          = omega[t] * m[5,t] * detect_prob[t]
+  #   misclassified[t,a] = omega[t] * m[5,t] * (1 - detect_prob[t]) * age_prop[t,a]
+  total_diag_age <- round_matrix_preserve(
+    m_age[,, sim_config$nlatst + 1],
+    colwise = TRUE
+  ) # [nage, nquar], integer, column sums preserved
+
+  if (sim_config$dist) {
+    ABROAD_age_mat <- matrix(
+      stats::rbinom(
+        sim_config$nage * sim_config$nquar,
+        as.integer(total_diag_age),
+        rep(detect_prob, each = sim_config$nage)
+      ),
+      nrow = sim_config$nage,
+      ncol = sim_config$nquar
+    )
+  } else {
+    ABROAD_age_mat <- round_matrix_preserve(
+      sweep(total_diag_age, 2, detect_prob, "*"),
+      colwise = TRUE
+    )
+  }
+  misclassified_age <- total_diag_age - ABROAD_age_mat # [nage, nquar]
+  misclassified <- colSums(misclassified_age)
+
   # Run epidemic simulations
   epi_uk <- epi_mat(
     Q_l,
@@ -720,14 +745,15 @@ simulate_diagnoses <- function(
     "m" = m,
     "m_age" = m_age,
     "mu" = mu,
-    "mu_detect" = mu_detect,
     "d_probs" = d_probs,
     "ratio_abroad_uk" = ratio_abroad_uk,
     "lat_init_uk" = lat_init_uk,
     "lat_init_uk_abroad" = lat_init_uk_abroad,
     "lat_init_abroad" = lat_init_abroad,
     # currently detect_prob is 0.8 for all time points
-    "detect_prob" = detect_prob
+    "detect_prob" = detect_prob,
+    "misclassified" = misclassified,
+    "misclassified_age" = misclassified_age
   )
 
   # Perform validation checks before rounding
@@ -759,6 +785,52 @@ simulate_diagnoses <- function(
   for (i in 1:(sim_config$ndiagst - 1)) {
     cd4_dx_age[,, 1, i] <- epi_uk$diags_age[,, i]
     cd4_dx_age[,, 2, i] <- born_abroad_age[,, i]
+  }
+
+  # Distribute misclassified abroad diagnoses across CD4 states for inclusion
+  # in CD4 data. In reality misclassified cases have CD4 counts recorded,
+  # we just don't know they were already diagnosed abroad. Use mu[1:nlatst]
+  # proportions as proxy for their CD4 distribution at arrival.
+  if (sim_config$rita) {
+    mu_cd4_cols <- 4:sim_config$nlatst
+    dx_cd4_cols <- 2:(sim_config$ndiagst - 1)
+  } else {
+    mu_cd4_cols <- 1:sim_config$nlatst
+    dx_cd4_cols <- 1:(sim_config$ndiagst - 1)
+  }
+
+  n_cd4_cats <- length(dx_cd4_cols)
+  misclassified_cd4_age <- array(
+    0, dim = c(sim_config$nage, sim_config$nquar, sim_config$ndiagst - 1)
+  )
+
+  for (t in 1:sim_config$nquar) {
+    mu_raw <- mu[t, mu_cd4_cols]
+    mu_total <- sum(mu_raw)
+    mu_cd4 <- if (mu_total > 0) {
+      mu_raw / mu_total
+    } else {
+      rep(1 / n_cd4_cats, n_cd4_cats)
+    }
+
+    for (a in 1:sim_config$nage) {
+      n <- misclassified_age[a, t]
+      if (n > 0) {
+        if (sim_config$dist) {
+          misclassified_cd4_age[a, t, dx_cd4_cols] <-
+            as.vector(stats::rmultinom(1, n, mu_cd4))
+        } else {
+          misclassified_cd4_age[a, t, dx_cd4_cols] <-
+            round_preserve(n * mu_cd4)
+        }
+      }
+    }
+  }
+
+  # Add misclassified CD4 counts to migrant CD4 data
+  cd4_dx_age[,, 2, ] <- cd4_dx_age[,, 2, ] + misclassified_cd4_age
+  for (i in 1:(sim_config$ndiagst - 1)) {
+    cd4_dx[, 2, i] <- cd4_dx[, 2, i] + colSums(misclassified_cd4_age[,, i])
   }
 
   # aids_dx is an nquar x 2 matrix
@@ -799,6 +871,13 @@ simulate_diagnoses <- function(
     hiv_dx_age[,, 2] <- hiv_dx_age[,, 2] + born_abroad_age[,, 5]
   }
 
+  # Add misclassified abroad diagnoses directly to migrant HIV totals.
+  # In the Stan model these bypass CD4 progression entirely and appear as
+
+  # immediate HIV diagnoses (not through diagnosis probabilities).
+  hiv_dx[, 2] <- hiv_dx[, 2] + misclassified
+  hiv_dx_age[,, 2] <- hiv_dx_age[,, 2] + misclassified_age
+
   if (sim_config$migration) {
     init_prev <- lat_init_uk
     init_prev_age <- lat_init_uk_age
@@ -832,12 +911,9 @@ simulate_diagnoses <- function(
     init_prev_abroad_age <- lat_init_abroad_age
   }
 
-  # Age distribution for prior diagnoses from abroad (ABROAD), by quarter
-  ABROAD <- m[, sim_config$nlatst + 1]
-  ABROAD_age <- t(round_matrix_preserve(
-    m_age[,, sim_config$nlatst + 1],
-    colwise = TRUE
-  ))
+  # ABROAD data: detected portion of diagnosed migrants
+  ABROAD <- colSums(ABROAD_age_mat)
+  ABROAD_age <- t(ABROAD_age_mat)
 
   # Make stan data list
   stan_data <- list(

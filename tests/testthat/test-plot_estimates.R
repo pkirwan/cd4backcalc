@@ -1,6 +1,6 @@
 test_that("simulated plots are generated correctly", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, migration = TRUE, sim_type = "combo_3")
+  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, rita = TRUE, sim_type = "combo_3")
   # Generate plots of key quantities
   p1 <- plot_simulations(stan_data, "incidence")
   p2 <- plot_simulations(stan_data, "undiag_prev")
@@ -23,11 +23,19 @@ test_that("simulated plots are generated correctly", {
   p3 <- plot_simulations(stan_data, "diag_prob")
   p4 <- plot_simulations(stan_data, "diagnoses")
   p5 <- plot_simulations(stan_data, "undiag_migration")
+  p6 <- plot_simulations(stan_data, "migration_prob")
+  p7 <- plot_simulations(stan_data, "transfers")
+  p8 <- plot_simulations(stan_data, "ratio_abroad_uk")
+  p9 <- plot_simulations(stan_data, "detect_prob")
   expect_s3_class(p1, "ggplot")
   expect_s3_class(p2, "ggplot")
   expect_s3_class(p3, "ggplot")
   expect_s3_class(p4, "ggplot")
   expect_s3_class(p5, "ggplot")
+  expect_s3_class(p6, "ggplot")
+  expect_s3_class(p7, "ggplot")
+  expect_s3_class(p8, "ggplot")
+  expect_s3_class(p9, "ggplot")
 })
 
 test_that("simulated plots are generated correctly for migration_prob", {

@@ -14,6 +14,17 @@ plot_simulations <- function(
   # replace "Estimated" with "Simulated"
   plot_title <- paste0("Simulated ", plot_title)
   sim_estimates <- extract_simulated_quantity(sim_diags, quantity)
+  sim_estimates_det <- extract_simulated_quantity(
+    sim_diags,
+    quantity,
+    deterministic = TRUE
+  )
+  sim_estimates <- sim_estimates |>
+    dplyr::mutate(group = "Simulated values") |>
+    dplyr::bind_rows(
+      sim_estimates_det |>
+        dplyr::mutate(group = "Expected values")
+    )
 
   # exclude "all" age_band from age-facetted plots
   if ("age_band" %in% names(sim_estimates) && grepl("_age$", quantity)) {
@@ -21,21 +32,51 @@ plot_simulations <- function(
       dplyr::filter(.data$age_band != "all")
   }
 
+  model_colors <- stats::setNames(
+      c("darkcyan", "mediumorchid"),
+      c("Simulated values", "Expected values")
+    )
+
+  # plot simulated values as points and expected values as lines
   p1 <- sim_estimates |>
     ggplot2::ggplot() +
-    ggplot2::aes(.data$year, .data$value, group = .data$group) +
-    ggplot2::geom_point(color = "mediumorchid") +
+    ggplot2::aes(.data$year, .data$value, color = .data$group, group = .data$group) +
+    ggplot2::geom_point(
+      data = sim_estimates |>
+        dplyr::filter(.data$group == "Simulated values"),
+      size = 1.1
+    ) +
+    ggplot2::geom_line(
+      data = sim_estimates |>
+        dplyr::filter(.data$group == "Expected values")
+    ) +
     ggplot2::labs(
       title = plot_title,
       x = "Year",
-      y = plot_title
+      # remove "by CD4 strata" and "by age" from y-axis label for better readability
+      y = sub(
+        "^(.)",
+        "\\U\\1",
+        gsub(
+          ", by CD4 strata| by age|, by CD4 strata and age|Simulated | for transfers of care",
+          "",
+          get_plot_title(quantity)
+        ),
+        perl = TRUE
+      ),
+      color = ""
+    ) +
+    ggplot2::scale_color_manual(
+      values = model_colors,
+      name = ""
     ) +
     ggplot2::theme_classic() +
     ggplot2::scale_x_continuous(
-      expand = c(0, 0)
+      expand = ggplot2::expansion(mult = c(0.01, 0.01))
     ) +
     ggplot2::theme(
-      panel.grid.minor = ggplot2::element_line(color = "grey80")
+      panel.grid.minor = ggplot2::element_line(color = "grey80"),
+      legend.position = "bottom"
     )
 
   p1 <- do_facetting(p1, quantity)
@@ -68,7 +109,9 @@ plot_estimates <- function(
   credible_intervals = TRUE
 ) {
   hiv_list <- purrr::compact(hiv_list)
-  if (length(hiv_list) == 0) stop("All entries in hiv_list are NULL.")
+  if (length(hiv_list) == 0) {
+    stop("All entries in hiv_list are NULL.")
+  }
   # make hiv_list a list of lists if not already
   if (
     !("incidence" %in% names(hiv_list[[1]])) &&
@@ -170,10 +213,7 @@ plot_estimates <- function(
   }
 
   # exclude "all" age_band from age-facetted plots
-  if (
-    "age_band" %in% names(quantiles) &&
-      grepl("_age$", quantity)
-  ) {
+  if ("age_band" %in% names(quantiles) && grepl("_age$", quantity)) {
     quantiles <- quantiles |>
       dplyr::filter(.data$age_band != "all")
   }
@@ -213,9 +253,10 @@ plot_estimates <- function(
       x = "Year",
       # remove "by CD4 strata" and "by age" from y-axis label for better readability
       y = sub(
-        "^(.)", "\\U\\1",
+        "^(.)",
+        "\\U\\1",
         gsub(
-          ", by CD4 strata| by age|, by CD4 strata and age|Estimated ",
+          ", by CD4 strata| by age|, by CD4 strata and age|Estimated | for transfers of care",
           "",
           get_plot_title(quantity)
         ),
@@ -226,7 +267,7 @@ plot_estimates <- function(
     ) +
     ggplot2::theme_classic() +
     ggplot2::scale_x_continuous(
-      expand = c(0, 0)
+      expand = ggplot2::expansion(mult = c(0.01, 0.01))
     ) +
     ggplot2::theme(
       legend.position = "bottom",
@@ -269,7 +310,11 @@ plot_estimates <- function(
   # add simulated values if data were simulated
   # use deterministic (expected) values so comparison is against lambda, not rpois(lambda)
   if ("sim_data" %in% names(hiv_list[[1]])) {
-    sim_estimates <- extract_simulated_quantity(hiv_list[[1]], quantity, deterministic = TRUE)
+    sim_estimates <- extract_simulated_quantity(
+      hiv_list[[1]],
+      quantity,
+      deterministic = TRUE
+    )
     if ("age_band" %in% names(sim_estimates) && grepl("_age$", quantity)) {
       sim_estimates <- sim_estimates |>
         dplyr::filter(.data$age_band != "all")
@@ -310,7 +355,9 @@ plot_estimates <- function(
 #' @export
 plot_diagnostics <- function(hiv_list, ntraces = 4) {
   hiv_list <- purrr::compact(hiv_list)
-  if (length(hiv_list) == 0) stop("All entries in hiv_list are NULL.")
+  if (length(hiv_list) == 0) {
+    stop("All entries in hiv_list are NULL.")
+  }
   # check if hiv_list is a list of results or a single result
   if ("fit" %in% names(hiv_list[[1]])) {
     fit <- hiv_list[[1]]$fit
@@ -333,11 +380,11 @@ plot_diagnostics <- function(hiv_list, ntraces = 4) {
       ntraces
     ))],
     facet_args = list(nrow = 1)
-  ) + 
-  # fewer x-axis ticks for better readability
-  ggplot2::scale_x_continuous(
-    breaks = scales::pretty_breaks(n = 4)
-  )
+  ) +
+    # fewer x-axis ticks for better readability
+    ggplot2::scale_x_continuous(
+      breaks = scales::pretty_breaks(n = 4)
+    )
   # log posterior density
   p2 <- bayesplot::mcmc_trace(draws, pars = "lp__")
 
@@ -388,14 +435,16 @@ plot_diagnostics <- function(hiv_list, ntraces = 4) {
       p6,
       ncol = 1,
       heights = c(2, 2, 2, 2, 2, 1)
-    ) & ggplot2::theme(text = ggplot2::element_text(family = "sans"))
+    ) &
+      ggplot2::theme(text = ggplot2::element_text(family = "sans"))
   } else {
     p0 <- patchwork::wrap_plots(
       p1,
       p2,
       ncol = 1,
       heights = c(2, 1)
-    ) & ggplot2::theme(text = ggplot2::element_text(family = "sans"))
+    ) &
+      ggplot2::theme(text = ggplot2::element_text(family = "sans"))
   }
 
   return(p0)

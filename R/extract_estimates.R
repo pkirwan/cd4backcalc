@@ -153,9 +153,9 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
     group = "Parameter values"
   )
   undiag_migration <- tibble::tibble(
-    # (1 / detect_prob) - 1 = (1 - detect_prob) * (1 / detect_prob)
-    value = rowSums(sim_data$m[, 1:stan_data$sim_config$nlatst]) -
-      (stan_data$ABROAD * ((1 / sim_data$detect_prob) - 1)),
+    # m[, 1:nlatst] now contains only true undiagnosed migrants (misclassified
+    # are handled separately via detect_prob split in sim_diags)
+    value = rowSums(sim_data$m[, 1:stan_data$sim_config$nlatst]),
     year = seq(0, plot_years, by = 0.25),
     group = "Parameter values"
   )
@@ -304,8 +304,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
             ],
             c(1, 2),
             sum
-          ) -
-            t(stan_data$ABROAD_age * ((1 / sim_data$detect_prob) - 1))
+          )
         ),
         group = "Parameter values",
         age_band = cut(

@@ -79,8 +79,10 @@ validate_stan_data <- function(stan_data, sim_data, config) {
       sum(sim_data$infs[, 1]) +
         sum(stan_data$init_prev) +
         sum(stan_data$init_prev_abroad) +
-        # abroad infections migrating to UK
-        sum(sim_data$m[, 1:config$nlatst]) -
+        # abroad infections migrating to UK (undiagnosed only)
+        sum(sim_data$m[, 1:config$nlatst]) +
+        # misclassified abroad diagnoses added directly to HIV totals
+        sum(sim_data$misclassified) -
         # total diagnoses plus latent infections
         sum(stan_data$HIV) -
         sum(stan_data$AIDS) -
