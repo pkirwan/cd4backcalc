@@ -435,7 +435,7 @@ model {
   // Migration priors
   beta_mig[1] ~ normal(4, 1);
   beta_mig[2 : npars_mig] ~ normal(0, sigma_mig);
-  log_sigma_mig ~ normal(-2, 1);
+  log_sigma_mig ~ normal(-2, 0.5);
   
   // Diagnosis priors
   alpha_diag_1 ~ normal(-3.2, 0.5);

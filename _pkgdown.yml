@@ -1,6 +1,11 @@
 url: https://pkirwan.github.io/cd4backcalc/
+
 template:
   bootstrap: 5
+
+authors:
+  Peter Kirwan:
+    href: https://www.pkirwan.com
 
 reference:
   - title: Simulation
@@ -78,7 +83,6 @@ reference:
       - fit_stan_model
       - get_sims
       - make_mse_list
-      - make_pars_save
       - model_type_prep
 
 articles:

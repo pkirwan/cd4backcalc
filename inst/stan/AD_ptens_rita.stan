@@ -13,6 +13,10 @@ data {
   int<lower=1> npars_inf;
   matrix[nquar * nage, npars_inf] X_inf; // design matrix ... 50 is number of inf params
   matrix[npars_inf - 1, 2 * npars_inf - 2] S1; // NOT SURE IF BOUNDARY CONSISTENT
+  
+  // Time-varying diagnosis splines (plus age-group offsets)
+  int<lower=1> npars_diag;
+  matrix[nquar, npars_diag] X_diag;
 }
 transformed data {
   row_vector[6] empty_vec = rep_row_vector(0, 6);
@@ -51,15 +55,24 @@ parameters {
   // Infection parameters
   vector[npars_inf] beta_inf; //beta are the infection parameters
   vector<lower=0>[2] sigma_inf; // smoothing parameters
-  vector<lower=0>[5] vardelta;
   
   // Diagnosis probability parameters
-  vector[nquar] delta_raw_1;
-  vector[nquar] delta_raw_2;
-  vector[nquar] delta_raw_3;
-  vector[nquar] delta_raw_4;
-  vector[nquar] delta_raw_5;
-  vector[5 * nagroup] alpha; // age group specific (ag) and state (k) specific linear time trend for dx probs --- 
+  vector[npars_diag] beta_diag_1;
+  vector[npars_diag] beta_diag_2;
+  vector[npars_diag] beta_diag_3;
+  vector[npars_diag] beta_diag_4;
+  vector[npars_diag] beta_diag_5;
+  real<lower=0> sigma_diag_1;
+  real<lower=0> sigma_diag_2;
+  real<lower=0> sigma_diag_3;
+  real<lower=0> sigma_diag_4;
+  real<lower=0> sigma_diag_5;
+  real alpha_diag_1;
+  real alpha_diag_2;
+  real alpha_diag_3;
+  real alpha_diag_4;
+  real alpha_diag_5;
+  vector[4 * 5] alpha_age_diag; // 4 age groups x 5 states
 }
 transformed parameters {
   // Infection parameters
@@ -75,44 +88,29 @@ transformed parameters {
   array[nquar, nage] simplex[5] exp_p; // proportion of HIV_age diagnoses in state k (time t and age a)
   array[4] matrix[nquar, 5] d; // matrix of diagnoses for different ages and age-groups
   
-  // Expected incidence
-  vector[nquar] delta_1;
-  vector[nquar] delta_2;
-  vector[nquar] delta_3;
-  vector[nquar] delta_4;
-  vector[nquar] delta_5;
+  // Smoothing parameters
   vector<lower=0>[2] tau; // smoothing parameters
   
   tau = inv(square(sigma_inf));
   
   // DIAGNOSES
-  // Initializing delta
-  delta_1[1] = -3.2 + 0.2 * delta_raw_1[1];
-  delta_2[1] = -3.2 + 0.2 * delta_raw_2[1];
-  delta_3[1] = -3.2 + 0.2 * delta_raw_3[1];
-  delta_4[1] = -3.0 + 0.2 * delta_raw_4[1];
-  delta_5[1] = -2.5 + 0.3 * delta_raw_5[1];
+  // Diagnosis probabilities by time (spline-based)
+  vector[nquar] delta_1 = alpha_diag_1 + 0.5 * (X_diag * beta_diag_1);
+  vector[nquar] delta_2 = alpha_diag_2 + 0.5 * (X_diag * beta_diag_2);
+  vector[nquar] delta_3 = alpha_diag_3 + 0.5 * (X_diag * beta_diag_3);
+  vector[nquar] delta_4 = alpha_diag_4 + 0.7 * (X_diag * beta_diag_4);
+  vector[nquar] delta_5 = alpha_diag_5 + 0.7 * (X_diag * beta_diag_5);
   
-  // Random walk for diagnoses
-  for (t in 2 : nquar) {
-    delta_1[t] = delta_1[t - 1] + vardelta[1] * delta_raw_1[t];
-    delta_2[t] = delta_2[t - 1] + vardelta[2] * delta_raw_2[t];
-    delta_3[t] = delta_3[t - 1] + vardelta[3] * delta_raw_3[t];
-    delta_4[t] = delta_4[t - 1] + vardelta[4] * delta_raw_4[t];
-    delta_5[t] = delta_5[t - 1] + vardelta[5] * delta_raw_5[t];
-  }
-  
-  // diag probs are inv logit of delta
-  // so that are normalised btwn 0 and 1
-  // Age-specific additive term, interpreted as a linear time trend (for a given state)
-  // which has an age and time specific gradient
+  // Diagnosis probabilities by age group (ag), state (k), and time (t).
+  // Stored as matrix[nquar, 5] so the inner time-loop accesses column k,
+  // which is contiguous in column-major memory (cache-friendly).
   for (ag in 1 : nagroup) {
     int ag_offset = (ag - 1) * 5;
-    d[ag,  : , 1] = inv_logit(delta_1 + alpha[ag_offset + 1]);
-    d[ag,  : , 2] = inv_logit(delta_2 + alpha[ag_offset + 2]);
-    d[ag,  : , 3] = inv_logit(delta_3 + alpha[ag_offset + 3]);
-    d[ag,  : , 4] = inv_logit(delta_4 + alpha[ag_offset + 4]);
-    d[ag,  : , 5] = inv_logit(delta_5 + alpha[ag_offset + 5]);
+    d[ag,  : , 1] = inv_logit(delta_1 + alpha_age_diag[ag_offset + 1]);
+    d[ag,  : , 2] = inv_logit(delta_2 + alpha_age_diag[ag_offset + 2]);
+    d[ag,  : , 3] = inv_logit(delta_3 + alpha_age_diag[ag_offset + 3]);
+    d[ag,  : , 4] = inv_logit(delta_4 + alpha_age_diag[ag_offset + 4]);
+    d[ag,  : , 5] = inv_logit(delta_5 + alpha_age_diag[ag_offset + 5]);
   }
   
   // NOW NEED TO CREATE THE TRANSITION MATRICES AND CALCULATE EXPECTED DIAGNOSES
@@ -260,16 +258,32 @@ model {
   matrix[np1, np1] K1_prec = S1a * tau[1] + S1b * tau[2];
   beta_inf[2 : npars_inf] ~ multi_normal_prec(zero_vec, K1_prec);
   
-  vardelta ~ gamma(1, 8); // prior for logit random walk
+  // Diagnosis priors
+  alpha_diag_1 ~ normal(-3.2, 0.5);
+  alpha_diag_2 ~ normal(-3.2, 0.5);
+  alpha_diag_3 ~ normal(-3.0, 0.5);
+  alpha_diag_4 ~ normal(-2.5, 0.5);
+  alpha_diag_5 ~ normal(-2.0, 0.5);
   
-  alpha ~ normal(0, 1); // Priors for age specific intercepts
+  beta_diag_1[1] ~ std_normal();
+  beta_diag_2[1] ~ std_normal();
+  beta_diag_3[1] ~ std_normal();
+  beta_diag_4[1] ~ std_normal();
+  beta_diag_5[1] ~ std_normal();
   
-  // Non centered parametrization for diagnoses
-  delta_raw_1 ~ normal(0, 1);
-  delta_raw_2 ~ normal(0, 1);
-  delta_raw_3 ~ normal(0, 1);
-  delta_raw_4 ~ normal(0, 1);
-  delta_raw_5 ~ normal(0, 1);
+  beta_diag_1[2 : npars_diag] ~ normal(0, sigma_diag_1);
+  beta_diag_2[2 : npars_diag] ~ normal(0, sigma_diag_2);
+  beta_diag_3[2 : npars_diag] ~ normal(0, sigma_diag_3);
+  beta_diag_4[2 : npars_diag] ~ normal(0, sigma_diag_4);
+  beta_diag_5[2 : npars_diag] ~ normal(0, sigma_diag_5);
+  
+  sigma_diag_1 ~ gamma(2, 16);
+  sigma_diag_2 ~ gamma(2, 16);
+  sigma_diag_3 ~ gamma(2, 16);
+  sigma_diag_4 ~ gamma(2, 16);
+  sigma_diag_5 ~ gamma(2, 16);
+  
+  alpha_age_diag ~ normal(0, 1); // Priors for age specific intercepts
   
   // Likelihood of model
   for (t in 1 : nquar) {

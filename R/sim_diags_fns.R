@@ -249,7 +249,7 @@ generate_diagnosis_probs <- function(
       )
       if (rita) {
         logit_d_probs <- cbind(
-          seq(logit(0.1), logit(0.2), length.out = nquar),
+          seq(logit(0.1), logit(0.25), length.out = nquar),
           logit_d_probs
         )
       }
@@ -298,7 +298,7 @@ generate_diagnosis_probs <- function(
       )
       if (rita) {
         d_probs <- cbind(
-          seq(0.1, 0.2, length.out = nquar),
+          seq(0.1, 0.25, length.out = nquar),
           d_probs
         )
       }
