@@ -149,6 +149,12 @@ fit_stan_model <- function(
 ) {
   options(mc.cores = parallelly::availableCores())
 
+  # Helper: safely extract total time from a CmdStanFit even when some
+  # chains failed (fit$time() can error with mismatched row counts).
+  safe_fit_time <- function(fit) {
+    tryCatch(fit$time()$total, error = function(e) NA_real_)
+  }
+
   # model seed
   if (is.null(model_seed)) {
     model_seed <- stan_data$model_config$model_seed
@@ -250,7 +256,16 @@ fit_stan_model <- function(
       }
 
       warmup_done <- warmup_done + this_chunk
-      total_time <- total_time + fit$time()$total
+      total_time <- total_time + safe_fit_time(fit)
+
+      # Check for failed chains
+      n_ok <- length(fit$metadata()$id)
+      if (n_ok < chains) {
+        warning(
+          n_ok, " of ", chains, " chains completed warmup chunk. ",
+          "Use fit$output() to inspect failures."
+        )
+      }
 
       if (warmup_done < iter_warmup) {
         # More warmup to go — stay in warmup phase
@@ -298,12 +313,24 @@ fit_stan_model <- function(
       sig_figs = 18
     )
 
+    # Check for failed chains — error early rather than silently
+    # continuing with mismatched draws.
+    n_ok <- length(fit$metadata()$id)
+    if (n_ok < chains) {
+      stop(
+        n_ok, " of ", chains, " chains completed the sampling chunk. ",
+        "Use fit$output() to inspect failures. ",
+        "The previous checkpoint is still on disk; resubmit to retry.",
+        call. = FALSE
+      )
+    }
+
     sampling_done <- sampling_done + this_chunk
     draws_list <- append(draws_list, list(fit$draws()))
     diagnostics_list <- append(
       diagnostics_list, list(fit$diagnostic_summary())
     )
-    total_time <- total_time + fit$time()$total
+    total_time <- total_time + safe_fit_time(fit)
 
     save_checkpoint(
       checkpoint_dir, fit, "sampling", warmup_done = iter_warmup,
@@ -539,9 +566,12 @@ load_stan_model <- function(config) {
 
   # Prefer a job-local cache to avoid failures from shared home-directory caches
   # on batch systems, while still allowing an explicit override when needed.
+  cache_dir <- stan_model_cache_dir()
+  message("CmdStan model cache dir: ", cache_dir)
+  message("R tempdir(): ", tempdir())
   cmdstanr::cmdstan_model(
     stan_file = stan_file,
-    dir = stan_model_cache_dir()
+    dir = cache_dir
   )
 }
 
