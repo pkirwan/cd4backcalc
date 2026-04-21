@@ -121,7 +121,8 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
       init_props_abroad = sim_config$init_props_abroad,
       abroad_prop = sim_config$abroad_prop,
       cd4_completeness = 1,
-      rita_completeness = 1
+      rita_completeness = 1,
+      age_diag_effect = sim_config$age_diag_effect
     )
   }
   stan_data <- sim_diags$stan_data
@@ -178,8 +179,10 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
     )
   }
   diag_prob <- if (stan_data$sim_config$rita) {
+    # Use middle age as representative for non-age-stratified summary
+    mid_age <- ceiling(stan_data$nage / 2)
     tibble::tibble(
-      value = as.vector(sim_data$d_probs),
+      value = as.vector(sim_data$d_probs[, mid_age, ]),
       year = rep(seq(0, plot_years, by = 0.25), 5),
       strata = rep(
         c(
@@ -206,8 +209,9 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
         )
       )
   } else {
+    mid_age <- ceiling(stan_data$nage / 2)
     tibble::tibble(
-      value = as.vector(sim_data$d_probs),
+      value = as.vector(sim_data$d_probs[, mid_age, ]),
       year = rep(seq(0, plot_years, by = 0.25), 4),
       strata = rep(
         c("CD4>=500", "CD4 350-499", "CD4 200-349", "CD4<200"),
@@ -346,10 +350,23 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
           )
       )
   } else if (quantity == "diag_prob_age") {
-    out <- tidyr::crossing(
-      diag_prob,
-      age_band = age_group_labels
-    )
+    nstates <- dim(sim_data$d_probs)[3]
+    state_labels <- if (stan_data$sim_config$rita) {
+      c("Recently acquired", "CD4>=500", "CD4 350-499", "CD4 200-349", "CD4<200")
+    } else {
+      c("CD4>=500", "CD4 350-499", "CD4 200-349", "CD4<200")
+    }
+    # d_probs is constant within each age group, so pick the first age per group
+    rep_ages <- c(1, 11, 21, 31) # first age index in each group
+    out <- tidyr::expand_grid(
+      year = seq(0, plot_years, by = 0.25),
+      age_band = factor(age_group_labels, levels = age_group_labels),
+      strata = factor(state_labels, levels = state_labels)
+    ) |>
+      dplyr::mutate(
+        value = as.vector(aperm(sim_data$d_probs[, rep_ages, , drop = FALSE], c(3, 2, 1))),
+        group = "Parameter values"
+      )
   } else if (quantity == "diagnoses_age") {
     out <- tidyr::expand_grid(
       # diagnoses are age x year

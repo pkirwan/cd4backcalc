@@ -26,6 +26,7 @@
 #' @param abroad_prop Proportion of infections acquired abroad at the outset.
 #' @param cd4_completeness CD4 completeness.
 #' @param rita_completeness RITA completeness.
+#' @param age_diag_effect Numeric scalar controlling the strength of age variation in diagnosis probabilities. Applied as a logit-additive offset scaled linearly across ages.
 #' @return Configuration list.
 #' @keywords internal
 define_sim_config <- function(
@@ -51,7 +52,8 @@ define_sim_config <- function(
   init_props_abroad = c(1.75, 2.25, 2.25, 1.25), # initial state proportions abroad
   abroad_prop = 0.2, # proportion acquired abroad at outset
   cd4_completeness = 1, # CD4 completeness
-  rita_completeness = 1 # RITA completeness
+  rita_completeness = 1, # RITA completeness
+  age_diag_effect = 0 # age effect on diagnosis probabilities
 ) {
   if (rita) {
     nlatst <- 7
@@ -95,7 +97,8 @@ define_sim_config <- function(
     init_props_abroad = init_props_abroad,
     abroad_prop = abroad_prop,
     cd4_completeness = cd4_completeness,
-    rita_completeness = rita_completeness
+    rita_completeness = rita_completeness,
+    age_diag_effect = age_diag_effect
   )
 
   if (!is.null(sim_type)) {
@@ -196,6 +199,9 @@ define_simulation_type <- function(config, sim_type = "constant") {
     config$p_pattern <- "increasing"
     config$m_pattern <- "varying"
     config$a_pattern <- "wedge"
+    if (config$age) {
+      config$age_diag_effect <- 0.5
+    }
   } else if (sim_type == "combo_3_no_migration") {
     config$h_pattern <- "varying"
     config$o_pattern <- "none"
@@ -208,6 +214,9 @@ define_simulation_type <- function(config, sim_type = "constant") {
     config$p_pattern <- "increasing"
     config$m_pattern <- "varying"
     config$a_pattern <- "wedge"
+    if (config$age) {
+      config$age_diag_effect <- 0.5
+    }
   }
 
   return(config)
@@ -232,7 +241,7 @@ define_simulation_type <- function(config, sim_type = "constant") {
 #' Latent state 7: CD4 < 200, HIV acquired more than 6 months ago
 #'
 #' @param t Time index.
-#' @param d_probs Diagnosis probabilities.
+#' @param d_probs Diagnosis probabilities, a 3D array with dimensions \code{[nquar, nage, nstates]}.
 #' @param q_age Age-specific progression probabilities.
 #' @param nlatst Number of latent states.
 #' @param nage Number of age groups.
@@ -241,9 +250,9 @@ define_simulation_type <- function(config, sim_type = "constant") {
 #' @examples
 #' \dontrun{
 #' q_age <- matrix(rep(c(0.2, 0.3, 0.4, 0.5), 52), nrow = 52, byrow = TRUE)
-#' d_probs <- matrix(rep(0.1, 40), nrow = 10)
+#' d_probs <- array(0.1, dim = c(10, 52, 4))
 #' Q_mat(t = 10, d_probs, q_age, nlatst = 4, nage = 52, rita = FALSE)
-#' d_probs <- matrix(rep(0.1, 50), nrow = 10)
+#' d_probs <- array(0.1, dim = c(10, 52, 5))
 #' Q_mat(t = 10, d_probs, q_age, nlatst = 7, nage = 52, rita = TRUE)
 #' }
 #' @keywords internal
@@ -253,22 +262,22 @@ Q_mat <- function(t, d_probs, q_age, nlatst, nage = 52, rita = FALSE) {
   for (a in 1:nage) {
     if (rita) {
       # RITA-specific logic
-      diag(out[a, , ])[4:7] <- (1 - d_probs[t, 2:5]) * (1 - q_age[a, ])
-      out[a, 1, 2] <- (1 - d_probs[t, 1]) * (1 - q_age[a, 1])
-      out[a, 1, 3] <- (1 - d_probs[t, 1]) * q_age[a, 1]
-      out[a, 2, 4] <- (1 - d_probs[t, 1]) * (1 - q_age[a, 1])
-      out[a, 2, 5] <- (1 - d_probs[t, 1]) * q_age[a, 1]
+      diag(out[a, , ])[4:7] <- (1 - d_probs[t, a, 2:5]) * (1 - q_age[a, ])
+      out[a, 1, 2] <- (1 - d_probs[t, a, 1]) * (1 - q_age[a, 1])
+      out[a, 1, 3] <- (1 - d_probs[t, a, 1]) * q_age[a, 1]
+      out[a, 2, 4] <- (1 - d_probs[t, a, 1]) * (1 - q_age[a, 1])
+      out[a, 2, 5] <- (1 - d_probs[t, a, 1]) * q_age[a, 1]
 
-      out[a, 3, 5] <- (1 - d_probs[t, 1]) * (1 - q_age[a, 2])
-      out[a, 3, 6] <- (1 - d_probs[t, 1]) * q_age[a, 2] # allow progression to lower CD4 state
+      out[a, 3, 5] <- (1 - d_probs[t, a, 1]) * (1 - q_age[a, 2])
+      out[a, 3, 6] <- (1 - d_probs[t, a, 1]) * q_age[a, 2] # allow progression to lower CD4 state
       for (i in 4:6) {
-        out[a, i, i + 1] <- (1 - d_probs[t, i - 2]) * q_age[a, i - 3]
+        out[a, i, i + 1] <- (1 - d_probs[t, a, i - 2]) * q_age[a, i - 3]
       }
     } else {
       # Standard logic
-      diag(out[a, , ])[1:4] <- (1 - d_probs[t, ]) * (1 - q_age[a, ])
+      diag(out[a, , ])[1:4] <- (1 - d_probs[t, a, ]) * (1 - q_age[a, ])
       for (i in 1:3) {
-        out[a, i, i + 1] <- (1 - d_probs[t, i]) * q_age[a, i]
+        out[a, i, i + 1] <- (1 - d_probs[t, a, i]) * q_age[a, i]
       }
     }
   }
@@ -293,7 +302,7 @@ Q_mat <- function(t, d_probs, q_age, nlatst, nage = 52, rita = FALSE) {
 #' Diagnosed state 5: CD4 < 200 at diagnosis
 #'
 #' @param t Time index.
-#' @param d_probs Diagnosis probabilities.
+#' @param d_probs Diagnosis probabilities, a 3D array with dimensions \code{[nquar, nage, nstates]}.
 #' @param q_age Age-specific progression probabilities.
 #' @param nlatst Number of latent states.
 #' @param ndiagst Number of diagnosed states.
@@ -302,10 +311,10 @@ Q_mat <- function(t, d_probs, q_age, nlatst, nage = 52, rita = FALSE) {
 #' @return D matrix.
 #' @examples
 #' \dontrun{
-#' d_probs <- matrix(rep(0.1, 40), nrow = 10)
 #' q_age <- matrix(rep(c(0.2, 0.3, 0.4, 0.5), 52), nrow = 52, byrow = TRUE)
+#' d_probs <- array(0.1, dim = c(10, 52, 4))
 #' D_mat(t = 10, d_probs = d_probs, q_age, nlatst = 4, ndiagst = 5, nage = 52, rita = FALSE)
-#' d_probs <- matrix(rep(0.1, 50), nrow = 10)
+#' d_probs <- array(0.1, dim = c(10, 52, 5))
 #' D_mat(t = 10, d_probs = d_probs, q_age, nlatst = 7, ndiagst = 6, nage = 52, rita = TRUE)
 #' }
 #' @keywords internal
@@ -315,13 +324,13 @@ D_mat <- function(t, d_probs, q_age, nlatst, ndiagst, nage = 52, rita = FALSE) {
   for (a in 1:nage) {
     if (rita) {
       # RITA-specific logic
-      out[a, 1:3, 1] <- d_probs[t, 1]
-      out[a, 4:7, 2:5] <- diag(d_probs[t, 2:5])
-      out[a, 7, 6] <- (1 - d_probs[t, 5]) * q_age[a, 4]
+      out[a, 1:3, 1] <- d_probs[t, a, 1]
+      out[a, 4:7, 2:5] <- diag(d_probs[t, a, 2:5])
+      out[a, 7, 6] <- (1 - d_probs[t, a, 5]) * q_age[a, 4]
     } else {
       # Standard logic
-      diag(out[a, , ])[1:4] <- d_probs[t, ]
-      out[a, 4, 5] <- (1 - d_probs[t, 4]) * q_age[a, 4]
+      diag(out[a, , ])[1:4] <- d_probs[t, a, ]
+      out[a, 4, 5] <- (1 - d_probs[t, a, 4]) * q_age[a, 4]
     }
   }
 
@@ -460,6 +469,7 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #' @param abroad_prop Proportion of infections acquired abroad at the outset.
 #' @param cd4_completeness CD4 completeness.
 #' @param rita_completeness RITA completeness.
+#' @param age_diag_effect Numeric scalar controlling the strength of age variation in diagnosis probabilities. Applied as a logit-additive offset scaled linearly across ages.
 #' @return List containing simulated epidemic data.
 #' @examples
 #' simulate_diagnoses()
@@ -487,7 +497,8 @@ simulate_diagnoses <- function(
   init_props_abroad = c(1.75, 2.25, 2.25, 1.25), # initial state proportions abroad
   abroad_prop = 0.2, # proportion acquired abroad at outset
   cd4_completeness = 1, # CD4 completeness
-  rita_completeness = 1 # RITA completeness
+  rita_completeness = 1, # RITA completeness
+  age_diag_effect = 0 # age effect on diagnosis probabilities
 ) {
   sim_config <- define_sim_config(
     h_pattern,
@@ -512,7 +523,8 @@ simulate_diagnoses <- function(
     init_props_abroad,
     abroad_prop,
     cd4_completeness,
-    rita_completeness
+    rita_completeness,
+    age_diag_effect
   )
   set.seed(sim_config$sim_seed)
 
@@ -578,9 +590,11 @@ simulate_diagnoses <- function(
   )
   d_probs <- generate_diagnosis_probs(
     sim_config$nquar,
+    sim_config$nage,
     sim_config$d_pattern,
     sim_config$dist,
-    sim_config$rita
+    sim_config$rita,
+    sim_config$age_diag_effect
   )
 
   # Generate initial prevalence

@@ -1,10 +1,10 @@
 test_that("simulated plots are generated correctly", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, rita = TRUE, sim_type = "combo_3")
+  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, age = TRUE, rita = TRUE, age_diag_effect = 0.5, sim_type = "combo_3")
   # Generate plots of key quantities
   p1 <- plot_simulations(stan_data, "incidence")
   p2 <- plot_simulations(stan_data, "undiag_prev")
-  p3 <- plot_simulations(stan_data, "diag_prob")
+  p3 <- plot_simulations(stan_data, "diag_prob_age")
   p4 <- plot_simulations(stan_data, "diagnoses")
   p5 <- plot_simulations(stan_data, "undiag_migration")
   expect_s3_class(p1, "ggplot")

@@ -105,10 +105,10 @@ generate_mu <- function(nquar, nlatst, pattern, dist = FALSE) {
     } else if (pattern == "varying") {
       matrix(
         c(
-          seq(0.1, 0.3, length.out = nquar),
+          seq(0.15, 0.3, length.out = nquar),
           seq(0.2, 0.22, length.out = nquar),
-          seq(0.25, 0.15, length.out = nquar),
-          seq(0.2, 0.05, length.out = nquar),
+          seq(0.2, 0.15, length.out = nquar),
+          seq(0.1, 0.05, length.out = nquar),
           seq(0.2, 0.4, length.out = nquar)
         ),
         nrow = nquar,
@@ -193,15 +193,19 @@ generate_migration <- function(nquar, nlatst, omega, mu, dist = TRUE) {
 #' Generate diagnosis probability patterns
 #'
 #' @param nquar Number of time quarters.
+#' @param nage Number of age groups.
 #' @param pattern Pattern type for diagnosis probabilities ("constant", "varying").
 #' @param dist Logical indicating whether to add normal variation.
 #' @param rita Logical indicating whether to generate an additional diagnosis probability for recently acquired HIV.
-#' @return Matrix of diagnosis probabilities over time.
+#' @param age_diag_effect Numeric scalar controlling the strength of age variation in diagnosis probabilities. A value of 0 means no age effect; positive values increase diagnosis probability with age. Applied as a multiplicative factor on the logit scale.
+#' @return A 3D array of diagnosis probabilities with dimensions \code{[nquar, nage, nstates]}.
 generate_diagnosis_probs <- function(
   nquar,
+  nage = 52,
   pattern,
   dist = TRUE,
-  rita = FALSE
+  rita = FALSE,
+  age_diag_effect = 0
 ) {
   # check pattern
   stopifnot(pattern %in% c("constant", "varying"))
@@ -224,7 +228,7 @@ generate_diagnosis_probs <- function(
       # Initialize first value
       start_values <- c(logit(0.02), logit(0.05), logit(0.07), logit(0.20))
       mid_values <- c(logit(0.03), logit(0.05), logit(0.07), logit(0.21))
-      end_values <- c(logit(0.08), logit(0.08), logit(0.10), logit(0.22))
+      end_values <- c(logit(0.07), logit(0.08), logit(0.10), logit(0.22))
 
       logit_d_probs[, 1] <- stats::rnorm(
         nquar,
@@ -262,7 +266,10 @@ generate_diagnosis_probs <- function(
         logit_d_probs <- cbind(
           stats::rnorm(
             nquar,
-            seq(logit(0.1), logit(0.18), length.out = nquar),
+            c(
+              seq(logit(0.1), logit(0.15), length.out = nquar / 2),
+              seq(logit(0.15), logit(0.15), length.out = nquar / 2)
+            ),
             sigma
           ),
           logit_d_probs
@@ -288,7 +295,7 @@ generate_diagnosis_probs <- function(
       # Initialize first value
       start_values <- c(logit(0.02), logit(0.05), logit(0.07), logit(0.20))
       mid_values <- c(logit(0.03), logit(0.05), logit(0.07), logit(0.21))
-      end_values <- c(logit(0.08), logit(0.08), logit(0.10), logit(0.22))
+      end_values <- c(logit(0.07), logit(0.08), logit(0.10), logit(0.22))
       d_probs <- matrix(
         invlogit(c(
           c(
@@ -313,13 +320,39 @@ generate_diagnosis_probs <- function(
       )
       if (rita) {
         d_probs <- cbind(
-          seq(0.1, 0.18, length.out = nquar),
+          c(
+            seq(0.1, 0.15, length.out = nquar / 2),
+            seq(0.15, 0.15, length.out = nquar / 2)
+          ),
           d_probs
         )
       }
     }
   }
-  return(d_probs)
+
+  # Expand to 3D array [nquar, nage, nstates] with age-group-level effect.
+  # Uses 4 age groups matching the Stan model:
+  #   group 1: ages 1-10, group 2: ages 11-20, group 3: ages 21-30, group 4: ages 31+
+  nstates <- ncol(d_probs)
+  nagroup <- 4
+  age_group_lookup <- pmin(nagroup, 1 + (seq_len(nage) - 1) %/% 10)
+
+  # Centred group scale: e.g. for 4 groups -> c(-0.5, -0.167, 0.167, 0.5)
+  group_scale <- (seq_len(nagroup) - 1) / (nagroup - 1) - 0.5
+  # Logit-additive offset per age group; zero when age_diag_effect == 0
+  group_offset <- age_diag_effect * group_scale # length nagroup
+
+  d_probs_3d <- array(0, dim = c(nquar, nage, nstates))
+  logit_base <- logit(d_probs) # [nquar, nstates]
+  for (ag in seq_len(nagroup)) {
+    idx <- which(age_group_lookup == ag)
+    shifted <- invlogit(logit_base + group_offset[ag])
+    for (a in idx) {
+      d_probs_3d[, a, ] <- shifted
+    }
+  }
+
+  return(d_probs_3d)
 }
 
 #' Generate age distributions

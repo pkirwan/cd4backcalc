@@ -4,19 +4,30 @@
 \alias{generate_diagnosis_probs}
 \title{Generate diagnosis probability patterns}
 \usage{
-generate_diagnosis_probs(nquar, pattern, dist = TRUE, rita = FALSE)
+generate_diagnosis_probs(
+  nquar,
+  nage = 52,
+  pattern,
+  dist = TRUE,
+  rita = FALSE,
+  age_diag_effect = 0
+)
 }
 \arguments{
 \item{nquar}{Number of time quarters.}
+
+\item{nage}{Number of age groups.}
 
 \item{pattern}{Pattern type for diagnosis probabilities ("constant", "varying").}
 
 \item{dist}{Logical indicating whether to add normal variation.}
 
 \item{rita}{Logical indicating whether to generate an additional diagnosis probability for recently acquired HIV.}
+
+\item{age_diag_effect}{Numeric scalar controlling the strength of age variation in diagnosis probabilities. A value of 0 means no age effect; positive values increase diagnosis probability with age. Applied as a multiplicative factor on the logit scale.}
 }
 \value{
-Matrix of diagnosis probabilities over time.
+A 3D array of diagnosis probabilities with dimensions \code{[nquar, nage, nstates]}.
 }
 \description{
 Generate diagnosis probability patterns
