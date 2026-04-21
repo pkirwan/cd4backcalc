@@ -138,44 +138,44 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
         rowSums(sim_data$epi_uk_abroad$lat) +
         rowSums(sim_data$epi_abroad$lat),
       year = seq(0, plot_years, by = 0.25),
-      group = "Parameter values"
+      group = "Generative values"
     )
   } else {
     tibble::tibble(
       value = rowSums(sim_data$epi_uk$lat) +
         rowSums(sim_data$epi_uk_abroad$lat),
       year = seq(0, plot_years, by = 0.25),
-      group = "Parameter values"
+      group = "Generative values"
     )
   }
   incidence <- tibble::tibble(
     value = sim_data$infs[, 1],
     year = seq(0, plot_years, by = 0.25),
-    group = "Parameter values"
+    group = "Generative values"
   )
   undiag_migration <- tibble::tibble(
     # m[, 1:nlatst] now contains only true undiagnosed migrants (misclassified
     # are handled separately via detect_prob split in sim_diags)
     value = rowSums(sim_data$m[, 1:stan_data$sim_config$nlatst]),
     year = seq(0, plot_years, by = 0.25),
-    group = "Parameter values"
+    group = "Generative values"
   )
   all_migration <- tibble::tibble(
     value = sim_data$omega,
     year = seq(0, plot_years, by = 0.25),
-    group = "Parameter values"
+    group = "Generative values"
   )
   diagnoses <- if (stan_data$sim_config$migration) {
     tibble::tibble(
       value = rowSums(stan_data$HIV) + rowSums(stan_data$AIDS),
       year = seq(0, plot_years, by = 0.25),
-      group = "Parameter values"
+      group = "Generative values"
     )
   } else {
     tibble::tibble(
       value = stan_data$HIV + stan_data$AIDS,
       year = seq(0, plot_years, by = 0.25),
-      group = "Parameter values"
+      group = "Generative values"
     )
   }
   diag_prob <- if (stan_data$sim_config$rita) {
@@ -194,7 +194,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
         ),
         each = stan_data$nquar
       ),
-      group = "Parameter values"
+      group = "Generative values"
     ) |>
       dplyr::mutate(
         strata = factor(
@@ -217,7 +217,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
         c("CD4>=500", "CD4 350-499", "CD4 200-349", "CD4<200"),
         each = stan_data$nquar
       ),
-      group = "Parameter values"
+      group = "Generative values"
     ) |>
       dplyr::mutate(
         strata = factor(
@@ -256,7 +256,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
           c(1, 2),
           sum
         )),
-        group = "Parameter values",
+        group = "Generative values",
         age_band = cut(
           .data$age,
           breaks = c(15, 25, 35, 45, 100),
@@ -279,7 +279,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
     ) |>
       dplyr::mutate(
         value = as.vector(sim_data$infs_age[,, 1]),
-        group = "Parameter values",
+        group = "Generative values",
         age_band = cut(
           .data$age,
           breaks = c(15, 25, 35, 45, 100),
@@ -310,7 +310,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
             sum
           )
         ),
-        group = "Parameter values",
+        group = "Generative values",
         age_band = cut(
           .data$age,
           breaks = c(15, 25, 35, 45, 100),
@@ -333,7 +333,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
     ) |>
       dplyr::mutate(
         value = as.vector(sim_data$omega_age),
-        group = "Parameter values",
+        group = "Generative values",
         age_band = cut(
           .data$age,
           breaks = c(15, 25, 35, 45, 100),
@@ -365,7 +365,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
     ) |>
       dplyr::mutate(
         value = as.vector(aperm(sim_data$d_probs[, rep_ages, , drop = FALSE], c(3, 2, 1))),
-        group = "Parameter values"
+        group = "Generative values"
       )
   } else if (quantity == "diagnoses_age") {
     out <- tidyr::expand_grid(
@@ -378,7 +378,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
           apply(stan_data$HIV_age, c(1, 2), sum) +
             apply(stan_data$AIDS_age, c(1, 2), sum)
         ),
-        group = "Parameter values",
+        group = "Generative values",
         age_band = cut(
           .data$age,
           breaks = c(15, 25, 35, 45, 100),
@@ -413,7 +413,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
         ),
         each = stan_data$nquar
       ),
-      group = "Parameter values"
+      group = "Generative values"
     ) |>
       dplyr::mutate(
         value = dplyr::if_else(is.na(.data$value), 0, .data$value),
@@ -432,13 +432,13 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
     out <- tibble::tibble(
       value = sim_data$ratio_abroad_uk,
       year = seq(0, plot_years, by = 0.25),
-      group = "Parameter values"
+      group = "Generative values"
     )
   } else if (quantity == "transfers") {
     out <- tibble::tibble(
       value = stan_data$ABROAD * (1 / sim_data$detect_prob),
       year = seq(0, plot_years, by = 0.25),
-      group = "Parameter values"
+      group = "Generative values"
     )
   } else if (quantity == "cd4_strata") {
     out <- if (stan_data$sim_config$rita) {
@@ -450,7 +450,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
           `CD4 200-349` = rowSums(stan_data$CD4[,, 4]),
           `CD4<200` = rowSums(stan_data$CD4[,, 5]),
           year = seq(0, plot_years, by = 0.25),
-          group = "Parameter values"
+          group = "Generative values"
         )
       } else {
         tibble::tibble(
@@ -460,7 +460,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
           `CD4 200-349` = stan_data$CD4[, 4],
           `CD4<200` = stan_data$CD4[, 5],
           year = seq(0, plot_years, by = 0.25),
-          group = "Parameter values"
+          group = "Generative values"
         )
       }
     } else if (stan_data$sim_config$migration) {
@@ -470,7 +470,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
         `CD4 200-349` = rowSums(stan_data$CD4[,, 3]),
         `CD4<200` = rowSums(stan_data$CD4[,, 4]),
         year = seq(0, plot_years, by = 0.25),
-        group = "Parameter values"
+        group = "Generative values"
       )
     } else {
       tibble::tibble(
@@ -479,7 +479,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
         `CD4 200-349` = stan_data$CD4[, 3],
         `CD4<200` = stan_data$CD4[, 4],
         year = seq(0, plot_years, by = 0.25),
-        group = "Parameter values"
+        group = "Generative values"
       )
     }
 
@@ -493,7 +493,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
     out <- tibble::tibble(
       value = sim_data$detect_prob,
       year = seq(0, plot_years, by = 0.25),
-      group = "Parameter values"
+      group = "Generative values"
     )
   }
   return(out)

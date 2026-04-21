@@ -20,7 +20,7 @@ plot_simulations <- function(
     deterministic = TRUE
   )
   sim_estimates <- sim_estimates |>
-    dplyr::mutate(group = "Simulated values") |>
+    dplyr::mutate(group = "Sampled values") |>
     dplyr::bind_rows(
       sim_estimates_det |>
         dplyr::mutate(group = "Expected values")
@@ -34,7 +34,7 @@ plot_simulations <- function(
 
   model_colors <- stats::setNames(
       c("darkcyan", "mediumorchid"),
-      c("Simulated values", "Expected values")
+      c("Sampled values", "Expected values")
     )
 
   # plot simulated values as points and expected values as lines
@@ -43,7 +43,7 @@ plot_simulations <- function(
     ggplot2::aes(.data$year, .data$value, color = .data$group, group = .data$group) +
     ggplot2::geom_point(
       data = sim_estimates |>
-        dplyr::filter(.data$group == "Simulated values"),
+        dplyr::filter(.data$group == "Sampled values"),
       size = 1.1
     ) +
     ggplot2::geom_line(
@@ -278,7 +278,7 @@ plot_estimates <- function(
   if (!is.null(hiv_list_2)) {
     model_colors <- stats::setNames(
       c("mediumorchid", "coral", "springgreen"),
-      c(model_1_name, model_2_name, "Parameter values")
+      c(model_1_name, model_2_name, "Generative values")
     )
     p1 <- p1 +
       ggplot2::scale_color_manual(
