@@ -5,7 +5,7 @@ Generate migration probability patterns
 ## Usage
 
 ``` r
-generate_mu(nquar, nlatst, pattern, detect_prob)
+generate_mu(nquar, nlatst, pattern, dist = FALSE)
 ```
 
 ## Arguments
@@ -22,10 +22,9 @@ generate_mu(nquar, nlatst, pattern, detect_prob)
 
   Pattern type for mu ("constant", "differing", "varying").
 
-- detect_prob:
+- dist:
 
-  Vector of detection probabilities for those migrating already
-  diagnosed.
+  Logical indicating whether to add logit-scale noise.
 
 ## Value
 

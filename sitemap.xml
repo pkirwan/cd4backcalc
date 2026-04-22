@@ -11,6 +11,7 @@
 <url><loc>https://pkirwan.github.io/cd4backcalc/index.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/D_mat.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/Q_mat.html</loc></url>
+<url><loc>https://pkirwan.github.io/cd4backcalc/reference/apply_frr.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/bias_plot.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/build_ppq_list.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/cd4backcalc-package.html</loc></url>
@@ -53,7 +54,6 @@
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/logit.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/make_fit_indices.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/make_mse_list.html</loc></url>
-<url><loc>https://pkirwan.github.io/cd4backcalc/reference/make_pars_save.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/make_tibble.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/migration.prob.df.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/model_type_prep.html</loc></url>

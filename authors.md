@@ -2,7 +2,7 @@
 
 ## Authors
 
-- **Peter Kirwan**. Author, maintainer.
+- **[Peter Kirwan](https://www.pkirwan.com)**. Author, maintainer.
   [](https://orcid.org/0000-0001-6904-0500)
 
 - **Paul Birrell**. Contributor.
@@ -12,15 +12,15 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/pkirwan/cd4backcalc/blob/main/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/pkirwan/cd4backcalc/blob/v0.0.5/DESCRIPTION)
 
 Kirwan P (2026). *cd4backcalc: CD4 Back-Calculation R package*. R
-package version 0.0.4, <https://pkirwan.github.io/cd4backcalc/>.
+package version 0.0.5, <https://pkirwan.github.io/cd4backcalc/>.
 
     @Manual{,
       title = {cd4backcalc: CD4 Back-Calculation R package},
       author = {Peter Kirwan},
       year = {2026},
-      note = {R package version 0.0.4},
+      note = {R package version 0.0.5},
       url = {https://pkirwan.github.io/cd4backcalc/},
     }

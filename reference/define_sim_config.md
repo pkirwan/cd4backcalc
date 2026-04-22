@@ -30,7 +30,9 @@ define_sim_config(
   init_props_abroad = c(1.75, 2.25, 2.25, 1.25),
   abroad_prop = 0.2,
   cd4_completeness = 1,
-  rita_completeness = 1
+  rita_completeness = 1,
+  age_diag_effect = 0,
+  frr = 0.019
 )
 ```
 
@@ -130,6 +132,16 @@ define_sim_config(
 - rita_completeness:
 
   RITA completeness.
+
+- age_diag_effect:
+
+  Numeric scalar controlling the strength of age variation in diagnosis
+  probabilities. Applied as a logit-additive offset scaled linearly
+  across ages.
+
+- frr:
+
+  False recency rate for RITA misclassification.
 
 ## Value
 
