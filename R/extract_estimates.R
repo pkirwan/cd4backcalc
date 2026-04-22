@@ -122,7 +122,8 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
       abroad_prop = sim_config$abroad_prop,
       cd4_completeness = 1,
       rita_completeness = 1,
-      age_diag_effect = sim_config$age_diag_effect
+      age_diag_effect = sim_config$age_diag_effect,
+      frr = sim_config$frr
     )
   }
   stan_data <- sim_diags$stan_data

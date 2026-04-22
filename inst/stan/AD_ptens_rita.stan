@@ -73,11 +73,17 @@ parameters {
   real alpha_diag_4;
   real alpha_diag_5;
   vector[4 * 5] alpha_age_diag; // 4 age groups x 5 states
+  
+  // False recency rate
+  real logit_frr;
 }
 transformed parameters {
   // Infection parameters
   vector[nquar * nage] lambda = X_inf * beta_inf;
   vector<lower=0>[nquar * nage] h = exp(lambda); //vector of expected log responses
+  
+  // False recency rate
+  real<lower=0, upper=1> frr = inv_logit(logit_frr);
   
   // Diagnosis probabilities
   array[nquar, nage] row_vector[6] exp_diag; // expected number of diag at time t age a state k
@@ -237,7 +243,12 @@ transformed parameters {
         // Add small epsilon to avoid exact zeros in the simplex,
         // which cause NaN via 0*log(0) in the multinomial likelihood
         vector[5] raw_p = to_vector(exp_diag[t, a, 1 : 5]) + 1e-12;
-        exp_p[t, a] = raw_p / sum(raw_p);
+        vector[5] p1 = raw_p / sum(raw_p);
+        exp_p[t, a, 1] = p1[1] + frr * (1 - p1[1]);
+        exp_p[t, a, 2] = (1 - frr) * p1[2];
+        exp_p[t, a, 3] = (1 - frr) * p1[3];
+        exp_p[t, a, 4] = (1 - frr) * p1[4];
+        exp_p[t, a, 5] = (1 - frr) * p1[5];
       } else {
         // safeguard; should be rare outside a==1, but avoids inv(0)
         exp_p[t, a] = rep_vector(0.2, 5);
@@ -282,6 +293,9 @@ model {
   sigma_diag_3 ~ gamma(2, 16);
   sigma_diag_4 ~ gamma(2, 16);
   sigma_diag_5 ~ gamma(2, 16);
+  
+  // False recency rate prior centred on logit(0.019)
+  logit_frr ~ normal(-3.94, 0.32);
   
   alpha_age_diag ~ normal(0, 1); // Priors for age specific intercepts
   

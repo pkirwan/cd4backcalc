@@ -23,7 +23,7 @@ plot_simulations <- function(
     dplyr::mutate(group = "Sampled values") |>
     dplyr::bind_rows(
       sim_estimates_det |>
-        dplyr::mutate(group = "Expected values")
+        dplyr::mutate(group = "Generative values")
     )
 
   # exclude "all" age_band from age-facetted plots
@@ -33,22 +33,28 @@ plot_simulations <- function(
   }
 
   model_colors <- stats::setNames(
-      c("darkcyan", "mediumorchid"),
-      c("Sampled values", "Expected values")
-    )
+    c("mediumturquoise", "mediumorchid"),
+    c("Sampled values", "Generative values")
+  )
 
   # plot simulated values as points and expected values as lines
   p1 <- sim_estimates |>
     ggplot2::ggplot() +
-    ggplot2::aes(.data$year, .data$value, color = .data$group, group = .data$group) +
+    ggplot2::aes(
+      .data$year,
+      .data$value,
+      color = .data$group,
+      group = .data$group
+    ) +
     ggplot2::geom_point(
       data = sim_estimates |>
         dplyr::filter(.data$group == "Sampled values"),
-      size = 1.1
+      size = 1.1,
+      shape = 3
     ) +
     ggplot2::geom_line(
       data = sim_estimates |>
-        dplyr::filter(.data$group == "Expected values")
+        dplyr::filter(.data$group == "Generative values")
     ) +
     ggplot2::labs(
       title = plot_title,
@@ -274,38 +280,28 @@ plot_estimates <- function(
       panel.grid.major = ggplot2::element_line(color = "grey80")
     )
 
-  # if two models plotted, add legend for model comparison
+  # define model colors
   if (!is.null(hiv_list_2)) {
     model_colors <- stats::setNames(
-      c("mediumorchid", "coral", "springgreen"),
+      c("mediumorchid", "coral", "mediumturquoise"),
       c(model_1_name, model_2_name, "Generative values")
     )
-    p1 <- p1 +
-      ggplot2::scale_color_manual(
-        values = model_colors,
-        name = ""
-      ) +
-      ggplot2::scale_fill_manual(
-        values = model_colors,
-        name = ""
-      )
   } else {
-    p1 <- p1 +
-      ggplot2::scale_color_manual(
-        values = c(
-          rep("mediumorchid", length(unique(quantiles$group))),
-          "springgreen"
-        ),
-        name = ""
-      ) +
-      ggplot2::scale_fill_manual(
-        values = c(
-          rep("mediumorchid", length(unique(quantiles$group))),
-          "springgreen"
-        ),
-        name = ""
-      )
+    model_colors <- stats::setNames(
+      c(rep("mediumorchid", length(unique(quantiles$group))), "mediumturquoise"),
+      c(unique(quantiles$group), "Generative values")
+    )
   }
+
+  p1 <- p1 +
+    ggplot2::scale_color_manual(
+      values = model_colors,
+      name = ""
+    ) +
+    ggplot2::scale_fill_manual(
+      values = model_colors,
+      name = ""
+    )
 
   # add simulated values if data were simulated
   # use deterministic (expected) values so comparison is against lambda, not rpois(lambda)
@@ -323,7 +319,8 @@ plot_estimates <- function(
       ggplot2::geom_point(
         data = sim_estimates,
         ggplot2::aes(y = .data$value, group = .data$group),
-        size = 1
+        size = 1.1,
+        shape = 3
       )
   } else if (quantity %in% c("diagnoses", "diagnoses_age", "transfers")) {
     # add observed diagnoses if real data
@@ -336,7 +333,8 @@ plot_estimates <- function(
       ggplot2::geom_point(
         data = observed_data,
         ggplot2::aes(y = .data$value, group = .data$group),
-        size = 1.1
+        size = 1.1,
+        shape = 3
       )
   }
 

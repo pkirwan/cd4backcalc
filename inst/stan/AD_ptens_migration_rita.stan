@@ -130,11 +130,17 @@ parameters {
   real alpha_detect;
   vector[npars_mp] beta_detect;
   real<lower=0> sigma_detect;
+  
+  // False recency rate
+  real logit_frr;
 }
 transformed parameters {
   // Infection intensity by (t, a)
   vector[nquar * nage] lambda = X_inf * beta_inf;
   vector<lower=0>[nquar * nage] h = exp(lambda);
+  
+  // False recency rate
+  real<lower=0, upper=1> frr = inv_logit(logit_frr);
   
   // Tensor product prior precision
   vector<lower=0>[2] tau = inv(square(sigma_inf));
@@ -415,7 +421,12 @@ transformed parameters {
             // Add small epsilon to avoid exact zeros in the simplex,
             // which cause NaN via 0*log(0) in the multinomial likelihood
             vector[5] raw_p = to_vector(exp_diag[t, a, y, 1 : 5]) + 1e-12;
-            exp_p[t, a, y] = raw_p / sum(raw_p);
+            vector[5] p1 = raw_p / sum(raw_p);
+            exp_p[t, a, y, 1] = p1[1] + frr * (1 - p1[1]);
+            exp_p[t, a, y, 2] = (1 - frr) * p1[2];
+            exp_p[t, a, y, 3] = (1 - frr) * p1[3];
+            exp_p[t, a, y, 4] = (1 - frr) * p1[4];
+            exp_p[t, a, y, 5] = (1 - frr) * p1[5];
           } else {
             exp_p[t, a, y] = rep_vector(0.2, 5);
           }
@@ -461,6 +472,9 @@ model {
   sigma_diag_3 ~ gamma(2, 16);
   sigma_diag_4 ~ gamma(2, 16);
   sigma_diag_5 ~ gamma(2, 16);
+  
+  // False recency rate prior centred on logit(0.019)
+  logit_frr ~ normal(-3.94, 0.32);
   
   alpha_age_diag ~ normal(0, 1);
   

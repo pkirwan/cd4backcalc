@@ -27,6 +27,7 @@
 #' @param cd4_completeness CD4 completeness.
 #' @param rita_completeness RITA completeness.
 #' @param age_diag_effect Numeric scalar controlling the strength of age variation in diagnosis probabilities. Applied as a logit-additive offset scaled linearly across ages.
+#' @param frr False recency rate for RITA misclassification.
 #' @return Configuration list.
 #' @keywords internal
 define_sim_config <- function(
@@ -53,7 +54,8 @@ define_sim_config <- function(
   abroad_prop = 0.2, # proportion acquired abroad at outset
   cd4_completeness = 1, # CD4 completeness
   rita_completeness = 1, # RITA completeness
-  age_diag_effect = 0 # age effect on diagnosis probabilities
+  age_diag_effect = 0, # age effect on diagnosis probabilities
+  frr = 0.019 # false recency rate for RITA misclassification
 ) {
   if (rita) {
     nlatst <- 7
@@ -98,7 +100,8 @@ define_sim_config <- function(
     abroad_prop = abroad_prop,
     cd4_completeness = cd4_completeness,
     rita_completeness = rita_completeness,
-    age_diag_effect = age_diag_effect
+    age_diag_effect = age_diag_effect,
+    frr = frr
   )
 
   if (!is.null(sim_type)) {
@@ -470,6 +473,7 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #' @param cd4_completeness CD4 completeness.
 #' @param rita_completeness RITA completeness.
 #' @param age_diag_effect Numeric scalar controlling the strength of age variation in diagnosis probabilities. Applied as a logit-additive offset scaled linearly across ages.
+#' @param frr False recency rate for RITA misclassification.
 #' @return List containing simulated epidemic data.
 #' @examples
 #' simulate_diagnoses()
@@ -498,7 +502,8 @@ simulate_diagnoses <- function(
   abroad_prop = 0.2, # proportion acquired abroad at outset
   cd4_completeness = 1, # CD4 completeness
   rita_completeness = 1, # RITA completeness
-  age_diag_effect = 0 # age effect on diagnosis probabilities
+  age_diag_effect = 0, # age effect on diagnosis probabilities
+  frr = 0.019 # false recency rate for RITA misclassification
 ) {
   sim_config <- define_sim_config(
     h_pattern,
@@ -524,7 +529,8 @@ simulate_diagnoses <- function(
     abroad_prop,
     cd4_completeness,
     rita_completeness,
-    age_diag_effect
+    age_diag_effect,
+    frr
   )
   set.seed(sim_config$sim_seed)
 
@@ -923,6 +929,12 @@ simulate_diagnoses <- function(
     init_prev_age <- lat_init_uk_age + lat_init_uk_abroad_age
     init_prev_abroad <- lat_init_abroad
     init_prev_abroad_age <- lat_init_abroad_age
+  }
+
+  # Apply false recency rate misclassification to RITA-classified data
+  if (sim_config$rita && sim_config$frr > 0) {
+    cd4_dx     <- apply_frr(cd4_dx,     sim_config$frr, sim_config$dist)
+    cd4_dx_age <- apply_frr(cd4_dx_age, sim_config$frr, sim_config$dist)
   }
 
   # ABROAD data: detected portion of diagnosed migrants

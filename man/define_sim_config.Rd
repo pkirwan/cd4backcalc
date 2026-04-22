@@ -28,7 +28,8 @@ define_sim_config(
   abroad_prop = 0.2,
   cd4_completeness = 1,
   rita_completeness = 1,
-  age_diag_effect = 0
+  age_diag_effect = 0,
+  frr = 0.019
 )
 }
 \arguments{
@@ -79,6 +80,8 @@ define_sim_config(
 \item{rita_completeness}{RITA completeness.}
 
 \item{age_diag_effect}{Numeric scalar controlling the strength of age variation in diagnosis probabilities. Applied as a logit-additive offset scaled linearly across ages.}
+
+\item{frr}{False recency rate for RITA misclassification.}
 }
 \value{
 Configuration list.

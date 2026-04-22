@@ -75,6 +75,9 @@ parameters {
   vector[npars_inf] beta_inf;
   real log_sigma_inf;
   
+  // False recency rate
+  real logit_frr;
+  
   // Diagnosis probability parameters
   vector[npars_diag] beta_diag_1;
   vector[npars_diag] beta_diag_2;
@@ -93,6 +96,9 @@ parameters {
   real alpha_diag_5;
 }
 transformed parameters {
+  // False recency rate
+  real<lower=0, upper=1> frr = inv_logit(logit_frr);
+  
   // Infection process
   real<lower=0> sigma_inf = exp(log_sigma_inf);
   vector[nquar] lambda = X_inf * beta_inf;
@@ -176,14 +182,15 @@ transformed parameters {
                + incidence_state_12 + incidence_state_13;
   exp_AIDS_dx = incidence_state_8;
   
-  // Including CD4 counts
+  // Including CD4 / RITA counts, adjusted for false recency rate
   for (t in 1 : nquar) {
     if (exp_HIV_dx[t] > 0) {
-      exp_p[t, 1] = incidence_state_9[t] / exp_HIV_dx[t];
-      exp_p[t, 2] = incidence_state_10[t] / exp_HIV_dx[t];
-      exp_p[t, 3] = incidence_state_11[t] / exp_HIV_dx[t];
-      exp_p[t, 4] = incidence_state_12[t] / exp_HIV_dx[t];
-      exp_p[t, 5] = incidence_state_13[t] / exp_HIV_dx[t];
+      real p1 = incidence_state_9[t] / exp_HIV_dx[t];
+      exp_p[t, 1] = p1 + frr * (1 - p1);
+      exp_p[t, 2] = (1 - frr) * incidence_state_10[t] / exp_HIV_dx[t];
+      exp_p[t, 3] = (1 - frr) * incidence_state_11[t] / exp_HIV_dx[t];
+      exp_p[t, 4] = (1 - frr) * incidence_state_12[t] / exp_HIV_dx[t];
+      exp_p[t, 5] = (1 - frr) * incidence_state_13[t] / exp_HIV_dx[t];
     }
   }
 }
@@ -216,6 +223,9 @@ model {
   sigma_diag_3 ~ gamma(2, 8);
   sigma_diag_4 ~ gamma(2, 8);
   sigma_diag_5 ~ gamma(2, 8);
+  
+  // False recency rate prior centred on logit(0.019)
+  logit_frr ~ normal(-3.94, 0.32);
   
   // Likelihood
   HIV ~ poisson(exp_HIV_dx);

@@ -413,3 +413,49 @@ generate_age_dist <- function(
   # transpose matrix
   return(t(age_dist))
 }
+
+#' Apply false recency rate misclassification to a RITA CD4 array
+#'
+#' Moves a fraction \code{frr} of long-standing (non-RITA-recent, states 2+)
+#' diagnoses to the RITA-recent state (state 1), simulating false recency
+#' classification errors in the RITA assay. Works on arrays of any rank whose
+#' \emph{last} dimension indexes the RITA/CD4 states.
+#'
+#' @param cd4_arr Integer array whose last dimension indexes RITA/CD4 states
+#' @param frr Scalar false recency rate in \eqn{[0, 1]}
+#' @param dist Logical; if \code{TRUE} the number of misclassified cases per
+#'   cell is drawn from a Binomial distribution, otherwise the deterministic
+#'   expectation (rounded, preserving the total) is used.
+#' @return An integer array with the same dimensions as \code{cd4_arr}.
+#' @keywords internal
+apply_frr <- function(cd4_arr, frr, dist = TRUE) {
+  if (frr <= 0) return(cd4_arr)
+
+  dims     <- dim(cd4_arr)
+  n_states <- dims[length(dims)]
+  n_cells  <- prod(dims[-length(dims)])
+
+  # Reshape to (n_cells x n_states) for vectorised operations
+  mat <- matrix(as.integer(cd4_arr), nrow = n_cells, ncol = n_states)
+
+  # Total long-standing diagnoses per cell (states 2:n_states)
+  n_long <- rowSums(mat[, 2:n_states, drop = FALSE])
+
+  # Number misclassified as RITA-recent
+  if (dist) {
+    n_mis <- stats::rbinom(n_cells, n_long, frr)
+  } else {
+    n_mis <- round(n_long * frr)
+  }
+
+  # Subtract proportionally from long-standing states, add to recent (state 1)
+  idx <- which(n_mis > 0 & n_long > 0)
+  for (i in idx) {
+    props              <- mat[i, 2:n_states] / n_long[i]
+    reduction          <- round_preserve(n_mis[i] * props)
+    mat[i, 2:n_states] <- mat[i, 2:n_states] - reduction
+  }
+  mat[, 1] <- mat[, 1] + n_mis
+
+  array(mat, dim = dims)
+}
