@@ -73,6 +73,7 @@ The number of latent and diagnosis states will be inferred from the simulation s
 <span>  cd4_completeness <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  rita_completeness <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  age_diag_effect <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  mig_diag_offset <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  frr <span class="op">=</span> <span class="fl">0.019</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -175,6 +176,10 @@ The number of latent and diagnosis states will be inferred from the simulation s
 
 <dt id="arg-age-diag-effect">age_diag_effect<a class="anchor" aria-label="anchor" href="#arg-age-diag-effect"></a></dt>
 <dd><p>Numeric scalar controlling the strength of age variation in diagnosis probabilities. Applied as a logit-additive offset scaled linearly across ages.</p></dd>
+
+
+<dt id="arg-mig-diag-offset">mig_diag_offset<a class="anchor" aria-label="anchor" href="#arg-mig-diag-offset"></a></dt>
+<dd><p>Numeric vector of per-state logit-scale offsets applied to diagnosis probabilities for the migrant group (y=2). Length must equal the number of diagnosis states (4 for non-RITA, 5 for RITA). NULL (default) applies no offset.</p></dd>
 
 
 <dt id="arg-frr">frr<a class="anchor" aria-label="anchor" href="#arg-frr"></a></dt>

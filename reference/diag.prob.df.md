@@ -5,7 +5,7 @@ Calculates diagnosis probabilities dataframe from posterior samples.
 ## Usage
 
 ``` r
-diag.prob.df(stan_data, fit_mat, start.yr = 1978)
+diag.prob.df(stan_data, fit_mat, start.yr = 1978, group = c("nat", "mig"))
 ```
 
 ## Arguments
@@ -21,6 +21,11 @@ diag.prob.df(stan_data, fit_mat, start.yr = 1978)
 - start.yr:
 
   Starting year for the dataframe.
+
+- group:
+
+  Character indicating which diagnosis probabilities to extract ("nat"
+  for native, "mig" for migration).
 
 ## Value
 
