@@ -113,6 +113,7 @@ parameters {
   real alpha_diag_3;
   real alpha_diag_4;
   real alpha_diag_5;
+  vector[5] alpha_diag_mig; // migrant-specific diagnosis intercept offset per state
   
   // Proportion UK-acquired parameters
   vector[npars_cob] beta_cob;
@@ -156,12 +157,19 @@ transformed parameters {
   vector[nquar] delta_3 = alpha_diag_3 + 0.5 * (X_diag * beta_diag_3);
   vector[nquar] delta_4 = alpha_diag_4 + 0.7 * (X_diag * beta_diag_4);
   vector[nquar] delta_5 = alpha_diag_5 + 0.7 * (X_diag * beta_diag_5);
-  matrix<lower=0, upper=1>[5, nquar] d;
+  matrix<lower=0, upper=1>[5, nquar] d_nat;
+  matrix<lower=0, upper=1>[5, nquar] d_mig;
   
   for (t in 1 : nquar) {
-    d[ : , t] = inv_logit(
-                          [delta_1[t], delta_2[t], delta_3[t], delta_4[t],
-                           delta_5[t]]');
+    d_nat[ : , t] = inv_logit(
+                              [delta_1[t], delta_2[t], delta_3[t], delta_4[t],
+                               delta_5[t]]');
+    d_mig[ : , t] = inv_logit(
+                              [delta_1[t] + alpha_diag_mig[1],
+                               delta_2[t] + alpha_diag_mig[2],
+                               delta_3[t] + alpha_diag_mig[3],
+                               delta_4[t] + alpha_diag_mig[4],
+                               delta_5[t] + alpha_diag_mig[5]]');
   }
   
   // Proportion UK-acquired (log-scale)
@@ -220,28 +228,30 @@ transformed parameters {
   array[nquar, 2] vector[7] prev_mat;
   
   // Initial time period (t=1)
-  matrix[13, 13] Lambda1 = tmat_fct(1, q, d);
+  matrix[13, 13] Lambda1_nat = tmat_fct(1, q, d_nat);
+  matrix[13, 13] Lambda1_mig = tmat_fct(1, q, d_mig);
   
-  cum_diags[1, 1,  : ] = Lambda1' * append_row(init_prev, rep_vector(0, 6));
+  cum_diags[1, 1,  : ] = Lambda1_nat' * append_row(init_prev, rep_vector(0, 6));
   cum_diags[1, 1, 1] += h[1];
   
   // Initial migrant group
   p[1] = exp(eta[1]);
-  cum_diags[1, 2,  : ] = Lambda1' * append_row(init_prev_abroad, rep_vector(0, 6));
+  cum_diags[1, 2,  : ] = Lambda1_mig' * append_row(init_prev_abroad, rep_vector(0, 6));
   cum_diags[1, 2, 1] += h[1] * p[1];
   cum_diags[1, 2, 4 : 7] += omega[1] * m[1 : 4, 1];
   
   // Evolution over time
   for (t in 2 : nquar) {
-    matrix[13, 13] Lambda_t = tmat_fct(t, q, d);
+    matrix[13, 13] Lambda_t_nat = tmat_fct(t, q, d_nat);
+    matrix[13, 13] Lambda_t_mig = tmat_fct(t, q, d_mig);
     
     // Native group
-    cum_diags[t, 1,  : ] = Lambda_t' * cum_diags[t - 1, 1,  : ];
+    cum_diags[t, 1,  : ] = Lambda_t_nat' * cum_diags[t - 1, 1,  : ];
     cum_diags[t, 1, 1] += h[t];
     
     // Migrant group
     p[t] = exp(eta[t]);
-    cum_diags[t, 2,  : ] = Lambda_t' * cum_diags[t - 1, 2,  : ];
+    cum_diags[t, 2,  : ] = Lambda_t_mig' * cum_diags[t - 1, 2,  : ];
     cum_diags[t, 2, 1] += h[t] * p[t];
     cum_diags[t, 2, 4 : 7] += omega[t] * m[1 : 4, t];
   }
@@ -315,7 +325,7 @@ model {
   log_sigma_mig ~ normal(-2, 0.5);
   
   // Diagnosis probability priors
-  alpha_diag_1 ~ normal(-3.2, 0.5);
+  alpha_diag_1 ~ normal(-2.5, 0.5);
   alpha_diag_2 ~ normal(-3.2, 0.5);
   alpha_diag_3 ~ normal(-3.0, 0.5);
   alpha_diag_4 ~ normal(-2.5, 0.5);
@@ -339,11 +349,13 @@ model {
   // False recency rate prior centred on logit(0.019)
   logit_frr ~ normal(-3.94, 0.32);
   
+  alpha_diag_mig ~ normal(0, 1);
+  
   // Proportion UK-acquired priors
-  alpha_cob ~ std_normal();
+  alpha_cob ~ normal(0, 1.5);
   beta_cob[1] ~ std_normal();
   beta_cob[2 : npars_cob] ~ normal(0, sigma_cob);
-  sigma_cob ~ gamma(2, 64);
+  sigma_cob ~ gamma(2, 32);
   
   // Approximate melding for proportion UK-acquired - AR(1)
   eta_mean[1] ~ normal(eta[1], eta_sd);
@@ -356,13 +368,13 @@ model {
   rho_eta ~ normal(0, 0.5);
   
   // Detection probability priors
-  alpha_detect ~ normal(0, 0.2);
-  beta_detect[1] ~ normal(0, 0.2);
+  alpha_detect ~ normal(1, 1);
+  beta_detect[1] ~ normal(0, 0.5);
   beta_detect[2 : npars_mp] ~ normal(0, sigma_detect);
-  sigma_detect ~ gamma(8, 64);
+  sigma_detect ~ gamma(2, 64);
   
   // Migration distribution priors
-  alpha_mp[1] ~ normal(-2, 1);
+  alpha_mp[1] ~ normal(0, 1.5);
   alpha_mp[2 : 4] ~ std_normal();
   beta_mp_1[1] ~ std_normal();
   beta_mp_2[1] ~ std_normal();
@@ -372,10 +384,10 @@ model {
   beta_mp_2[2 : npars_mp] ~ normal(0, sigma_mp_2);
   beta_mp_3[2 : npars_mp] ~ normal(0, sigma_mp_3);
   beta_mp_5[2 : npars_mp] ~ normal(0, sigma_mp_5);
-  sigma_mp_1 ~ gamma(2, 64);
-  sigma_mp_2 ~ gamma(2, 64);
-  sigma_mp_3 ~ gamma(2, 64);
-  sigma_mp_5 ~ gamma(2, 64);
+  sigma_mp_1 ~ gamma(1, 16);
+  sigma_mp_2 ~ gamma(1, 16);
+  sigma_mp_3 ~ gamma(1, 16);
+  sigma_mp_5 ~ gamma(1, 16);
   
   // Likelihood
   for (t in 1 : nquar) {

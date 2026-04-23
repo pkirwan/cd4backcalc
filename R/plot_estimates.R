@@ -184,7 +184,7 @@ plot_estimates <- function(
 
   if (
     quantity %in%
-      c("diag_prob", "diag_prob_age")
+      c("diag_prob", "diag_prob_age", "diag_prob_mig", "diag_prob_mig_age")
   ) {
     quantiles <- quantiles |>
       dplyr::mutate(
@@ -485,6 +485,10 @@ get_plot_title <- function(quantity) {
     "HIV diagnoses by age"
   } else if (quantity == "diag_prob_age") {
     "HIV diagnosis probabilities, by CD4 strata and age"
+  } else if (quantity == "diag_prob_mig") {
+    "HIV diagnosis probabilities (migrants), by CD4 strata"
+  } else if (quantity == "diag_prob_mig_age") {
+    "HIV diagnosis probabilities (migrants), by CD4 strata and age"
   } else if (quantity == "incidence_trend") {
     "HIV incidence trend by age"
   } else if (quantity == "peak_incidence") {
@@ -504,7 +508,10 @@ do_facetting <- function(p1, quantity) {
   # custom y-axis for probabilities
   if (
     quantity %in%
-      c("diag_prob", "ratio_abroad_uk", "detect_prob", "migration_prob")
+      c(
+        "diag_prob", "diag_prob_mig", "diag_prob_age", "diag_prob_mig_age",
+        "ratio_abroad_uk", "detect_prob", "migration_prob", "migration_prob_age"
+      )
   ) {
     p1 <- p1 +
       ggplot2::scale_y_continuous(
@@ -522,7 +529,7 @@ do_facetting <- function(p1, quantity) {
   }
 
   # facet by strata for diagnosis and migration probabilities
-  if (quantity %in% c("diag_prob", "migration_prob")) {
+  if (quantity %in% c("diag_prob", "diag_prob_mig", "migration_prob")) {
     p1 <- p1 +
       ggplot2::facet_grid(cols = ggplot2::vars(.data$strata), scales = "free_y")
   }
@@ -545,7 +552,7 @@ do_facetting <- function(p1, quantity) {
   }
 
   # facet by strata and age for age-dependent diagnosis and migration probabilities
-  if (quantity %in% c("diag_prob_age", "migration_prob_age")) {
+  if (quantity %in% c("diag_prob_age", "diag_prob_mig_age", "migration_prob_age")) {
     p1 <- p1 +
       ggplot2::facet_grid(
         rows = ggplot2::vars(.data$strata),

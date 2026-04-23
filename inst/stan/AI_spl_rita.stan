@@ -203,7 +203,7 @@ model {
   log_sigma_inf ~ normal(-2, 0.5);
   
   // Diagnosis probability priors
-  alpha_diag_1 ~ normal(-3.2, 0.5);
+  alpha_diag_1 ~ normal(-2.5, 0.5);
   alpha_diag_2 ~ normal(-3.2, 0.5);
   alpha_diag_3 ~ normal(-3.0, 0.5);
   alpha_diag_4 ~ normal(-2.5, 0.5);

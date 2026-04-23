@@ -108,6 +108,7 @@ parameters {
   real alpha_diag_4;
   real alpha_diag_5;
   vector[4 * 5] alpha_age_diag; // 4 age groups x 5 states
+  vector[5] alpha_diag_mig; // migrant-specific diagnosis intercept offset per state
   
   // Proportion UK-acquired among migrants
   vector[npars_cob] beta_cob;
@@ -173,14 +174,21 @@ transformed parameters {
   // Diagnosis probabilities by age group (ag), state (k), and time (t).
   // Stored as matrix[nquar, 5] so the inner time-loop accesses column k,
   // which is contiguous in column-major memory (cache-friendly).
-  array[4] matrix<lower=0, upper=1>[nquar, 5] d;
+  // d_nat: natives; d_mig: migrants (adds alpha_diag_mig offset per state).
+  array[4] matrix<lower=0, upper=1>[nquar, 5] d_nat;
+  array[4] matrix<lower=0, upper=1>[nquar, 5] d_mig;
   for (ag in 1 : 4) {
     int ag_offset = (ag - 1) * 5;
-    d[ag,  : , 1] = inv_logit(delta_1 + alpha_age_diag[ag_offset + 1]);
-    d[ag,  : , 2] = inv_logit(delta_2 + alpha_age_diag[ag_offset + 2]);
-    d[ag,  : , 3] = inv_logit(delta_3 + alpha_age_diag[ag_offset + 3]);
-    d[ag,  : , 4] = inv_logit(delta_4 + alpha_age_diag[ag_offset + 4]);
-    d[ag,  : , 5] = inv_logit(delta_5 + alpha_age_diag[ag_offset + 5]);
+    d_nat[ag,  : , 1] = inv_logit(delta_1 + alpha_age_diag[ag_offset + 1]);
+    d_nat[ag,  : , 2] = inv_logit(delta_2 + alpha_age_diag[ag_offset + 2]);
+    d_nat[ag,  : , 3] = inv_logit(delta_3 + alpha_age_diag[ag_offset + 3]);
+    d_nat[ag,  : , 4] = inv_logit(delta_4 + alpha_age_diag[ag_offset + 4]);
+    d_nat[ag,  : , 5] = inv_logit(delta_5 + alpha_age_diag[ag_offset + 5]);
+    d_mig[ag,  : , 1] = inv_logit(delta_1 + alpha_age_diag[ag_offset + 1] + alpha_diag_mig[1]);
+    d_mig[ag,  : , 2] = inv_logit(delta_2 + alpha_age_diag[ag_offset + 2] + alpha_diag_mig[2]);
+    d_mig[ag,  : , 3] = inv_logit(delta_3 + alpha_age_diag[ag_offset + 3] + alpha_diag_mig[3]);
+    d_mig[ag,  : , 4] = inv_logit(delta_4 + alpha_age_diag[ag_offset + 4] + alpha_diag_mig[4]);
+    d_mig[ag,  : , 5] = inv_logit(delta_5 + alpha_age_diag[ag_offset + 5] + alpha_diag_mig[5]);
   }
   
   // Proportion UK-acquired among migrants
@@ -269,11 +277,11 @@ transformed parameters {
           int ag0 = age_group_lookup[a0];
           
           // d[ag, t, k] layout: row = time, col = state
-          real d1 = d[ag0, 1, 1];
-          real d2 = d[ag0, 1, 2];
-          real d3 = d[ag0, 1, 3];
-          real d4 = d[ag0, 1, 4];
-          real d5 = d[ag0, 1, 5];
+          real d1 = (y == 1) ? d_nat[ag0, 1, 1] : d_mig[ag0, 1, 1];
+          real d2 = (y == 1) ? d_nat[ag0, 1, 2] : d_mig[ag0, 1, 2];
+          real d3 = (y == 1) ? d_nat[ag0, 1, 3] : d_mig[ag0, 1, 3];
+          real d4 = (y == 1) ? d_nat[ag0, 1, 4] : d_mig[ag0, 1, 4];
+          real d5 = (y == 1) ? d_nat[ag0, 1, 5] : d_mig[ag0, 1, 5];
           real nd1 = 1 - d1;
           real nd2 = 1 - d2;
           real nd3 = 1 - d3;
@@ -361,11 +369,11 @@ transformed parameters {
             int ag = age_group_lookup[a];
             
             // d[ag, t, k]: column k is contiguous in memory, cache-friendly for varying t
-            real d1 = d[ag, t, 1];
-            real d2 = d[ag, t, 2];
-            real d3 = d[ag, t, 3];
-            real d4 = d[ag, t, 4];
-            real d5 = d[ag, t, 5];
+            real d1 = (y == 1) ? d_nat[ag, t, 1] : d_mig[ag, t, 1];
+            real d2 = (y == 1) ? d_nat[ag, t, 2] : d_mig[ag, t, 2];
+            real d3 = (y == 1) ? d_nat[ag, t, 3] : d_mig[ag, t, 3];
+            real d4 = (y == 1) ? d_nat[ag, t, 4] : d_mig[ag, t, 4];
+            real d5 = (y == 1) ? d_nat[ag, t, 5] : d_mig[ag, t, 5];
             real nd1 = 1 - d1;
             real nd2 = 1 - d2;
             real nd3 = 1 - d3;
@@ -437,8 +445,8 @@ transformed parameters {
 }
 model {
   // Infection surface priors
-  sigma_inf ~ student_t(4, 0, 200);
-  beta_inf[1] ~ normal(0, 30);
+  sigma_inf ~ normal(0, 50);
+  beta_inf[1] ~ normal(0, 5);
   
   matrix[np1, np1] K1_prec = S1a * tau[1] + S1b * tau[2];
   beta_inf[2 : npars_inf] ~ multi_normal_prec(zero_vec, K1_prec);
@@ -449,7 +457,7 @@ model {
   log_sigma_mig ~ normal(-2, 0.5);
   
   // Diagnosis priors
-  alpha_diag_1 ~ normal(-3.2, 0.5);
+  alpha_diag_1 ~ normal(-2.5, 0.5);
   alpha_diag_2 ~ normal(-3.2, 0.5);
   alpha_diag_3 ~ normal(-3.0, 0.5);
   alpha_diag_4 ~ normal(-2.5, 0.5);
@@ -477,12 +485,13 @@ model {
   logit_frr ~ normal(-3.94, 0.32);
   
   alpha_age_diag ~ normal(0, 1);
+  alpha_diag_mig ~ normal(0, 1);
   
   // Proportion UK-acquired priors
-  alpha_cob ~ std_normal();
+  alpha_cob ~ normal(0, 1.5);
   beta_cob[1] ~ std_normal();
   beta_cob[2 : npars_cob] ~ normal(0, sigma_cob);
-  sigma_cob ~ gamma(2, 64);
+  sigma_cob ~ gamma(2, 32);
   
   // Approximate melding for proportion UK-acquired - AR(1)
   eta_mean[1] ~ normal(eta[1], eta_sd);
@@ -495,13 +504,13 @@ model {
   rho_eta ~ normal(0, 0.5);
   
   // Detection probability priors
-  alpha_detect ~ normal(0, 0.2);
-  beta_detect[1] ~ normal(0, 0.2);
+  alpha_detect ~ normal(1, 1);
+  beta_detect[1] ~ normal(0, 0.5);
   beta_detect[2 : npars_mp] ~ normal(0, sigma_detect);
-  sigma_detect ~ gamma(8, 64);
+  sigma_detect ~ gamma(2, 64);
   
   // Migration distribution priors
-  alpha_mp[1] ~ normal(-2, 1);
+  alpha_mp[1] ~ normal(0, 1.5);
   alpha_mp[2 : 4] ~ std_normal();
   
   beta_mp_1[1] ~ std_normal();
@@ -514,10 +523,10 @@ model {
   beta_mp_3[2 : npars_mp] ~ normal(0, sigma_mp_3);
   beta_mp_5[2 : npars_mp] ~ normal(0, sigma_mp_5);
   
-  sigma_mp_1 ~ gamma(2, 64);
-  sigma_mp_2 ~ gamma(2, 64);
-  sigma_mp_3 ~ gamma(2, 64);
-  sigma_mp_5 ~ gamma(2, 64);
+  sigma_mp_1 ~ gamma(1, 16);
+  sigma_mp_2 ~ gamma(1, 16);
+  sigma_mp_3 ~ gamma(1, 16);
+  sigma_mp_5 ~ gamma(1, 16);
   
   // Likelihood (omit age == 1)
   for (t in 1 : nquar) {

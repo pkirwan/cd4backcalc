@@ -123,6 +123,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
       cd4_completeness = 1,
       rita_completeness = 1,
       age_diag_effect = sim_config$age_diag_effect,
+      mig_diag_offset = sim_config$mig_diag_offset,
       frr = sim_config$frr
     )
   }
@@ -240,6 +241,42 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
     out <- diagnoses
   } else if (quantity == "diag_prob") {
     out <- diag_prob
+  } else if (quantity == "diag_prob_mig") {
+    # Migrant-specific diagnosis probabilities — mirrors diag_prob but uses d_probs_mig
+    mid_age <- ceiling(stan_data$nage / 2)
+    if (stan_data$sim_config$rita) {
+      out <- tibble::tibble(
+        value = as.vector(sim_data$d_probs_mig[, mid_age, ]),
+        year = rep(seq(0, plot_years, by = 0.25), 5),
+        strata = rep(
+          c("Recently acquired", "CD4>=500", "CD4 350-499", "CD4 200-349", "CD4<200"),
+          each = stan_data$nquar
+        ),
+        group = "Generative values"
+      ) |>
+        dplyr::mutate(
+          strata = factor(
+            .data$strata,
+            levels = c("Recently acquired", "CD4>=500", "CD4 350-499", "CD4 200-349", "CD4<200")
+          )
+        )
+    } else {
+      out <- tibble::tibble(
+        value = as.vector(sim_data$d_probs_mig[, mid_age, ]),
+        year = rep(seq(0, plot_years, by = 0.25), 4),
+        strata = rep(
+          c("CD4>=500", "CD4 350-499", "CD4 200-349", "CD4<200"),
+          each = stan_data$nquar
+        ),
+        group = "Generative values"
+      ) |>
+        dplyr::mutate(
+          strata = factor(
+            .data$strata,
+            levels = c("CD4>=500", "CD4 350-499", "CD4 200-349", "CD4<200")
+          )
+        )
+    }
   } else if (quantity == "undiag_prev_age") {
     out <- tidyr::expand_grid(
       year = seq(0, plot_years, by = 0.25),
@@ -350,8 +387,8 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
             age_band = "all"
           )
       )
-  } else if (quantity == "diag_prob_age") {
-    nstates <- dim(sim_data$d_probs)[3]
+  } else if (quantity %in% c("diag_prob_age", "diag_prob_mig_age")) {
+    d_array <- if (quantity == "diag_prob_mig_age") sim_data$d_probs_mig else sim_data$d_probs
     state_labels <- if (stan_data$sim_config$rita) {
       c("Recently acquired", "CD4>=500", "CD4 350-499", "CD4 200-349", "CD4<200")
     } else {
@@ -365,7 +402,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
       strata = factor(state_labels, levels = state_labels)
     ) |>
       dplyr::mutate(
-        value = as.vector(aperm(sim_data$d_probs[, rep_ages, , drop = FALSE], c(3, 2, 1))),
+        value = as.vector(aperm(d_array[, rep_ages, , drop = FALSE], c(3, 2, 1))),
         group = "Generative values"
       )
   } else if (quantity == "diagnoses_age") {

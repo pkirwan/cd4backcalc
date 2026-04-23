@@ -27,6 +27,7 @@
 #' @param cd4_completeness CD4 completeness.
 #' @param rita_completeness RITA completeness.
 #' @param age_diag_effect Numeric scalar controlling the strength of age variation in diagnosis probabilities. Applied as a logit-additive offset scaled linearly across ages.
+#' @param mig_diag_offset Numeric vector of per-state logit-scale offsets applied to diagnosis probabilities for the migrant group (y=2). Length must equal the number of diagnosis states (4 for non-RITA, 5 for RITA). NULL (default) applies no offset.
 #' @param frr False recency rate for RITA misclassification.
 #' @return Configuration list.
 #' @keywords internal
@@ -55,6 +56,7 @@ define_sim_config <- function(
   cd4_completeness = 1, # CD4 completeness
   rita_completeness = 1, # RITA completeness
   age_diag_effect = 0, # age effect on diagnosis probabilities
+  mig_diag_offset = NULL, # per-state logit offsets for migrant diagnosis probs
   frr = 0.019 # false recency rate for RITA misclassification
 ) {
   if (rita) {
@@ -101,6 +103,7 @@ define_sim_config <- function(
     cd4_completeness = cd4_completeness,
     rita_completeness = rita_completeness,
     age_diag_effect = age_diag_effect,
+    mig_diag_offset = mig_diag_offset,
     frr = frr
   )
 
@@ -205,6 +208,13 @@ define_simulation_type <- function(config, sim_type = "constant") {
     if (config$age) {
       config$age_diag_effect <- 0.5
     }
+    if (config$migration) {
+      if (config$rita) {
+        config$mig_diag_offset <- c(-0.5, -0.5, -0.25, -0.2, -0.1)
+      } else {
+        config$mig_diag_offset <- c(-0.5, -0.25, -0.2, -0.1)
+      }
+    }
   } else if (sim_type == "combo_3_no_migration") {
     config$h_pattern <- "varying"
     config$o_pattern <- "none"
@@ -219,6 +229,13 @@ define_simulation_type <- function(config, sim_type = "constant") {
     config$a_pattern <- "wedge"
     if (config$age) {
       config$age_diag_effect <- 0.5
+    }
+    if (config$migration) {
+      if (config$rita) {
+        config$mig_diag_offset <- c(-0.5, -0.5, -0.25, -0.2, -0.1)
+      } else {
+        config$mig_diag_offset <- c(-0.5, -0.25, -0.2, -0.1)
+      }
     }
   }
 
@@ -473,6 +490,7 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #' @param cd4_completeness CD4 completeness.
 #' @param rita_completeness RITA completeness.
 #' @param age_diag_effect Numeric scalar controlling the strength of age variation in diagnosis probabilities. Applied as a logit-additive offset scaled linearly across ages.
+#' @param mig_diag_offset Numeric vector of per-state logit-scale offsets applied to diagnosis probabilities for the migrant group (y=2). Length must equal the number of diagnosis states (4 for non-RITA, 5 for RITA). NULL (default) applies no offset.
 #' @param frr False recency rate for RITA misclassification.
 #' @return List containing simulated epidemic data.
 #' @examples
@@ -503,6 +521,7 @@ simulate_diagnoses <- function(
   cd4_completeness = 1, # CD4 completeness
   rita_completeness = 1, # RITA completeness
   age_diag_effect = 0, # age effect on diagnosis probabilities
+  mig_diag_offset = NULL, # per-state logit offsets for migrant diagnosis probs
   frr = 0.019 # false recency rate for RITA misclassification
 ) {
   sim_config <- define_sim_config(
@@ -530,6 +549,7 @@ simulate_diagnoses <- function(
     cd4_completeness,
     rita_completeness,
     age_diag_effect,
+    mig_diag_offset,
     frr
   )
   set.seed(sim_config$sim_seed)
@@ -603,6 +623,30 @@ simulate_diagnoses <- function(
     sim_config$age_diag_effect
   )
 
+  # Build migrant diagnosis probabilities by applying per-state logit offsets.
+  # Mirrors alpha_diag_mig in the Stan migration models: migrants (y=2) may
+  # have a systematically different baseline diagnosis rate than natives (y=1)
+  # while sharing the same time trend.
+  mig_offset <- sim_config$mig_diag_offset
+  nstates_diag <- dim(d_probs)[3]
+  if (is.null(mig_offset) || all(mig_offset == 0)) {
+    d_probs_mig <- d_probs
+  } else {
+    if (length(mig_offset) != nstates_diag) {
+      stop(paste0(
+        "mig_diag_offset must have length ",
+        nstates_diag,
+        " (one per diagnosis state); got length ",
+        length(mig_offset),
+        "."
+      ))
+    }
+    d_probs_mig <- d_probs
+    for (k in seq_len(nstates_diag)) {
+      d_probs_mig[,, k] <- invlogit(logit(d_probs[,, k]) + mig_offset[k])
+    }
+  }
+
   # Generate initial prevalence
   lat_init_uk <- round(
     sum(infs[1, ]) / (1 + sim_config$abroad_prop) * sim_config$init_props
@@ -616,7 +660,7 @@ simulate_diagnoses <- function(
     sum(m[1, 1:(sim_config$nlatst)]) * sim_config$init_props_abroad
   )
 
-  # Generate Q and D matrices
+  # Generate Q and D matrices for native group (y=1)
   Q_l <- lapply(1:sim_config$nquar, function(x) {
     Q_mat(
       x,
@@ -631,6 +675,29 @@ simulate_diagnoses <- function(
     D_mat(
       x,
       d_probs,
+      sim_config$q_age,
+      sim_config$nlatst,
+      sim_config$ndiagst,
+      sim_config$nage,
+      sim_config$rita
+    )
+  })
+
+  # Generate Q and D matrices for migrant group (y=2)
+  Q_l_mig <- lapply(1:sim_config$nquar, function(x) {
+    Q_mat(
+      x,
+      d_probs_mig,
+      sim_config$q_age,
+      sim_config$nlatst,
+      sim_config$nage,
+      sim_config$rita
+    )
+  })
+  D_l_mig <- lapply(1:sim_config$nquar, function(x) {
+    D_mat(
+      x,
+      d_probs_mig,
       sim_config$q_age,
       sim_config$nlatst,
       sim_config$ndiagst,
@@ -740,15 +807,15 @@ simulate_diagnoses <- function(
     sim_config
   )
   epi_uk_abroad <- epi_mat(
-    Q_l,
-    D_l,
+    Q_l_mig,
+    D_l_mig,
     infs_uk_abroad_age,
     lat_init_uk_abroad_age,
     sim_config
   )
   epi_abroad <- epi_mat(
-    Q_l,
-    D_l,
+    Q_l_mig,
+    D_l_mig,
     m_age[,, 1:sim_config$nlatst],
     lat_init_abroad_age,
     sim_config
@@ -766,6 +833,7 @@ simulate_diagnoses <- function(
     "m_age" = m_age,
     "mu" = mu,
     "d_probs" = d_probs,
+    "d_probs_mig" = d_probs_mig,
     "ratio_abroad_uk" = ratio_abroad_uk,
     "lat_init_uk" = lat_init_uk,
     "lat_init_uk_abroad" = lat_init_uk_abroad,
@@ -821,7 +889,8 @@ simulate_diagnoses <- function(
 
   n_cd4_cats <- length(dx_cd4_cols)
   misclassified_cd4_age <- array(
-    0, dim = c(sim_config$nage, sim_config$nquar, sim_config$ndiagst - 1)
+    0,
+    dim = c(sim_config$nage, sim_config$nquar, sim_config$ndiagst - 1)
   )
 
   for (t in 1:sim_config$nquar) {
@@ -933,7 +1002,7 @@ simulate_diagnoses <- function(
 
   # Apply false recency rate misclassification to RITA-classified data
   if (sim_config$rita && sim_config$frr > 0) {
-    cd4_dx     <- apply_frr(cd4_dx,     sim_config$frr, sim_config$dist)
+    cd4_dx <- apply_frr(cd4_dx, sim_config$frr, sim_config$dist)
     cd4_dx_age <- apply_frr(cd4_dx_age, sim_config$frr, sim_config$dist)
   }
 
@@ -973,22 +1042,46 @@ simulate_diagnoses <- function(
   if (sim_config$cd4_completeness < 1) {
     stan_data$CD4 <- round(
       stan_data$CD4 *
-        pmin(1, stats::rnorm(length(stan_data$CD4), sim_config$cd4_completeness, 0.05))
+        pmin(
+          1,
+          stats::rnorm(length(stan_data$CD4), sim_config$cd4_completeness, 0.05)
+        )
     )
     stan_data$CD4_age <- round(
       stan_data$CD4_age *
-        pmin(1, stats::rnorm(length(stan_data$CD4_age), sim_config$cd4_completeness, 0.05))
+        pmin(
+          1,
+          stats::rnorm(
+            length(stan_data$CD4_age),
+            sim_config$cd4_completeness,
+            0.05
+          )
+        )
     )
   }
   # Adjust RITA counts if completeness less than 100% using a normal approximation to the binomial distribution
   if (sim_config$rita && sim_config$rita_completeness < 1) {
     stan_data$CD4 <- round(
       stan_data$CD4 *
-        pmin(1, stats::rnorm(length(stan_data$CD4), sim_config$rita_completeness, 0.05))
+        pmin(
+          1,
+          stats::rnorm(
+            length(stan_data$CD4),
+            sim_config$rita_completeness,
+            0.05
+          )
+        )
     )
     stan_data$CD4_age <- round(
       stan_data$CD4_age *
-        pmin(1, stats::rnorm(length(stan_data$CD4_age), sim_config$rita_completeness, 0.05))
+        pmin(
+          1,
+          stats::rnorm(
+            length(stan_data$CD4_age),
+            sim_config$rita_completeness,
+            0.05
+          )
+        )
     )
   }
 

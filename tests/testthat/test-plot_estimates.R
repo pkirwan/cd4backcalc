@@ -27,6 +27,7 @@ test_that("simulated plots are generated correctly", {
   p7 <- plot_simulations(stan_data, "transfers")
   p8 <- plot_simulations(stan_data, "ratio_abroad_uk")
   p9 <- plot_simulations(stan_data, "detect_prob")
+  p10 <- plot_simulations(stan_data, "diag_prob_mig")
   expect_s3_class(p1, "ggplot")
   expect_s3_class(p2, "ggplot")
   expect_s3_class(p3, "ggplot")
@@ -36,6 +37,7 @@ test_that("simulated plots are generated correctly", {
   expect_s3_class(p7, "ggplot")
   expect_s3_class(p8, "ggplot")
   expect_s3_class(p9, "ggplot")
+  expect_s3_class(p10, "ggplot")
 })
 
 test_that("simulated plots are generated correctly for migration_prob", {
@@ -63,12 +65,16 @@ test_that("simulated plots are generated correctly for migration_prob", {
 
 test_that("simulated age plots are generated correctly", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, age = TRUE, sim_type = "combo_3")
+  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, age = TRUE, migration = TRUE, sim_type = "combo_3")
   # Generate plots of key quantities
   p1 <- plot_simulations(stan_data, "incidence_age")
   p2 <- plot_simulations(stan_data, "undiag_prev_age")
+  p3 <- plot_simulations(stan_data, "diag_prob_age")
+  p4 <- plot_simulations(stan_data, "diag_prob_mig_age")
   expect_s3_class(p1, "ggplot")
   expect_s3_class(p2, "ggplot")
+  expect_s3_class(p3, "ggplot")
+  expect_s3_class(p4, "ggplot")
 })
 
 test_that("plots are generated correctly", {

@@ -156,12 +156,16 @@ postproc_ai <- function(
 make_fit_indices <- function(fit_mat, config, nquar) {
   cn <- colnames(fit_mat)
 
+  # Migration models expose d_nat[k,t] and d_mig[k,t] instead of d[k,t].
+  # Use d_nat as the representative native-group diagnosis probabilities.
+  dp <- if (isTRUE(config$migration)) "d_nat" else "d"
+
   idx <- list(
-    d1 = grep("^d\\[1,", cn),
-    d2 = grep("^d\\[2,", cn),
-    d3 = grep("^d\\[3,", cn),
-    d4 = grep("^d\\[4,", cn),
-    d5 = grep("^d\\[5,", cn),
+    d1 = grep(sprintf("^%s\\[1,", dp), cn),
+    d2 = grep(sprintf("^%s\\[2,", dp), cn),
+    d3 = grep(sprintf("^%s\\[3,", dp), cn),
+    d4 = grep(sprintf("^%s\\[4,", dp), cn),
+    d5 = grep(sprintf("^%s\\[5,", dp), cn),
     lambda = grep("^lambda\\[", cn),
     gamma = grep("^gamma\\[", cn),
     p = grep("^p\\[", cn),
@@ -247,6 +251,12 @@ build_ppq_list <- function(
     out <- c(
       out,
       list(
+        diag_prob_mig = diag.prob.df(
+          stan_data,
+          fit_slice,
+          start.yr = start_yr,
+          group = "mig"
+        ),
         all_migration = total.migration.df(
           stan_data,
           prev_dist,
@@ -1276,31 +1286,41 @@ undiag.prev.df <- function(
 #' @param stan_data Data list used in stan model fitting.
 #' @param fit_mat Matrix of posterior samples from stan model.
 #' @param start.yr Starting year for the dataframe.
+#' @param group Character indicating which diagnosis probabilities to extract ("nat" for native, "mig" for migration).
 #' @return Dataframe of diagnosis probabilities estimates.
-diag.prob.df <- function(stan_data, fit_mat, start.yr = 1978) {
+diag.prob.df <- function(stan_data, fit_mat, start.yr = 1978, group = c("nat", "mig")) {
+  group <- match.arg(group)
   nyr <- stan_data$nquar / 4
+
+  # Migration models expose d_nat[k,t] / d_mig[k,t]; non-migration models use d[k,t].
+  # group = "nat" selects d_nat (or d for non-migration); group = "mig" selects d_mig.
+  dp <- if (any(grepl("^d_nat\\[", colnames(fit_mat)))) {
+    if (group == "mig") "d_mig" else "d_nat"
+  } else {
+    "d"
+  }
 
   ### Quantiles of diagnosis
   d1.q <- apply(
-    fit_mat[, grep("^d\\[1,", colnames(fit_mat))],
+    fit_mat[, grep(sprintf("^%s\\[1,", dp), colnames(fit_mat))],
     2,
     stats::quantile,
     probs = c(0.025, 0.5, 0.975)
   )
   d2.q <- apply(
-    fit_mat[, grep("^d\\[2,", colnames(fit_mat))],
+    fit_mat[, grep(sprintf("^%s\\[2,", dp), colnames(fit_mat))],
     2,
     stats::quantile,
     probs = c(0.025, 0.5, 0.975)
   )
   d3.q <- apply(
-    fit_mat[, grep("^d\\[3,", colnames(fit_mat))],
+    fit_mat[, grep(sprintf("^%s\\[3,", dp), colnames(fit_mat))],
     2,
     stats::quantile,
     probs = c(0.025, 0.5, 0.975)
   )
   d4.q <- apply(
-    fit_mat[, grep("^d\\[4,", colnames(fit_mat))],
+    fit_mat[, grep(sprintf("^%s\\[4,", dp), colnames(fit_mat))],
     2,
     stats::quantile,
     probs = c(0.025, 0.5, 0.975)
@@ -1308,10 +1328,9 @@ diag.prob.df <- function(stan_data, fit_mat, start.yr = 1978) {
 
   year <- seq(start.yr, start.yr + nyr - 0.25, by = 0.25)
 
-  if (any(grepl("^d\\[5,", colnames(fit_mat)))) {
-    d5.ind <-
-      d5.q <- apply(
-        fit_mat[, grep("^d\\[5,", colnames(fit_mat))],
+  if (any(grepl(sprintf("^%s\\[5,", dp), colnames(fit_mat)))) {
+    d5.q <- apply(
+        fit_mat[, grep(sprintf("^%s\\[5,", dp), colnames(fit_mat))],
         2,
         stats::quantile,
         probs = c(0.025, 0.5, 0.975)

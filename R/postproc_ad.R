@@ -186,29 +186,32 @@ postproc_ad <- function(
 
   ### DIAGNOSIS PROBABILITIES ###
 
-  # Indices for diagnosis parameters by age band
-  # Stan declaration: array[4] matrix[nquar, 4/5] d  =>  d[ag, t, state]
-  ind_list$d1.ind.1524 <- grep("^d\\[1,[0-9]+,1\\]$", colnames(fit_mat))
-  ind_list$d2.ind.1524 <- grep("^d\\[1,[0-9]+,2\\]$", colnames(fit_mat))
-  ind_list$d3.ind.1524 <- grep("^d\\[1,[0-9]+,3\\]$", colnames(fit_mat))
-  ind_list$d4.ind.1524 <- grep("^d\\[1,[0-9]+,4\\]$", colnames(fit_mat))
-  ind_list$d1.ind.2534 <- grep("^d\\[2,[0-9]+,1\\]$", colnames(fit_mat))
-  ind_list$d2.ind.2534 <- grep("^d\\[2,[0-9]+,2\\]$", colnames(fit_mat))
-  ind_list$d3.ind.2534 <- grep("^d\\[2,[0-9]+,3\\]$", colnames(fit_mat))
-  ind_list$d4.ind.2534 <- grep("^d\\[2,[0-9]+,4\\]$", colnames(fit_mat))
-  ind_list$d1.ind.3544 <- grep("^d\\[3,[0-9]+,1\\]$", colnames(fit_mat))
-  ind_list$d2.ind.3544 <- grep("^d\\[3,[0-9]+,2\\]$", colnames(fit_mat))
-  ind_list$d3.ind.3544 <- grep("^d\\[3,[0-9]+,3\\]$", colnames(fit_mat))
-  ind_list$d4.ind.3544 <- grep("^d\\[3,[0-9]+,4\\]$", colnames(fit_mat))
-  ind_list$d1.ind.45 <- grep("^d\\[4,[0-9]+,1\\]$", colnames(fit_mat))
-  ind_list$d2.ind.45 <- grep("^d\\[4,[0-9]+,2\\]$", colnames(fit_mat))
-  ind_list$d3.ind.45 <- grep("^d\\[4,[0-9]+,3\\]$", colnames(fit_mat))
-  ind_list$d4.ind.45 <- grep("^d\\[4,[0-9]+,4\\]$", colnames(fit_mat))
+  # Indices for diagnosis parameters by age band.
+  # Migration models use d_nat[ag, t, state] / d_mig[ag, t, state]; non-migration
+  # models use d[ag, t, state].  For reporting and the C++ backcalculation we use
+  # the native-group array (d_nat) as representative.
+  dp <- if (config$migration) "d_nat" else "d"
+  ind_list$d1.ind.1524 <- grep(sprintf("^%s\\[1,[0-9]+,1\\]$", dp), colnames(fit_mat))
+  ind_list$d2.ind.1524 <- grep(sprintf("^%s\\[1,[0-9]+,2\\]$", dp), colnames(fit_mat))
+  ind_list$d3.ind.1524 <- grep(sprintf("^%s\\[1,[0-9]+,3\\]$", dp), colnames(fit_mat))
+  ind_list$d4.ind.1524 <- grep(sprintf("^%s\\[1,[0-9]+,4\\]$", dp), colnames(fit_mat))
+  ind_list$d1.ind.2534 <- grep(sprintf("^%s\\[2,[0-9]+,1\\]$", dp), colnames(fit_mat))
+  ind_list$d2.ind.2534 <- grep(sprintf("^%s\\[2,[0-9]+,2\\]$", dp), colnames(fit_mat))
+  ind_list$d3.ind.2534 <- grep(sprintf("^%s\\[2,[0-9]+,3\\]$", dp), colnames(fit_mat))
+  ind_list$d4.ind.2534 <- grep(sprintf("^%s\\[2,[0-9]+,4\\]$", dp), colnames(fit_mat))
+  ind_list$d1.ind.3544 <- grep(sprintf("^%s\\[3,[0-9]+,1\\]$", dp), colnames(fit_mat))
+  ind_list$d2.ind.3544 <- grep(sprintf("^%s\\[3,[0-9]+,2\\]$", dp), colnames(fit_mat))
+  ind_list$d3.ind.3544 <- grep(sprintf("^%s\\[3,[0-9]+,3\\]$", dp), colnames(fit_mat))
+  ind_list$d4.ind.3544 <- grep(sprintf("^%s\\[3,[0-9]+,4\\]$", dp), colnames(fit_mat))
+  ind_list$d1.ind.45 <- grep(sprintf("^%s\\[4,[0-9]+,1\\]$", dp), colnames(fit_mat))
+  ind_list$d2.ind.45 <- grep(sprintf("^%s\\[4,[0-9]+,2\\]$", dp), colnames(fit_mat))
+  ind_list$d3.ind.45 <- grep(sprintf("^%s\\[4,[0-9]+,3\\]$", dp), colnames(fit_mat))
+  ind_list$d4.ind.45 <- grep(sprintf("^%s\\[4,[0-9]+,4\\]$", dp), colnames(fit_mat))
   if (config$rita) {
-    ind_list$d5.ind.1524 <- grep("^d\\[1,[0-9]+,5\\]$", colnames(fit_mat))
-    ind_list$d5.ind.2534 <- grep("^d\\[2,[0-9]+,5\\]$", colnames(fit_mat))
-    ind_list$d5.ind.3544 <- grep("^d\\[3,[0-9]+,5\\]$", colnames(fit_mat))
-    ind_list$d5.ind.45 <- grep("^d\\[4,[0-9]+,5\\]$", colnames(fit_mat))
+    ind_list$d5.ind.1524 <- grep(sprintf("^%s\\[1,[0-9]+,5\\]$", dp), colnames(fit_mat))
+    ind_list$d5.ind.2534 <- grep(sprintf("^%s\\[2,[0-9]+,5\\]$", dp), colnames(fit_mat))
+    ind_list$d5.ind.3544 <- grep(sprintf("^%s\\[3,[0-9]+,5\\]$", dp), colnames(fit_mat))
+    ind_list$d5.ind.45 <- grep(sprintf("^%s\\[4,[0-9]+,5\\]$", dp), colnames(fit_mat))
   }
 
   # Extract diagnosis probabilities by age band (only populated bands)
@@ -247,6 +250,63 @@ postproc_ad <- function(
       names_to = "quartile",
       values_to = "value"
     )
+
+  # Migrant-specific diagnosis probabilities (d_mig) — only for migration models
+  if (config$migration) {
+    # Build d_mig index list (same structure as ind_list but using d_mig[ag,t,k])
+    ind_list_mig <- vector("list", length(ind_list))
+    names(ind_list_mig) <- names(ind_list)
+    for (age_band in names(age_bands)[-1]) {
+      ag_num <- match(age_band, names(age_bands)[-1])
+      for (k in seq_len(length(diag_states))) {
+        key <- sprintf("d%i.ind.%s", k, age_band)
+        ind_list_mig[[key]] <- grep(
+          sprintf("^d_mig\\[%d,[0-9]+,%d\\]$", ag_num, k),
+          colnames(fit_mat)
+        )
+      }
+    }
+    if (config$rita) {
+      for (age_band in names(age_bands)[-1]) {
+        ag_num <- match(age_band, names(age_bands)[-1])
+        ind_list_mig[[sprintf("d5.ind.%s", age_band)]] <- grep(
+          sprintf("^d_mig\\[%d,[0-9]+,5\\]$", ag_num),
+          colnames(fit_mat)
+        )
+      }
+    }
+
+    out$diag_prob_mig_age <- purrr::pmap(
+      list(age_band = diag_grid$age_band, state = diag_grid$state),
+      function(age_band, state) {
+        idx_name <- sprintf("d%i.ind.%s", state, age_band)
+        idx <- ind_list_mig[[idx_name]]
+
+        q <- apply(fit_mat[, idx, drop = FALSE], 2, get_quantiles)
+
+        tibble::as_tibble(t(q)) |>
+          dplyr::mutate(
+            age_band = factor(age_band, levels = names(age_bands)),
+            strata = factor(
+              state,
+              levels = 1:length(diag_states),
+              labels = names(diag_states)
+            ),
+            year = seq(
+              from = start_yr,
+              length.out = nquar,
+              by = 0.25
+            )
+          )
+      }
+    ) |>
+      purrr::list_rbind() |>
+      tidyr::pivot_longer(
+        cols = dplyr::all_of(q_levels),
+        names_to = "quartile",
+        values_to = "value"
+      )
+  }
 
   # Delta parameters (age progression rates)
   delta1.ind <- grep("delta_1", colnames(fit_mat))
@@ -324,14 +384,16 @@ postproc_ad <- function(
       }
     }
 
-    # Build d-cube indices (agegrp, state, t) from fit_mat colnames, then per draw create (state,t,agegrp)
+    # Build d-cube indices (agegrp, state, t) from fit_mat colnames, then per draw create (state,t,agegrp).
+    # Migration models expose d_nat[ag,t,k] and d_mig[ag,t,k]; use d_nat as representative for
+    # the native-group diagnosis probabilities passed to the C++ backcalculation.
     d_idx <- array(NA_integer_, dim = c(4, (config$ndiagst - 1), nquar))
     for (ag in 1:4) {
       for (k in 1:(config$ndiagst - 1)) {
-        ind <- grep(sprintf("^d\\[%d,[0-9]+,%d\\]$", ag, k), colnames(fit_mat))
+        ind <- grep(sprintf("^d_nat\\[%d,[0-9]+,%d\\]$", ag, k), colnames(fit_mat))
         if (length(ind) != nquar) {
           stop(sprintf(
-            "Could not find d[%d,*,%d] with length nquar=%d.",
+            "Could not find d_nat[%d,*,%d] with length nquar=%d.",
             ag,
             k,
             nquar

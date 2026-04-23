@@ -29,6 +29,7 @@ simulate_diagnoses(
   cd4_completeness = 1,
   rita_completeness = 1,
   age_diag_effect = 0,
+  mig_diag_offset = NULL,
   frr = 0.019
 )
 }
@@ -80,6 +81,8 @@ simulate_diagnoses(
 \item{rita_completeness}{RITA completeness.}
 
 \item{age_diag_effect}{Numeric scalar controlling the strength of age variation in diagnosis probabilities. Applied as a logit-additive offset scaled linearly across ages.}
+
+\item{mig_diag_offset}{Numeric vector of per-state logit-scale offsets applied to diagnosis probabilities for the migrant group (y=2). Length must equal the number of diagnosis states (4 for non-RITA, 5 for RITA). NULL (default) applies no offset.}
 
 \item{frr}{False recency rate for RITA misclassification.}
 }

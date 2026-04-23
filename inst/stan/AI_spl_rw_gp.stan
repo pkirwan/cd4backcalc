@@ -261,9 +261,9 @@ model {
   // Diagnosis probability priors
   if (diag_model == 1) {
     alpha_diag_1 ~ normal(-3.2, 0.5);
-    alpha_diag_2 ~ normal(-3.2, 0.5);
-    alpha_diag_3 ~ normal(-3.0, 0.5);
-    alpha_diag_4 ~ normal(-2.5, 0.5);
+    alpha_diag_2 ~ normal(-3.0, 0.5);
+    alpha_diag_3 ~ normal(-2.5, 0.5);
+    alpha_diag_4 ~ normal(-2.0, 0.5);
     beta_diag_1[1] ~ std_normal();
     beta_diag_2[1] ~ std_normal();
     beta_diag_3[1] ~ std_normal();

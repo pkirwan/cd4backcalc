@@ -220,23 +220,18 @@ transformed parameters {
   }
 }
 model {
-  // Priors
-  // Splines
-  // sigma_inf ~ inv_gamma(.05,.005); // s.d of observations. Manual recommends using flat priors, following Gelman's paper
-  // If commented default un-normslized uniform prior
-  
-  sigma_inf ~ student_t(4, 0, 200); // Weakly informative priors
-  
-  beta_inf[1] ~ normal(0, 30); // 30 s.d corresponding to precision given in JAGS
+  // Infection surface priors
+  sigma_inf ~ normal(0, 50);
+  beta_inf[1] ~ normal(0, 5);
   
   matrix[np1, np1] K1_prec = S1a * tau[1] + S1b * tau[2];
   beta_inf[2 : npars_inf] ~ multi_normal_prec(zero_vec, K1_prec);
   
   // Diagnosis priors (time spline + age group offsets)
   alpha_diag_1 ~ normal(-3.2, 0.5);
-  alpha_diag_2 ~ normal(-3.2, 0.5);
-  alpha_diag_3 ~ normal(-3.0, 0.5);
-  alpha_diag_4 ~ normal(-2.5, 0.5);
+  alpha_diag_2 ~ normal(-3.0, 0.5);
+  alpha_diag_3 ~ normal(-2.5, 0.5);
+  alpha_diag_4 ~ normal(-2.0, 0.5);
   
   beta_diag_1[1] ~ std_normal();
   beta_diag_2[1] ~ std_normal();

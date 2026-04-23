@@ -4,7 +4,7 @@
 \alias{diag.prob.df}
 \title{Diagnosis probabilities dataframe}
 \usage{
-diag.prob.df(stan_data, fit_mat, start.yr = 1978)
+diag.prob.df(stan_data, fit_mat, start.yr = 1978, group = c("nat", "mig"))
 }
 \arguments{
 \item{stan_data}{Data list used in stan model fitting.}
@@ -12,6 +12,8 @@ diag.prob.df(stan_data, fit_mat, start.yr = 1978)
 \item{fit_mat}{Matrix of posterior samples from stan model.}
 
 \item{start.yr}{Starting year for the dataframe.}
+
+\item{group}{Character indicating which diagnosis probabilities to extract ("nat" for native, "mig" for migration).}
 }
 \value{
 Dataframe of diagnosis probabilities estimates.

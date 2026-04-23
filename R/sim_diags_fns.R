@@ -214,21 +214,21 @@ generate_diagnosis_probs <- function(
     sigma <- 0.1
 
     if (pattern == "constant") {
-      logit_d_probs[, 1] <- stats::rnorm(nquar, logit(0.05), sigma)
-      logit_d_probs[, 2] <- stats::rnorm(nquar, logit(0.08), sigma)
-      logit_d_probs[, 3] <- stats::rnorm(nquar, logit(0.11), sigma)
-      logit_d_probs[, 4] <- stats::rnorm(nquar, logit(0.25), sigma)
+      logit_d_probs[, 1] <- stats::rnorm(nquar, logit(0.04), sigma)
+      logit_d_probs[, 2] <- stats::rnorm(nquar, logit(0.05), sigma)
+      logit_d_probs[, 3] <- stats::rnorm(nquar, logit(0.075), sigma)
+      logit_d_probs[, 4] <- stats::rnorm(nquar, logit(0.12), sigma)
       if (rita) {
         logit_d_probs <- cbind(
-          stats::rnorm(nquar, logit(0.15), sigma),
+          stats::rnorm(nquar, logit(0.08), sigma),
           logit_d_probs
         )
       }
     } else if (pattern == "varying") {
       # Initialize first value
-      start_values <- c(logit(0.02), logit(0.05), logit(0.07), logit(0.20))
-      mid_values <- c(logit(0.03), logit(0.05), logit(0.07), logit(0.21))
-      end_values <- c(logit(0.07), logit(0.08), logit(0.10), logit(0.22))
+      start_values <- c(logit(0.025), logit(0.05), logit(0.07), logit(0.11))
+      mid_values <- c(logit(0.04), logit(0.05), logit(0.075), logit(0.12))
+      end_values <- c(logit(0.05), logit(0.06), logit(0.09), logit(0.14))
 
       logit_d_probs[, 1] <- stats::rnorm(
         nquar,
@@ -267,8 +267,8 @@ generate_diagnosis_probs <- function(
           stats::rnorm(
             nquar,
             c(
-              seq(logit(0.1), logit(0.15), length.out = nquar / 2),
-              seq(logit(0.15), logit(0.15), length.out = nquar / 2)
+              seq(logit(0.08), logit(0.1), length.out = nquar / 2),
+              seq(logit(0.1), logit(0.1), length.out = nquar / 2)
             ),
             sigma
           ),
@@ -280,22 +280,22 @@ generate_diagnosis_probs <- function(
   } else {
     if (pattern == "constant") {
       d_probs <- matrix(
-        c(0.05, 0.08, 0.11, 0.25),
+        c(0.04, 0.05, 0.075, 0.12),
         nrow = nquar,
         ncol = 4,
         byrow = TRUE
       )
       if (rita) {
         d_probs <- cbind(
-          rep(0.15, nquar),
+          rep(0.08, nquar),
           d_probs
         )
       }
     } else if (pattern == "varying") {
       # Initialize first value
-      start_values <- c(logit(0.02), logit(0.05), logit(0.07), logit(0.20))
-      mid_values <- c(logit(0.03), logit(0.05), logit(0.07), logit(0.21))
-      end_values <- c(logit(0.07), logit(0.08), logit(0.10), logit(0.22))
+      start_values <- c(logit(0.025), logit(0.05), logit(0.07), logit(0.11))
+      mid_values <- c(logit(0.04), logit(0.05), logit(0.075), logit(0.12))
+      end_values <- c(logit(0.05), logit(0.06), logit(0.09), logit(0.14))
       d_probs <- matrix(
         invlogit(c(
           c(
@@ -321,8 +321,8 @@ generate_diagnosis_probs <- function(
       if (rita) {
         d_probs <- cbind(
           c(
-            seq(0.1, 0.15, length.out = nquar / 2),
-            seq(0.15, 0.15, length.out = nquar / 2)
+            seq(0.07, 0.1, length.out = nquar / 2),
+            seq(0.1, 0.1, length.out = nquar / 2)
           ),
           d_probs
         )
