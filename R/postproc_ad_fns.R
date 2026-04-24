@@ -334,13 +334,10 @@ gof.fct <- function(
   apply(y, 2, get_quantiles)
 }
 
-#' Function to get posterior functions of prevalence
-#'
-#' This function generates prevalence by age group from prevalence arrays (per each posterior iteration).
 #' Function to get posterior quantiles of undiagnosed migration by age band
 #'
-#' @param draws A matrix of posterior draws for undiagnosed migration, [ndraws x nquar].
-#' @param abroad_age_prop A matrix of migrant age proportions, [nquar x nage].
+#' @param draws A matrix of posterior draws for undiagnosed migration.
+#' @param abroad_age_prop A matrix of migrant age proportions.
 #' @param age.st Starting age for the band.
 #' @param age.end Ending age for the band.
 #' @param nage Number of single-year age groups.
@@ -355,7 +352,9 @@ undiag.mig.fct.qt <- function(draws, abroad_age_prop, age.st, age.end, nage, nt,
   make_tibble(band.q, nt = nt, start_yr = start_yr, qt.flag = TRUE)
 }
 
+#' Function to get posterior functions of prevalence
 #'
+#' This function generates prevalence by age group from prevalence arrays (per each posterior iteration).
 #' @param prev.arr A 4D array with prevalence for each posterior sample.
 #' @param state State for prevalence calculation, either "all" or 1 to 7.
 #' @param age.st Starting age for prevalence calculation.
