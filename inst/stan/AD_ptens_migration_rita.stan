@@ -165,11 +165,11 @@ transformed parameters {
   }
   
   // Diagnosis probabilities by time
-  vector[nquar] delta_1 = alpha_diag_1 + 0.5 * (X_diag * beta_diag_1);
-  vector[nquar] delta_2 = alpha_diag_2 + 0.5 * (X_diag * beta_diag_2);
-  vector[nquar] delta_3 = alpha_diag_3 + 0.5 * (X_diag * beta_diag_3);
-  vector[nquar] delta_4 = alpha_diag_4 + 0.7 * (X_diag * beta_diag_4);
-  vector[nquar] delta_5 = alpha_diag_5 + 0.7 * (X_diag * beta_diag_5);
+  vector[nquar] delta_1 = alpha_diag_1 + (X_diag * beta_diag_1);
+  vector[nquar] delta_2 = alpha_diag_2 + (X_diag * beta_diag_2);
+  vector[nquar] delta_3 = alpha_diag_3 + (X_diag * beta_diag_3);
+  vector[nquar] delta_4 = alpha_diag_4 + (X_diag * beta_diag_4);
+  vector[nquar] delta_5 = alpha_diag_5 + (X_diag * beta_diag_5);
   
   // Diagnosis probabilities by age group (ag), state (k), and time (t).
   // Stored as matrix[nquar, 5] so the inner time-loop accesses column k,

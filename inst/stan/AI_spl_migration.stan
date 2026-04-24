@@ -122,10 +122,10 @@ transformed parameters {
   vector<lower=0>[nquar] omega = exp(gamma);
   
   // Diagnosis probabilities
-  vector[nquar] delta_1 = alpha_diag_1 + 0.5 * (X_diag * beta_diag_1);
-  vector[nquar] delta_2 = alpha_diag_2 + 0.5 * (X_diag * beta_diag_2);
-  vector[nquar] delta_3 = alpha_diag_3 + 0.5 * (X_diag * beta_diag_3);
-  vector[nquar] delta_4 = alpha_diag_4 + 0.7 * (X_diag * beta_diag_4);
+  vector[nquar] delta_1 = alpha_diag_1 + (X_diag * beta_diag_1);
+  vector[nquar] delta_2 = alpha_diag_2 + (X_diag * beta_diag_2);
+  vector[nquar] delta_3 = alpha_diag_3 + (X_diag * beta_diag_3);
+  vector[nquar] delta_4 = alpha_diag_4 + (X_diag * beta_diag_4);
   matrix<lower=0, upper=1>[4, nquar] d_nat;
   matrix<lower=0, upper=1>[4, nquar] d_mig;
   

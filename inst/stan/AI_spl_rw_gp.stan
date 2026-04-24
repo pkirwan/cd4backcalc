@@ -150,10 +150,10 @@ transformed parameters {
   // Initializing delta based on diagnosis model
   if (diag_model == 1) {
     // Spline model for diagnoses
-    delta_1 = alpha_diag_1 + 0.5 * (X_diag * beta_diag_1);
-    delta_2 = alpha_diag_2 + 0.5 * (X_diag * beta_diag_2);
-    delta_3 = alpha_diag_3 + 0.5 * (X_diag * beta_diag_3);
-    delta_4 = alpha_diag_4 + 0.7 * (X_diag * beta_diag_4);
+    delta_1 = alpha_diag_1 + (X_diag * beta_diag_1);
+    delta_2 = alpha_diag_2 + (X_diag * beta_diag_2);
+    delta_3 = alpha_diag_3 + (X_diag * beta_diag_3);
+    delta_4 = alpha_diag_4 + (X_diag * beta_diag_4);
   } else if (diag_model == 2) {
     // Random walk for diagnoses
     delta_1[1] = -3.2 + 0.2 * delta_raw_1[1];
