@@ -387,21 +387,21 @@ transformed parameters {
         exp_HIV_dx[t, a, y] = hiv_dx;
         exp_AIDS_dx[t, a, y] = aids_dx;
         
-        // CD4 composition excludes misclassified diagnoses for migrants
+        // CD4 composition: include misclassified arrivals for migrants,
+        // proportional to m[1:4] (their latent-state distribution at arrival).
+        // Without this, the multinomial likelihood for each of nquar*nage migrant
+        // cells independently pushes detect_prob->99% to eliminate the mismatch.
         {
-          real denom = hiv_dx;
-          if (y == 2) {
-            denom -= misclassified_dx[t, a];
+          vector[4] raw_p = to_vector(exp_diag[t, a, y, 1 : 4]) + 1e-12;
+          if (y == 2 && misclassified_dx[t, a] > 1e-10) {
+            real total_lat = sum(m[1 : 4, t]);
+            vector[4] m_lat = (total_lat > 1e-10)
+                              ? m[1 : 4, t] / total_lat
+                              : rep_vector(0.25, 4);
+            raw_p += misclassified_dx[t, a] * m_lat;
           }
-          
-          if (denom > 1e-10) {
-            // Add small epsilon to avoid exact zeros in the simplex,
-            // which cause NaN via 0*log(0) in the multinomial likelihood
-            vector[4] raw_p = to_vector(exp_diag[t, a, y, 1 : 4]) + 1e-12;
-            exp_p[t, a, y] = raw_p / sum(raw_p);
-          } else {
-            exp_p[t, a, y] = rep_vector(0.25, 4);
-          }
+          real total_p = sum(raw_p);
+          exp_p[t, a, y] = (total_p > 1e-10) ? raw_p / total_p : rep_vector(0.25, 4);
         }
       }
     }

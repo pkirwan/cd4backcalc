@@ -258,13 +258,21 @@ transformed parameters {
       exp_p[t, 1, 3] = incidence_state_8[t, 1] / exp_HIV_dx[t, 1];
       exp_p[t, 1, 4] = incidence_state_9[t, 1] / exp_HIV_dx[t, 1];
     }
-    // Migrant population (y=2)
-    real denom = exp_HIV_dx[t, 2] - misclassified_dx[t, 2];
-    if (denom > 0) {
-      exp_p[t, 2, 1] = incidence_state_6[t, 2] / denom;
-      exp_p[t, 2, 2] = incidence_state_7[t, 2] / denom;
-      exp_p[t, 2, 3] = incidence_state_8[t, 2] / denom;
-      exp_p[t, 2, 4] = incidence_state_9[t, 2] / denom;
+    // Migrant population (y=2): include misclassified arrivals in exp_p,
+    // proportional to m[1:4,t], matching what the simulation puts in CD4 data.
+    {
+      vector[4] raw_p = [incidence_state_6[t, 2], incidence_state_7[t, 2],
+                         incidence_state_8[t, 2], incidence_state_9[t, 2]]'
+                        + 1e-12;
+      if (misclassified_dx[t, 2] > 1e-10) {
+        real total_lat = sum(m[1 : 4, t]);
+        vector[4] m_lat = (total_lat > 1e-10)
+                          ? m[1 : 4, t] / total_lat
+                          : rep_vector(0.25, 4);
+        raw_p += misclassified_dx[t, 2] * m_lat;
+      }
+      real total_p = sum(raw_p);
+      exp_p[t, 2] = (total_p > 1e-10) ? raw_p / total_p : rep_vector(0.25, 4);
     }
   }
 }

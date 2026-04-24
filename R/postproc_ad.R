@@ -966,6 +966,18 @@ postproc_ad <- function(
       qt.flag = TRUE
     )
 
+    # undiagnosed migration by age band
+    out$undiag_migration_age <- purrr::imap(age_bands, \(age, bn) {
+      undiag.mig.fct.qt(
+        undiag_migration.draws,
+        abroad_age_prop,
+        age[1], age[2],
+        nage, nquar, start_yr
+      ) |>
+        dplyr::mutate(age_band = factor(bn, levels = names(age_bands)))
+    }) |>
+      purrr::list_rbind()
+
     # out$transfers <- out$transfers_age |>
     #   dplyr::filter(.data$age_band == "all")
 

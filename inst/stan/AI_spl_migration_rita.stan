@@ -299,15 +299,35 @@ transformed parameters {
       exp_p[t, 1, 5] = (1 - frr) * incidence_state_13[t, 1] / exp_HIV_dx[t, 1];
     }
     
-    // Migrant population (y=2)
-    real denom = exp_HIV_dx[t, 2] - misclassified_dx[t, 2];
-    if (denom > 0) {
-      real p1 = incidence_state_9[t, 2] / denom;
-      exp_p[t, 2, 1] = p1 + frr * (1 - p1);
-      exp_p[t, 2, 2] = (1 - frr) * incidence_state_10[t, 2] / denom;
-      exp_p[t, 2, 3] = (1 - frr) * incidence_state_11[t, 2] / denom;
-      exp_p[t, 2, 4] = (1 - frr) * incidence_state_12[t, 2] / denom;
-      exp_p[t, 2, 5] = (1 - frr) * incidence_state_13[t, 2] / denom;
+    // Migrant population (y=2): include misclassified arrivals in exp_p.
+    // Misclassified migrants arrive in non-RITA latent states (diagnosed states 2-5),
+    // proportional to m[1:4,t]. FRR applied afterwards as usual.
+    {
+      vector[5] raw_p = [incidence_state_9[t, 2], incidence_state_10[t, 2],
+                         incidence_state_11[t, 2], incidence_state_12[t, 2],
+                         incidence_state_13[t, 2]]'
+                        + 1e-12;
+      if (misclassified_dx[t, 2] > 1e-10) {
+        real total_lat = sum(m[1 : 4, t]);
+        vector[4] m_lat = (total_lat > 1e-10)
+                          ? m[1 : 4, t] / total_lat
+                          : rep_vector(0.25, 4);
+        raw_p[2] += misclassified_dx[t, 2] * m_lat[1];
+        raw_p[3] += misclassified_dx[t, 2] * m_lat[2];
+        raw_p[4] += misclassified_dx[t, 2] * m_lat[3];
+        raw_p[5] += misclassified_dx[t, 2] * m_lat[4];
+      }
+      real total_p_sum = sum(raw_p);
+      if (total_p_sum > 1e-10) {
+        vector[5] p1 = raw_p / total_p_sum;
+        exp_p[t, 2, 1] = p1[1] + frr * (1 - p1[1]);
+        exp_p[t, 2, 2] = (1 - frr) * p1[2];
+        exp_p[t, 2, 3] = (1 - frr) * p1[3];
+        exp_p[t, 2, 4] = (1 - frr) * p1[4];
+        exp_p[t, 2, 5] = (1 - frr) * p1[5];
+      } else {
+        exp_p[t, 2] = rep_vector(0.2, 5);
+      }
     }
   }
 }
