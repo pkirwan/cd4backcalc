@@ -360,11 +360,11 @@ model {
   beta_diag_3[2 : npars_diag] ~ normal(0, sigma_diag_3);
   beta_diag_4[2 : npars_diag] ~ normal(0, sigma_diag_4);
   beta_diag_5[2 : npars_diag] ~ normal(0, sigma_diag_5);
-  sigma_diag_1 ~ gamma(2, 8);
-  sigma_diag_2 ~ gamma(2, 8);
-  sigma_diag_3 ~ gamma(2, 8);
-  sigma_diag_4 ~ gamma(2, 8);
-  sigma_diag_5 ~ gamma(2, 8);
+  sigma_diag_1 ~ gamma(4, 32);
+  sigma_diag_2 ~ gamma(4, 32);
+  sigma_diag_3 ~ gamma(4, 32);
+  sigma_diag_4 ~ gamma(4, 32);
+  sigma_diag_5 ~ gamma(4, 32);
   
   // False recency rate prior centred on logit(0.019)
   logit_frr ~ normal(-3.94, 0.32);
@@ -391,7 +391,7 @@ model {
   alpha_detect ~ normal(1, 1);
   beta_detect[1] ~ normal(0, 0.5);
   beta_detect[2 : npars_mp] ~ normal(0, sigma_detect);
-  sigma_detect ~ gamma(2, 64);
+  sigma_detect ~ gamma(2, 32);
   
   // Migration distribution priors
   alpha_mp[1] ~ normal(0, 1.5);
@@ -404,10 +404,10 @@ model {
   beta_mp_2[2 : npars_mp] ~ normal(0, sigma_mp_2);
   beta_mp_3[2 : npars_mp] ~ normal(0, sigma_mp_3);
   beta_mp_5[2 : npars_mp] ~ normal(0, sigma_mp_5);
-  sigma_mp_1 ~ gamma(1, 16);
-  sigma_mp_2 ~ gamma(1, 16);
-  sigma_mp_3 ~ gamma(1, 16);
-  sigma_mp_5 ~ gamma(1, 16);
+  sigma_mp_1 ~ gamma(2, 32);
+  sigma_mp_2 ~ gamma(2, 32);
+  sigma_mp_3 ~ gamma(2, 32);
+  sigma_mp_5 ~ gamma(2, 32);
   
   // Likelihood
   for (t in 1 : nquar) {

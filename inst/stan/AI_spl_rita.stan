@@ -218,11 +218,11 @@ model {
   beta_diag_3[2 : npars_diag] ~ normal(0, sigma_diag_3);
   beta_diag_4[2 : npars_diag] ~ normal(0, sigma_diag_4);
   beta_diag_5[2 : npars_diag] ~ normal(0, sigma_diag_5);
-  sigma_diag_1 ~ gamma(2, 8);
-  sigma_diag_2 ~ gamma(2, 8);
-  sigma_diag_3 ~ gamma(2, 8);
-  sigma_diag_4 ~ gamma(2, 8);
-  sigma_diag_5 ~ gamma(2, 8);
+  sigma_diag_1 ~ gamma(4, 32);
+  sigma_diag_2 ~ gamma(4, 32);
+  sigma_diag_3 ~ gamma(4, 32);
+  sigma_diag_4 ~ gamma(4, 32);
+  sigma_diag_5 ~ gamma(4, 32);
   
   // False recency rate prior centred on logit(0.019)
   logit_frr ~ normal(-3.94, 0.32);

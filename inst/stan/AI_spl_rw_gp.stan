@@ -272,10 +272,10 @@ model {
     beta_diag_2[2 : npars_diag] ~ normal(0, sigma_diag_2);
     beta_diag_3[2 : npars_diag] ~ normal(0, sigma_diag_3);
     beta_diag_4[2 : npars_diag] ~ normal(0, sigma_diag_4);
-    sigma_diag_1 ~ gamma(2, 8);
-    sigma_diag_2 ~ gamma(2, 8);
-    sigma_diag_3 ~ gamma(2, 8);
-    sigma_diag_4 ~ gamma(2, 8);
+    sigma_diag_1 ~ gamma(4, 32);
+    sigma_diag_2 ~ gamma(4, 32);
+    sigma_diag_3 ~ gamma(4, 32);
+    sigma_diag_4 ~ gamma(4, 32);
     
     // weak priors for inactive RW diag params
     delta_raw_1 ~ normal(0, 1);
