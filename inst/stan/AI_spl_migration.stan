@@ -95,10 +95,10 @@ parameters {
   real<lower=-1, upper=1> rho_eta;
   
   // Probability of migration into each compartment
-  vector[npars_mp] beta_mp_1;
-  vector[npars_mp] beta_mp_2;
-  vector[npars_mp] beta_mp_3;
-  vector[npars_mp] beta_mp_5;
+  vector[npars_mp] beta_mp_1_raw;
+  vector[npars_mp] beta_mp_2_raw;
+  vector[npars_mp] beta_mp_3_raw;
+  vector[npars_mp] beta_mp_5_raw;
   real<lower=0> sigma_mp_1;
   real<lower=0> sigma_mp_2;
   real<lower=0> sigma_mp_3;
@@ -153,6 +153,20 @@ transformed parameters {
   // Proportion UK-acquired
   vector[nquar] eta = alpha_cob + 0.5 * (X_cob * beta_cob);
   vector<lower=0>[nquar] p;
+  
+  // Non-centred reconstruction of migration compartment splines
+  vector[npars_mp] beta_mp_1;
+  vector[npars_mp] beta_mp_2;
+  vector[npars_mp] beta_mp_3;
+  vector[npars_mp] beta_mp_5;
+  beta_mp_1[1] = beta_mp_1_raw[1];
+  beta_mp_2[1] = beta_mp_2_raw[1];
+  beta_mp_3[1] = beta_mp_3_raw[1];
+  beta_mp_5[1] = beta_mp_5_raw[1];
+  beta_mp_1[2 : npars_mp] = beta_mp_1_raw[2 : npars_mp] * sigma_mp_1;
+  beta_mp_2[2 : npars_mp] = beta_mp_2_raw[2 : npars_mp] * sigma_mp_2;
+  beta_mp_3[2 : npars_mp] = beta_mp_3_raw[2 : npars_mp] * sigma_mp_3;
+  beta_mp_5[2 : npars_mp] = beta_mp_5_raw[2 : npars_mp] * sigma_mp_5;
   
   // Migration probabilities using softmax, reference = compartment 4
   vector[nquar] theta_1 = alpha_mp[2] + X_mp * beta_mp_1;
@@ -342,14 +356,10 @@ model {
   // Migration distribution priors
   alpha_mp[1] ~ normal(0, 1.5);
   alpha_mp[2 : 4] ~ std_normal();
-  beta_mp_1[1] ~ std_normal();
-  beta_mp_2[1] ~ std_normal();
-  beta_mp_3[1] ~ std_normal();
-  beta_mp_5[1] ~ std_normal();
-  beta_mp_1[2 : npars_mp] ~ normal(0, sigma_mp_1);
-  beta_mp_2[2 : npars_mp] ~ normal(0, sigma_mp_2);
-  beta_mp_3[2 : npars_mp] ~ normal(0, sigma_mp_3);
-  beta_mp_5[2 : npars_mp] ~ normal(0, sigma_mp_5);
+  beta_mp_1_raw ~ std_normal();
+  beta_mp_2_raw ~ std_normal();
+  beta_mp_3_raw ~ std_normal();
+  beta_mp_5_raw ~ std_normal();
   sigma_mp_1 ~ gamma(2, 32);
   sigma_mp_2 ~ gamma(2, 32);
   sigma_mp_3 ~ gamma(2, 32);
