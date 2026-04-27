@@ -17,7 +17,7 @@ bias_plot(
 \arguments{
 \item{hiv_list}{A list returned from the \code{postproc} function containing model estimates.}
 
-\item{quantity}{The quantity to plot bias for (default is "incidence", other options are "undiag_migration", "ratio_abroad_uk", and "mp").}
+\item{quantity}{The quantity to plot bias for (default is \code{"incidence"}). Migration-model options are \code{"undiag_migration"}, \code{"ratio_abroad_uk"}, and \code{"mp"}.}
 
 \item{offset}{The offset for text labels.}
 

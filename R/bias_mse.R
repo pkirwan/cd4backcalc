@@ -114,7 +114,7 @@ make_mse_list <- function(
 #'
 #' @param hiv_list A list returned from the `postproc` function containing model estimates.
 #' @param hiv_list_2 A second list returned from the `postproc` function for comparison (default is NULL).
-#' @param quantity The quantity to plot MSE for (default is "incidence", other options are "undiag_migration", "ratio_abroad_uk", and "mp").
+#' @param quantity The quantity to plot MSE for (default is `"incidence"`). Migration-model options are `"undiag_migration"`, `"ratio_abroad_uk"`, and `"mp"`.
 #' @param offset The offset for text labels.
 #' @param lab A logical indicating whether to add labels.
 #' @param model_1_name The name of the first model for labeling (default is "Model 1").
@@ -215,7 +215,7 @@ mse_plot <- function(
 #' Box plots of bias.
 #'
 #' @param hiv_list A list returned from the `postproc` function containing model estimates.
-#' @param quantity The quantity to plot bias for (default is "incidence", other options are "undiag_migration", "ratio_abroad_uk", and "mp").
+#' @param quantity The quantity to plot bias for (default is `"incidence"`). Migration-model options are `"undiag_migration"`, `"ratio_abroad_uk"`, and `"mp"`.
 #' @param offset The offset for text labels.
 #' @param lab A logical indicating whether to add labels.
 #' @param hiv_list_2 A second list returned from the `postproc` function for comparison (default is NULL).

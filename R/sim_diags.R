@@ -141,7 +141,6 @@ define_sim_config <- function(
 #' - "combo_1": Combination of varying infections, step change migration, and varying diagnosis probabilities.
 #' - "combo_2": Combination of varying infections, step change migration, varying diagnosis probabilities, and increasing proportion UK.
 #' - "combo_3": Combination of varying infections, step change migration, varying diagnosis probabilities, increasing proportion UK, and varying migration probabilities.
-#' - "combo_3_no_migration": Similar to "combo_3" but without migration effects.
 #' - "combo_4": As "combo_3" but with different incidence and migration patterns.
 #'
 #' @param config Configuration list to modify.
@@ -163,7 +162,6 @@ define_simulation_type <- function(config, sim_type = "constant") {
     "combo_1",
     "combo_2",
     "combo_3",
-    "combo_3_no_migration",
     "combo_4"
   )
   if (!sim_type %in% valid_sim_types) {
@@ -215,11 +213,6 @@ define_simulation_type <- function(config, sim_type = "constant") {
         config$mig_diag_offset <- c(-0.5, -0.25, -0.2, -0.1)
       }
     }
-  } else if (sim_type == "combo_3_no_migration") {
-    config$h_pattern <- "varying"
-    config$o_pattern <- "none"
-    config$d_pattern <- "varying"
-    config$p_pattern <- "increasing"
   } else if (sim_type == "combo_4") {
     config$h_pattern <- "varying_1"
     config$o_pattern <- "step_change"

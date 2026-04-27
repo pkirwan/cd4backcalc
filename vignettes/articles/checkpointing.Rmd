@@ -82,4 +82,4 @@ For age-independent models, fitting is typically fast enough that checkpointing 
 
 ## Single-chunk behaviour
 
-If `iter_per_chunk` is greater than or equal to `iter_sampling`, no chunking occurs and the model fits in a single pass (returning a standard `CmdStanMCMC` object rather than a combined fit).
+If `iter_per_chunk` is greater than or equal to `iter_sampling`, no chunking occurs and the model fits in a single run.

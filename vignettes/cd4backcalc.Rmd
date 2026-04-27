@@ -60,7 +60,7 @@ hiv_list <- run_backcalc(
 Use `plot_diagnostics()` to inspect traceplots and posterior density plots for key parameters:
 
 ```{r diagnostics, eval=FALSE}
-plot_diagnostics(hiv_list)
+plot_diagnostics(hiv_list, ntraces = 4)
 ```
 
 You can also access the underlying `cmdstanr` fit object for additional diagnostics:

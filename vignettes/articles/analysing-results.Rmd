@@ -74,7 +74,7 @@ plot_estimates(hiv_list, quantity = "incidence")
 Use `get_estimates()` to obtain the posterior summary as a tibble for custom analysis:
 
 ```{r get-ests, eval=FALSE}
-inc_df <- get_estimates(hiv_list, "incidence")
+inc_df <- get_estimates(hiv_list, quantity = "incidence")
 head(inc_df)
 ```
 
@@ -83,14 +83,14 @@ head(inc_df)
 Use `extract_simulated_quantity()` to extract the true simulated values for comparison:
 
 ```{r extract-sim, eval=FALSE}
-sim_inc <- extract_simulated_quantity(sim_diags, "incidence")
+sim_inc <- extract_simulated_quantity(sim_diags, quantity = "incidence")
 head(sim_inc)
 ```
 
 Use `extract_real_data()` to extract the observed data used for fitting:
 
 ```{r extract-real, eval=FALSE}
-obs <- extract_real_data(hiv_list)
+obs <- extract_real_data(hiv_list, quantity = "diagnoses")
 head(obs)
 ```
 
@@ -100,7 +100,6 @@ When fitting to simulated data, `bias_plot()` shows how much the model over- or 
 
 ```{r bias, eval=FALSE}
 bias_plot(hiv_list, quantity = "incidence")
-bias_plot(hiv_list, quantity = "undiag_prev")
 ```
 
 When comparing multiple models, `mse_plot()` shows the mean squared error:

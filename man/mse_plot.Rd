@@ -19,7 +19,7 @@ mse_plot(
 
 \item{hiv_list_2}{A second list returned from the \code{postproc} function for comparison (default is NULL).}
 
-\item{quantity}{The quantity to plot MSE for (default is "incidence", other options are "undiag_migration", "ratio_abroad_uk", and "mp").}
+\item{quantity}{The quantity to plot MSE for (default is \code{"incidence"}). Migration-model options are \code{"undiag_migration"}, \code{"ratio_abroad_uk"}, and \code{"mp"}.}
 
 \item{offset}{The offset for text labels.}
 
