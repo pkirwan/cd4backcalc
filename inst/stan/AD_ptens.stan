@@ -56,10 +56,10 @@ parameters {
   vector<lower=0>[2] sigma_inf; // smoothing parameters
   
   // Diagnosis probability parameters (time spline + age-group offset)
-  vector[npars_diag] beta_diag_1;
-  vector[npars_diag] beta_diag_2;
-  vector[npars_diag] beta_diag_3;
-  vector[npars_diag] beta_diag_4;
+  vector[npars_diag] beta_diag_1_raw;
+  vector[npars_diag] beta_diag_2_raw;
+  vector[npars_diag] beta_diag_3_raw;
+  vector[npars_diag] beta_diag_4_raw;
   real<lower=0> sigma_diag_1;
   real<lower=0> sigma_diag_2;
   real<lower=0> sigma_diag_3;
@@ -78,6 +78,18 @@ transformed parameters {
   // Tensor product prior precision
   vector<lower=0>[2] tau = inv(square(sigma_inf));
   
+  vector[npars_diag] beta_diag_1;
+  vector[npars_diag] beta_diag_2;
+  vector[npars_diag] beta_diag_3;
+  vector[npars_diag] beta_diag_4;
+  beta_diag_1[1] = beta_diag_1_raw[1];
+  beta_diag_2[1] = beta_diag_2_raw[1];
+  beta_diag_3[1] = beta_diag_3_raw[1];
+  beta_diag_4[1] = beta_diag_4_raw[1];
+  beta_diag_1[2 : npars_diag] = beta_diag_1_raw[2 : npars_diag] * sigma_diag_1;
+  beta_diag_2[2 : npars_diag] = beta_diag_2_raw[2 : npars_diag] * sigma_diag_2;
+  beta_diag_3[2 : npars_diag] = beta_diag_3_raw[2 : npars_diag] * sigma_diag_3;
+  beta_diag_4[2 : npars_diag] = beta_diag_4_raw[2 : npars_diag] * sigma_diag_4;
   // Diagnosis probabilities by time
   vector[nquar] delta_1 = alpha_diag_1 + (X_diag * beta_diag_1);
   vector[nquar] delta_2 = alpha_diag_2 + (X_diag * beta_diag_2);
@@ -233,15 +245,10 @@ model {
   alpha_diag_3 ~ normal(-2.5, 0.5);
   alpha_diag_4 ~ normal(-2.0, 0.5);
   
-  beta_diag_1[1] ~ std_normal();
-  beta_diag_2[1] ~ std_normal();
-  beta_diag_3[1] ~ std_normal();
-  beta_diag_4[1] ~ std_normal();
-  
-  beta_diag_1[2 : npars_diag] ~ normal(0, sigma_diag_1);
-  beta_diag_2[2 : npars_diag] ~ normal(0, sigma_diag_2);
-  beta_diag_3[2 : npars_diag] ~ normal(0, sigma_diag_3);
-  beta_diag_4[2 : npars_diag] ~ normal(0, sigma_diag_4);
+  beta_diag_1_raw ~ std_normal();
+  beta_diag_2_raw ~ std_normal();
+  beta_diag_3_raw ~ std_normal();
+  beta_diag_4_raw ~ std_normal();
   
   sigma_diag_1 ~ gamma(4, 32);
   sigma_diag_2 ~ gamma(4, 32);

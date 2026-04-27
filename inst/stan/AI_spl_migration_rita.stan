@@ -98,11 +98,11 @@ parameters {
   real logit_frr;
   
   // Diagnosis probability parameters
-  vector[npars_diag] beta_diag_1;
-  vector[npars_diag] beta_diag_2;
-  vector[npars_diag] beta_diag_3;
-  vector[npars_diag] beta_diag_4;
-  vector[npars_diag] beta_diag_5;
+  vector[npars_diag] beta_diag_1_raw;
+  vector[npars_diag] beta_diag_2_raw;
+  vector[npars_diag] beta_diag_3_raw;
+  vector[npars_diag] beta_diag_4_raw;
+  vector[npars_diag] beta_diag_5_raw;
   real<lower=0> sigma_diag_1;
   real<lower=0> sigma_diag_2;
   real<lower=0> sigma_diag_3;
@@ -151,6 +151,21 @@ transformed parameters {
   vector[nquar] gamma = X_mig * beta_mig;
   vector<lower=0>[nquar] omega = exp(gamma);
   
+  vector[npars_diag] beta_diag_1;
+  vector[npars_diag] beta_diag_2;
+  vector[npars_diag] beta_diag_3;
+  vector[npars_diag] beta_diag_4;
+  vector[npars_diag] beta_diag_5;
+  beta_diag_1[1] = beta_diag_1_raw[1];
+  beta_diag_2[1] = beta_diag_2_raw[1];
+  beta_diag_3[1] = beta_diag_3_raw[1];
+  beta_diag_4[1] = beta_diag_4_raw[1];
+  beta_diag_5[1] = beta_diag_5_raw[1];
+  beta_diag_1[2 : npars_diag] = beta_diag_1_raw[2 : npars_diag] * sigma_diag_1;
+  beta_diag_2[2 : npars_diag] = beta_diag_2_raw[2 : npars_diag] * sigma_diag_2;
+  beta_diag_3[2 : npars_diag] = beta_diag_3_raw[2 : npars_diag] * sigma_diag_3;
+  beta_diag_4[2 : npars_diag] = beta_diag_4_raw[2 : npars_diag] * sigma_diag_4;
+  beta_diag_5[2 : npars_diag] = beta_diag_5_raw[2 : npars_diag] * sigma_diag_5;
   // Diagnosis probabilities
   vector[nquar] delta_1 = alpha_diag_1 + (X_diag * beta_diag_1);
   vector[nquar] delta_2 = alpha_diag_2 + (X_diag * beta_diag_2);
@@ -350,16 +365,11 @@ model {
   alpha_diag_3 ~ normal(-3.0, 0.5);
   alpha_diag_4 ~ normal(-2.5, 0.5);
   alpha_diag_5 ~ normal(-2.0, 0.5);
-  beta_diag_1[1] ~ std_normal();
-  beta_diag_2[1] ~ std_normal();
-  beta_diag_3[1] ~ std_normal();
-  beta_diag_4[1] ~ std_normal();
-  beta_diag_5[1] ~ std_normal();
-  beta_diag_1[2 : npars_diag] ~ normal(0, sigma_diag_1);
-  beta_diag_2[2 : npars_diag] ~ normal(0, sigma_diag_2);
-  beta_diag_3[2 : npars_diag] ~ normal(0, sigma_diag_3);
-  beta_diag_4[2 : npars_diag] ~ normal(0, sigma_diag_4);
-  beta_diag_5[2 : npars_diag] ~ normal(0, sigma_diag_5);
+  beta_diag_1_raw ~ std_normal();
+  beta_diag_2_raw ~ std_normal();
+  beta_diag_3_raw ~ std_normal();
+  beta_diag_4_raw ~ std_normal();
+  beta_diag_5_raw ~ std_normal();
   sigma_diag_1 ~ gamma(4, 32);
   sigma_diag_2 ~ gamma(4, 32);
   sigma_diag_3 ~ gamma(4, 32);
