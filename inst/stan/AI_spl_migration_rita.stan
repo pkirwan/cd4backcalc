@@ -69,12 +69,10 @@ data {
   // Splines
   int<lower=1> npars_inf;
   int<lower=1> npars_mig;
-  int<lower=1> npars_diag;
   int<lower=1> npars_cob;
   int<lower=1> npars_mp;
   matrix[nquar, npars_inf] X_inf;
   matrix[nquar, npars_mig] X_mig;
-  matrix[nquar, npars_diag] X_diag;
   matrix[nquar, npars_cob] X_cob;
   matrix[nquar, npars_mp] X_mp;
   
@@ -97,17 +95,15 @@ parameters {
   // False recency rate
   real logit_frr;
   
-  // Diagnosis probability parameters
-  vector[npars_diag] beta_diag_1_raw;
-  vector[npars_diag] beta_diag_2_raw;
-  vector[npars_diag] beta_diag_3_raw;
-  vector[npars_diag] beta_diag_4_raw;
-  vector[npars_diag] beta_diag_5_raw;
-  real<lower=0> sigma_diag_1;
-  real<lower=0> sigma_diag_2;
-  real<lower=0> sigma_diag_3;
-  real<lower=0> sigma_diag_4;
-  real<lower=0> sigma_diag_5;
+  // Diagnosis probability parameters (random walk)
+  vector[nquar] delta_raw_1;
+  vector[nquar] delta_raw_2;
+  vector[nquar] delta_raw_3;
+  vector[nquar] delta_raw_4;
+  vector[nquar] delta_raw_5;
+  vector[5] log_vardelta;
+  real mu_log_var;
+  real<lower=0> sigma_log_var;
   real alpha_diag_1;
   real alpha_diag_2;
   real alpha_diag_3;
@@ -151,27 +147,26 @@ transformed parameters {
   vector[nquar] gamma = X_mig * beta_mig;
   vector<lower=0>[nquar] omega = exp(gamma);
   
-  vector[npars_diag] beta_diag_1;
-  vector[npars_diag] beta_diag_2;
-  vector[npars_diag] beta_diag_3;
-  vector[npars_diag] beta_diag_4;
-  vector[npars_diag] beta_diag_5;
-  beta_diag_1[1] = beta_diag_1_raw[1];
-  beta_diag_2[1] = beta_diag_2_raw[1];
-  beta_diag_3[1] = beta_diag_3_raw[1];
-  beta_diag_4[1] = beta_diag_4_raw[1];
-  beta_diag_5[1] = beta_diag_5_raw[1];
-  beta_diag_1[2 : npars_diag] = beta_diag_1_raw[2 : npars_diag] * sigma_diag_1;
-  beta_diag_2[2 : npars_diag] = beta_diag_2_raw[2 : npars_diag] * sigma_diag_2;
-  beta_diag_3[2 : npars_diag] = beta_diag_3_raw[2 : npars_diag] * sigma_diag_3;
-  beta_diag_4[2 : npars_diag] = beta_diag_4_raw[2 : npars_diag] * sigma_diag_4;
-  beta_diag_5[2 : npars_diag] = beta_diag_5_raw[2 : npars_diag] * sigma_diag_5;
-  // Diagnosis probabilities
-  vector[nquar] delta_1 = alpha_diag_1 + (X_diag * beta_diag_1);
-  vector[nquar] delta_2 = alpha_diag_2 + (X_diag * beta_diag_2);
-  vector[nquar] delta_3 = alpha_diag_3 + (X_diag * beta_diag_3);
-  vector[nquar] delta_4 = alpha_diag_4 + (X_diag * beta_diag_4);
-  vector[nquar] delta_5 = alpha_diag_5 + (X_diag * beta_diag_5);
+  // Step variances on natural scale
+  vector<lower=0>[5] vardelta = exp(log_vardelta);
+  // Diagnosis probabilities via random walk
+  vector[nquar] delta_1;
+  vector[nquar] delta_2;
+  vector[nquar] delta_3;
+  vector[nquar] delta_4;
+  vector[nquar] delta_5;
+  delta_1[1] = alpha_diag_1 + 0.2 * delta_raw_1[1];
+  delta_2[1] = alpha_diag_2 + 0.2 * delta_raw_2[1];
+  delta_3[1] = alpha_diag_3 + 0.2 * delta_raw_3[1];
+  delta_4[1] = alpha_diag_4 + 0.2 * delta_raw_4[1];
+  delta_5[1] = alpha_diag_5 + 0.2 * delta_raw_5[1];
+  for (t in 2 : nquar) {
+    delta_1[t] = delta_1[t - 1] + sqrt(vardelta[1]) * delta_raw_1[t];
+    delta_2[t] = delta_2[t - 1] + sqrt(vardelta[2]) * delta_raw_2[t];
+    delta_3[t] = delta_3[t - 1] + sqrt(vardelta[3]) * delta_raw_3[t];
+    delta_4[t] = delta_4[t - 1] + sqrt(vardelta[4]) * delta_raw_4[t];
+    delta_5[t] = delta_5[t - 1] + sqrt(vardelta[5]) * delta_raw_5[t];
+  }
   matrix<lower=0, upper=1>[5, nquar] d_nat;
   matrix<lower=0, upper=1>[5, nquar] d_mig;
   
@@ -379,16 +374,14 @@ model {
   alpha_diag_3 ~ normal(-3.0, 0.5);
   alpha_diag_4 ~ normal(-2.5, 0.5);
   alpha_diag_5 ~ normal(-2.0, 0.5);
-  beta_diag_1_raw ~ std_normal();
-  beta_diag_2_raw ~ std_normal();
-  beta_diag_3_raw ~ std_normal();
-  beta_diag_4_raw ~ std_normal();
-  beta_diag_5_raw ~ std_normal();
-  sigma_diag_1 ~ gamma(4, 32);
-  sigma_diag_2 ~ gamma(4, 32);
-  sigma_diag_3 ~ gamma(4, 32);
-  sigma_diag_4 ~ gamma(4, 32);
-  sigma_diag_5 ~ gamma(4, 32);
+  delta_raw_1 ~ std_normal();
+  delta_raw_2 ~ std_normal();
+  delta_raw_3 ~ std_normal();
+  delta_raw_4 ~ std_normal();
+  delta_raw_5 ~ std_normal();
+  mu_log_var ~ normal(-3.5, 1);
+  sigma_log_var ~ normal(0, 0.5);
+  log_vardelta ~ normal(mu_log_var, sigma_log_var);
   
   // False recency rate prior centred on logit(0.019)
   logit_frr ~ normal(-3.94, 0.32);

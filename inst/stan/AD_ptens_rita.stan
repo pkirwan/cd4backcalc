@@ -14,9 +14,6 @@ data {
   matrix[nquar * nage, npars_inf] X_inf; // design matrix ... 50 is number of inf params
   matrix[npars_inf - 1, 2 * npars_inf - 2] S1; // NOT SURE IF BOUNDARY CONSISTENT
   
-  // Time-varying diagnosis splines (plus age-group offsets)
-  int<lower=1> npars_diag;
-  matrix[nquar, npars_diag] X_diag;
 }
 transformed data {
   row_vector[6] empty_vec = rep_row_vector(0, 6);
@@ -56,17 +53,20 @@ parameters {
   vector[npars_inf] beta_inf; //beta are the infection parameters
   vector<lower=0>[2] sigma_inf; // smoothing parameters
   
-  // Diagnosis probability parameters
-  vector[npars_diag] beta_diag_1_raw;
-  vector[npars_diag] beta_diag_2_raw;
-  vector[npars_diag] beta_diag_3_raw;
-  vector[npars_diag] beta_diag_4_raw;
-  vector[npars_diag] beta_diag_5_raw;
-  real<lower=0> sigma_diag_1;
-  real<lower=0> sigma_diag_2;
-  real<lower=0> sigma_diag_3;
-  real<lower=0> sigma_diag_4;
-  real<lower=0> sigma_diag_5;
+  // Diagnosis probability parameters (random walk)
+  // Non-centred increments for each state
+  vector[nquar] delta_raw_1;
+  vector[nquar] delta_raw_2;
+  vector[nquar] delta_raw_3;
+  vector[nquar] delta_raw_4;
+  vector[nquar] delta_raw_5;
+  // Step variances: log-normal parameterisation avoids half-normal mass
+  // accumulation at zero when sigma_log_var is large relative to mu_log_var.
+  // vardelta = exp(log_vardelta), so always strictly positive.
+  vector[5] log_vardelta;
+  real mu_log_var;          // shared hyperprior mean (log scale)
+  real<lower=0> sigma_log_var; // shared hyperprior SD (log scale)
+  // Initial level intercepts
   real alpha_diag_1;
   real alpha_diag_2;
   real alpha_diag_3;
@@ -81,6 +81,9 @@ transformed parameters {
   // Infection parameters
   vector[nquar * nage] lambda = X_inf * beta_inf;
   vector<lower=0>[nquar * nage] h = exp(lambda); //vector of expected log responses
+  
+  // Step variances on natural scale
+  vector<lower=0>[5] vardelta = exp(log_vardelta);
   
   // False recency rate
   real<lower=0, upper=1> frr = inv_logit(logit_frr);
@@ -99,28 +102,27 @@ transformed parameters {
   
   tau = inv(square(sigma_inf));
   
-  vector[npars_diag] beta_diag_1;
-  vector[npars_diag] beta_diag_2;
-  vector[npars_diag] beta_diag_3;
-  vector[npars_diag] beta_diag_4;
-  vector[npars_diag] beta_diag_5;
-  beta_diag_1[1] = beta_diag_1_raw[1];
-  beta_diag_2[1] = beta_diag_2_raw[1];
-  beta_diag_3[1] = beta_diag_3_raw[1];
-  beta_diag_4[1] = beta_diag_4_raw[1];
-  beta_diag_5[1] = beta_diag_5_raw[1];
-  beta_diag_1[2 : npars_diag] = beta_diag_1_raw[2 : npars_diag] * sigma_diag_1;
-  beta_diag_2[2 : npars_diag] = beta_diag_2_raw[2 : npars_diag] * sigma_diag_2;
-  beta_diag_3[2 : npars_diag] = beta_diag_3_raw[2 : npars_diag] * sigma_diag_3;
-  beta_diag_4[2 : npars_diag] = beta_diag_4_raw[2 : npars_diag] * sigma_diag_4;
-  beta_diag_5[2 : npars_diag] = beta_diag_5_raw[2 : npars_diag] * sigma_diag_5;
   // DIAGNOSES
-  // Diagnosis probabilities by time (spline-based)
-  vector[nquar] delta_1 = alpha_diag_1 + (X_diag * beta_diag_1);
-  vector[nquar] delta_2 = alpha_diag_2 + (X_diag * beta_diag_2);
-  vector[nquar] delta_3 = alpha_diag_3 + (X_diag * beta_diag_3);
-  vector[nquar] delta_4 = alpha_diag_4 + (X_diag * beta_diag_4);
-  vector[nquar] delta_5 = alpha_diag_5 + (X_diag * beta_diag_5);
+  // Diagnosis probabilities via random walk (non-centred parameterisation).
+  // Initial value uses a fixed small step scale (0.2) so the starting
+  // uncertainty is not driven by vardelta, which governs evolution.
+  vector[nquar] delta_1;
+  vector[nquar] delta_2;
+  vector[nquar] delta_3;
+  vector[nquar] delta_4;
+  vector[nquar] delta_5;
+  delta_1[1] = alpha_diag_1 + 0.2 * delta_raw_1[1];
+  delta_2[1] = alpha_diag_2 + 0.2 * delta_raw_2[1];
+  delta_3[1] = alpha_diag_3 + 0.2 * delta_raw_3[1];
+  delta_4[1] = alpha_diag_4 + 0.2 * delta_raw_4[1];
+  delta_5[1] = alpha_diag_5 + 0.2 * delta_raw_5[1];
+  for (t in 2 : nquar) {
+    delta_1[t] = delta_1[t - 1] + sqrt(vardelta[1]) * delta_raw_1[t];
+    delta_2[t] = delta_2[t - 1] + sqrt(vardelta[2]) * delta_raw_2[t];
+    delta_3[t] = delta_3[t - 1] + sqrt(vardelta[3]) * delta_raw_3[t];
+    delta_4[t] = delta_4[t - 1] + sqrt(vardelta[4]) * delta_raw_4[t];
+    delta_5[t] = delta_5[t - 1] + sqrt(vardelta[5]) * delta_raw_5[t];
+  }
   
   // Diagnosis probabilities by age group (ag), state (k), and time (t).
   // Stored as matrix[nquar, 5] so the inner time-loop accesses column k,
@@ -280,23 +282,26 @@ model {
   beta_inf[2 : npars_inf] ~ multi_normal_prec(zero_vec, K1_prec);
   
   // Diagnosis priors
+  // Initial level intercepts
   alpha_diag_1 ~ normal(-2.5, 0.5);
   alpha_diag_2 ~ normal(-3.2, 0.5);
   alpha_diag_3 ~ normal(-3.0, 0.5);
   alpha_diag_4 ~ normal(-2.5, 0.5);
   alpha_diag_5 ~ normal(-2.0, 0.5);
   
-  beta_diag_1_raw ~ std_normal();
-  beta_diag_2_raw ~ std_normal();
-  beta_diag_3_raw ~ std_normal();
-  beta_diag_4_raw ~ std_normal();
-  beta_diag_5_raw ~ std_normal();
+  // Non-centred RW increments
+  delta_raw_1 ~ std_normal();
+  delta_raw_2 ~ std_normal();
+  delta_raw_3 ~ std_normal();
+  delta_raw_4 ~ std_normal();
+  delta_raw_5 ~ std_normal();
   
-  sigma_diag_1 ~ gamma(4, 32);
-  sigma_diag_2 ~ gamma(4, 32);
-  sigma_diag_3 ~ gamma(4, 32);
-  sigma_diag_4 ~ gamma(4, 32);
-  sigma_diag_5 ~ gamma(4, 32);
+  // Hierarchical prior on log step variances.
+  // mu_log_var ~ normal(-3.5, 1): centres exp(mu) ~ 0.030, broad on log scale.
+  // sigma_log_var ~ normal(0, 0.5): allows ~2-fold between-state differences.
+  mu_log_var ~ normal(-3.5, 1);
+  sigma_log_var ~ normal(0, 0.5);
+  log_vardelta ~ normal(mu_log_var, sigma_log_var);
   
   // False recency rate prior centred on logit(0.019)
   logit_frr ~ normal(-3.94, 0.32);

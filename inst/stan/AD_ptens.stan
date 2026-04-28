@@ -15,8 +15,7 @@ data {
   matrix[npars_inf - 1, 2 * npars_inf - 2] S1; // NOT SURE IF BOUNDARY CONSISTENT
   
   // Time-varying diagnosis splines, plus age-group offsets
-  int<lower=1> npars_diag;
-  matrix[nquar, npars_diag] X_diag;
+  // (X_diag and npars_diag removed; diagnosis now uses random walk)
 }
 transformed data {
   row_vector[5] empty_vec = rep_row_vector(0, 5);
@@ -55,15 +54,14 @@ parameters {
   vector[npars_inf] beta_inf; //beta_inf are the infection parameters
   vector<lower=0>[2] sigma_inf; // smoothing parameters
   
-  // Diagnosis probability parameters (time spline + age-group offset)
-  vector[npars_diag] beta_diag_1_raw;
-  vector[npars_diag] beta_diag_2_raw;
-  vector[npars_diag] beta_diag_3_raw;
-  vector[npars_diag] beta_diag_4_raw;
-  real<lower=0> sigma_diag_1;
-  real<lower=0> sigma_diag_2;
-  real<lower=0> sigma_diag_3;
-  real<lower=0> sigma_diag_4;
+  // Diagnosis probability parameters (random walk)
+  vector[nquar] delta_raw_1;
+  vector[nquar] delta_raw_2;
+  vector[nquar] delta_raw_3;
+  vector[nquar] delta_raw_4;
+  vector[4] log_vardelta;
+  real mu_log_var;
+  real<lower=0> sigma_log_var;
   real alpha_diag_1;
   real alpha_diag_2;
   real alpha_diag_3;
@@ -78,23 +76,23 @@ transformed parameters {
   // Tensor product prior precision
   vector<lower=0>[2] tau = inv(square(sigma_inf));
   
-  vector[npars_diag] beta_diag_1;
-  vector[npars_diag] beta_diag_2;
-  vector[npars_diag] beta_diag_3;
-  vector[npars_diag] beta_diag_4;
-  beta_diag_1[1] = beta_diag_1_raw[1];
-  beta_diag_2[1] = beta_diag_2_raw[1];
-  beta_diag_3[1] = beta_diag_3_raw[1];
-  beta_diag_4[1] = beta_diag_4_raw[1];
-  beta_diag_1[2 : npars_diag] = beta_diag_1_raw[2 : npars_diag] * sigma_diag_1;
-  beta_diag_2[2 : npars_diag] = beta_diag_2_raw[2 : npars_diag] * sigma_diag_2;
-  beta_diag_3[2 : npars_diag] = beta_diag_3_raw[2 : npars_diag] * sigma_diag_3;
-  beta_diag_4[2 : npars_diag] = beta_diag_4_raw[2 : npars_diag] * sigma_diag_4;
-  // Diagnosis probabilities by time
-  vector[nquar] delta_1 = alpha_diag_1 + (X_diag * beta_diag_1);
-  vector[nquar] delta_2 = alpha_diag_2 + (X_diag * beta_diag_2);
-  vector[nquar] delta_3 = alpha_diag_3 + (X_diag * beta_diag_3);
-  vector[nquar] delta_4 = alpha_diag_4 + (X_diag * beta_diag_4);
+  // Step variances on natural scale
+  vector<lower=0>[4] vardelta = exp(log_vardelta);
+  // Diagnosis probabilities via random walk
+  vector[nquar] delta_1;
+  vector[nquar] delta_2;
+  vector[nquar] delta_3;
+  vector[nquar] delta_4;
+  delta_1[1] = alpha_diag_1 + 0.2 * delta_raw_1[1];
+  delta_2[1] = alpha_diag_2 + 0.2 * delta_raw_2[1];
+  delta_3[1] = alpha_diag_3 + 0.2 * delta_raw_3[1];
+  delta_4[1] = alpha_diag_4 + 0.2 * delta_raw_4[1];
+  for (t in 2 : nquar) {
+    delta_1[t] = delta_1[t - 1] + sqrt(vardelta[1]) * delta_raw_1[t];
+    delta_2[t] = delta_2[t - 1] + sqrt(vardelta[2]) * delta_raw_2[t];
+    delta_3[t] = delta_3[t - 1] + sqrt(vardelta[3]) * delta_raw_3[t];
+    delta_4[t] = delta_4[t - 1] + sqrt(vardelta[4]) * delta_raw_4[t];
+  }
   
   // Diagnosis probabilities by age group (ag), state (k), and time (t).
   // Stored as matrix[nquar, 4] so the inner time-loop accesses column k,
@@ -244,16 +242,13 @@ model {
   alpha_diag_2 ~ normal(-3.0, 0.5);
   alpha_diag_3 ~ normal(-2.5, 0.5);
   alpha_diag_4 ~ normal(-2.0, 0.5);
-  
-  beta_diag_1_raw ~ std_normal();
-  beta_diag_2_raw ~ std_normal();
-  beta_diag_3_raw ~ std_normal();
-  beta_diag_4_raw ~ std_normal();
-  
-  sigma_diag_1 ~ gamma(4, 32);
-  sigma_diag_2 ~ gamma(4, 32);
-  sigma_diag_3 ~ gamma(4, 32);
-  sigma_diag_4 ~ gamma(4, 32);
+  delta_raw_1 ~ std_normal();
+  delta_raw_2 ~ std_normal();
+  delta_raw_3 ~ std_normal();
+  delta_raw_4 ~ std_normal();
+  mu_log_var ~ normal(-3.5, 1);
+  sigma_log_var ~ normal(0, 0.5);
+  log_vardelta ~ normal(mu_log_var, sigma_log_var);
   
   alpha_age_diag ~ normal(0, 1);
   
