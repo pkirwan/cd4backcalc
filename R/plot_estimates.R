@@ -329,12 +329,26 @@ plot_estimates <- function(
       observed_data <- observed_data |>
         dplyr::filter(.data$age_band != "all")
     }
+
+    model_colors <- stats::setNames(
+      c(rep("mediumorchid", length(unique(quantiles$group))), "mediumturquoise"),
+      c(unique(quantiles$group), "Observed values")
+    )
+
     p1 <- p1 +
       ggplot2::geom_point(
         data = observed_data,
         ggplot2::aes(y = .data$value, group = .data$group),
         size = 1.1,
         shape = 3
+      ) +
+      ggplot2::scale_color_manual(
+        values = model_colors,
+        name = ""
+      ) +
+      ggplot2::scale_fill_manual(
+        values = model_colors,
+        name = ""
       )
   }
 

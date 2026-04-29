@@ -60,10 +60,10 @@ parameters {
   vector[nquar] delta_raw_3;
   vector[nquar] delta_raw_4;
   vector[nquar] delta_raw_5;
-  // Step variances: log-normal parameterisation avoids half-normal mass
-  // accumulation at zero when sigma_log_var is large relative to mu_log_var.
-  // vardelta = exp(log_vardelta), so always strictly positive.
-  vector[5] log_vardelta;
+  // Step variances: non-centred log-normal avoids funnel geometry.
+  // log_vardelta = mu_log_var + sigma_log_var * log_vardelta_raw,
+  // so vardelta = exp(log_vardelta) is always strictly positive.
+  vector[5] log_vardelta_raw; // non-centred increments
   real mu_log_var;          // shared hyperprior mean (log scale)
   real<lower=0> sigma_log_var; // shared hyperprior SD (log scale)
   // Initial level intercepts
@@ -82,7 +82,8 @@ transformed parameters {
   vector[nquar * nage] lambda = X_inf * beta_inf;
   vector<lower=0>[nquar * nage] h = exp(lambda); //vector of expected log responses
   
-  // Step variances on natural scale
+  // Step variances on natural scale (non-centred)
+  vector[5] log_vardelta = mu_log_var + sigma_log_var * log_vardelta_raw;
   vector<lower=0>[5] vardelta = exp(log_vardelta);
   
   // False recency rate
@@ -111,11 +112,11 @@ transformed parameters {
   vector[nquar] delta_3;
   vector[nquar] delta_4;
   vector[nquar] delta_5;
-  delta_1[1] = alpha_diag_1 + 0.2 * delta_raw_1[1];
-  delta_2[1] = alpha_diag_2 + 0.2 * delta_raw_2[1];
-  delta_3[1] = alpha_diag_3 + 0.2 * delta_raw_3[1];
-  delta_4[1] = alpha_diag_4 + 0.2 * delta_raw_4[1];
-  delta_5[1] = alpha_diag_5 + 0.2 * delta_raw_5[1];
+  delta_1[1] = alpha_diag_1 + sqrt(vardelta[1]) * delta_raw_1[1];
+  delta_2[1] = alpha_diag_2 + sqrt(vardelta[2]) * delta_raw_2[1];
+  delta_3[1] = alpha_diag_3 + sqrt(vardelta[3]) * delta_raw_3[1];
+  delta_4[1] = alpha_diag_4 + sqrt(vardelta[4]) * delta_raw_4[1];
+  delta_5[1] = alpha_diag_5 + sqrt(vardelta[5]) * delta_raw_5[1];
   for (t in 2 : nquar) {
     delta_1[t] = delta_1[t - 1] + sqrt(vardelta[1]) * delta_raw_1[t];
     delta_2[t] = delta_2[t - 1] + sqrt(vardelta[2]) * delta_raw_2[t];
@@ -296,12 +297,12 @@ model {
   delta_raw_4 ~ std_normal();
   delta_raw_5 ~ std_normal();
   
-  // Hierarchical prior on log step variances.
+  // Hierarchical prior on log step variances (non-centred).
   // mu_log_var ~ normal(-3.5, 1): centres exp(mu) ~ 0.030, broad on log scale.
   // sigma_log_var ~ normal(0, 0.5): allows ~2-fold between-state differences.
   mu_log_var ~ normal(-3.5, 1);
   sigma_log_var ~ normal(0, 0.5);
-  log_vardelta ~ normal(mu_log_var, sigma_log_var);
+  log_vardelta_raw ~ std_normal();
   
   // False recency rate prior centred on logit(0.019)
   logit_frr ~ normal(-3.94, 0.32);

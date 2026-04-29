@@ -124,13 +124,21 @@ postproc_ad <- function(
   # Posterior means of parameter of interest
   out$tau <- tau
   alpha.ind <- grep("alpha", colnames(fit_mat))
-  sigma2.ind <- grep("vardelta", colnames(fit_mat))
+  sigma2.ind <- grep("^vardelta\\[", colnames(fit_mat))
+  mu_log_var.ind <- grep("^mu_log_var$", colnames(fit_mat))
+  sigma_log_var.ind <- grep("^sigma_log_var$", colnames(fit_mat))
 
   if (length(alpha.ind) != 0) {
     out$alpha <- fit_mat[, alpha.ind]
   }
   if (length(sigma2.ind) != 0) {
     out$sigma2 <- fit_mat[, sigma2.ind]
+  }
+  if (length(mu_log_var.ind) != 0) {
+    out$mu_log_var <- get_quantiles(fit_mat[, mu_log_var.ind])
+  }
+  if (length(sigma_log_var.ind) != 0) {
+    out$sigma_log_var <- get_quantiles(fit_mat[, sigma_log_var.ind])
   }
 
   # Posterior mean for all time and ages
