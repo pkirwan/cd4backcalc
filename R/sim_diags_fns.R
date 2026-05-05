@@ -71,7 +71,7 @@ generate_omega <- function(nquar, pattern, target_mig = 12000, dist = TRUE) {
       seq(0.4, 1.2, length.out = round(nquar * 0.1)),
       seq(1.2, 0.4, length.out = round(nquar * 0.1)),
       seq(0.4, 1.3, length.out = round(nquar * 0.55)),
-      seq(1.35, 4.5, length.out = round(nquar * 0.15))
+      seq(1.35, 2.5, length.out = round(nquar * 0.15))
     ) *
       ann_mig
   } else if (pattern == "none") {
@@ -108,7 +108,7 @@ generate_mu <- function(nquar, nlatst, pattern, dist = FALSE) {
           seq(0.15, 0.3, length.out = nquar),
           seq(0.2, 0.22, length.out = nquar),
           seq(0.2, 0.15, length.out = nquar),
-          seq(0.1, 0.05, length.out = nquar),
+          seq(0.10, 0.08, length.out = nquar),
           seq(0.2, 0.4, length.out = nquar)
         ),
         nrow = nquar,
@@ -214,21 +214,22 @@ generate_diagnosis_probs <- function(
     sigma <- 0.1
 
     if (pattern == "constant") {
-      logit_d_probs[, 1] <- stats::rnorm(nquar, logit(0.04), sigma)
-      logit_d_probs[, 2] <- stats::rnorm(nquar, logit(0.05), sigma)
-      logit_d_probs[, 3] <- stats::rnorm(nquar, logit(0.075), sigma)
-      logit_d_probs[, 4] <- stats::rnorm(nquar, logit(0.12), sigma)
+      logit_d_probs[, 1] <- stats::rnorm(nquar, logit(0.055), sigma)
+      logit_d_probs[, 2] <- stats::rnorm(nquar, logit(0.065), sigma)
+      logit_d_probs[, 3] <- stats::rnorm(nquar, logit(0.13), sigma)
+      logit_d_probs[, 4] <- stats::rnorm(nquar, logit(0.35), sigma)
       if (rita) {
         logit_d_probs <- cbind(
-          stats::rnorm(nquar, logit(0.08), sigma),
+          stats::rnorm(nquar, logit(0.15), sigma),
           logit_d_probs
         )
       }
     } else if (pattern == "varying") {
-      # Initialize first value
-      start_values <- c(logit(0.025), logit(0.05), logit(0.07), logit(0.11))
-      mid_values <- c(logit(0.04), logit(0.05), logit(0.075), logit(0.12))
-      end_values <- c(logit(0.05), logit(0.06), logit(0.09), logit(0.14))
+      # Amplitude kept within ~2x the AR(1) stationary SD (~0.28 logit units)
+      # so the prior does not systematically shrink the trend to zero.
+      start_values <- c(logit(0.040), logit(0.050), logit(0.10), logit(0.28))
+      mid_values <- c(logit(0.055), logit(0.065), logit(0.13), logit(0.35))
+      end_values <- c(logit(0.065), logit(0.080), logit(0.16), logit(0.40))
 
       logit_d_probs[, 1] <- stats::rnorm(
         nquar,
@@ -267,8 +268,8 @@ generate_diagnosis_probs <- function(
           stats::rnorm(
             nquar,
             c(
-              seq(logit(0.08), logit(0.1), length.out = nquar / 2),
-              seq(logit(0.1), logit(0.1), length.out = nquar / 2)
+              seq(logit(0.12), logit(0.18), length.out = nquar / 2),
+              seq(logit(0.18), logit(0.18), length.out = nquar / 2)
             ),
             sigma
           ),
@@ -280,22 +281,22 @@ generate_diagnosis_probs <- function(
   } else {
     if (pattern == "constant") {
       d_probs <- matrix(
-        c(0.04, 0.05, 0.075, 0.12),
+        c(0.055, 0.065, 0.13, 0.35),
         nrow = nquar,
         ncol = 4,
         byrow = TRUE
       )
       if (rita) {
         d_probs <- cbind(
-          rep(0.08, nquar),
+          rep(0.15, nquar),
           d_probs
         )
       }
     } else if (pattern == "varying") {
-      # Initialize first value
-      start_values <- c(logit(0.025), logit(0.05), logit(0.07), logit(0.11))
-      mid_values <- c(logit(0.04), logit(0.05), logit(0.075), logit(0.12))
-      end_values <- c(logit(0.05), logit(0.06), logit(0.09), logit(0.14))
+      # Amplitude kept within ~2x the AR(1) stationary SD (~0.28 logit units).
+      start_values <- c(logit(0.040), logit(0.050), logit(0.10), logit(0.28))
+      mid_values <- c(logit(0.055), logit(0.065), logit(0.13), logit(0.35))
+      end_values <- c(logit(0.065), logit(0.080), logit(0.16), logit(0.40))
       d_probs <- matrix(
         invlogit(c(
           c(
@@ -321,8 +322,8 @@ generate_diagnosis_probs <- function(
       if (rita) {
         d_probs <- cbind(
           c(
-            seq(0.07, 0.1, length.out = nquar / 2),
-            seq(0.1, 0.1, length.out = nquar / 2)
+            seq(0.12, 0.18, length.out = nquar / 2),
+            seq(0.18, 0.18, length.out = nquar / 2)
           ),
           d_probs
         )
