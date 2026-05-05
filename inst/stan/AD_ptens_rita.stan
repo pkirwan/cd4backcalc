@@ -316,9 +316,11 @@ model {
   delta_raw_5 ~ std_normal();
   
   // Hierarchical prior on log step variances (non-centred).
-  // mu_log_var ~ normal(-3.5, 1): centres exp(mu) ~ 0.030, broad on log scale.
+  // mu_log_var: centres exp(-4.0) ~ 0.018 => step SD ~0.13 logit/quarter,
+  // stationary SD ~0.26 logit. SD=0.5 avoids the heavy upper tail of normal(-3.5,1)
+  // which allowed unrealistically large swings in diagnosis probability.
   // sigma_log_var ~ normal(0, 0.5): allows ~2-fold between-state differences.
-  mu_log_var ~ normal(-3.5, 1);
+  mu_log_var ~ normal(-4.0, 0.5);
   sigma_log_var ~ normal(0, 0.5);
   log_vardelta_raw ~ std_normal();
   

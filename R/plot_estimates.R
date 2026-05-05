@@ -102,6 +102,7 @@ plot_simulations <- function(
 #' @param model_1_name A string specifying the name of the first model for the legend (default is "Model 1").
 #' @param model_2_name A string specifying the name of the second model for the legend (default is "Model 2").
 #' @param credible_intervals A logical indicating whether to plot 95% credible intervals (default is TRUE).
+#' @param sim_comparison A string specifying which simulated values to compare against when `hiv_list` contains simulated data. Options are `"generative"` (deterministic expected values, the default) or `"sampled"` (the stochastic realisation for the particular seed).
 #' @return A ggplot2 object.
 #' @export
 plot_estimates <- function(
@@ -112,8 +113,10 @@ plot_estimates <- function(
   hiv_list_2 = NULL,
   model_1_name = "Model 1",
   model_2_name = "Model 2",
-  credible_intervals = TRUE
+  credible_intervals = TRUE,
+  sim_comparison = c("generative", "sampled")
 ) {
+  sim_comparison <- match.arg(sim_comparison)
   hiv_list <- purrr::compact(hiv_list)
   if (length(hiv_list) == 0) {
     stop("All entries in hiv_list are NULL.")
@@ -281,15 +284,16 @@ plot_estimates <- function(
     )
 
   # define model colors
+  sim_ref_label <- if (sim_comparison == "sampled") "Sampled values" else "Generative values"
   if (!is.null(hiv_list_2)) {
     model_colors <- stats::setNames(
       c("mediumorchid", "coral", "mediumturquoise"),
-      c(model_1_name, model_2_name, "Generative values")
+      c(model_1_name, model_2_name, sim_ref_label)
     )
   } else {
     model_colors <- stats::setNames(
       c(rep("mediumorchid", length(unique(quantiles$group))), "mediumturquoise"),
-      c(unique(quantiles$group), "Generative values")
+      c(unique(quantiles$group), sim_ref_label)
     )
   }
 
@@ -304,13 +308,17 @@ plot_estimates <- function(
     )
 
   # add simulated values if data were simulated
-  # use deterministic (expected) values so comparison is against lambda, not rpois(lambda)
   if ("sim_data" %in% names(hiv_list[[1]])) {
+    use_deterministic <- sim_comparison == "generative"
     sim_estimates <- extract_simulated_quantity(
       hiv_list[[1]],
       quantity,
-      deterministic = TRUE
+      deterministic = use_deterministic
     )
+    if (!use_deterministic) {
+      sim_estimates <- sim_estimates |>
+        dplyr::mutate(group = "Sampled values")
+    }
     if ("age_band" %in% names(sim_estimates) && grepl("_age$", quantity)) {
       sim_estimates <- sim_estimates |>
         dplyr::filter(.data$age_band != "all")

@@ -190,6 +190,38 @@ generate_migration <- function(nquar, nlatst, omega, mu, dist = TRUE) {
   return(m)
 }
 
+#' Simulate AR(1) trajectory on the logit scale
+#'
+#' Produces a time series with the same correlation structure as the Stan AR(1)
+#' random-walk prior used for diagnosis probabilities. AR(1) residuals are added
+#' on top of a deterministic trend and then mean-centred so that the stochastic
+#' trajectory does not drift systematically from the deterministic trend. This
+#' ensures that \code{dist = TRUE} and \code{dist = FALSE} simulations produce
+#' comparable epidemic trajectories (e.g. undiagnosed prevalence), while still
+#' exhibiting realistic smooth quarter-to-quarter variation.
+#'
+#' @param nquar Number of time quarters.
+#' @param trend_logit Numeric vector of length \code{nquar} giving the
+#'   deterministic mean trajectory on the logit scale.
+#' @param rho AR(1) autocorrelation coefficient.
+#' @param vardelta Innovation variance (step variance per quarter).
+#' @return Numeric vector of length \code{nquar} on the logit scale.
+#' @keywords internal
+simulate_ar1_logit <- function(nquar, trend_logit, rho = 0.86, vardelta = exp(-4.0)) {
+  resid <- numeric(nquar)
+  resid[1] <- sqrt(vardelta / (1 - rho^2)) * stats::rnorm(1)
+  for (t in 2:nquar) {
+    resid[t] <- rho * resid[t - 1] + sqrt(vardelta) * stats::rnorm(1)
+  }
+  # Centre residuals so the stochastic trajectory has the same mean as the
+  # deterministic trend. Without this, a large initial draw (amplified by the
+  # stationary-distribution scale factor 1/sqrt(1-rho^2) ~ 2 for rho=0.86)
+  # persists throughout the simulation and causes systematic divergence in
+  # derived quantities such as undiagnosed prevalence.
+  resid <- resid - mean(resid)
+  trend_logit + resid
+}
+
 #' Generate diagnosis probability patterns
 #'
 #' @param nquar Number of time quarters.
@@ -210,72 +242,45 @@ generate_diagnosis_probs <- function(
   # check pattern
   stopifnot(pattern %in% c("constant", "varying"))
   if (dist) {
-    logit_d_probs <- matrix(0, nrow = nquar, ncol = 4)
-    sigma <- 0.1
+    # Simulate from an AR(1) on the logit scale, matching the Stan AR(1) prior.
+    # rho and vardelta are set to the prior mode / tightened prior centre so that
+    # the simulated trajectories are drawn from a distribution the model can fit.
+    # Stationary SD = sqrt(vardelta / (1 - rho^2)) ~ 0.26 logit units.
+    rho_sim <- 0.86       # prior mode of beta(7, 2)
+    vardelta_sim <- exp(-4.0)  # tightened prior centre of mu_log_var
 
     if (pattern == "constant") {
-      logit_d_probs[, 1] <- stats::rnorm(nquar, logit(0.055), sigma)
-      logit_d_probs[, 2] <- stats::rnorm(nquar, logit(0.065), sigma)
-      logit_d_probs[, 3] <- stats::rnorm(nquar, logit(0.13), sigma)
-      logit_d_probs[, 4] <- stats::rnorm(nquar, logit(0.35), sigma)
-      if (rita) {
-        logit_d_probs <- cbind(
-          stats::rnorm(nquar, logit(0.15), sigma),
-          logit_d_probs
-        )
-      }
+      trend <- matrix(
+        c(logit(0.055), logit(0.065), logit(0.13), logit(0.35)),
+        nrow = nquar, ncol = 4, byrow = TRUE
+      )
+      if (rita) trend <- cbind(rep(logit(0.15), nquar), trend)
     } else if (pattern == "varying") {
-      # Amplitude kept within ~2x the AR(1) stationary SD (~0.28 logit units)
-      # so the prior does not systematically shrink the trend to zero.
       start_values <- c(logit(0.040), logit(0.050), logit(0.10), logit(0.28))
-      mid_values <- c(logit(0.055), logit(0.065), logit(0.13), logit(0.35))
-      end_values <- c(logit(0.065), logit(0.080), logit(0.16), logit(0.40))
-
-      logit_d_probs[, 1] <- stats::rnorm(
-        nquar,
-        c(
-          seq(start_values[1], mid_values[1], length.out = nquar / 2),
-          seq(mid_values[1], end_values[1], length.out = nquar / 2)
-        ),
-        sigma
-      )
-      logit_d_probs[, 2] <- stats::rnorm(
-        nquar,
-        c(
-          seq(start_values[2], mid_values[2], length.out = nquar / 2),
-          seq(mid_values[2], end_values[2], length.out = nquar / 2)
-        ),
-        sigma
-      )
-      logit_d_probs[, 3] <- stats::rnorm(
-        nquar,
-        c(
-          seq(start_values[3], mid_values[3], length.out = nquar / 2),
-          seq(mid_values[3], end_values[3], length.out = nquar / 2)
-        ),
-        sigma
-      )
-      logit_d_probs[, 4] <- stats::rnorm(
-        nquar,
-        c(
-          seq(start_values[4], mid_values[4], length.out = nquar / 2),
-          seq(mid_values[4], end_values[4], length.out = nquar / 2)
-        ),
-        sigma
-      )
-      if (rita) {
-        logit_d_probs <- cbind(
-          stats::rnorm(
-            nquar,
-            c(
-              seq(logit(0.12), logit(0.18), length.out = nquar / 2),
-              seq(logit(0.18), logit(0.18), length.out = nquar / 2)
-            ),
-            sigma
-          ),
-          logit_d_probs
+      mid_values   <- c(logit(0.055), logit(0.065), logit(0.13), logit(0.35))
+      end_values   <- c(logit(0.065), logit(0.080), logit(0.16), logit(0.40))
+      trend <- matrix(0, nrow = nquar, ncol = 4)
+      for (k in 1:4) {
+        trend[, k] <- c(
+          seq(start_values[k], mid_values[k], length.out = nquar / 2),
+          seq(mid_values[k],   end_values[k], length.out = nquar / 2)
         )
       }
+      if (rita) {
+        rita_trend <- c(
+          seq(logit(0.12), logit(0.18), length.out = nquar / 2),
+          seq(logit(0.18), logit(0.18), length.out = nquar / 2)
+        )
+        trend <- cbind(rita_trend, trend)
+      }
+    }
+
+    nstates_sim <- ncol(trend)
+    logit_d_probs <- matrix(0, nrow = nquar, ncol = nstates_sim)
+    for (k in seq_len(nstates_sim)) {
+      logit_d_probs[, k] <- simulate_ar1_logit(
+        nquar, trend[, k], rho_sim, vardelta_sim
+      )
     }
     d_probs <- invlogit(logit_d_probs)
   } else {

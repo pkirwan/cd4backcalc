@@ -554,11 +554,17 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
   # Simulating AIDS diagnoses
   tempvec <- if (config$migration) {
     sapply(5:nquar, function(x) {
-      if (sum(stan_data$AIDS[x, ]) > 0 && sum(d_to_i_AIDS_uk[x, ]) > 0) {
-        stats::rmultinom(1, sum(stan_data$AIDS[x, ]), d_to_i_AIDS_uk[x, ])
+      uk_aids <- if (stan_data$AIDS[x, 1] > 0 && sum(d_to_i_AIDS_uk[x, ]) > 0) {
+        stats::rmultinom(1, stan_data$AIDS[x, 1], d_to_i_AIDS_uk[x, ])
       } else {
         matrix(0, nrow = nquar, ncol = 1)
       }
+      abroad_aids <- if (stan_data$AIDS[x, 2] > 0 && sum(d_to_i_AIDS_abroad[x, ]) > 0) {
+        stats::rmultinom(1, stan_data$AIDS[x, 2], d_to_i_AIDS_abroad[x, ])
+      } else {
+        matrix(0, nrow = nquar, ncol = 1)
+      }
+      uk_aids + abroad_aids
     })
   } else {
     sapply(5:nquar, function(x) {

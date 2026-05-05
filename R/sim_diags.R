@@ -62,7 +62,7 @@ define_sim_config <- function(
   if (rita) {
     nlatst <- 7
     ndiagst <- 6
-    init_props <- c(1, 0.8, 0.08, 4, 2.6, 1.3, 0.4)
+    init_props <- c(1.2, 1.0, 0.1, 4.8, 3.4, 1.75, 0.5)
     init_props_abroad <- c(0, 0, 0, 1.75, 2.25, 2.25, 1.25)
   } else {
     nlatst <- 4

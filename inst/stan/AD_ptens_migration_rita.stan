@@ -520,7 +520,10 @@ model {
   delta_raw_3 ~ std_normal();
   delta_raw_4 ~ std_normal();
   delta_raw_5 ~ std_normal();
-  mu_log_var ~ normal(-3.5, 1);
+  // mu_log_var: centres exp(-4.0) ~ 0.018 => step SD ~0.13 logit/quarter,
+  // stationary SD ~0.26 logit. SD=0.5 avoids the heavy upper tail of normal(-3.5,1)
+  // which allowed unrealistically large swings in diagnosis probability.
+  mu_log_var ~ normal(-4.0, 0.5);
   sigma_log_var ~ normal(0, 0.5);
   log_vardelta_raw ~ std_normal();
   
