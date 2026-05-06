@@ -14,7 +14,8 @@ plot_estimates(
   hiv_list_2 = NULL,
   model_1_name = "Model 1",
   model_2_name = "Model 2",
-  credible_intervals = TRUE
+  credible_intervals = TRUE,
+  sim_comparison = c("generative", "sampled")
 )
 ```
 
@@ -60,6 +61,13 @@ plot_estimates(
 
   A logical indicating whether to plot 95% credible intervals (default
   is TRUE).
+
+- sim_comparison:
+
+  A string specifying which simulated values to compare against when
+  `hiv_list` contains simulated data. Options are `"generative"`
+  (deterministic expected values, the default) or `"sampled"` (the
+  stochastic realisation for the particular seed).
 
 ## Value
 

@@ -12,7 +12,8 @@ mse_plot(
   offset = 0.1,
   lab = TRUE,
   model_1_name = "Model 1",
-  model_2_name = "Model 2"
+  model_2_name = "Model 2",
+  sim_comparison = c("generative", "sampled")
 )
 ```
 
@@ -30,8 +31,9 @@ mse_plot(
 
 - quantity:
 
-  The quantity to plot MSE for (default is "incidence", other options
-  are "undiag_migration", "ratio_abroad_uk", and "mp").
+  The quantity to plot MSE for (default is `"incidence"`).
+  Migration-model options are `"undiag_migration"`, `"ratio_abroad_uk"`,
+  and `"mp"`.
 
 - offset:
 
@@ -48,6 +50,12 @@ mse_plot(
 - model_2_name:
 
   The name of the second model for labeling (default is "Model 2").
+
+- sim_comparison:
+
+  A string specifying which simulated values to compare against. Options
+  are `"generative"` (deterministic expected values, the default) or
+  `"sampled"` (the stochastic realisation for the particular seed).
 
 ## Value
 

@@ -7,12 +7,12 @@ simulate data and fit each variant.
 
 ## Supported models
 
-| Model                  |             Age-independent              |              Age-dependent              |
-|:-----------------------|:----------------------------------------:|:---------------------------------------:|
-| CD4                    | `rita=FALSE, migration=FALSE, age=FALSE` | `rita=FALSE, migration=FALSE, age=TRUE` |
-| CD4 + RITA             | `rita=TRUE, migration=FALSE, age=FALSE`  | `rita=TRUE, migration=FALSE, age=TRUE`  |
-| CD4 + Migration        | `rita=FALSE, migration=TRUE, age=FALSE`  | `rita=FALSE, migration=TRUE, age=TRUE`  |
-| CD4 + RITA + Migration |  `rita=TRUE, migration=TRUE, age=FALSE`  |  `rita=TRUE, migration=TRUE, age=TRUE`  |
+| Model | Age-independent | Age-dependent |
+|:---|:--:|:--:|
+| CD4 | `rita=FALSE, migration=FALSE, age=FALSE` | `rita=FALSE, migration=FALSE, age=TRUE` |
+| CD4 + RITA | `rita=TRUE, migration=FALSE, age=FALSE` | `rita=TRUE, migration=FALSE, age=TRUE` |
+| CD4 + Migration | `rita=FALSE, migration=TRUE, age=FALSE` | `rita=FALSE, migration=TRUE, age=TRUE` |
+| CD4 + RITA + Migration | `rita=TRUE, migration=TRUE, age=FALSE` | `rita=TRUE, migration=TRUE, age=TRUE` |
 
 The `rita`, `migration`, and `age` flags are passed to both
 [`simulate_diagnoses()`](https://pkirwan.github.io/cd4backcalc/reference/simulate_diagnoses.md)
@@ -33,14 +33,15 @@ model.](figures/backcalc-model-1.png)
 
 Figure: CD4-staged back-calculation model. The model compartments
 represent undiagnosed HIV (round boxes) and diagnosed HIV or AIDS
-(square boxes); the $h_{j}$ arrow represents HIV acquired at each time
-point ($j$); HIV progression probabilities ($q_{i}$) vary by CD4
-stratum; HIV diagnosis probabilities ($d_{i,j}$) vary by CD4 stratum and
-time.
+(square boxes); the $`h_j`$ arrow represents HIV acquired at each time
+point ($`j`$); HIV progression probabilities ($`q_i`$) vary by CD4
+stratum; HIV diagnosis probabilities ($`d_{i,j}`$) vary by CD4 stratum
+and time.
 
 This model can be fitted with:
 
 ``` r
+
 library(cd4backcalc)
 
 sim_cd4 <- simulate_diagnoses(h_pattern = "increasing")
@@ -59,11 +60,12 @@ for fitting age-dependent models on resource-constrained systems — see
 ![Figure: Age-dependent CD4 back-calculation
 model.](figures/agedep-model-1.png)
 
-Figure: Age-dependent CD4 back-calculation model with $k$ representing
-the current age-category and $k_{0}$ representing the age category at
+Figure: Age-dependent CD4 back-calculation model with $`k`$ representing
+the current age-category and $`k_0`$ representing the age category at
 HIV acquisition.
 
 ``` r
+
 sim_age <- simulate_diagnoses(age = TRUE, h_pattern = "increasing")
 fit_age <- run_backcalc(sim_age)
 
@@ -95,6 +97,7 @@ assay and non-recent incidence assay CD4-staged states. A/w = Acquired
 within, mo. = months.
 
 ``` r
+
 sim_rita <- simulate_diagnoses(rita = TRUE, h_pattern = "increasing")
 fit_rita <- run_backcalc(sim_rita)
 plot_estimates(fit_rita, quantity = "incidence")
@@ -118,6 +121,7 @@ lines are HIV acquisition or migration arrivals among individuals born
 abroad.
 
 ``` r
+
 sim_mig <- simulate_diagnoses(migration = TRUE, h_pattern = "increasing")
 fit_mig <- run_backcalc(sim_mig)
 
@@ -137,6 +141,7 @@ model (e.g. for comparison), use
 to restructure the data:
 
 ``` r
+
 # simulate with RITA
 sim_rita <- simulate_diagnoses(rita = TRUE)
 
@@ -154,6 +159,7 @@ combine multiple parameter patterns. These are specified via the
 `sim_type` argument:
 
 ``` r
+
 # combo_3: varying acquisition + step-change migration + varying diagnosis +
 #          increasing proportion UK + varying migration probabilities +
 #          non-uniform age distribution

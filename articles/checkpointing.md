@@ -6,6 +6,7 @@ checkpointing allows you to fit the model in stages, saving intermediate
 results that can be resumed if the job is interrupted.
 
 ``` r
+
 library(cd4backcalc)
 ```
 
@@ -18,6 +19,7 @@ to enable checkpointing. The model will fit in chunks of
 chunk.
 
 ``` r
+
 sim_diags <- simulate_diagnoses(age = TRUE, h_pattern = "increasing")
 
 hiv_list <- run_backcalc(
@@ -44,6 +46,7 @@ will detect existing checkpoints and resume from the last completed
 chunk:
 
 ``` r
+
 # re-run the same code — automatically resumes from checkpoint
 hiv_list <- run_backcalc(
   sim_diags,
@@ -62,6 +65,7 @@ to extract the last iteration’s parameter values as initial values for a
 new run:
 
 ``` r
+
 # fit a short initial run
 short_fit <- run_backcalc(
   sim_diags,
@@ -91,5 +95,4 @@ checkpointing is unnecessary.
 ## Single-chunk behaviour
 
 If `iter_per_chunk` is greater than or equal to `iter_sampling`, no
-chunking occurs and the model fits in a single pass (returning a
-standard `CmdStanMCMC` object rather than a combined fit).
+chunking occurs and the model fits in a single run.

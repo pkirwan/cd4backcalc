@@ -16,6 +16,11 @@ Useful links:
 **Maintainer**: Peter Kirwan <pdk29@cam.ac.uk>
 ([ORCID](https://orcid.org/0000-0001-6904-0500))
 
+Authors:
+
+- Peter Kirwan <pdk29@cam.ac.uk>
+  ([ORCID](https://orcid.org/0000-0001-6904-0500))
+
 Other contributors:
 
 - Paul Birrell \[contributor\]

@@ -28,10 +28,10 @@ and time.](reference/figures/README-backcalc-model-1.png)
 
 Figure: CD4-staged back-calculation model. The model compartments
 represent undiagnosed HIV (round boxes) and diagnosed HIV or AIDS
-(square boxes); the $h_{j}$ arrow represents HIV acquired at each time
-point ($j$); HIV progression probabilities ($q_{i}$) vary by CD4
-stratum; HIV diagnosis probabilities ($d_{i,j}$) vary by CD4 stratum and
-time.
+(square boxes); the $`h_j`$ arrow represents HIV acquired at each time
+point ($`j`$); HIV progression probabilities ($`q_i`$) vary by CD4
+stratum; HIV diagnosis probabilities ($`d_{i,j}`$) vary by CD4 stratum
+and time.
 
 ## Installation
 
@@ -44,6 +44,7 @@ for instructions.
 You can then install the development version of cd4backcalc with:
 
 ``` r
+
 # install.packages(c("pak", "gitcreds"))
 gitcreds::gitcreds_set() # set your PAT in the prompt
 pak::pak("pkirwan/cd4backcalc")
@@ -70,6 +71,7 @@ back-calculation model, check convergence and goodness of fit to the
 simulated data, and plot model estimates is shown in the example below.
 
 ``` r
+
 library(cd4backcalc)
 
 # simulate data under an increasing incidence scenario
@@ -82,6 +84,7 @@ plot_simulations(sim_diags, quantity = "incidence")
 ![](reference/figures/README-simulate-data-1.png)
 
 ``` r
+
 # run back-calculation model on simulated data
 # default is 1000 warmup iterations, 1000 sampling iterations, and 4 chains
 model_1 <- run_backcalc(sim_diags)
@@ -93,6 +96,7 @@ plot_diagnostics(model_1)
 ![](reference/figures/README-simulate-data-2.png)
 
 ``` r
+
 # check goodness of fit to simulated values
 bias_plot(model_1, quantity = "incidence")
 ```
@@ -100,6 +104,7 @@ bias_plot(model_1, quantity = "incidence")
 ![](reference/figures/README-simulate-data-3.png)
 
 ``` r
+
 # plot estimates compared to simulated values
 plot_estimates(model_1, quantity = "incidence")
 ```
@@ -121,12 +126,12 @@ variants, with the appropriate model selected based on user-specified
 options. The table below shows the options which should be used for each
 combination of RITA evidence, migration status, and age structure.
 
-| Model                  |               Age-independent                |                Age-dependent                |
-|:-----------------------|:--------------------------------------------:|:-------------------------------------------:|
-| CD4                    | rita = FALSE, migration = FALSE, age = FALSE | rita = FALSE, migration = FALSE, age = TRUE |
-| CD4 + RITA             | rita = TRUE, migration = FALSE, age = FALSE  | rita = TRUE, migration = FALSE, age = TRUE  |
-| CD4 + Migration        | rita = FALSE, migration = TRUE, age = FALSE  | rita = FALSE, migration = TRUE, age = TRUE  |
-| CD4 + RITA + Migration |  rita = TRUE, migration = TRUE, age = FALSE  |  rita = TRUE, migration = TRUE, age = TRUE  |
+| Model | Age-independent | Age-dependent |
+|:---|:--:|:--:|
+| CD4 | rita = FALSE, migration = FALSE, age = FALSE | rita = FALSE, migration = FALSE, age = TRUE |
+| CD4 + RITA | rita = TRUE, migration = FALSE, age = FALSE | rita = TRUE, migration = FALSE, age = TRUE |
+| CD4 + Migration | rita = FALSE, migration = TRUE, age = FALSE | rita = FALSE, migration = TRUE, age = TRUE |
+| CD4 + RITA + Migration | rita = TRUE, migration = TRUE, age = FALSE | rita = TRUE, migration = TRUE, age = TRUE |
 
 N.B. Due to the increased complexity, fitting times can be substantially
 longer when using the age-dependent models. On resource-constrained

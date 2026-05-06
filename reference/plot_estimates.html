@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,7 +35,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Plot estimated model quantities</h1>
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.0.5/R/plot_estimates.R" class="external-link"><code>R/plot_estimates.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.0.6/R/plot_estimates.R" class="external-link"><code>R/plot_estimates.R</code></a></small>
       <div class="d-none name"><code>plot_estimates.Rd</code></div>
     </div>
 
@@ -53,7 +53,8 @@
 <span>  hiv_list_2 <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  model_1_name <span class="op">=</span> <span class="st">"Model 1"</span>,</span>
 <span>  model_2_name <span class="op">=</span> <span class="st">"Model 2"</span>,</span>
-<span>  credible_intervals <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  credible_intervals <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  sim_comparison <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"generative"</span>, <span class="st">"sampled"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -91,6 +92,10 @@
 
 <dt id="arg-credible-intervals">credible_intervals<a class="anchor" aria-label="anchor" href="#arg-credible-intervals"></a></dt>
 <dd><p>A logical indicating whether to plot 95% credible intervals (default is TRUE).</p></dd>
+
+
+<dt id="arg-sim-comparison">sim_comparison<a class="anchor" aria-label="anchor" href="#arg-sim-comparison"></a></dt>
+<dd><p>A string specifying which simulated values to compare against when <code>hiv_list</code> contains simulated data. Options are <code>"generative"</code> (deterministic expected values, the default) or <code>"sampled"</code> (the stochastic realisation for the particular seed).</p></dd>
 
 </dl></div>
     <div class="section level2">

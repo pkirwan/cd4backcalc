@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,7 +61,7 @@
       <h1>Analysing results</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.0.5/vignettes/articles/analysing-results.Rmd" class="external-link"><code>vignettes/articles/analysing-results.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.0.6/vignettes/articles/analysing-results.Rmd" class="external-link"><code>vignettes/articles/analysing-results.Rmd</code></a></small>
       <div class="d-none name"><code>analysing-results.Rmd</code></div>
     </div>
 
@@ -187,7 +187,7 @@ comparison:</p>
 <p>Use <code><a href="../reference/get_estimates.html">get_estimates()</a></code> to obtain the posterior summary as a
 tibble for custom analysis:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">inc_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_estimates.html">get_estimates</a></span><span class="op">(</span><span class="va">hiv_list</span>, <span class="st">"incidence"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">inc_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_estimates.html">get_estimates</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">inc_df</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -196,12 +196,12 @@ tibble for custom analysis:</p>
 <p>Use <code><a href="../reference/extract_simulated_quantity.html">extract_simulated_quantity()</a></code> to extract the true
 simulated values for comparison:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sim_inc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/extract_simulated_quantity.html">extract_simulated_quantity</a></span><span class="op">(</span><span class="va">sim_diags</span>, <span class="st">"incidence"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">sim_inc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/extract_simulated_quantity.html">extract_simulated_quantity</a></span><span class="op">(</span><span class="va">sim_diags</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sim_inc</span><span class="op">)</span></span></code></pre></div>
 <p>Use <code><a href="../reference/extract_real_data.html">extract_real_data()</a></code> to extract the observed data
 used for fitting:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">obs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/extract_real_data.html">extract_real_data</a></span><span class="op">(</span><span class="va">hiv_list</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">obs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/extract_real_data.html">extract_real_data</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"diagnoses"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">obs</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -210,8 +210,7 @@ used for fitting:</p>
 <p>When fitting to simulated data, <code><a href="../reference/bias_plot.html">bias_plot()</a></code> shows how
 much the model over- or under-estimates each quantity:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/bias_plot.html">bias_plot</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/bias_plot.html">bias_plot</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"undiag_prev"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/bias_plot.html">bias_plot</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
 <p>When comparing multiple models, <code><a href="../reference/mse_plot.html">mse_plot()</a></code> shows the
 mean squared error:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">

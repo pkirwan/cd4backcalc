@@ -5,6 +5,7 @@ back-calculation models, including the full set of available quantities,
 model comparison, and working with real data.
 
 ``` r
+
 library(cd4backcalc)
 ```
 
@@ -49,6 +50,7 @@ Before fitting, simulated quantities can be inspected with
 [`plot_simulations()`](https://pkirwan.github.io/cd4backcalc/reference/plot_simulations.md):
 
 ``` r
+
 sim_diags <- simulate_diagnoses(migration = TRUE, h_pattern = "increasing")
 
 plot_simulations(sim_diags, quantity = "incidence")
@@ -64,6 +66,7 @@ shows posterior median and 95% credible intervals. When simulated data
 is present, the true values are shown for comparison:
 
 ``` r
+
 hiv_list <- run_backcalc(sim_diags)
 plot_estimates(hiv_list, quantity = "incidence")
 ```
@@ -75,7 +78,8 @@ Use
 to obtain the posterior summary as a tibble for custom analysis:
 
 ``` r
-inc_df <- get_estimates(hiv_list, "incidence")
+
+inc_df <- get_estimates(hiv_list, quantity = "incidence")
 head(inc_df)
 ```
 
@@ -86,7 +90,8 @@ Use
 to extract the true simulated values for comparison:
 
 ``` r
-sim_inc <- extract_simulated_quantity(sim_diags, "incidence")
+
+sim_inc <- extract_simulated_quantity(sim_diags, quantity = "incidence")
 head(sim_inc)
 ```
 
@@ -95,7 +100,8 @@ Use
 to extract the observed data used for fitting:
 
 ``` r
-obs <- extract_real_data(hiv_list)
+
+obs <- extract_real_data(hiv_list, quantity = "diagnoses")
 head(obs)
 ```
 
@@ -106,8 +112,8 @@ When fitting to simulated data,
 shows how much the model over- or under-estimates each quantity:
 
 ``` r
+
 bias_plot(hiv_list, quantity = "incidence")
-bias_plot(hiv_list, quantity = "undiag_prev")
 ```
 
 When comparing multiple models,
@@ -115,6 +121,7 @@ When comparing multiple models,
 shows the mean squared error:
 
 ``` r
+
 mse_plot(hiv_list, quantity = "incidence")
 ```
 
@@ -127,6 +134,7 @@ and
 all accept a second model for side-by-side comparison:
 
 ``` r
+
 sim_diags <- simulate_diagnoses(rita = TRUE, h_pattern = "increasing")
 model_rita <- run_backcalc(sim_diags)
 
@@ -156,6 +164,7 @@ Pass a list of model fits to compare more than two models
 simultaneously:
 
 ``` r
+
 sim_diags <- simulate_diagnoses(h_pattern = "increasing")
 models <- list()
 for (i in 1:3) {
@@ -172,6 +181,7 @@ When fitting to real (non-simulated) data, plotting and extraction
 functions still work — the simulated truth overlay is simply omitted:
 
 ``` r
+
 hiv_list <- run_backcalc(real_stan_data, migration = TRUE)
 
 plot_estimates(hiv_list, quantity = "incidence")
@@ -185,6 +195,7 @@ For detailed convergence analysis, set `chain_results = TRUE` in
 to obtain separate posterior summaries for each chain:
 
 ``` r
+
 hiv_list <- run_backcalc(sim_diags, chain_results = TRUE)
 plot_estimates(hiv_list, quantity = "incidence", chain_results = TRUE)
 ```

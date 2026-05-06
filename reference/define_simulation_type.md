@@ -57,8 +57,5 @@ List of available simulation types:
   varying diagnosis probabilities, increasing proportion UK, and varying
   migration probabilities.
 
-- "combo_3_no_migration": Similar to "combo_3" but without migration
-  effects.
-
 - "combo_4": As "combo_3" but with different incidence and migration
   patterns.
