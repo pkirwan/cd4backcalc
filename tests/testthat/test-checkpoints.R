@@ -225,7 +225,7 @@ test_that("checkpoint with single chunk returns CmdStanMCMC", {
       refresh = 0,
       messages = FALSE,
       checkpoint_dir = checkpoint_dir,
-      iter_per_chunk = 5
+      iter_per_chunk = 10
     )
   })
 

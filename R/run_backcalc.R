@@ -327,14 +327,10 @@ fit_stan_model <- function(
 
     sampling_done <- sampling_done + this_chunk
 
-    # In the single-chunk case we return `fit` directly, so skip the CSV
-    # read (fit$draws()) that would otherwise fail when CmdStan's temp
-    # output files are no longer accessible (e.g. on constrained CI runners).
-    is_single_chunk <- (length(draws_list) == 0 && sampling_done >= iter_sampling)
-
-    if (!is_single_chunk) {
-      draws_list <- append(draws_list, list(fit$draws()))
-    }
+    # Always accumulate draws so the checkpoint contains all draws to date.
+    # This ensures that a resumed run can combine draws from all chunks,
+    # even when a prior run covered only a single chunk.
+    draws_list <- append(draws_list, list(fit$draws()))
     diagnostics_list <- append(
       diagnostics_list, list(fit$diagnostic_summary())
     )
@@ -349,11 +345,6 @@ fit_stan_model <- function(
     message("Checkpoint: ", sampling_done, "/", iter_sampling, " sampling iterations complete.")
   }
 
-  # Combine draws from all chunks into a single fit-like object.
-  # draws_list is empty only when a single chunk covered all iterations.
-  if (length(draws_list) == 0) {
-    return(fit)
-  }
   create_combined_fit(fit, draws_list, diagnostics_list, chains, total_time)
 }
 
