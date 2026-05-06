@@ -345,6 +345,12 @@ fit_stan_model <- function(
     message("Checkpoint: ", sampling_done, "/", iter_sampling, " sampling iterations complete.")
   }
 
+  # Single chunk (no prior draws in checkpoint, only one chunk run):
+  # return the raw CmdStanFit so callers get the native object.
+  # Multiple chunks: combine into a single fit-like object.
+  if (length(draws_list) == 1) {
+    return(fit)
+  }
   create_combined_fit(fit, draws_list, diagnostics_list, chains, total_time)
 }
 
