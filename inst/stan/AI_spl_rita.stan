@@ -66,9 +66,7 @@ data {
   
   // Splines
   int<lower=1> npars_inf;
-  int<lower=1> npars_diag;
   matrix[nquar, npars_inf] X_inf;
-  matrix[nquar, npars_diag] X_diag;
 }
 parameters {
   // Infection parameters
@@ -78,22 +76,24 @@ parameters {
   // False recency rate
   real logit_frr;
   
-  // Diagnosis probability parameters
-  vector[npars_diag] beta_diag_1_raw;
-  vector[npars_diag] beta_diag_2_raw;
-  vector[npars_diag] beta_diag_3_raw;
-  vector[npars_diag] beta_diag_4_raw;
-  vector[npars_diag] beta_diag_5_raw;
-  real<lower=0> sigma_diag_1; // smoothing parameter for delta1 spline
-  real<lower=0> sigma_diag_2;
-  real<lower=0> sigma_diag_3;
-  real<lower=0> sigma_diag_4;
-  real<lower=0> sigma_diag_5;
-  real alpha_diag_1; // Initial value for delta1
+  // Diagnosis probability parameters (random walk)
+  vector[nquar] delta_raw_1;
+  vector[nquar] delta_raw_2;
+  vector[nquar] delta_raw_3;
+  vector[nquar] delta_raw_4;
+  vector[nquar] delta_raw_5;
+  vector[5] log_vardelta_raw;
+  real mu_log_var;
+  real<lower=0> sigma_log_var;
+  real alpha_diag_1;
   real alpha_diag_2;
   real alpha_diag_3;
   real alpha_diag_4;
   real alpha_diag_5;
+  
+  // AR(1) coefficient shared across diagnosis-probability walks.
+  // Constrained to (0, 1) so the process is mean-reverting but persistent.
+  real<lower=0, upper=1> rho_diag;
 }
 transformed parameters {
   // False recency rate
@@ -104,27 +104,32 @@ transformed parameters {
   vector[nquar] lambda = X_inf * beta_inf;
   vector<lower=0>[nquar] h = exp(lambda);
   
-  vector[npars_diag] beta_diag_1;
-  vector[npars_diag] beta_diag_2;
-  vector[npars_diag] beta_diag_3;
-  vector[npars_diag] beta_diag_4;
-  vector[npars_diag] beta_diag_5;
-  beta_diag_1[1] = beta_diag_1_raw[1];
-  beta_diag_2[1] = beta_diag_2_raw[1];
-  beta_diag_3[1] = beta_diag_3_raw[1];
-  beta_diag_4[1] = beta_diag_4_raw[1];
-  beta_diag_5[1] = beta_diag_5_raw[1];
-  beta_diag_1[2 : npars_diag] = beta_diag_1_raw[2 : npars_diag] * sigma_diag_1;
-  beta_diag_2[2 : npars_diag] = beta_diag_2_raw[2 : npars_diag] * sigma_diag_2;
-  beta_diag_3[2 : npars_diag] = beta_diag_3_raw[2 : npars_diag] * sigma_diag_3;
-  beta_diag_4[2 : npars_diag] = beta_diag_4_raw[2 : npars_diag] * sigma_diag_4;
-  beta_diag_5[2 : npars_diag] = beta_diag_5_raw[2 : npars_diag] * sigma_diag_5;
-  // Diagnosis probabilities
-  vector[nquar] delta_1 = alpha_diag_1 + (X_diag * beta_diag_1);
-  vector[nquar] delta_2 = alpha_diag_2 + (X_diag * beta_diag_2);
-  vector[nquar] delta_3 = alpha_diag_3 + (X_diag * beta_diag_3);
-  vector[nquar] delta_4 = alpha_diag_4 + (X_diag * beta_diag_4);
-  vector[nquar] delta_5 = alpha_diag_5 + (X_diag * beta_diag_5);
+  // Step variances on natural scale (non-centred)
+  vector[5] log_vardelta = mu_log_var + sigma_log_var * log_vardelta_raw;
+  vector<lower=0>[5] vardelta = exp(log_vardelta);
+  // Diagnosis probabilities via random walk
+  vector[nquar] delta_1;
+  vector[nquar] delta_2;
+  vector[nquar] delta_3;
+  vector[nquar] delta_4;
+  vector[nquar] delta_5;
+  // AR(1) non-centred parameterisation.
+  // t = 1: initial condition drawn from stationary distribution
+  //   (variance = step_variance / (1 - rho^2)).
+  // t > 1: mean reversion toward alpha_diag_k prevents endpoint drift.
+  real inv_stationary = inv_sqrt(1 - square(rho_diag));
+  delta_1[1] = alpha_diag_1 + sqrt(vardelta[1]) * inv_stationary * delta_raw_1[1];
+  delta_2[1] = alpha_diag_2 + sqrt(vardelta[2]) * inv_stationary * delta_raw_2[1];
+  delta_3[1] = alpha_diag_3 + sqrt(vardelta[3]) * inv_stationary * delta_raw_3[1];
+  delta_4[1] = alpha_diag_4 + sqrt(vardelta[4]) * inv_stationary * delta_raw_4[1];
+  delta_5[1] = alpha_diag_5 + sqrt(vardelta[5]) * inv_stationary * delta_raw_5[1];
+  for (t in 2 : nquar) {
+    delta_1[t] = alpha_diag_1 + rho_diag * (delta_1[t - 1] - alpha_diag_1) + sqrt(vardelta[1]) * delta_raw_1[t];
+    delta_2[t] = alpha_diag_2 + rho_diag * (delta_2[t - 1] - alpha_diag_2) + sqrt(vardelta[2]) * delta_raw_2[t];
+    delta_3[t] = alpha_diag_3 + rho_diag * (delta_3[t - 1] - alpha_diag_3) + sqrt(vardelta[3]) * delta_raw_3[t];
+    delta_4[t] = alpha_diag_4 + rho_diag * (delta_4[t - 1] - alpha_diag_4) + sqrt(vardelta[4]) * delta_raw_4[t];
+    delta_5[t] = alpha_diag_5 + rho_diag * (delta_5[t - 1] - alpha_diag_5) + sqrt(vardelta[5]) * delta_raw_5[t];
+  }
   matrix<lower=0, upper=1>[5, nquar] d;
   
   // Transform diag probs using logit transformation
@@ -212,27 +217,44 @@ transformed parameters {
 model {
   // PRIORS
   
-  // Infection priors
-  beta_inf[1] ~ normal(5, 1.5); // Vaguely informative priors: corresponds to quarter inf in (exp(2),exp(8)) = (8,4390)
+  // Infection priors.
+  // Note: unlike the AD model which penalises curvature via a precision matrix,
+  // this model shrinks coefficient magnitude (ridge). A tight log_sigma_inf
+  // suppresses peaks even when the data support them. normal(-1, 1) loosens
+  // the prior to median sigma ~ 0.37 with a wide range, matching the AD
+  // model's effective permissiveness for large smooth peaks.
+  beta_inf[1] ~ normal(5, 1.5);
   beta_inf[2 : npars_inf] ~ normal(0, sigma_inf);
-  log_sigma_inf ~ normal(-2, 0.5);
+  log_sigma_inf ~ normal(-1, 1);
   
   // Diagnosis probability priors
-  alpha_diag_1 ~ normal(-2.5, 0.5);
-  alpha_diag_2 ~ normal(-3.2, 0.5);
-  alpha_diag_3 ~ normal(-3.0, 0.5);
-  alpha_diag_4 ~ normal(-2.5, 0.5);
-  alpha_diag_5 ~ normal(-2.0, 0.5);
-  beta_diag_1_raw ~ std_normal();
-  beta_diag_2_raw ~ std_normal();
-  beta_diag_3_raw ~ std_normal();
-  beta_diag_4_raw ~ std_normal();
-  beta_diag_5_raw ~ std_normal();
-  sigma_diag_1 ~ gamma(4, 32);
-  sigma_diag_2 ~ gamma(4, 32);
-  sigma_diag_3 ~ gamma(4, 32);
-  sigma_diag_4 ~ gamma(4, 32);
-  sigma_diag_5 ~ gamma(4, 32);
+  // Initial level intercepts — centred on midpoints of observed empirical ranges.
+  // State 1 (recently acquired / RITA+): 5–30%   → logit midpoint ~ -1.75
+  // State 2 (CD4 ≥ 500):                2.5–10%  → logit midpoint ~ -2.90
+  // State 3 (CD4 350–500):              2.5–11%  → logit midpoint ~ -2.75
+  // State 4 (CD4 200–349):              5–25%    → logit midpoint ~ -2.00
+  // State 5 (CD4 < 200):                20–60%   → logit midpoint ~ -0.50
+  alpha_diag_1 ~ normal(-1.75, 0.5);
+  alpha_diag_2 ~ normal(-2.9, 0.5);
+  alpha_diag_3 ~ normal(-2.75, 0.5);
+  alpha_diag_4 ~ normal(-2.0, 0.5);
+  alpha_diag_5 ~ normal(-0.5, 0.5);
+  delta_raw_1 ~ std_normal();
+  delta_raw_2 ~ std_normal();
+  delta_raw_3 ~ std_normal();
+  delta_raw_4 ~ std_normal();
+  delta_raw_5 ~ std_normal();
+  // mu_log_var: centres exp(-4.0) ~ 0.018 => step SD ~0.13 logit/quarter,
+  // stationary SD ~0.26 logit. SD=0.5 avoids the heavy upper tail of normal(-3.5,1)
+  // which allowed unrealistically large swings in diagnosis probability.
+  mu_log_var ~ normal(-4.0, 0.5);
+  sigma_log_var ~ normal(0, 0.5);
+  log_vardelta_raw ~ std_normal();
+  
+  // AR(1) coefficient: prior with mode ~ 0.86 (high persistence) but not a
+  // pure random walk. beta(7, 2) has mode = 6/7 ~ 0.857 and mean = 7/9 ~ 0.78,
+  // placing almost no mass below 0.5 and ruling out the RW1 boundary at 1.
+  rho_diag ~ beta(7, 2);
   
   // False recency rate prior centred on logit(0.019)
   logit_frr ~ normal(-3.94, 0.32);

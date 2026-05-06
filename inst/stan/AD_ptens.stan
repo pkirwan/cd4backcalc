@@ -15,8 +15,7 @@ data {
   matrix[npars_inf - 1, 2 * npars_inf - 2] S1; // NOT SURE IF BOUNDARY CONSISTENT
   
   // Time-varying diagnosis splines, plus age-group offsets
-  int<lower=1> npars_diag;
-  matrix[nquar, npars_diag] X_diag;
+  // (X_diag and npars_diag removed; diagnosis now uses random walk)
 }
 transformed data {
   row_vector[5] empty_vec = rep_row_vector(0, 5);
@@ -55,20 +54,23 @@ parameters {
   vector[npars_inf] beta_inf; //beta_inf are the infection parameters
   vector<lower=0>[2] sigma_inf; // smoothing parameters
   
-  // Diagnosis probability parameters (time spline + age-group offset)
-  vector[npars_diag] beta_diag_1_raw;
-  vector[npars_diag] beta_diag_2_raw;
-  vector[npars_diag] beta_diag_3_raw;
-  vector[npars_diag] beta_diag_4_raw;
-  real<lower=0> sigma_diag_1;
-  real<lower=0> sigma_diag_2;
-  real<lower=0> sigma_diag_3;
-  real<lower=0> sigma_diag_4;
+  // Diagnosis probability parameters (random walk)
+  vector[nquar] delta_raw_1;
+  vector[nquar] delta_raw_2;
+  vector[nquar] delta_raw_3;
+  vector[nquar] delta_raw_4;
+  vector[4] log_vardelta_raw;
+  real mu_log_var;
+  real<lower=0> sigma_log_var;
   real alpha_diag_1;
   real alpha_diag_2;
   real alpha_diag_3;
   real alpha_diag_4;
   vector[4 * nagroup] alpha_age_diag; // 4 age groups x 4 states
+  
+  // AR(1) coefficient shared across diagnosis-probability walks.
+  // Constrained to (0, 1) so the process is mean-reverting but persistent.
+  real<lower=0, upper=1> rho_diag;
 }
 transformed parameters {
   // Infection parameters
@@ -78,23 +80,29 @@ transformed parameters {
   // Tensor product prior precision
   vector<lower=0>[2] tau = inv(square(sigma_inf));
   
-  vector[npars_diag] beta_diag_1;
-  vector[npars_diag] beta_diag_2;
-  vector[npars_diag] beta_diag_3;
-  vector[npars_diag] beta_diag_4;
-  beta_diag_1[1] = beta_diag_1_raw[1];
-  beta_diag_2[1] = beta_diag_2_raw[1];
-  beta_diag_3[1] = beta_diag_3_raw[1];
-  beta_diag_4[1] = beta_diag_4_raw[1];
-  beta_diag_1[2 : npars_diag] = beta_diag_1_raw[2 : npars_diag] * sigma_diag_1;
-  beta_diag_2[2 : npars_diag] = beta_diag_2_raw[2 : npars_diag] * sigma_diag_2;
-  beta_diag_3[2 : npars_diag] = beta_diag_3_raw[2 : npars_diag] * sigma_diag_3;
-  beta_diag_4[2 : npars_diag] = beta_diag_4_raw[2 : npars_diag] * sigma_diag_4;
-  // Diagnosis probabilities by time
-  vector[nquar] delta_1 = alpha_diag_1 + (X_diag * beta_diag_1);
-  vector[nquar] delta_2 = alpha_diag_2 + (X_diag * beta_diag_2);
-  vector[nquar] delta_3 = alpha_diag_3 + (X_diag * beta_diag_3);
-  vector[nquar] delta_4 = alpha_diag_4 + (X_diag * beta_diag_4);
+  // Step variances on natural scale (non-centred)
+  vector[4] log_vardelta = mu_log_var + sigma_log_var * log_vardelta_raw;
+  vector<lower=0>[4] vardelta = exp(log_vardelta);
+  // Diagnosis probabilities via random walk
+  vector[nquar] delta_1;
+  vector[nquar] delta_2;
+  vector[nquar] delta_3;
+  vector[nquar] delta_4;
+  // AR(1) non-centred parameterisation.
+  // t = 1: initial condition drawn from stationary distribution
+  //   (variance = step_variance / (1 - rho^2)).
+  // t > 1: mean reversion toward alpha_diag_k prevents endpoint drift.
+  real inv_stationary = inv_sqrt(1 - square(rho_diag));
+  delta_1[1] = alpha_diag_1 + sqrt(vardelta[1]) * inv_stationary * delta_raw_1[1];
+  delta_2[1] = alpha_diag_2 + sqrt(vardelta[2]) * inv_stationary * delta_raw_2[1];
+  delta_3[1] = alpha_diag_3 + sqrt(vardelta[3]) * inv_stationary * delta_raw_3[1];
+  delta_4[1] = alpha_diag_4 + sqrt(vardelta[4]) * inv_stationary * delta_raw_4[1];
+  for (t in 2 : nquar) {
+    delta_1[t] = alpha_diag_1 + rho_diag * (delta_1[t - 1] - alpha_diag_1) + sqrt(vardelta[1]) * delta_raw_1[t];
+    delta_2[t] = alpha_diag_2 + rho_diag * (delta_2[t - 1] - alpha_diag_2) + sqrt(vardelta[2]) * delta_raw_2[t];
+    delta_3[t] = alpha_diag_3 + rho_diag * (delta_3[t - 1] - alpha_diag_3) + sqrt(vardelta[3]) * delta_raw_3[t];
+    delta_4[t] = alpha_diag_4 + rho_diag * (delta_4[t - 1] - alpha_diag_4) + sqrt(vardelta[4]) * delta_raw_4[t];
+  }
   
   // Diagnosis probabilities by age group (ag), state (k), and time (t).
   // Stored as matrix[nquar, 4] so the inner time-loop accesses column k,
@@ -233,27 +241,38 @@ transformed parameters {
 }
 model {
   // Infection surface priors
-  sigma_inf ~ normal(0, 50);
-  beta_inf[1] ~ normal(0, 5);
+  // beta_inf[1] is the log-scale intercept; normal(5.0, 1.5) covers [7, 3000]
+  // infections/quarter at ±2 SD, matching observed incidence scale.
+  sigma_inf ~ normal(0, 5);
+  beta_inf[1] ~ normal(5.0, 1.5);
   
   matrix[np1, np1] K1_prec = S1a * tau[1] + S1b * tau[2];
   beta_inf[2 : npars_inf] ~ multi_normal_prec(zero_vec, K1_prec);
   
-  // Diagnosis priors (time spline + age group offsets)
-  alpha_diag_1 ~ normal(-3.2, 0.5);
-  alpha_diag_2 ~ normal(-3.0, 0.5);
-  alpha_diag_3 ~ normal(-2.5, 0.5);
-  alpha_diag_4 ~ normal(-2.0, 0.5);
+  // Diagnosis priors — centred on midpoints of observed empirical ranges.
+  // State 1 (CD4 ≥ 500):    2.5–10%  → logit midpoint ~ -2.90
+  // State 2 (CD4 350–500):  2.5–11%  → logit midpoint ~ -2.75
+  // State 3 (CD4 200–349):  5–25%    → logit midpoint ~ -2.00
+  // State 4 (CD4 < 200):    20–60%   → logit midpoint ~ -0.50
+  alpha_diag_1 ~ normal(-2.9, 0.5);
+  alpha_diag_2 ~ normal(-2.75, 0.5);
+  alpha_diag_3 ~ normal(-2.0, 0.5);
+  alpha_diag_4 ~ normal(-0.5, 0.5);
+  delta_raw_1 ~ std_normal();
+  delta_raw_2 ~ std_normal();
+  delta_raw_3 ~ std_normal();
+  delta_raw_4 ~ std_normal();
+  // mu_log_var: centres exp(-4.0) ~ 0.018 => step SD ~0.13 logit/quarter,
+  // stationary SD ~0.26 logit. SD=0.5 avoids the heavy upper tail of normal(-3.5,1)
+  // which allowed unrealistically large swings in diagnosis probability.
+  mu_log_var ~ normal(-4.0, 0.5);
+  sigma_log_var ~ normal(0, 0.5);
+  log_vardelta_raw ~ std_normal();
   
-  beta_diag_1_raw ~ std_normal();
-  beta_diag_2_raw ~ std_normal();
-  beta_diag_3_raw ~ std_normal();
-  beta_diag_4_raw ~ std_normal();
-  
-  sigma_diag_1 ~ gamma(4, 32);
-  sigma_diag_2 ~ gamma(4, 32);
-  sigma_diag_3 ~ gamma(4, 32);
-  sigma_diag_4 ~ gamma(4, 32);
+  // AR(1) coefficient: prior with mode ~ 0.86 (high persistence) but not a
+  // pure random walk. beta(7, 2) has mode = 6/7 ~ 0.857 and mean = 7/9 ~ 0.78,
+  // placing almost no mass below 0.5 and ruling out the RW1 boundary at 1.
+  rho_diag ~ beta(7, 2);
   
   alpha_age_diag ~ normal(0, 1);
   

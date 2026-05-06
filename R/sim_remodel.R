@@ -80,6 +80,7 @@ sim_remodel <- function(sim_diags, rita = TRUE) {
     stan_data$init_prev_age <- init_prev_age
     stan_data$init_prev_abroad <- init_prev_abroad
     stan_data$init_prev_abroad_age <- init_prev_abroad_age
+
   }
 
   return(list(

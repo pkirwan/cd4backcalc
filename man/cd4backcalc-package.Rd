@@ -19,6 +19,11 @@ Useful links:
 \author{
 \strong{Maintainer}: Peter Kirwan \email{pdk29@cam.ac.uk} (\href{https://orcid.org/0000-0001-6904-0500}{ORCID})
 
+Authors:
+\itemize{
+  \item Peter Kirwan \email{pdk29@cam.ac.uk} (\href{https://orcid.org/0000-0001-6904-0500}{ORCID})
+}
+
 Other contributors:
 \itemize{
   \item Paul Birrell [contributor]

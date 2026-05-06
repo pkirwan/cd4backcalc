@@ -62,7 +62,7 @@ define_sim_config <- function(
   if (rita) {
     nlatst <- 7
     ndiagst <- 6
-    init_props <- c(1, 0.8, 0.08, 4, 2.6, 1.3, 0.4)
+    init_props <- c(1.2, 1.0, 0.1, 4.8, 3.4, 1.75, 0.5)
     init_props_abroad <- c(0, 0, 0, 1.75, 2.25, 2.25, 1.25)
   } else {
     nlatst <- 4
@@ -581,9 +581,9 @@ simulate_diagnoses <- function(
   # detection probabilities for those migrating already diagnosed
   # In Stan: detect_prob[t] = inv_logit(alpha_detect + 0.5 * X_mp * beta_detect)
   if (sim_config$dist) {
-    detect_prob <- invlogit(stats::rnorm(sim_config$nquar, logit(0.8), 0.1))
+    detect_prob <- invlogit(stats::rnorm(sim_config$nquar, logit(seq(0.7, 0.8, length.out = sim_config$nquar)), 0.1))
   } else {
-    detect_prob <- rep(0.8, sim_config$nquar)
+    detect_prob <- seq(0.7, 0.8, length.out = sim_config$nquar)
   }
 
   if (sim_config$rita) {
@@ -831,7 +831,6 @@ simulate_diagnoses <- function(
     "lat_init_uk" = lat_init_uk,
     "lat_init_uk_abroad" = lat_init_uk_abroad,
     "lat_init_abroad" = lat_init_abroad,
-    # currently detect_prob is 0.8 for all time points
     "detect_prob" = detect_prob,
     "misclassified" = misclassified,
     "misclassified_age" = misclassified_age

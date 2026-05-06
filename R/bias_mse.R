@@ -59,11 +59,15 @@ get_mse <- function(bias_df) {
 #' Make a list of mean squared error (MSE) values for HIV model estimates.
 #'
 #' @param hiv_list A list of HIV model results.
+#' @param sim_comparison A string specifying which simulated values to compare against. Options are `"generative"` (deterministic expected values, the default) or `"sampled"` (the stochastic realisation for the particular seed).
 #' @return A list of bias and MSE values for incidence, migration, proportion of UK-acquired infections that are migrants, and migration probabilities.
 #' @keywords internal
 make_mse_list <- function(
-  hiv_list
+  hiv_list,
+  sim_comparison = c("generative", "sampled")
 ) {
+  sim_comparison <- match.arg(sim_comparison)
+  use_deterministic <- sim_comparison == "generative"
   hiv_list <- purrr::compact(hiv_list)
   if (length(hiv_list) == 0) stop("All entries in hiv_list are NULL.")
   # make hiv_list a list of lists if not already
@@ -75,7 +79,7 @@ make_mse_list <- function(
 
   out$incidence_bias <- get_bias(
     hiv_list,
-    extract_simulated_quantity(hiv_list[[1]], quantity = "incidence", deterministic = TRUE),
+    extract_simulated_quantity(hiv_list[[1]], quantity = "incidence", deterministic = use_deterministic),
     "incidence"
   )
   out$incidence_mse <- get_mse(out$incidence_bias)
@@ -83,22 +87,22 @@ make_mse_list <- function(
   if (hiv_list[[1]]$stan_data$model_config$migration) {
     out$undiag_migration_bias <- get_bias(
       hiv_list,
-      extract_simulated_quantity(hiv_list[[1]], quantity = "undiag_migration", deterministic = TRUE),
+      extract_simulated_quantity(hiv_list[[1]], quantity = "undiag_migration", deterministic = use_deterministic),
       "undiag_migration"
     )
     out$all_migration_bias <- get_bias(
       hiv_list,
-      extract_simulated_quantity(hiv_list[[1]], quantity = "all_migration", deterministic = TRUE),
+      extract_simulated_quantity(hiv_list[[1]], quantity = "all_migration", deterministic = use_deterministic),
       "all_migration"
     )
     out$ratio_abroad_uk_bias <- get_bias(
       hiv_list,
-      extract_simulated_quantity(hiv_list[[1]], quantity = "ratio_abroad_uk", deterministic = TRUE),
+      extract_simulated_quantity(hiv_list[[1]], quantity = "ratio_abroad_uk", deterministic = use_deterministic),
       "ratio_abroad_uk"
     )
     out$mp_bias <- get_bias_strata(
       hiv_list,
-      extract_simulated_quantity(hiv_list[[1]], quantity = "migration_prob", deterministic = TRUE),
+      extract_simulated_quantity(hiv_list[[1]], quantity = "migration_prob", deterministic = use_deterministic),
       "migration_prob"
     )
 
@@ -119,6 +123,7 @@ make_mse_list <- function(
 #' @param lab A logical indicating whether to add labels.
 #' @param model_1_name The name of the first model for labeling (default is "Model 1").
 #' @param model_2_name The name of the second model for labeling (default is "Model 2").
+#' @param sim_comparison A string specifying which simulated values to compare against. Options are `"generative"` (deterministic expected values, the default) or `"sampled"` (the stochastic realisation for the particular seed).
 #' @return A ggplot object of the MSE box plot.
 #' @export
 mse_plot <- function(
@@ -128,15 +133,19 @@ mse_plot <- function(
   offset = 0.1,
   lab = TRUE,
   model_1_name = "Model 1",
-  model_2_name = "Model 2"
+  model_2_name = "Model 2",
+  sim_comparison = c("generative", "sampled")
 ) {
+  sim_comparison <- match.arg(sim_comparison)
   data <- make_mse_list(
-    hiv_list
+    hiv_list,
+    sim_comparison = sim_comparison
   )[[paste0(quantity, "_mse")]]
 
   if (!is.null(hiv_list_2)) {
     data_2 <- make_mse_list(
-      hiv_list_2
+      hiv_list_2,
+      sim_comparison = sim_comparison
     )[[paste0(quantity, "_mse")]]
 
     data <- dplyr::bind_rows(
@@ -221,6 +230,7 @@ mse_plot <- function(
 #' @param hiv_list_2 A second list returned from the `postproc` function for comparison (default is NULL).
 #' @param model_1_name The name of the first model for labeling (default is "Model 1").
 #' @param model_2_name The name of the second model for labeling (default is "Model 2").
+#' @param sim_comparison A string specifying which simulated values to compare against. Options are `"generative"` (deterministic expected values, the default) or `"sampled"` (the stochastic realisation for the particular seed).
 #' @return A ggplot object of the bias box plot.
 #' @export
 bias_plot <- function(
@@ -230,15 +240,19 @@ bias_plot <- function(
   lab = TRUE,
   hiv_list_2 = NULL,
   model_1_name = "Model 1",
-  model_2_name = "Model 2"
+  model_2_name = "Model 2",
+  sim_comparison = c("generative", "sampled")
 ) {
+  sim_comparison <- match.arg(sim_comparison)
   data <- make_mse_list(
-    hiv_list
+    hiv_list,
+    sim_comparison = sim_comparison
   )[[paste0(quantity, "_bias")]]
 
   if (!is.null(hiv_list_2)) {
     data_2 <- make_mse_list(
-      hiv_list_2
+      hiv_list_2,
+      sim_comparison = sim_comparison
     )[[paste0(quantity, "_bias")]]
 
     data <- dplyr::bind_rows(

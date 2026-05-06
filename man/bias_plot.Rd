@@ -11,7 +11,8 @@ bias_plot(
   lab = TRUE,
   hiv_list_2 = NULL,
   model_1_name = "Model 1",
-  model_2_name = "Model 2"
+  model_2_name = "Model 2",
+  sim_comparison = c("generative", "sampled")
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ bias_plot(
 \item{model_1_name}{The name of the first model for labeling (default is "Model 1").}
 
 \item{model_2_name}{The name of the second model for labeling (default is "Model 2").}
+
+\item{sim_comparison}{A string specifying which simulated values to compare against. Options are \code{"generative"} (deterministic expected values, the default) or \code{"sampled"} (the stochastic realisation for the particular seed).}
 }
 \value{
 A ggplot object of the bias box plot.

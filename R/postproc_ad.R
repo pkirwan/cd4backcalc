@@ -124,13 +124,21 @@ postproc_ad <- function(
   # Posterior means of parameter of interest
   out$tau <- tau
   alpha.ind <- grep("alpha", colnames(fit_mat))
-  sigma2.ind <- grep("vardelta", colnames(fit_mat))
+  sigma2.ind <- grep("^vardelta\\[", colnames(fit_mat))
+  mu_log_var.ind <- grep("^mu_log_var$", colnames(fit_mat))
+  sigma_log_var.ind <- grep("^sigma_log_var$", colnames(fit_mat))
 
   if (length(alpha.ind) != 0) {
     out$alpha <- fit_mat[, alpha.ind]
   }
   if (length(sigma2.ind) != 0) {
     out$sigma2 <- fit_mat[, sigma2.ind]
+  }
+  if (length(mu_log_var.ind) != 0) {
+    out$mu_log_var <- get_quantiles(fit_mat[, mu_log_var.ind])
+  }
+  if (length(sigma_log_var.ind) != 0) {
+    out$sigma_log_var <- get_quantiles(fit_mat[, sigma_log_var.ind])
   }
 
   # Posterior mean for all time and ages
@@ -351,12 +359,6 @@ postproc_ad <- function(
       dim = c(ndraws, nquar, nage, ny, ncd4)
     ) # [draw, t, a, y, cd4]
 
-    mis_dx_idx <- grep("^misclassified_dx\\[", colnames(fit_mat))
-    mis_dx <- array(
-      fit_mat[, mis_dx_idx],
-      dim = c(ndraws, nquar, nage)
-    ) # [draw, t, a]
-
     # HIV/AIDS arrays as (t, age, draw), summed over y
     HIV <- aperm(apply(exp_HIV_dx, c(1, 2, 3), sum), c(2, 3, 1))
     AIDS <- aperm(apply(exp_AIDS_dx, c(1, 2, 3), sum), c(2, 3, 1))
@@ -385,8 +387,8 @@ postproc_ad <- function(
     }
 
     # Build d-cube indices (agegrp, state, t) from fit_mat colnames, then per draw create (state,t,agegrp).
-    # Migration models expose d_nat[ag,t,k] and d_mig[ag,t,k]; use d_nat as representative for
-    # the native-group diagnosis probabilities passed to the C++ backcalculation.
+    # Migration models expose d_nat[ag,t,k] (y=1, native) and d_mig[ag,t,k] (y=2, migrant).
+    # Both are needed to match the Stan model: native group uses d_nat, migrant group uses d_mig.
     d_idx <- array(NA_integer_, dim = c(4, (config$ndiagst - 1), nquar))
     for (ag in 1:4) {
       for (k in 1:(config$ndiagst - 1)) {
@@ -400,6 +402,22 @@ postproc_ad <- function(
           ))
         }
         d_idx[ag, k, ] <- ind
+      }
+    }
+
+    d_mig_idx <- array(NA_integer_, dim = c(4, (config$ndiagst - 1), nquar))
+    for (ag in 1:4) {
+      for (k in 1:(config$ndiagst - 1)) {
+        ind <- grep(sprintf("^d_mig\\[%d,[0-9]+,%d\\]$", ag, k), colnames(fit_mat))
+        if (length(ind) != nquar) {
+          stop(sprintf(
+            "Could not find d_mig[%d,*,%d] with length nquar=%d.",
+            ag,
+            k,
+            nquar
+          ))
+        }
+        d_mig_idx[ag, k, ] <- ind
       }
     }
 
@@ -420,20 +438,36 @@ postproc_ad <- function(
 
     q_mat <- matrix(stan_data$q_age, nrow = 4, ncol = nage)
 
-    # Expected prevalence with RITA strata
-    prev_total_mat <- matrix(
+    # Separate initial prevalence matrices: y=1 (native) and y=2 (migrant).
+    # Stan uses init_prev_age for y=1 and init_prev_abroad_age for y=2 independently.
+    prev_nat_mat <- matrix(
       stan_data$init_prev_age,
       nrow = config$nlatst,
       ncol = nage
-    ) +
-      matrix(stan_data$init_prev_abroad_age, nrow = config$nlatst, ncol = nage)
+    )
+    prev_mig_mat <- matrix(
+      stan_data$init_prev_abroad_age,
+      nrow = config$nlatst,
+      ncol = nage
+    )
+
+    omega_zero <- rep(0.0, nquar)
+    p_zero <- rep(0.0, nquar)
 
     exp.prev <- lapply(seq_len(nrow(fit_mat)), function(i) {
-      # d_cube: 4/5 (ndiagst - 1) x nquar (time) x 4 (agegrp)
-      d_cube <- array(NA_real_, dim = c(config$ndiagst - 1, nquar, 4))
+      # Native d_cube (d_nat) — used for y=1 group
+      d_cube_nat <- array(NA_real_, dim = c(config$ndiagst - 1, nquar, 4))
       for (ag in 1:4) {
         for (k in 1:(config$ndiagst - 1)) {
-          d_cube[k, , ag] <- fit_mat[i, d_idx[ag, k, ]]
+          d_cube_nat[k, , ag] <- fit_mat[i, d_idx[ag, k, ]]
+        }
+      }
+
+      # Migrant d_cube (d_mig) — used for y=2 group
+      d_cube_mig <- array(NA_real_, dim = c(config$ndiagst - 1, nquar, 4))
+      for (ag in 1:4) {
+        for (k in 1:(config$ndiagst - 1)) {
+          d_cube_mig[k, , ag] <- fit_mat[i, d_mig_idx[ag, k, ]]
         }
       }
 
@@ -443,33 +477,68 @@ postproc_ad <- function(
       # m_mat: 5 x nquar (rows are k=1..5)
       m_mat <- matrix(fit_mat[i, m.ind], nrow = 5, ncol = nquar)
 
+      H_i <- exp(infs[i, ])
+      # Pre-scale H by p for the migrant UK-acquired group (y=2), so that
+      # inflow_native in the migrant call equals h[t]*p[t] matching Stan's inflow_mig_uk.
+      # Pass p=0 to avoid double-scaling.
+      H_mig <- H_i * rep(p_i, nage)
+
       if (config$rita) {
-        prev_iter_fct_migration_rita(
-          H = exp(infs[i, ]),
-          d = d_cube,
+        # Native: d_nat, init_prev_age, no migration
+        prev_nat <- prev_iter_fct_migration_rita(
+          H = H_i,
+          d = d_cube_nat,
           q = q_mat,
-          prev_total = prev_total_mat,
+          prev_total = prev_nat_mat,
+          omega = omega_zero,
+          p = p_zero,
+          m = m_mat,
+          abroad_age_prop = abroad_age_prop,
+          nquar = nquar,
+          nage = nage
+        )
+        # Migrant: d_mig, init_prev_abroad_age, with migration, H already scaled by p
+        prev_mig <- prev_iter_fct_migration_rita(
+          H = H_mig,
+          d = d_cube_mig,
+          q = q_mat,
+          prev_total = prev_mig_mat,
           omega = omega_i,
-          p = p_i,
+          p = p_zero,
           m = m_mat,
           abroad_age_prop = abroad_age_prop,
           nquar = nquar,
           nage = nage
         )
       } else {
-        prev_iter_fct_migration(
-          H = exp(infs[i, ]),
-          d = d_cube,
+        # Native: d_nat, init_prev_age, no migration
+        prev_nat <- prev_iter_fct_migration(
+          H = H_i,
+          d = d_cube_nat,
           q = q_mat,
-          prev_total = prev_total_mat,
+          prev_total = prev_nat_mat,
+          omega = omega_zero,
+          p = p_zero,
+          m = m_mat,
+          abroad_age_prop = abroad_age_prop,
+          nquar = nquar,
+          nage = nage
+        )
+        # Migrant: d_mig, init_prev_abroad_age, with migration, H already scaled by p
+        prev_mig <- prev_iter_fct_migration(
+          H = H_mig,
+          d = d_cube_mig,
+          q = q_mat,
+          prev_total = prev_mig_mat,
           omega = omega_i,
-          p = p_i,
+          p = p_zero,
           m = m_mat,
           abroad_age_prop = abroad_age_prop,
           nquar = nquar,
           nage = nage
         )
       }
+      prev_nat + prev_mig
     })
 
     exp.prev.arr <- simplify2array(exp.prev) # (t, age, state, draw)
@@ -548,8 +617,9 @@ postproc_ad <- function(
 
   if (config$migration) {
     # exp_p is already defined above in migration branch as [draw,t,a,y,cd4]
+    # and already includes misclassified migrant arrivals where Stan does.
     denom_uk <- exp_HIV_dx[,,, 1] # [draw,t,a]
-    denom_m <- pmax(0, exp_HIV_dx[,,, 2] - mis_dx) # [draw,t,a] (exclude misclassified)
+    denom_m <- pmax(0, exp_HIV_dx[,,, 2]) # [draw,t,a]
 
     numer_uk <- sweep(exp_p[,,, 1, , drop = TRUE], c(1, 2, 3), denom_uk, "*")
     numer_m <- sweep(exp_p[,,, 2, , drop = TRUE], c(1, 2, 3), denom_m, "*")
