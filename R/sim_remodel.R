@@ -80,6 +80,13 @@ sim_remodel <- function(sim_diags, rita = TRUE) {
     stan_data$init_prev_age <- init_prev_age
     stan_data$init_prev_abroad <- init_prev_abroad
     stan_data$init_prev_abroad_age <- init_prev_abroad_age
+
+    # Keep metadata aligned with the remodeled CD4-only data so helpers that
+    # infer model type from sim_config do not continue treating this as RITA.
+    stan_data$sim_config$rita <- FALSE
+    stan_data$sim_config$r_pattern <- "none"
+    stan_data$sim_config$nlatst <- 4
+    stan_data$sim_config$ndiagst <- 5
   }
 
   return(list(

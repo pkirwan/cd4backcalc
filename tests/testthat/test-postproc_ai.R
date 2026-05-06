@@ -71,6 +71,54 @@ test_that("migration post-processing works", {
   expect_true("migration_prob" %in% names(hiv_list))
 })
 
+test_that("migration undiag_prev uses direct latent prevalence", {
+  stan_data <- list(
+    nquar = 4,
+    model_config = list(migration = TRUE)
+  )
+
+  prev_dist <- sapply(
+    list(
+      list(
+        undiagnosed_total = c(10, 9, 8, 7),
+        undiagnosed = matrix(1000, nrow = 1)
+      ),
+      list(
+        undiagnosed_total = c(14, 13, 12, 11),
+        undiagnosed = matrix(2000, nrow = 1)
+      )
+    ),
+    identity
+  )
+
+  inf_dist <- sapply(
+    list(
+      list(
+        AIDS.Dx.Infect.Dist = matrix(1000, nrow = 4, ncol = 4),
+        HIV.Dx.Infect.Dist = array(1000, dim = c(1, 4, 4))
+      ),
+      list(
+        AIDS.Dx.Infect.Dist = matrix(2000, nrow = 4, ncol = 4),
+        HIV.Dx.Infect.Dist = array(2000, dim = c(1, 4, 4))
+      )
+    ),
+    identity
+  )
+
+  undiag_prev <- undiag.prev.df(
+    stan_data,
+    prev_dist,
+    inf_dist,
+    start.yr = 0
+  )
+
+  median_values <- undiag_prev |>
+    dplyr::filter(.data$quartile == "50%") |>
+    dplyr::pull(.data$value)
+
+  expect_equal(median_values, c(12, 11, 10, 9))
+})
+
 test_that("rita post-processing works", {
   # Simulate diagnoses
   sim_diags <- simulate_diagnoses(

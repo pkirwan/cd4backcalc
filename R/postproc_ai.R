@@ -166,6 +166,11 @@ make_fit_indices <- function(fit_mat, config, nquar) {
     d3 = grep(sprintf("^%s\\[3,", dp), cn),
     d4 = grep(sprintf("^%s\\[4,", dp), cn),
     d5 = grep(sprintf("^%s\\[5,", dp), cn),
+    d1_mig = grep("^d_mig\\[1,", cn),
+    d2_mig = grep("^d_mig\\[2,", cn),
+    d3_mig = grep("^d_mig\\[3,", cn),
+    d4_mig = grep("^d_mig\\[4,", cn),
+    d5_mig = grep("^d_mig\\[5,", cn),
     lambda = grep("^lambda\\[", cn),
     gamma = grep("^gamma\\[", cn),
     p = grep("^p\\[", cn),
@@ -350,6 +355,10 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
     temp_p <- as.numeric(fit_mat[i, idx$p])
     temp_m <- matrix(as.numeric(fit_mat[i, idx$m]), nrow = nquar, byrow = TRUE)
     temp_om <- t(temp_m[, 1:4] * temp_omega)
+    d1_mig <- as.numeric(fit_mat[i, idx$d1_mig])
+    d2_mig <- as.numeric(fit_mat[i, idx$d2_mig])
+    d3_mig <- as.numeric(fit_mat[i, idx$d3_mig])
+    d4_mig <- as.numeric(fit_mat[i, idx$d4_mig])
   }
 
   # Calculate diagnoses
@@ -380,43 +389,44 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
   if (config$migration) {
     if (config$rita) {
       d5 <- as.numeric(fit_mat[i, idx$d5])
+      d5_mig <- as.numeric(fit_mat[i, idx$d5_mig])
       diagnoses_b <- forward_calculate_rita(
-        init_prev_abroad / 2,
+        init_prev_abroad,
         temp_h * temp_p,
-        d1 = d1,
-        d2 = d2,
-        d3 = d3,
-        d4 = d4,
-        d5 = d5,
+        d1 = d1_mig,
+        d2 = d2_mig,
+        d3 = d3_mig,
+        d4 = d4_mig,
+        d5 = d5_mig,
         q = stan_data$q
       )
       diagnoses_m <- forward_calculate_m_rita(
-        init_prev_abroad / 2,
+        rep(0, length(init_prev_abroad)),
         temp_om,
-        d1 = d1,
-        d2 = d2,
-        d3 = d3,
-        d4 = d4,
-        d5 = d5,
+        d1 = d1_mig,
+        d2 = d2_mig,
+        d3 = d3_mig,
+        d4 = d4_mig,
+        d5 = d5_mig,
         q = stan_data$q
       )
     } else {
       diagnoses_b <- forward_calculate(
-        init_prev_abroad / 2,
+        init_prev_abroad,
         temp_h * temp_p,
-        d1 = d1,
-        d2 = d2,
-        d3 = d3,
-        d4 = d4,
+        d1 = d1_mig,
+        d2 = d2_mig,
+        d3 = d3_mig,
+        d4 = d4_mig,
         q = stan_data$q
       )
       diagnoses_m <- forward_calculate_m(
-        init_prev_abroad / 2,
+        rep(0, length(init_prev_abroad)),
         temp_om,
-        d1 = d1,
-        d2 = d2,
-        d3 = d3,
-        d4 = d4,
+        d1 = d1_mig,
+        d2 = d2_mig,
+        d3 = d3_mig,
+        d4 = d4_mig,
         q = stan_data$q
       )
     }
@@ -575,16 +585,17 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
   output$AIDS.Dx.Infect.Dist <- cbind(0, 0, 0, 0, tempvec) + unreported.AIDS
 
   if (config$rita) {
-    collapsed_s1 <- colSums(diagnoses$prevalence[, 1:3, ])
+    prev_for_dist <- if (config$migration) diagnoses_combined$prevalence else diagnoses$prevalence
+    collapsed_s1 <- colSums(prev_for_dist[, 1:3, ])
     dist_s1 <- t(collapsed_s1) / colSums(collapsed_s1)
 
     for (state in 1) {
-      #prev_list <- array(sapply(1:nquar, function(x) colSums(diagnoses$prevalence[x, 1:3, ])), dim = c(nquar, 1, nquar))
-      d_to_i_temp_1 <- diag_to_infec_wrap1(diagnoses$prevalence, 1) *
+      #prev_list <- array(sapply(1:nquar, function(x) colSums(prev_for_dist[x, 1:3, ])), dim = c(nquar, 1, nquar))
+      d_to_i_temp_1 <- diag_to_infec_wrap1(prev_for_dist, 1) *
         dist_s1[, 1]
-      d_to_i_temp_2 <- diag_to_infec_wrap1(diagnoses$prevalence, 2) *
+      d_to_i_temp_2 <- diag_to_infec_wrap1(prev_for_dist, 2) *
         dist_s1[, 2]
-      d_to_i_temp_3 <- diag_to_infec_wrap1(diagnoses$prevalence, 3) *
+      d_to_i_temp_3 <- diag_to_infec_wrap1(prev_for_dist, 3) *
         dist_s1[, 3]
       d_to_i_temp <- d_to_i_temp_1 + d_to_i_temp_2 + d_to_i_temp_3
 
@@ -602,7 +613,7 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
     }
 
     for (state in 4:config$nlatst) {
-      d_to_i_temp <- diag_to_infec_wrap1(diagnoses$prevalence, state)
+      d_to_i_temp <- diag_to_infec_wrap1(prev_for_dist, state)
 
       HIV.diags <- if (config$migration) {
         c(rep(0, nquar - n_CD4), rowSums(stan_data$CD4[,, state - 2]))
@@ -701,6 +712,10 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
     temp_p <- as.numeric(fit_mat[i, idx$p])
     temp_m <- matrix(as.numeric(fit_mat[i, idx$m]), nrow = nquar, byrow = TRUE)
     temp_om <- t(temp_m[, 1:4] * temp_omega)
+    d1_mig <- as.numeric(fit_mat[i, idx$d1_mig])
+    d2_mig <- as.numeric(fit_mat[i, idx$d2_mig])
+    d3_mig <- as.numeric(fit_mat[i, idx$d3_mig])
+    d4_mig <- as.numeric(fit_mat[i, idx$d4_mig])
   }
 
   # Calculate diagnoses
@@ -731,43 +746,44 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
   if (config$migration) {
     if (config$rita) {
       d5 <- as.numeric(fit_mat[i, idx$d5])
+      d5_mig <- as.numeric(fit_mat[i, idx$d5_mig])
       diagnoses_b <- forward_calculate_rita(
         init_prev_abroad,
         temp_h * temp_p,
-        d1 = d1,
-        d2 = d2,
-        d3 = d3,
-        d4 = d4,
-        d5 = d5,
+        d1 = d1_mig,
+        d2 = d2_mig,
+        d3 = d3_mig,
+        d4 = d4_mig,
+        d5 = d5_mig,
         q = stan_data$q
       )
       diagnoses_m <- forward_calculate_m_rita(
         rep(0, 7),
         temp_om,
-        d1 = d1,
-        d2 = d2,
-        d3 = d3,
-        d4 = d4,
-        d5 = d5,
+        d1 = d1_mig,
+        d2 = d2_mig,
+        d3 = d3_mig,
+        d4 = d4_mig,
+        d5 = d5_mig,
         q = stan_data$q
       )
     } else {
       diagnoses_b <- forward_calculate(
         init_prev_abroad,
         temp_h * temp_p,
-        d1 = d1,
-        d2 = d2,
-        d3 = d3,
-        d4 = d4,
+        d1 = d1_mig,
+        d2 = d2_mig,
+        d3 = d3_mig,
+        d4 = d4_mig,
         q = stan_data$q
       )
       diagnoses_m <- forward_calculate_m(
         rep(0, 4),
         temp_om,
-        d1 = d1,
-        d2 = d2,
-        d3 = d3,
-        d4 = d4,
+        d1 = d1_mig,
+        d2 = d2_mig,
+        d3 = d3_mig,
+        d4 = d4_mig,
         q = stan_data$q
       )
     }
@@ -867,6 +883,16 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
 
   output$unreported.AIDS <- rowSums(unreported.AIDS)
 
+  # In migration models the observed HIV/CD4 diagnoses include misclassified
+  # arrivals who were already diagnosed abroad. Reconstructing undiagnosed
+  # prevalence from diagnosis timings back-projects those cases into pre-arrival
+  # history and inflates the early quarters. Preserve the direct latent
+  # prevalence trajectory so undiagnosed prevalence can be read off without
+  # that back-imputation.
+  output$undiagnosed_total <- vapply(seq_len(nquar), function(tt) {
+    sum(diagnoses_combined$prevalence[tt, 1:config$nlatst, ])
+  }, numeric(1))
+
   # it appears that the undiagnosed component will only hold data for the most recent year
   output$undiagnosed <- matrix(
     stats::rpois(
@@ -933,11 +959,17 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
   # Simulating AIDS diagnoses
   tempvec <- if (config$migration) {
     sapply(5:nquar, function(x) {
-      if (sum(stan_data$AIDS[x, ]) > 0 && sum(d_to_i_AIDS_uk[x, ]) > 0) {
-        stats::rmultinom(1, sum(stan_data$AIDS[x, ]), d_to_i_AIDS_uk[x, ])
+      uk_aids <- if (stan_data$AIDS[x, 1] > 0 && sum(d_to_i_AIDS_uk[x, ]) > 0) {
+        stats::rmultinom(1, stan_data$AIDS[x, 1], d_to_i_AIDS_uk[x, ])
       } else {
         matrix(0, nrow = nquar, ncol = 1)
       }
+      abroad_aids <- if (stan_data$AIDS[x, 2] > 0 && sum(d_to_i_AIDS_abroad[x, ]) > 0) {
+        stats::rmultinom(1, stan_data$AIDS[x, 2], d_to_i_AIDS_abroad[x, ])
+      } else {
+        matrix(0, nrow = nquar, ncol = 1)
+      }
+      uk_aids + abroad_aids
     })
   } else {
     sapply(5:nquar, function(x) {
@@ -948,16 +980,16 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
   output$reported.AIDS <- rowSums(tempvec)
 
   if (config$rita) {
-    collapsed_s1 <- colSums(diagnoses$prevalence[, 1:3, ])
+    collapsed_s1 <- colSums(diagnoses_combined$prevalence[, 1:3, ])
     dist_s1 <- t(collapsed_s1) / colSums(collapsed_s1)
 
     for (state in 1) {
-      #prev_list <- array(sapply(1:nquar, function(x) colSums(diagnoses$prevalence[x, 1:3, ])), dim = c(nquar, 1, nquar))
-      d_to_i_temp_1 <- diag_to_infec_wrap1(diagnoses$prevalence, 1) *
+      #prev_list <- array(sapply(1:nquar, function(x) colSums(diagnoses_combined$prevalence[x, 1:3, ])), dim = c(nquar, 1, nquar))
+      d_to_i_temp_1 <- diag_to_infec_wrap1(diagnoses_combined$prevalence, 1) *
         dist_s1[, 1]
-      d_to_i_temp_2 <- diag_to_infec_wrap1(diagnoses$prevalence, 2) *
+      d_to_i_temp_2 <- diag_to_infec_wrap1(diagnoses_combined$prevalence, 2) *
         dist_s1[, 2]
-      d_to_i_temp_3 <- diag_to_infec_wrap1(diagnoses$prevalence, 3) *
+      d_to_i_temp_3 <- diag_to_infec_wrap1(diagnoses_combined$prevalence, 3) *
         dist_s1[, 3]
       d_to_i_temp <- d_to_i_temp_1 + d_to_i_temp_2 + d_to_i_temp_3
 
@@ -974,7 +1006,7 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
     }
 
     for (state in 4:config$nlatst) {
-      d_to_i_temp <- diag_to_infec_wrap1(diagnoses$prevalence, state)
+      d_to_i_temp <- diag_to_infec_wrap1(diagnoses_combined$prevalence, state)
 
       HIV.diags <- if (config$migration) {
         c(rep(0, nquar - n_CD4), rowSums(stan_data$CD4[,, state - 2]))
@@ -1243,28 +1275,41 @@ undiag.prev.df <- function(
   annual = FALSE
 ) {
   nyr <- stan_data$nquar / 4
-  # start.yr <- 1995
-  ## Undiagnosed prevalence is equal to the number of people
-  ## that are undiagnosed by the end of the surveillance period
-  undiagnosed.prevalence <- sapply(prev_dist["undiagnosed", ], function(x) {
-    cumsum(colSums(x))
-  })
+  use_direct_prev <-
+    isTRUE(stan_data$model_config$migration) &&
+    "undiagnosed_total" %in% rownames(prev_dist)
 
-  ### Plus all those that were diagnosed (AIDS or HIV)
-  ### between the infection time and dx time
-  ### these are counted by the prev_fun(1)
-  undiagnosed.prevalence.AIDS <- sapply(
-    inf_dist["AIDS.Dx.Infect.Dist", ],
-    function(x) t(prev_fun(x))
-  )
-  undiagnosed.prevalence.HIV <- sapply(
-    inf_dist["HIV.Dx.Infect.Dist", ],
-    function(x) t(prev_fun1(x))
-  )
+  if (use_direct_prev) {
+    undiagnosed.prevalence <- as.matrix(
+      simplify2array(prev_dist["undiagnosed_total", ])
+    )
+    if (nrow(undiagnosed.prevalence) != stan_data$nquar) {
+      undiagnosed.prevalence <- t(undiagnosed.prevalence)
+    }
+  } else {
+    # start.yr <- 1995
+    ## Undiagnosed prevalence is equal to the number of people
+    ## that are undiagnosed by the end of the surveillance period
+    undiagnosed.prevalence <- sapply(prev_dist["undiagnosed", ], function(x) {
+      cumsum(colSums(x))
+    })
 
-  undiagnosed.prevalence <- undiagnosed.prevalence +
-    undiagnosed.prevalence.AIDS +
-    undiagnosed.prevalence.HIV
+    ### Plus all those that were diagnosed (AIDS or HIV)
+    ### between the infection time and dx time
+    ### these are counted by the prev_fun(1)
+    undiagnosed.prevalence.AIDS <- sapply(
+      inf_dist["AIDS.Dx.Infect.Dist", ],
+      function(x) t(prev_fun(x))
+    )
+    undiagnosed.prevalence.HIV <- sapply(
+      inf_dist["HIV.Dx.Infect.Dist", ],
+      function(x) t(prev_fun1(x))
+    )
+
+    undiagnosed.prevalence <- undiagnosed.prevalence +
+      undiagnosed.prevalence.AIDS +
+      undiagnosed.prevalence.HIV
+  }
 
   q.undiagnosed.prevalence <- apply(
     undiagnosed.prevalence,
