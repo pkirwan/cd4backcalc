@@ -175,6 +175,8 @@ make_fit_indices <- function(fit_mat, config, nquar) {
     gamma = grep("^gamma\\[", cn),
     p = grep("^p\\[", cn),
     m = grep("^m\\[", cn),
+    mis_dx = grep("^misclassified_dx\\[[0-9]+,2\\]$", cn),
+    frr = match("frr", cn),
     under_rep = match("under_rep", cn)
   )
 
@@ -200,9 +202,50 @@ make_fit_indices <- function(fit_mat, config, nquar) {
       stop("config$migration=TRUE but p[...] not found.")
     }
     if (length(idx$m) == 0L) stop("config$migration=TRUE but m[...] not found.")
+    if (length(idx$mis_dx) != nquar) {
+      stop("config$migration=TRUE but misclassified_dx[*,2] not found or wrong length.")
+    }
+    if (config$rita && is.na(idx$frr)) {
+      stop("config$rita=TRUE but frr not found in fit matrix column names.")
+    }
   }
 
   idx
+}
+
+split_ai_misclassified_observed <- function(fit_mat, i, idx, temp_m, config, nquar) {
+  nstage <- config$ndiagst - 1
+  out <- list(
+    total = rep(0, nquar),
+    cd4 = matrix(0, nrow = nstage, ncol = nquar)
+  )
+
+  if (!isTRUE(config$migration)) {
+    return(out)
+  }
+
+  out$total <- as.numeric(fit_mat[i, idx$mis_dx])
+
+  m_lat_raw <- temp_m[, 1:4, drop = FALSE]
+  m_lat <- m_lat_raw
+  lat_total <- rowSums(m_lat_raw)
+  nz <- lat_total > 0
+  if (any(nz)) {
+    m_lat[nz, ] <- sweep(m_lat_raw[nz, , drop = FALSE], 1, lat_total[nz], "/")
+  }
+  if (any(!nz)) {
+    m_lat[!nz, ] <- matrix(0.25, nrow = sum(!nz), ncol = 4)
+  }
+
+  if (isTRUE(config$rita)) {
+    frr <- as.numeric(fit_mat[i, idx$frr])
+    out$cd4[1, ] <- out$total * frr
+    out$cd4[2:5, ] <- t(sweep(m_lat, 1, out$total * (1 - frr), "*"))
+  } else {
+    out$cd4 <- t(sweep(m_lat, 1, out$total, "*"))
+  }
+
+  out
 }
 
 #' Build posterior predictive quantities list
@@ -355,6 +398,14 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
     temp_p <- as.numeric(fit_mat[i, idx$p])
     temp_m <- matrix(as.numeric(fit_mat[i, idx$m]), nrow = nquar, byrow = TRUE)
     temp_om <- t(temp_m[, 1:4] * temp_omega)
+    misclassified_obs <- split_ai_misclassified_observed(
+      fit_mat,
+      i,
+      idx,
+      temp_m,
+      config,
+      nquar
+    )
     d1_mig <- as.numeric(fit_mat[i, idx$d1_mig])
     d2_mig <- as.numeric(fit_mat[i, idx$d2_mig])
     d3_mig <- as.numeric(fit_mat[i, idx$d3_mig])
@@ -604,6 +655,9 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
       } else {
         c(rep(0, nquar - n_CD4), stan_data$CD4[, 1])
       }
+      if (config$migration) {
+        HIV.diags <- pmax(0, HIV.diags - misclassified_obs$cd4[1, ])
+      }
 
       tempvec1 <- sapply((state + 1):nquar, function(x) {
         stats::rmultinom(1, HIV.diags[x], d_to_i_temp[x - state, ])
@@ -619,6 +673,9 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
         c(rep(0, nquar - n_CD4), rowSums(stan_data$CD4[,, state - 2]))
       } else {
         c(rep(0, nquar - n_CD4), stan_data$CD4[, state - 2])
+      }
+      if (config$migration) {
+        HIV.diags <- pmax(0, HIV.diags - misclassified_obs$cd4[state - 2, ])
       }
 
       tempvec1 <- sapply((state + 1):nquar, function(x) {
@@ -642,6 +699,9 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
         c(rep(0, nquar - n_CD4), rowSums(stan_data$CD4[,, state]))
       } else {
         c(rep(0, nquar - n_CD4), stan_data$CD4[, state])
+      }
+      if (config$migration) {
+        HIV.diags <- pmax(0, HIV.diags - misclassified_obs$cd4[state, ])
       }
 
       tempvec1 <- sapply((state + 1):nquar, function(x) {
@@ -712,6 +772,14 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
     temp_p <- as.numeric(fit_mat[i, idx$p])
     temp_m <- matrix(as.numeric(fit_mat[i, idx$m]), nrow = nquar, byrow = TRUE)
     temp_om <- t(temp_m[, 1:4] * temp_omega)
+    misclassified_obs <- split_ai_misclassified_observed(
+      fit_mat,
+      i,
+      idx,
+      temp_m,
+      config,
+      nquar
+    )
     d1_mig <- as.numeric(fit_mat[i, idx$d1_mig])
     d2_mig <- as.numeric(fit_mat[i, idx$d2_mig])
     d3_mig <- as.numeric(fit_mat[i, idx$d3_mig])
@@ -838,6 +906,12 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
     ),
     nquar
   )
+
+  if (config$migration) {
+    # Keep transfers in observed HIV diagnoses, but do not back-project them
+    # through latent infection histories.
+    output$misclassified.HIV <- stats::rpois(nquar, misclassified_obs$total)
+  }
 
   if (config$migration) {
     output$total.migration <- stats::rpois(length(temp_omega), temp_omega)
@@ -998,6 +1072,9 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
       } else {
         c(rep(0, nquar - n_CD4), stan_data$CD4[, 1])
       }
+      if (config$migration) {
+        HIV.diags <- pmax(0, HIV.diags - misclassified_obs$cd4[1, ])
+      }
 
       tempvec1 <- sapply((state + 1):nquar, function(x) {
         stats::rmultinom(1, HIV.diags[x], d_to_i_temp[x - state, ])
@@ -1012,6 +1089,9 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
         c(rep(0, nquar - n_CD4), rowSums(stan_data$CD4[,, state - 2]))
       } else {
         c(rep(0, nquar - n_CD4), stan_data$CD4[, state - 2])
+      }
+      if (config$migration) {
+        HIV.diags <- pmax(0, HIV.diags - misclassified_obs$cd4[state - 2, ])
       }
 
       tempvec1 <- sapply((state + 1):nquar, function(x) {
@@ -1032,6 +1112,9 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
           rep(0, nquar - n_CD4),
           stan_data$CD4[, state]
         )
+      }
+      if (config$migration) {
+        HIV.diags <- pmax(0, HIV.diags - misclassified_obs$cd4[state, ])
       }
 
       tempvec1 <- sapply((state + 1):nquar, function(x) {
@@ -1454,6 +1537,12 @@ diagnoses.df <- function(
   diagnosed.HIV <- sapply(prev_dist["HIV.diagnoses", ], function(x) {
     colSums(x)
   })
+  if ("misclassified.HIV" %in% rownames(prev_dist)) {
+    diagnosed.HIV <- diagnosed.HIV + matrix(
+      simplify2array(prev_dist["misclassified.HIV", ]),
+      nrow = stan_data$nquar
+    )
+  }
 
   q.diagnosed <- apply(
     diagnosed.HIV + diagnosed.AIDS,

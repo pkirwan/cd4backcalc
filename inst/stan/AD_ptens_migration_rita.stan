@@ -447,7 +447,7 @@ transformed parameters {
         real hiv_dx = sum(exp_diag[t, a, y, 1 : 5]);
         real aids_dx = exp_diag[t, a, y, 6];
         
-        // Add misclassified abroad diagnoses to migrant HIV totals only (excluded from CD4 composition)
+        // Add misclassified abroad diagnoses to migrant HIV totals only
         if (y == 2) {
           hiv_dx += misclassified_dx[t, a];
         }

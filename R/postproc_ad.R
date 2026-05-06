@@ -359,12 +359,6 @@ postproc_ad <- function(
       dim = c(ndraws, nquar, nage, ny, ncd4)
     ) # [draw, t, a, y, cd4]
 
-    mis_dx_idx <- grep("^misclassified_dx\\[", colnames(fit_mat))
-    mis_dx <- array(
-      fit_mat[, mis_dx_idx],
-      dim = c(ndraws, nquar, nage)
-    ) # [draw, t, a]
-
     # HIV/AIDS arrays as (t, age, draw), summed over y
     HIV <- aperm(apply(exp_HIV_dx, c(1, 2, 3), sum), c(2, 3, 1))
     AIDS <- aperm(apply(exp_AIDS_dx, c(1, 2, 3), sum), c(2, 3, 1))
@@ -623,8 +617,9 @@ postproc_ad <- function(
 
   if (config$migration) {
     # exp_p is already defined above in migration branch as [draw,t,a,y,cd4]
+    # and already includes misclassified migrant arrivals where Stan does.
     denom_uk <- exp_HIV_dx[,,, 1] # [draw,t,a]
-    denom_m <- pmax(0, exp_HIV_dx[,,, 2] - mis_dx) # [draw,t,a] (exclude misclassified)
+    denom_m <- pmax(0, exp_HIV_dx[,,, 2]) # [draw,t,a]
 
     numer_uk <- sweep(exp_p[,,, 1, , drop = TRUE], c(1, 2, 3), denom_uk, "*")
     numer_m <- sweep(exp_p[,,, 2, , drop = TRUE], c(1, 2, 3), denom_m, "*")
