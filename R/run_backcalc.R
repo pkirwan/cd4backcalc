@@ -25,6 +25,9 @@
 #' @param iter_per_chunk Number of sampling iterations per chunk when
 #'   checkpointing.  If \code{NULL}, all sampling iterations are run in a
 #'   single chunk.
+#' @param init Initial values passed to Stan. When checkpointing, these are
+#'   only used when starting a new run; resumed checkpointed fits use the
+#'   saved checkpoint state.
 #' @return List of posterior predictive quantities and (optionally) the stanfit object.
 #' @examples
 #' sim_diags <- simulate_diagnoses(sim_seed = 123)
@@ -52,7 +55,8 @@ run_backcalc <- function(
   chain_results = FALSE,
   return_fit = TRUE,
   checkpoint_dir = NULL,
-  iter_per_chunk = NULL
+  iter_per_chunk = NULL,
+  init = NULL
 ) {
   # Check if sim_diags object has been provided
   if ("stan_data" %in% names(stan_data)) {
@@ -85,7 +89,8 @@ run_backcalc <- function(
     refresh = refresh,
     messages = messages,
     checkpoint_dir = checkpoint_dir,
-    iter_per_chunk = iter_per_chunk
+    iter_per_chunk = iter_per_chunk,
+    init = init
   )
 
   # post-process
@@ -123,6 +128,9 @@ run_backcalc <- function(
 #' @param iter_per_chunk Number of sampling iterations per chunk when
 #'   checkpointing.  If \code{NULL}, all sampling iterations are run in a
 #'   single chunk.
+#' @param init Initial values passed to Stan. When checkpointing, these are
+#'   only used when starting a new run; resumed checkpointed fits use the
+#'   saved checkpoint state.
 #' @return A CmdStanFit object (without checkpointing) or a
 #'   \code{cd4backcalc_combined_fit} object (with checkpointing).
 #' @examples
@@ -145,7 +153,8 @@ fit_stan_model <- function(
   refresh = 100,
   messages = TRUE,
   checkpoint_dir = NULL,
-  iter_per_chunk = NULL
+  iter_per_chunk = NULL,
+  init = NULL
 ) {
   options(mc.cores = parallelly::availableCores())
 
@@ -178,6 +187,7 @@ fit_stan_model <- function(
       iter_sampling = iter_sampling,
       chains = chains,
       seed = model_seed,
+      init = init,
       adapt_delta = adapt_delta,
       max_treedepth = max_treedepth,
       refresh = refresh,
@@ -194,6 +204,12 @@ fit_stan_model <- function(
 
   cp <- load_checkpoint(checkpoint_dir)
   if (!is.null(cp)) cp <- pad_checkpoint_chains(cp, chains)
+  if (!is.null(init) && !is.null(cp)) {
+    warning(
+      "Ignoring user-supplied init because an existing checkpoint was found; resuming from the saved checkpoint state.",
+      call. = FALSE
+    )
+  }
   draws_list <- if (!is.null(cp)) cp$draws_list else list()
   diagnostics_list <- if (!is.null(cp)) cp$diagnostics_list else list()
   total_time <- if (!is.null(cp)) cp$total_time else 0
@@ -225,6 +241,7 @@ fit_stan_model <- function(
           iter_sampling = 0,
           chains = chains,
           seed = model_seed,
+          init = init,
           adapt_delta = adapt_delta,
           max_treedepth = max_treedepth,
           refresh = refresh,

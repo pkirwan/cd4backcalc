@@ -199,33 +199,93 @@ postproc_ad <- function(
   # models use d[ag, t, state].  For reporting and the C++ backcalculation we use
   # the native-group array (d_nat) as representative.
   dp <- if (config$migration) "d_nat" else "d"
-  ind_list$d1.ind.1524 <- grep(sprintf("^%s\\[1,[0-9]+,1\\]$", dp), colnames(fit_mat))
-  ind_list$d2.ind.1524 <- grep(sprintf("^%s\\[1,[0-9]+,2\\]$", dp), colnames(fit_mat))
-  ind_list$d3.ind.1524 <- grep(sprintf("^%s\\[1,[0-9]+,3\\]$", dp), colnames(fit_mat))
-  ind_list$d4.ind.1524 <- grep(sprintf("^%s\\[1,[0-9]+,4\\]$", dp), colnames(fit_mat))
-  ind_list$d1.ind.2534 <- grep(sprintf("^%s\\[2,[0-9]+,1\\]$", dp), colnames(fit_mat))
-  ind_list$d2.ind.2534 <- grep(sprintf("^%s\\[2,[0-9]+,2\\]$", dp), colnames(fit_mat))
-  ind_list$d3.ind.2534 <- grep(sprintf("^%s\\[2,[0-9]+,3\\]$", dp), colnames(fit_mat))
-  ind_list$d4.ind.2534 <- grep(sprintf("^%s\\[2,[0-9]+,4\\]$", dp), colnames(fit_mat))
-  ind_list$d1.ind.3544 <- grep(sprintf("^%s\\[3,[0-9]+,1\\]$", dp), colnames(fit_mat))
-  ind_list$d2.ind.3544 <- grep(sprintf("^%s\\[3,[0-9]+,2\\]$", dp), colnames(fit_mat))
-  ind_list$d3.ind.3544 <- grep(sprintf("^%s\\[3,[0-9]+,3\\]$", dp), colnames(fit_mat))
-  ind_list$d4.ind.3544 <- grep(sprintf("^%s\\[3,[0-9]+,4\\]$", dp), colnames(fit_mat))
-  ind_list$d1.ind.45 <- grep(sprintf("^%s\\[4,[0-9]+,1\\]$", dp), colnames(fit_mat))
-  ind_list$d2.ind.45 <- grep(sprintf("^%s\\[4,[0-9]+,2\\]$", dp), colnames(fit_mat))
-  ind_list$d3.ind.45 <- grep(sprintf("^%s\\[4,[0-9]+,3\\]$", dp), colnames(fit_mat))
-  ind_list$d4.ind.45 <- grep(sprintf("^%s\\[4,[0-9]+,4\\]$", dp), colnames(fit_mat))
+  ind_list$d1.ind.1524 <- grep(
+    sprintf("^%s\\[1,[0-9]+,1\\]$", dp),
+    colnames(fit_mat)
+  )
+  ind_list$d2.ind.1524 <- grep(
+    sprintf("^%s\\[1,[0-9]+,2\\]$", dp),
+    colnames(fit_mat)
+  )
+  ind_list$d3.ind.1524 <- grep(
+    sprintf("^%s\\[1,[0-9]+,3\\]$", dp),
+    colnames(fit_mat)
+  )
+  ind_list$d4.ind.1524 <- grep(
+    sprintf("^%s\\[1,[0-9]+,4\\]$", dp),
+    colnames(fit_mat)
+  )
+  ind_list$d1.ind.2534 <- grep(
+    sprintf("^%s\\[2,[0-9]+,1\\]$", dp),
+    colnames(fit_mat)
+  )
+  ind_list$d2.ind.2534 <- grep(
+    sprintf("^%s\\[2,[0-9]+,2\\]$", dp),
+    colnames(fit_mat)
+  )
+  ind_list$d3.ind.2534 <- grep(
+    sprintf("^%s\\[2,[0-9]+,3\\]$", dp),
+    colnames(fit_mat)
+  )
+  ind_list$d4.ind.2534 <- grep(
+    sprintf("^%s\\[2,[0-9]+,4\\]$", dp),
+    colnames(fit_mat)
+  )
+  ind_list$d1.ind.3544 <- grep(
+    sprintf("^%s\\[3,[0-9]+,1\\]$", dp),
+    colnames(fit_mat)
+  )
+  ind_list$d2.ind.3544 <- grep(
+    sprintf("^%s\\[3,[0-9]+,2\\]$", dp),
+    colnames(fit_mat)
+  )
+  ind_list$d3.ind.3544 <- grep(
+    sprintf("^%s\\[3,[0-9]+,3\\]$", dp),
+    colnames(fit_mat)
+  )
+  ind_list$d4.ind.3544 <- grep(
+    sprintf("^%s\\[3,[0-9]+,4\\]$", dp),
+    colnames(fit_mat)
+  )
+  ind_list$d1.ind.45 <- grep(
+    sprintf("^%s\\[4,[0-9]+,1\\]$", dp),
+    colnames(fit_mat)
+  )
+  ind_list$d2.ind.45 <- grep(
+    sprintf("^%s\\[4,[0-9]+,2\\]$", dp),
+    colnames(fit_mat)
+  )
+  ind_list$d3.ind.45 <- grep(
+    sprintf("^%s\\[4,[0-9]+,3\\]$", dp),
+    colnames(fit_mat)
+  )
+  ind_list$d4.ind.45 <- grep(
+    sprintf("^%s\\[4,[0-9]+,4\\]$", dp),
+    colnames(fit_mat)
+  )
   if (config$rita) {
-    ind_list$d5.ind.1524 <- grep(sprintf("^%s\\[1,[0-9]+,5\\]$", dp), colnames(fit_mat))
-    ind_list$d5.ind.2534 <- grep(sprintf("^%s\\[2,[0-9]+,5\\]$", dp), colnames(fit_mat))
-    ind_list$d5.ind.3544 <- grep(sprintf("^%s\\[3,[0-9]+,5\\]$", dp), colnames(fit_mat))
-    ind_list$d5.ind.45 <- grep(sprintf("^%s\\[4,[0-9]+,5\\]$", dp), colnames(fit_mat))
+    ind_list$d5.ind.1524 <- grep(
+      sprintf("^%s\\[1,[0-9]+,5\\]$", dp),
+      colnames(fit_mat)
+    )
+    ind_list$d5.ind.2534 <- grep(
+      sprintf("^%s\\[2,[0-9]+,5\\]$", dp),
+      colnames(fit_mat)
+    )
+    ind_list$d5.ind.3544 <- grep(
+      sprintf("^%s\\[3,[0-9]+,5\\]$", dp),
+      colnames(fit_mat)
+    )
+    ind_list$d5.ind.45 <- grep(
+      sprintf("^%s\\[4,[0-9]+,5\\]$", dp),
+      colnames(fit_mat)
+    )
   }
 
   # Extract diagnosis probabilities by age band (only populated bands)
   diag_grid <- tidyr::crossing(
     age_band = names(age_bands)[-1],
-    state = 1:length(diag_states)
+    state = seq_along(diag_states)
   )
 
   out$diag_prob_age <- purrr::pmap(
@@ -241,7 +301,7 @@ postproc_ad <- function(
           age_band = factor(age_band, levels = names(age_bands)),
           strata = factor(
             state,
-            levels = 1:length(diag_states),
+            levels = seq_along(diag_states),
             labels = names(diag_states)
           ),
           year = seq(
@@ -266,7 +326,7 @@ postproc_ad <- function(
     names(ind_list_mig) <- names(ind_list)
     for (age_band in names(age_bands)[-1]) {
       ag_num <- match(age_band, names(age_bands)[-1])
-      for (k in seq_len(length(diag_states))) {
+      for (k in seq_along(diag_states)) {
         key <- sprintf("d%i.ind.%s", k, age_band)
         ind_list_mig[[key]] <- grep(
           sprintf("^d_mig\\[%d,[0-9]+,%d\\]$", ag_num, k),
@@ -297,7 +357,7 @@ postproc_ad <- function(
             age_band = factor(age_band, levels = names(age_bands)),
             strata = factor(
               state,
-              levels = 1:length(diag_states),
+              levels = seq_along(diag_states),
               labels = names(diag_states)
             ),
             year = seq(
@@ -392,7 +452,10 @@ postproc_ad <- function(
     d_idx <- array(NA_integer_, dim = c(4, (config$ndiagst - 1), nquar))
     for (ag in 1:4) {
       for (k in 1:(config$ndiagst - 1)) {
-        ind <- grep(sprintf("^d_nat\\[%d,[0-9]+,%d\\]$", ag, k), colnames(fit_mat))
+        ind <- grep(
+          sprintf("^d_nat\\[%d,[0-9]+,%d\\]$", ag, k),
+          colnames(fit_mat)
+        )
         if (length(ind) != nquar) {
           stop(sprintf(
             "Could not find d_nat[%d,*,%d] with length nquar=%d.",
@@ -408,7 +471,10 @@ postproc_ad <- function(
     d_mig_idx <- array(NA_integer_, dim = c(4, (config$ndiagst - 1), nquar))
     for (ag in 1:4) {
       for (k in 1:(config$ndiagst - 1)) {
-        ind <- grep(sprintf("^d_mig\\[%d,[0-9]+,%d\\]$", ag, k), colnames(fit_mat))
+        ind <- grep(
+          sprintf("^d_mig\\[%d,[0-9]+,%d\\]$", ag, k),
+          colnames(fit_mat)
+        )
         if (length(ind) != nquar) {
           stop(sprintf(
             "Could not find d_mig[%d,*,%d] with length nquar=%d.",
@@ -564,7 +630,7 @@ postproc_ad <- function(
     )
 
     # Expected diagnoses
-    exp.diags <- lapply(1:nrow(fit_mat), function(i) {
+    exp.diags <- lapply(seq_len(nrow(fit_mat)), function(i) {
       g.fct(
         exp(infs[i, ]),
         d.mat.iter(
@@ -585,7 +651,7 @@ postproc_ad <- function(
     })
 
     # Expected prevalence
-    exp.prev <- lapply(1:nrow(fit_mat), function(i) {
+    exp.prev <- lapply(seq_len(nrow(fit_mat)), function(i) {
       p.fct(
         exp(infs[i, ]),
         d.mat.iter(
@@ -694,7 +760,7 @@ postproc_ad <- function(
     aids_slice <- ifelse(config$rita, 6, 5)
     if (urep.flag) {
       urep.vec <- fit_mat[, "under_rep"]
-      AIDS <- simplify2array(lapply(1:nrow(fit_mat), function(i) {
+      AIDS <- simplify2array(lapply(seq_len(nrow(fit_mat)), function(i) {
         urep.fct(
           urep.vec[i],
           exp.diags.arr[,, aids_slice, i],
@@ -1041,8 +1107,11 @@ postproc_ad <- function(
       undiag.mig.fct.qt(
         undiag_migration.draws,
         abroad_age_prop,
-        age[1], age[2],
-        nage, nquar, start_yr
+        age[1],
+        age[2],
+        nage,
+        nquar,
+        start_yr
       ) |>
         dplyr::mutate(age_band = factor(bn, levels = names(age_bands)))
     }) |>
@@ -1178,46 +1247,4 @@ tidy_bind <- function(
     out_template <- dplyr::bind_rows(out_template, df1)
   }
   return(out_template)
-}
-
-#' Get initial prevalence matrix to provide to age-dependent model
-#'
-#' @param config Configuration list.
-#' @param exp.prev.arr Expected prevalence array.
-#' @param start_yr Starting year.
-#' @return Initial prevalence matrix.
-get_init_prev <- function(config, exp.prev.arr, start_yr) {
-  ### Initial prevalence matrix
-  # Prev.mat for specific years
-  if (config$rita) {
-    prev.mat.2011 <- rbind(
-      apply(exp.prev.arr[1, , 1, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 2, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 3, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 4, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 5, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 6, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 7, ], 1, get_quantiles)[2, ]
-    )
-  } else if (start_yr == 1995) {
-    prev.mat.1995 <- rbind(
-      apply(exp.prev.arr[1, , 1, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 2, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 3, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 4, ], 1, get_quantiles)[2, ]
-    )
-    prev.mat.2011 <- rbind(
-      apply(exp.prev.arr[65, , 1, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[65, , 2, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[65, , 3, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[65, , 4, ], 1, get_quantiles)[2, ]
-    )
-  } else if (start_yr == 2011) {
-    prev.mat.2011 <- rbind(
-      apply(exp.prev.arr[1, , 1, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 2, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 3, ], 1, get_quantiles)[2, ],
-      apply(exp.prev.arr[1, , 4, ], 1, get_quantiles)[2, ]
-    )
-  }
 }

@@ -30,10 +30,10 @@ get_sims <- function(sim_list, var, var2, plot_years = 29.75) {
 #' Get estimates from HIV model results for plotting.
 #'
 #' @param hiv_list A list of HIV model results.
-#' @param var The variable to extract.
+#' @param quantity The variable to extract.
 #' @return A data frame of model estimates for plotting.
 #' @export
-get_estimates <- function(hiv_list, var) {
+get_estimates <- function(hiv_list, quantity) {
   hiv_list <- purrr::compact(hiv_list)
   if (length(hiv_list) == 0) return(tibble::tibble())
   # make hiv_list a list of lists if not already
@@ -45,7 +45,7 @@ get_estimates <- function(hiv_list, var) {
     x <- hiv_list[[i]]
     group_label <- if (!is.null(x$group)) x$group else paste0("Model ", i)
 
-    estimate_tbl <- x[[var]] |>
+    estimate_tbl <- x[[quantity]] |>
       tibble::as_tibble()
 
     if (all(c("quartile", "value") %in% names(estimate_tbl))) {
@@ -57,7 +57,7 @@ get_estimates <- function(hiv_list, var) {
         stop(
           sprintf(
             "Estimate '%s' must contain either quartile/value columns or summary columns.",
-            var
+            quantity
           )
         )
       }

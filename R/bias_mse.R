@@ -9,7 +9,7 @@ get_bias <- function(
   model_estimates,
   type
 ) {
-  bias <- dplyr::left_join(
+  dplyr::left_join(
     get_estimates(hiv_list, type),
     model_estimates,
     by = c("year")
@@ -33,7 +33,7 @@ get_bias_strata <- function(
   model_estimates,
   type
 ) {
-  bias <- dplyr::left_join(
+  dplyr::left_join(
     get_estimates(hiv_list, type),
     model_estimates,
     by = c("year", "strata")
@@ -69,7 +69,9 @@ make_mse_list <- function(
   sim_comparison <- match.arg(sim_comparison)
   use_deterministic <- sim_comparison == "generative"
   hiv_list <- purrr::compact(hiv_list)
-  if (length(hiv_list) == 0) stop("All entries in hiv_list are NULL.")
+  if (length(hiv_list) == 0) {
+    stop("All entries in hiv_list are NULL.")
+  }
   # make hiv_list a list of lists if not already
   if (!("incidence" %in% names(hiv_list[[1]]))) {
     hiv_list <- list(hiv_list)
@@ -79,7 +81,11 @@ make_mse_list <- function(
 
   out$incidence_bias <- get_bias(
     hiv_list,
-    extract_simulated_quantity(hiv_list[[1]], quantity = "incidence", deterministic = use_deterministic),
+    extract_simulated_quantity(
+      hiv_list[[1]],
+      quantity = "incidence",
+      deterministic = use_deterministic
+    ),
     "incidence"
   )
   out$incidence_mse <- get_mse(out$incidence_bias)
@@ -87,22 +93,38 @@ make_mse_list <- function(
   if (hiv_list[[1]]$stan_data$model_config$migration) {
     out$undiag_migration_bias <- get_bias(
       hiv_list,
-      extract_simulated_quantity(hiv_list[[1]], quantity = "undiag_migration", deterministic = use_deterministic),
+      extract_simulated_quantity(
+        hiv_list[[1]],
+        quantity = "undiag_migration",
+        deterministic = use_deterministic
+      ),
       "undiag_migration"
     )
     out$all_migration_bias <- get_bias(
       hiv_list,
-      extract_simulated_quantity(hiv_list[[1]], quantity = "all_migration", deterministic = use_deterministic),
+      extract_simulated_quantity(
+        hiv_list[[1]],
+        quantity = "all_migration",
+        deterministic = use_deterministic
+      ),
       "all_migration"
     )
     out$ratio_abroad_uk_bias <- get_bias(
       hiv_list,
-      extract_simulated_quantity(hiv_list[[1]], quantity = "ratio_abroad_uk", deterministic = use_deterministic),
+      extract_simulated_quantity(
+        hiv_list[[1]],
+        quantity = "ratio_abroad_uk",
+        deterministic = use_deterministic
+      ),
       "ratio_abroad_uk"
     )
     out$mp_bias <- get_bias_strata(
       hiv_list,
-      extract_simulated_quantity(hiv_list[[1]], quantity = "migration_prob", deterministic = use_deterministic),
+      extract_simulated_quantity(
+        hiv_list[[1]],
+        quantity = "migration_prob",
+        deterministic = use_deterministic
+      ),
       "migration_prob"
     )
 

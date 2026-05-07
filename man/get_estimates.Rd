@@ -4,12 +4,12 @@
 \alias{get_estimates}
 \title{Get estimates from HIV model results for plotting.}
 \usage{
-get_estimates(hiv_list, var)
+get_estimates(hiv_list, quantity)
 }
 \arguments{
 \item{hiv_list}{A list of HIV model results.}
 
-\item{var}{The variable to extract.}
+\item{quantity}{The variable to extract.}
 }
 \value{
 A data frame of model estimates for plotting.

@@ -109,6 +109,24 @@ plot_estimates(model_1, quantity = "incidence")
 
 <img src="man/figures/README-simulate-data-4.png" width="100%" />
 
+For real data, pass a Stan-ready list directly to `run_backcalc()` and
+supply the matching `migration`, `rita`, and `age` flags for the chosen
+model. The input list should contain the diagnosis arrays required for
+that model family:
+
+``` r
+hiv_list <- run_backcalc(
+	real_stan_data,
+	migration = TRUE,
+	rita = FALSE,
+	age = FALSE
+)
+```
+
+If `plot_diagnostics()` or `model_1$fit$cmdstan_diagnose()` indicates
+divergent transitions or maximum treedepth warnings, refit with a
+larger `adapt_delta` and `max_treedepth`.
+
 ## Supported models
 
 The cd4backcalc package includes several models, written in Stan, which
@@ -131,9 +149,21 @@ combination of RITA evidence, migration status, and age structure.
 | CD4 + Migration | rita = FALSE, migration = TRUE, age = FALSE | rita = FALSE, migration = TRUE, age = TRUE |
 | CD4 + RITA + Migration | rita = TRUE, migration = TRUE, age = FALSE | rita = TRUE, migration = TRUE, age = TRUE |
 
+For the age-independent CD4-only model, `run_backcalc()` also supports
+alternative smoothing families via `inf_model` and `diag_model`.
+Models with migration, RITA, or age structure currently use the spline
+configuration.
+
 N.B. Due to the increased complexity, fitting times can be substantially
 longer when using the age-dependent models. On resource-constrained
 systems, “checkpointing” is available to fit these models in stages,
 saving and reloading intermediate results, see
 [vignette(“checkpointing”)](https://pkirwan.github.io/cd4backcalc/articles/checkpointing.html)
 for details.
+
+See also [Getting started](https://pkirwan.github.io/cd4backcalc/articles/cd4backcalc.html)
+for the basic workflow,
+[Model types](https://pkirwan.github.io/cd4backcalc/articles/model-types.html)
+for RITA, migration, and age-dependent models, and
+[Analysing results](https://pkirwan.github.io/cd4backcalc/articles/analysing-results.html)
+for extracting estimates and comparing fitted models.

@@ -22,6 +22,42 @@ test_that("cd4-only back-calculation produces a stanfit object", {
   expect_true("diag_prob" %in% names(hiv_list))
 })
 
+test_that("run_backcalc accepts user-supplied inits", {
+  stan_data <- simulate_diagnoses(sim_seed = 123)
+
+  suppressWarnings({
+    initial_fit <- run_backcalc(
+      stan_data,
+      model_seed = 123,
+      iter_warmup = 5,
+      iter_sampling = 5,
+      chains = 1,
+      refresh = 0,
+      messages = FALSE,
+      nworkers = 1
+    )
+  })
+
+  inits <- create_stan_inits(initial_fit$fit)
+
+  suppressWarnings({
+    hiv_list <- run_backcalc(
+      stan_data,
+      model_seed = 123,
+      iter_warmup = 5,
+      iter_sampling = 5,
+      chains = 1,
+      refresh = 0,
+      messages = FALSE,
+      nworkers = 1,
+      init = inits
+    )
+  })
+
+  expect_r6_class(hiv_list$fit, "CmdStanMCMC")
+  expect_true("diag_prob" %in% names(hiv_list))
+})
+
 test_that("back-calculation can cope with missing data", {
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(sim_seed = 123, cd4_completeness = 0.5)

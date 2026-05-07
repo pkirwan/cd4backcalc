@@ -15,7 +15,8 @@ fit_stan_model(
   refresh = 100,
   messages = TRUE,
   checkpoint_dir = NULL,
-  iter_per_chunk = NULL
+  iter_per_chunk = NULL,
+  init = NULL
 )
 }
 \arguments{
@@ -43,6 +44,10 @@ If \code{NULL} (default), no checkpointing is performed.}
 \item{iter_per_chunk}{Number of sampling iterations per chunk when
 checkpointing.  If \code{NULL}, all sampling iterations are run in a
 single chunk.}
+
+\item{init}{Initial values passed to Stan. When checkpointing, these are
+only used when starting a new run; resumed checkpointed fits use the
+saved checkpoint state.}
 }
 \value{
 A CmdStanFit object (without checkpointing) or a
