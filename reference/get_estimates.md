@@ -5,7 +5,7 @@ Get estimates from HIV model results for plotting.
 ## Usage
 
 ``` r
-get_estimates(hiv_list, var)
+get_estimates(hiv_list, quantity)
 ```
 
 ## Arguments
@@ -14,7 +14,7 @@ get_estimates(hiv_list, var)
 
   A list of HIV model results.
 
-- var:
+- quantity:
 
   The variable to extract.
 

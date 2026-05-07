@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -119,6 +119,15 @@ Figure: CD4-staged back-calculation model. The model compartments represent undi
 <code class="sourceCode R"><span><span class="co"># plot estimates compared to simulated values</span></span>
 <span><span class="fu"><a href="reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">model_1</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="reference/figures/README-simulate-data-4.png" width="100%"></p>
+<p>For real data, pass a Stan-ready list directly to <code><a href="reference/run_backcalc.html">run_backcalc()</a></code> and supply the matching <code>migration</code>, <code>rita</code>, and <code>age</code> flags for the chosen model. The input list should contain the diagnosis arrays required for that model family:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">hiv_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span></span>
+<span>    <span class="va">real_stan_data</span>,</span>
+<span>    migration <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    rita <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>    age <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>If <code><a href="reference/plot_diagnostics.html">plot_diagnostics()</a></code> or <code>model_1$fit$cmdstan_diagnose()</code> indicates divergent transitions or maximum treedepth warnings, refit with a larger <code>adapt_delta</code> and <code>max_treedepth</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="supported-models">Supported models<a class="anchor" aria-label="anchor" href="#supported-models"></a>
@@ -164,7 +173,9 @@ Figure: CD4-staged back-calculation model. The model compartments represent undi
 </tr>
 </tbody>
 </table>
+<p>For the age-independent CD4-only model, <code><a href="reference/run_backcalc.html">run_backcalc()</a></code> also supports alternative smoothing families via <code>inf_model</code> and <code>diag_model</code>. Models with migration, RITA, or age structure currently use the spline configuration.</p>
 <p>N.B. Due to the increased complexity, fitting times can be substantially longer when using the age-dependent models. On resource-constrained systems, “checkpointing” is available to fit these models in stages, saving and reloading intermediate results, see <a href="https://pkirwan.github.io/cd4backcalc/articles/checkpointing.html">vignette(“checkpointing”)</a> for details.</p>
+<p>See also <a href="https://pkirwan.github.io/cd4backcalc/articles/cd4backcalc.html">Getting started</a> for the basic workflow, <a href="https://pkirwan.github.io/cd4backcalc/articles/model-types.html">Model types</a> for RITA, migration, and age-dependent models, and <a href="https://pkirwan.github.io/cd4backcalc/articles/analysing-results.html">Analysing results</a> for extracting estimates and comparing fitted models.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">

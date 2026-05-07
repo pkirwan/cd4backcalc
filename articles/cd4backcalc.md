@@ -28,6 +28,26 @@ If you are working with real data rather than simulated data, you can
 skip this step and pass a pre-formatted `stan_data` list directly to
 [`run_backcalc()`](https://pkirwan.github.io/cd4backcalc/reference/run_backcalc.md).
 
+For real data, the input to
+[`run_backcalc()`](https://pkirwan.github.io/cd4backcalc/reference/run_backcalc.md)
+should be a Stan-ready list containing the diagnosis arrays required for
+the chosen model. At minimum this includes diagnosis counts (`HIV`,
+`AIDS`, and `CD4`); migration, RITA, and age-dependent models
+additionally require the corresponding migration, recency, and
+age-specific arrays. When fitting real data, pass the matching
+`migration`, `rita`, and `age` flags explicitly to
+[`run_backcalc()`](https://pkirwan.github.io/cd4backcalc/reference/run_backcalc.md).
+
+``` r
+
+hiv_list_real <- run_backcalc(
+  real_stan_data,
+  migration = TRUE,
+  rita = FALSE,
+  age = FALSE
+)
+```
+
 We can visualise the simulated data using
 [`plot_simulations()`](https://pkirwan.github.io/cd4backcalc/reference/plot_simulations.md):
 
@@ -80,6 +100,21 @@ diagnostics:
 
 hiv_list$fit$summary()
 hiv_list$fit$cmdstan_diagnose()
+```
+
+If diagnostics show divergent transitions or maximum treedepth warnings,
+first try increasing `adapt_delta` and `max_treedepth`. If chains still
+mix poorly, increase the warmup or sampling iterations and refit:
+
+``` r
+
+hiv_list <- run_backcalc(
+  sim_diags,
+  adapt_delta = 0.99,
+  max_treedepth = 14,
+  iter_warmup = 1000,
+  iter_sampling = 1500
+)
 ```
 
 ## Goodness of fit

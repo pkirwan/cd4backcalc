@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,7 +61,7 @@
       <h1>Model types</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.0.6/vignettes/articles/model-types.Rmd" class="external-link"><code>vignettes/articles/model-types.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.0.7/vignettes/articles/model-types.Rmd" class="external-link"><code>vignettes/articles/model-types.Rmd</code></a></small>
       <div class="d-none name"><code>model-types.Rmd</code></div>
     </div>
 
@@ -70,7 +70,8 @@
 <p>The <code>cd4backcalc</code> package supports eight model
 configurations combining CD4-only or CD4 + RITA data, with or without
 migration, and age-independent or age-dependent structures. This article
-shows how to simulate data and fit each variant.</p>
+shows the main arguments used to simulate and fit each family of model,
+and highlights the outputs available for each combination.</p>
 <div class="section level2">
 <h2 id="supported-models">Supported models<a class="anchor" aria-label="anchor" href="#supported-models"></a>
 </h2>
@@ -112,6 +113,12 @@ shows how to simulate data and fit each variant.</p>
 flags are passed to both <code><a href="../reference/simulate_diagnoses.html">simulate_diagnoses()</a></code> and
 <code><a href="../reference/run_backcalc.html">run_backcalc()</a></code>. When fitting to real data these flags are
 passed to <code><a href="../reference/run_backcalc.html">run_backcalc()</a></code> only.</p>
+<p>For the age-independent CD4-only model, <code><a href="../reference/run_backcalc.html">run_backcalc()</a></code>
+also supports alternative smoothing families via <code>inf_model</code>
+and <code>diag_model</code> (<code>1</code> = spline, <code>2</code> =
+random walk, and for incidence only <code>3</code> = GP). Models with
+migration, RITA, or age structure currently use the spline configuration
+(<code>inf_model = 1</code>, <code>diag_model = 1</code>).</p>
 </div>
 <div class="section level2">
 <h2 id="cd4-only-model">CD4-only model<a class="anchor" aria-label="anchor" href="#cd4-only-model"></a>
@@ -141,6 +148,14 @@ vary by CD4 stratum and time.
 <span><span class="va">sim_cd4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>h_pattern <span class="op">=</span> <span class="st">"increasing"</span><span class="op">)</span></span>
 <span><span class="va">fit_cd4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_cd4</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_cd4</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
+<p>Alternative smoothing choices are available for the age-independent
+CD4-only model:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_cd4_rw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span></span>
+<span>  <span class="va">sim_cd4</span>,</span>
+<span>  inf_model <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  diag_model <span class="op">=</span> <span class="fl">2</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="age-dependent-models">Age-dependent models<a class="anchor" aria-label="anchor" href="#age-dependent-models"></a>
@@ -159,7 +174,7 @@ representing the current age-category and
 representing the age category at HIV acquisition.
 </p>
 </div>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sim_age</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>age <span class="op">=</span> <span class="cn">TRUE</span>, h_pattern <span class="op">=</span> <span class="st">"increasing"</span><span class="op">)</span></span>
 <span><span class="va">fit_age</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_age</span><span class="op">)</span></span>
 <span></span>
@@ -188,7 +203,7 @@ assay and non-recent incidence assay CD4-staged states. A/w = Acquired
 within, mo. = months.
 </p>
 </div>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sim_rita</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>rita <span class="op">=</span> <span class="cn">TRUE</span>, h_pattern <span class="op">=</span> <span class="st">"increasing"</span><span class="op">)</span></span>
 <span><span class="va">fit_rita</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_rita</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_rita</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
@@ -210,7 +225,7 @@ lines are HIV acquisition or migration arrivals among individuals born
 abroad.
 </p>
 </div>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sim_mig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>migration <span class="op">=</span> <span class="cn">TRUE</span>, h_pattern <span class="op">=</span> <span class="st">"increasing"</span><span class="op">)</span></span>
 <span><span class="va">fit_mig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_mig</span><span class="op">)</span></span>
 <span></span>
@@ -222,12 +237,34 @@ abroad.
 <span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"detect_prob"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="combined-rita-migration-models">Combined RITA + migration models<a class="anchor" aria-label="anchor" href="#combined-rita-migration-models"></a>
+</h2>
+<p>When both recent infection evidence and migration data are available,
+the same interface extends to the combined model:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sim_rita_mig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span></span>
+<span>  rita <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  migration <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  h_pattern <span class="op">=</span> <span class="st">"increasing"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">fit_rita_mig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_rita_mig</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_rita_mig</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_rita_mig</span>, quantity <span class="op">=</span> <span class="st">"diag_prob_mig"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_rita_mig</span>, quantity <span class="op">=</span> <span class="st">"detect_prob"</span><span class="op">)</span></span></code></pre></div>
+<p>To fit the corresponding age-dependent model, add
+<code>age = TRUE</code> to both <code><a href="../reference/simulate_diagnoses.html">simulate_diagnoses()</a></code> and
+<code><a href="../reference/run_backcalc.html">run_backcalc()</a></code>. Age-specific outputs such as
+<code>undiag_migration_age</code> and <code>diag_prob_mig_age</code> are
+then available.</p>
+</div>
+<div class="section level2">
 <h2 id="remodelling-data">Remodelling data<a class="anchor" aria-label="anchor" href="#remodelling-data"></a>
 </h2>
 <p>If data was simulated with RITA evidence but you want to fit a
 CD4-only model (e.g. for comparison), use <code><a href="../reference/sim_remodel.html">sim_remodel()</a></code> to
 restructure the data:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># simulate with RITA</span></span>
 <span><span class="va">sim_rita</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>rita <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
@@ -243,7 +280,7 @@ restructure the data:</p>
 <p>For reproducible simulation studies, pre-defined simulation types
 combine multiple parameter patterns. These are specified via the
 <code>sim_type</code> argument:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># combo_3: varying acquisition + step-change migration + varying diagnosis +</span></span>
 <span><span class="co">#          increasing proportion UK + varying migration probabilities +</span></span>
 <span><span class="co">#          non-uniform age distribution</span></span>

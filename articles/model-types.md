@@ -2,8 +2,9 @@
 
 The `cd4backcalc` package supports eight model configurations combining
 CD4-only or CD4 + RITA data, with or without migration, and
-age-independent or age-dependent structures. This article shows how to
-simulate data and fit each variant.
+age-independent or age-dependent structures. This article shows the main
+arguments used to simulate and fit each family of model, and highlights
+the outputs available for each combination.
 
 ## Supported models
 
@@ -21,6 +22,13 @@ and
 When fitting to real data these flags are passed to
 [`run_backcalc()`](https://pkirwan.github.io/cd4backcalc/reference/run_backcalc.md)
 only.
+
+For the age-independent CD4-only model,
+[`run_backcalc()`](https://pkirwan.github.io/cd4backcalc/reference/run_backcalc.md)
+also supports alternative smoothing families via `inf_model` and
+`diag_model` (`1` = spline, `2` = random walk, and for incidence only
+`3` = GP). Models with migration, RITA, or age structure currently use
+the spline configuration (`inf_model = 1`, `diag_model = 1`).
 
 ## CD4-only model
 
@@ -47,6 +55,18 @@ library(cd4backcalc)
 sim_cd4 <- simulate_diagnoses(h_pattern = "increasing")
 fit_cd4 <- run_backcalc(sim_cd4)
 plot_estimates(fit_cd4, quantity = "incidence")
+```
+
+Alternative smoothing choices are available for the age-independent
+CD4-only model:
+
+``` r
+
+fit_cd4_rw <- run_backcalc(
+  sim_cd4,
+  inf_model = 2,
+  diag_model = 2
+)
 ```
 
 ## Age-dependent models
@@ -132,6 +152,32 @@ plot_estimates(fit_mig, quantity = "ratio_abroad_uk")
 plot_estimates(fit_mig, quantity = "transfers")
 plot_estimates(fit_mig, quantity = "detect_prob")
 ```
+
+## Combined RITA + migration models
+
+When both recent infection evidence and migration data are available,
+the same interface extends to the combined model:
+
+``` r
+
+sim_rita_mig <- simulate_diagnoses(
+  rita = TRUE,
+  migration = TRUE,
+  h_pattern = "increasing"
+)
+fit_rita_mig <- run_backcalc(sim_rita_mig)
+
+plot_estimates(fit_rita_mig, quantity = "incidence")
+plot_estimates(fit_rita_mig, quantity = "diag_prob_mig")
+plot_estimates(fit_rita_mig, quantity = "detect_prob")
+```
+
+To fit the corresponding age-dependent model, add `age = TRUE` to both
+[`simulate_diagnoses()`](https://pkirwan.github.io/cd4backcalc/reference/simulate_diagnoses.md)
+and
+[`run_backcalc()`](https://pkirwan.github.io/cd4backcalc/reference/run_backcalc.md).
+Age-specific outputs such as `undiag_migration_age` and
+`diag_prob_mig_age` are then available.
 
 ## Remodelling data
 

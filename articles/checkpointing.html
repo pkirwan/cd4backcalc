@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,7 +61,7 @@
       <h1>Checkpointing and long runs</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.0.6/vignettes/articles/checkpointing.Rmd" class="external-link"><code>vignettes/articles/checkpointing.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.0.7/vignettes/articles/checkpointing.Rmd" class="external-link"><code>vignettes/articles/checkpointing.Rmd</code></a></small>
       <div class="d-none name"><code>checkpointing.Rmd</code></div>
     </div>
 
@@ -119,7 +119,7 @@ from the last completed chunk:</p>
 </h2>
 <p>For fine-tuning or extending a previous fit, use
 <code><a href="../reference/create_stan_inits.html">create_stan_inits()</a></code> to extract the last iteration’s
-parameter values as initial values for a new run:</p>
+parameter values and pass them to a new run:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># fit a short initial run</span></span>
 <span><span class="va">short_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span></span>
@@ -131,8 +131,18 @@ parameter values as initial values for a new run:</p>
 <span><span class="co"># extract initial values</span></span>
 <span><span class="va">inits</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_stan_inits.html">create_stan_inits</a></span><span class="op">(</span><span class="va">short_fit</span><span class="op">$</span><span class="va">fit</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># use as starting point for a longer run</span></span>
-<span><span class="co"># (inits can be passed to cmdstanr via the stan_data workflow)</span></span></code></pre></div>
+<span><span class="co"># reuse as starting point for a longer run</span></span>
+<span><span class="va">long_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span></span>
+<span>  <span class="va">sim_diags</span>,</span>
+<span>  iter_warmup <span class="op">=</span> <span class="fl">500</span>,</span>
+<span>  iter_sampling <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>  init <span class="op">=</span> <span class="va">inits</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>The same <code>inits</code> object can also be passed directly to a
+custom <code>cmdstanr</code> workflow. For interrupted chunked runs
+within <code>cd4backcalc</code>, restarting via
+<code>checkpoint_dir</code> is usually simpler because it also preserves
+the checkpointed adaptation state.</p>
 </div>
 <div class="section level2">
 <h2 id="when-to-use-checkpointing">When to use checkpointing<a class="anchor" aria-label="anchor" href="#when-to-use-checkpointing"></a>

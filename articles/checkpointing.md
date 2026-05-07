@@ -61,8 +61,8 @@ hiv_list <- run_backcalc(
 
 For fine-tuning or extending a previous fit, use
 [`create_stan_inits()`](https://pkirwan.github.io/cd4backcalc/reference/create_stan_inits.md)
-to extract the last iteration’s parameter values as initial values for a
-new run:
+to extract the last iteration’s parameter values and pass them to a new
+run:
 
 ``` r
 
@@ -76,9 +76,19 @@ short_fit <- run_backcalc(
 # extract initial values
 inits <- create_stan_inits(short_fit$fit)
 
-# use as starting point for a longer run
-# (inits can be passed to cmdstanr via the stan_data workflow)
+# reuse as starting point for a longer run
+long_fit <- run_backcalc(
+  sim_diags,
+  iter_warmup = 500,
+  iter_sampling = 1000,
+  init = inits
+)
 ```
+
+The same `inits` object can also be passed directly to a custom
+`cmdstanr` workflow. For interrupted chunked runs within `cd4backcalc`,
+restarting via `checkpoint_dir` is usually simpler because it also
+preserves the checkpointed adaptation state.
 
 ## When to use checkpointing
 

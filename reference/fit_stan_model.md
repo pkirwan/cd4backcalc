@@ -20,7 +20,8 @@ fit_stan_model(
   refresh = 100,
   messages = TRUE,
   checkpoint_dir = NULL,
-  iter_per_chunk = NULL
+  iter_per_chunk = NULL,
+  init = NULL
 )
 ```
 
@@ -72,6 +73,12 @@ fit_stan_model(
 
   Number of sampling iterations per chunk when checkpointing. If `NULL`,
   all sampling iterations are run in a single chunk.
+
+- init:
+
+  Initial values passed to Stan. When checkpointing, these are only used
+  when starting a new run; resumed checkpointed fits use the saved
+  checkpoint state.
 
 ## Value
 

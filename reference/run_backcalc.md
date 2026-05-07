@@ -26,7 +26,8 @@ run_backcalc(
   chain_results = FALSE,
   return_fit = TRUE,
   checkpoint_dir = NULL,
-  iter_per_chunk = NULL
+  iter_per_chunk = NULL,
+  init = NULL
 )
 ```
 
@@ -114,6 +115,12 @@ run_backcalc(
   Number of sampling iterations per chunk when checkpointing. If `NULL`,
   all sampling iterations are run in a single chunk.
 
+- init:
+
+  Initial values passed to Stan. When checkpointing, these are only used
+  when starting a new run; resumed checkpointed fits use the saved
+  checkpoint state.
+
 ## Value
 
 List of posterior predictive quantities and (optionally) the stanfit
@@ -126,7 +133,7 @@ sim_diags <- simulate_diagnoses(sim_seed = 123)
 hiv_list <- run_backcalc(
  sim_diags, iter_warmup = 10, iter_sampling = 10, chains = 1, messages = FALSE, nworkers = 1
 )
-#> CmdStan model cache dir: /tmp/RtmpxdZJbj/cd4backcalc-cmdstan
-#> R tempdir(): /tmp/RtmpxdZJbj
+#> CmdStan model cache dir: /tmp/RtmpuVCNDa/cd4backcalc-cmdstan
+#> R tempdir(): /tmp/RtmpuVCNDa
 #> Error: CmdStan path has not been set yet. See ?set_cmdstan_path.
 ```

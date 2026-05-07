@@ -27,22 +27,31 @@ depend on the model type:
 
 **Migration models** (additional):
 
-| Quantity             | Description                                 |
-|----------------------|---------------------------------------------|
-| `"undiag_migration"` | Estimated undiagnosed migration             |
-| `"migration_prob"`   | Estimated migration probabilities           |
-| `"ratio_abroad_uk"`  | Proportion of infections acquired in the UK |
-| `"transfers"`        | Estimated transfers of care                 |
-| `"detect_prob"`      | Estimated detection probabilities           |
+| Quantity | Description |
+|----|----|
+| `"all_migration"` | Estimated overall migration with HIV |
+| `"undiag_migration"` | Estimated undiagnosed migration |
+| `"diag_prob_mig"` | Estimated diagnosis probabilities for migrants by CD4 stratum |
+| `"migration_prob"` | Estimated migration probabilities |
+| `"ratio_abroad_uk"` | Proportion of infections acquired in the UK |
+| `"transfers"` | Estimated transfers of care |
+| `"detect_prob"` | Estimated detection probabilities |
 
 **Age-dependent models** (additional):
 
-| Quantity            | Description                          |
-|---------------------|--------------------------------------|
-| `"incidence_age"`   | Incidence stratified by age group    |
-| `"undiag_prev_age"` | Undiagnosed prevalence by age group  |
-| `"diagnoses_age"`   | Diagnoses by age group               |
-| `"diag_prob_age"`   | Diagnosis probabilities by age group |
+| Quantity            | Description                                    |
+|---------------------|------------------------------------------------|
+| `"incidence_age"`   | Incidence stratified by age group              |
+| `"undiag_prev_age"` | Undiagnosed prevalence by age group            |
+| `"diagnoses_age"`   | Diagnoses by age group                         |
+| `"diag_prob_age"`   | Diagnosis probabilities by CD4 stratum and age |
+
+**Age-dependent migration models** (additional):
+
+| Quantity | Description |
+|----|----|
+| `"undiag_migration_age"` | Undiagnosed migration by age group |
+| `"diag_prob_mig_age"` | Migrant diagnosis probabilities by CD4 stratum and age |
 
 ## Plotting simulated data
 
@@ -56,6 +65,7 @@ sim_diags <- simulate_diagnoses(migration = TRUE, h_pattern = "increasing")
 plot_simulations(sim_diags, quantity = "incidence")
 plot_simulations(sim_diags, quantity = "undiag_prev")
 plot_simulations(sim_diags, quantity = "diag_prob")
+plot_simulations(sim_diags, quantity = "all_migration")
 plot_simulations(sim_diags, quantity = "undiag_migration")
 ```
 
@@ -70,6 +80,25 @@ is present, the true values are shown for comparison:
 hiv_list <- run_backcalc(sim_diags)
 plot_estimates(hiv_list, quantity = "incidence")
 ```
+
+By default, plotting and summary diagnostics compare fitted values with
+the generative expectation from the simulation. To compare against the
+sampled realisation from a particular simulation seed instead, set
+`sim_comparison = "sampled"`:
+
+``` r
+
+plot_estimates(
+  hiv_list,
+  quantity = "incidence",
+  sim_comparison = "sampled"
+)
+```
+
+The same argument is available in
+[`bias_plot()`](https://pkirwan.github.io/cd4backcalc/reference/bias_plot.md)
+and
+[`mse_plot()`](https://pkirwan.github.io/cd4backcalc/reference/mse_plot.md).
 
 ## Extracting estimates as data
 
@@ -116,9 +145,9 @@ shows how much the model over- or under-estimates each quantity:
 bias_plot(hiv_list, quantity = "incidence")
 ```
 
-When comparing multiple models,
+When fitting to simulated data,
 [`mse_plot()`](https://pkirwan.github.io/cd4backcalc/reference/mse_plot.md)
-shows the mean squared error:
+summarises mean squared error across one or more simulated fits:
 
 ``` r
 
@@ -178,14 +207,24 @@ mse_plot(models, quantity = "incidence")
 ## Working with real data
 
 When fitting to real (non-simulated) data, plotting and extraction
-functions still work — the simulated truth overlay is simply omitted:
+functions still work — the simulated truth overlay is simply omitted.
+The `stan_data` object should contain the diagnosis arrays required for
+the chosen model, with matching `migration`, `rita`, and `age` flags
+supplied to
+[`run_backcalc()`](https://pkirwan.github.io/cd4backcalc/reference/run_backcalc.md).
 
 ``` r
 
-hiv_list <- run_backcalc(real_stan_data, migration = TRUE)
+hiv_list <- run_backcalc(
+  real_stan_data,
+  migration = TRUE,
+  rita = TRUE,
+  age = FALSE
+)
 
 plot_estimates(hiv_list, quantity = "incidence")
-get_estimates(hiv_list, "undiag_prev")
+plot_estimates(hiv_list, quantity = "diagnoses")
+extract_real_data(hiv_list, quantity = "diagnoses")
 ```
 
 ## Per-chain results
