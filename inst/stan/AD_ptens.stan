@@ -66,7 +66,8 @@ parameters {
   real alpha_diag_2;
   real alpha_diag_3;
   real alpha_diag_4;
-  vector[4 * nagroup] alpha_age_diag; // 4 age groups x 4 states
+  array[4] sum_to_zero_vector[4] gamma_age_raw;
+  real<lower=0> sigma_age; // shared shrinkage for age effects
   
   // AR(1) coefficient shared across diagnosis-probability walks.
   // Constrained to (0, 1) so the process is mean-reverting but persistent.
@@ -104,16 +105,26 @@ transformed parameters {
     delta_4[t] = alpha_diag_4 + rho_diag * (delta_4[t - 1] - alpha_diag_4) + sqrt(vardelta[4]) * delta_raw_4[t];
   }
   
+  // Built-in zero-sum age effects by diagnosis state.
+  // The sqrt(4 / 3) factor corrects the constrained-vector variance so each
+  // age effect has marginal SD sigma_age rather than sigma_age * sqrt(3 / 4).
+  matrix[4, 4] gamma_age;
+  real age_effect_scale = sigma_age * sqrt(4.0 / 3.0);
+  for (k in 1 : 4) {
+    for (ag in 1 : 4) {
+      gamma_age[ag, k] = age_effect_scale * gamma_age_raw[k][ag];
+    }
+  }
+  
   // Diagnosis probabilities by age group (ag), state (k), and time (t).
   // Stored as matrix[nquar, 4] so the inner time-loop accesses column k,
   // which is contiguous in column-major memory (cache-friendly).
   array[4] matrix<lower=0, upper=1>[nquar, 4] d;
   for (ag in 1 : nagroup) {
-    int ag_offset = (ag - 1) * 4;
-    d[ag,  : , 1] = inv_logit(delta_1 + alpha_age_diag[ag_offset + 1]);
-    d[ag,  : , 2] = inv_logit(delta_2 + alpha_age_diag[ag_offset + 2]);
-    d[ag,  : , 3] = inv_logit(delta_3 + alpha_age_diag[ag_offset + 3]);
-    d[ag,  : , 4] = inv_logit(delta_4 + alpha_age_diag[ag_offset + 4]);
+    d[ag,  : , 1] = inv_logit(delta_1 + gamma_age[ag, 1]);
+    d[ag,  : , 2] = inv_logit(delta_2 + gamma_age[ag, 2]);
+    d[ag,  : , 3] = inv_logit(delta_3 + gamma_age[ag, 3]);
+    d[ag,  : , 4] = inv_logit(delta_4 + gamma_age[ag, 4]);
   }
   
   // Expected diagnoses
@@ -274,7 +285,10 @@ model {
   // placing almost no mass below 0.5 and ruling out the RW1 boundary at 1.
   rho_diag ~ beta(7, 2);
   
-  alpha_age_diag ~ normal(0, 1);
+  for (k in 1 : 4) {
+    gamma_age_raw[k] ~ std_normal();
+  }
+  sigma_age ~ normal(0, 0.5);
   
   // Likelihood of model
   for (t in 1 : nquar) {
