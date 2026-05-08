@@ -339,7 +339,7 @@ plot_estimates <- function(
     }
 
     model_colors <- stats::setNames(
-      c(rep("mediumorchid", length(unique(quantiles$group))), "mediumturquoise"),
+      c("mediumorchid", "coral", "mediumturquoise"),
       c(unique(quantiles$group), "Observed values")
     )
 
@@ -454,7 +454,7 @@ plot_diagnostics <- function(hiv_list, ntraces = 4) {
       p5,
       p6,
       ncol = 1,
-      heights = c(2, 2, 2, 2, 2, 1)
+      heights = c(1, 1, 1, 1, 1, 1)
     ) &
       ggplot2::theme(text = ggplot2::element_text(family = "sans"))
   } else {
@@ -462,7 +462,7 @@ plot_diagnostics <- function(hiv_list, ntraces = 4) {
       p1,
       p2,
       ncol = 1,
-      heights = c(2, 1)
+      heights = c(1, 1)
     ) &
       ggplot2::theme(text = ggplot2::element_text(family = "sans"))
   }
