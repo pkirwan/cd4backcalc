@@ -485,6 +485,7 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #' @param age_diag_effect Numeric scalar controlling the strength of age variation in diagnosis probabilities. Applied as a logit-additive offset scaled linearly across ages.
 #' @param mig_diag_offset Numeric vector of per-state logit-scale offsets applied to diagnosis probabilities for the migrant group (y=2). Length must equal the number of diagnosis states (4 for non-RITA, 5 for RITA). NULL (default) applies no offset.
 #' @param frr False recency rate for RITA misclassification.
+#' @param eta_sd Standard deviation of the approximate melding prior for the log ratio of abroad-acquired to UK-acquired infections. Passed directly to Stan as data. Smaller values anchor the model more tightly to the external \code{ratio_abroad_uk} evidence. Default is 0.10, which matches the simulation noise on the log scale.
 #' @return List containing simulated epidemic data.
 #' @examples
 #' simulate_diagnoses()
@@ -515,7 +516,8 @@ simulate_diagnoses <- function(
   rita_completeness = 1, # RITA completeness
   age_diag_effect = 0, # age effect on diagnosis probabilities
   mig_diag_offset = NULL, # per-state logit offsets for migrant diagnosis probs
-  frr = 0.019 # false recency rate for RITA misclassification
+  frr = 0.019, # false recency rate for RITA misclassification
+  eta_sd = 0.10 # sd of the melding prior for log(ratio_abroad_uk)
 ) {
   sim_config <- define_sim_config(
     h_pattern,
@@ -1022,8 +1024,7 @@ simulate_diagnoses <- function(
     "init_prev_abroad_age" = t(init_prev_abroad_age),
     # log(p) is the appropriate transformation for the eta parameter in the migration model
     "eta_mean" = log(sim_data$ratio_abroad_uk),
-    # vague prior sd for eta
-    "eta_sd" = 0.5,
+    "eta_sd" = eta_sd,
     "sim_config" = sim_config
   )
 
