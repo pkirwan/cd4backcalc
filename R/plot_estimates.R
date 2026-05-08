@@ -408,7 +408,7 @@ plot_diagnostics <- function(hiv_list, ntraces = 4) {
   # log posterior density
   p2 <- bayesplot::mcmc_trace(draws, pars = "lp__")
 
-  if (any(grepl("gamma", colnames(draws)))) {
+  if (any(grepl("detect_prob", colnames(draws)))) {
     # detection probabilities
     p3 <- bayesplot::mcmc_trace(
       draws,
