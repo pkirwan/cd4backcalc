@@ -182,7 +182,9 @@ transformed parameters {
     delta_4[t] = alpha_diag_4 + rho_diag * (delta_4[t - 1] - alpha_diag_4) + sqrt(vardelta[4]) * delta_raw_4[t];
   }
   
-  // Built-in zero-sum age effects by diagnosis state.
+  // State-specific zero-sum age effects: each CD4 state has its own
+  // age-group profile, reflecting real-data evidence that the age disparity
+  // in diagnosis probability differs across CD4 strata.
   // The sqrt(4 / 3) factor corrects the constrained-vector variance so each
   // age effect has marginal SD sigma_age rather than sigma_age * sqrt(3 / 4).
   matrix[4, 4] gamma_age;
@@ -496,7 +498,12 @@ model {
     gamma_age_raw[k] ~ std_normal();
   }
   sigma_age ~ normal(0, 0.5);
-  alpha_diag_mig ~ normal(0, 1);
+  // States 1–3: normal(0, 1) allows up to ~2 logit-unit migrant offset.
+  // State 4 (CD4 < 200): tighter normal(0, 0.25) — late-stage diagnosis is
+  // largely symptom-driven, so native/migrant rates should be similar.
+  // This prevents alpha_diag_mig[4] absorbing age-effect confounding.
+  alpha_diag_mig[1 : 3] ~ normal(0, 1);
+  alpha_diag_mig[4] ~ normal(0, 0.25);
   
   // Proportion UK-acquired priors
   alpha_cob ~ normal(0, 1.5);
@@ -529,10 +536,16 @@ model {
   beta_mp_3_raw ~ std_normal();
   beta_mp_5_raw ~ std_normal();
   
-  sigma_mp_1 ~ gamma(2, 32);
-  sigma_mp_2 ~ gamma(2, 32);
-  sigma_mp_3 ~ gamma(2, 32);
-  sigma_mp_5 ~ gamma(2, 32);
+  // gamma(2, 8): mean 0.25, allows ~0.5 logit-scale variation per basis
+  // function — necessary to track the "varying" m_pattern in combo_3/combo_4
+  // where true compartment logits shift by ~0.9 units over the study period.
+  // gamma(2, 32) (mean 0.0625) was too tight: in the age-stratified model the
+  // per-cell likelihood is weak enough that the prior dominated, pinning
+  // transfers near their prior mode with spurious precision.
+  sigma_mp_1 ~ gamma(2, 8);
+  sigma_mp_2 ~ gamma(2, 8);
+  sigma_mp_3 ~ gamma(2, 8);
+  sigma_mp_5 ~ gamma(2, 8);
   
   // Likelihood
   // As in AD_ptens, omit age == 1 from the likelihood (often structurally zero)

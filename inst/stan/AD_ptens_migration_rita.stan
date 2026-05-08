@@ -550,7 +550,12 @@ model {
     gamma_age_raw[k] ~ std_normal();
   }
   sigma_age ~ normal(0, 0.5);
-  alpha_diag_mig ~ normal(0, 1);
+  // States 1–4: normal(0, 1) allows up to ~2 logit-unit migrant offset.
+  // State 5 (CD4 < 200): tighter normal(0, 0.25) — late-stage diagnosis is
+  // largely symptom-driven, so native/migrant rates should be similar.
+  // This prevents alpha_diag_mig[5] absorbing age-effect confounding.
+  alpha_diag_mig[1 : 4] ~ normal(0, 1);
+  alpha_diag_mig[5] ~ normal(0, 0.25);
   
   // Proportion UK-acquired priors
   alpha_cob ~ normal(0, 1.5);
@@ -583,10 +588,16 @@ model {
   beta_mp_3_raw ~ std_normal();
   beta_mp_5_raw ~ std_normal();
   
-  sigma_mp_1 ~ gamma(2, 32);
-  sigma_mp_2 ~ gamma(2, 32);
-  sigma_mp_3 ~ gamma(2, 32);
-  sigma_mp_5 ~ gamma(2, 32);
+  // gamma(2, 8): mean 0.25, allows ~0.5 logit-scale variation per basis
+  // function — necessary to track the "varying" m_pattern in combo_3/combo_4
+  // where true compartment logits shift by ~0.9 units over the study period.
+  // gamma(2, 32) (mean 0.0625) was too tight: in the age-stratified model the
+  // per-cell likelihood is weak enough that the prior dominated, pinning
+  // transfers near their prior mode with spurious precision.
+  sigma_mp_1 ~ gamma(2, 8);
+  sigma_mp_2 ~ gamma(2, 8);
+  sigma_mp_3 ~ gamma(2, 8);
+  sigma_mp_5 ~ gamma(2, 8);
   
   // Likelihood (omit age == 1)
   for (t in 1 : nquar) {
