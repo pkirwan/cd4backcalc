@@ -39,6 +39,11 @@ data {
   // Prior information for evidence synthesis (log proportion UK-acquired)
   vector[nquar] eta_mean;
   real<lower=0> eta_sd;
+  
+  // External data-linkage estimates of detection probability (on logit scale).
+  // Set detect_obs_sd = 0 to disable (treated as no observation).
+  vector[nquar] detect_logit_obs;
+  real<lower=0> detect_obs_sd;
 }
 transformed data {
   row_vector[6] empty_vec = rep_row_vector(0, 6);
@@ -513,7 +518,8 @@ model {
   // Migration priors
   beta_mig[1] ~ normal(4, 1);
   beta_mig[2 : npars_mig] ~ normal(0, sigma_mig);
-  log_sigma_mig ~ normal(-2, 0.5);
+  // See AD_ptens_migration.stan for rationale; same fix applies here.
+  log_sigma_mig ~ normal(-0.5, 0.5);
   
   // Diagnosis priors — centred on midpoints of observed empirical ranges.
   // State 1 (recently acquired / RITA+): 5–30%   → logit midpoint ~ -1.75
@@ -574,6 +580,12 @@ model {
   rho_eta ~ normal(0, 0.5);
   
   // Detection probability priors
+  // detect_prob is not separately identified from ABROAD alone: the ABROAD
+  // likelihood constrains omega * m[5] * detect_prob jointly. To identify
+  // detect_prob independently, external data on either (a) total HIV+ migration
+  // flow or (b) a data-linkage-derived detection rate is required. Without it,
+  // a wider prior is more honest; tightening the prior merely hides the
+  // non-identifiability rather than resolving it.
   alpha_detect ~ normal(1.1, 0.5);
   beta_detect[1] ~ normal(0, 0.5);
   beta_detect[2 : npars_mp] ~ normal(0, sigma_detect);
@@ -598,6 +610,12 @@ model {
   sigma_mp_2 ~ gamma(2, 8);
   sigma_mp_3 ~ gamma(2, 8);
   sigma_mp_5 ~ gamma(2, 8);
+  
+  // Auxiliary likelihood for detect_prob from data-linkage study.
+  // Only included when detect_obs_sd > 0.
+  if (detect_obs_sd > 0) {
+    detect_logit_obs ~ normal(detect_logit, detect_obs_sd);
+  }
   
   // Likelihood (omit age == 1)
   for (t in 1 : nquar) {

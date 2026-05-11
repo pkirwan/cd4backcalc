@@ -486,6 +486,7 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #' @param mig_diag_offset Numeric vector of per-state logit-scale offsets applied to diagnosis probabilities for the migrant group (y=2). Length must equal the number of diagnosis states (4 for non-RITA, 5 for RITA). NULL (default) applies no offset.
 #' @param frr False recency rate for RITA misclassification.
 #' @param eta_sd Standard deviation of the approximate melding prior for the log ratio of abroad-acquired to UK-acquired infections. Passed directly to Stan as data. Smaller values anchor the model more tightly to the external \code{ratio_abroad_uk} evidence. Default is 0.10, which matches the simulation noise on the log scale.
+#' @param detect_obs_sd Standard deviation of detection probability
 #' @return List containing simulated epidemic data.
 #' @examples
 #' simulate_diagnoses()
@@ -517,7 +518,8 @@ simulate_diagnoses <- function(
   age_diag_effect = 0, # age effect on diagnosis probabilities
   mig_diag_offset = NULL, # per-state logit offsets for migrant diagnosis probs
   frr = 0.019, # false recency rate for RITA misclassification
-  eta_sd = 0.10 # sd of the melding prior for log(ratio_abroad_uk)
+  eta_sd = 0.10, # sd of the melding prior for log(ratio_abroad_uk)
+  detect_obs_sd = 0
 ) {
   sim_config <- define_sim_config(
     h_pattern,
@@ -583,7 +585,11 @@ simulate_diagnoses <- function(
   # detection probabilities for those migrating already diagnosed
   # In Stan: detect_prob[t] = inv_logit(alpha_detect + 0.5 * X_mp * beta_detect)
   if (sim_config$dist) {
-    detect_prob <- invlogit(stats::rnorm(sim_config$nquar, logit(seq(0.7, 0.8, length.out = sim_config$nquar)), 0.1))
+    detect_prob <- invlogit(stats::rnorm(
+      sim_config$nquar,
+      logit(seq(0.7, 0.8, length.out = sim_config$nquar)),
+      0.1
+    ))
   } else {
     detect_prob <- seq(0.7, 0.8, length.out = sim_config$nquar)
   }
@@ -1000,6 +1006,14 @@ simulate_diagnoses <- function(
     cd4_dx_age <- apply_frr(cd4_dx_age, sim_config$frr, sim_config$dist)
   }
 
+  # Generate noisy logit-scale detect_prob observations (data-linkage auxiliary data).
+  # detect_obs_sd = 0 disables the auxiliary likelihood in Stan.
+  detect_logit_obs <- if (detect_obs_sd > 0) {
+    stats::rnorm(sim_config$nquar, logit(detect_prob), detect_obs_sd)
+  } else {
+    rep(0, sim_config$nquar) # placeholder; ignored in Stan when detect_obs_sd = 0
+  }
+
   # ABROAD data: detected portion of diagnosed migrants
   ABROAD <- colSums(ABROAD_age_mat)
   ABROAD_age <- t(ABROAD_age_mat)
@@ -1025,6 +1039,8 @@ simulate_diagnoses <- function(
     # log(p) is the appropriate transformation for the eta parameter in the migration model
     "eta_mean" = log(sim_data$ratio_abroad_uk),
     "eta_sd" = eta_sd,
+    "detect_logit_obs" = detect_logit_obs,
+    "detect_obs_sd" = detect_obs_sd,
     "sim_config" = sim_config
   )
 

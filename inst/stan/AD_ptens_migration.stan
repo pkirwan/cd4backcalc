@@ -41,6 +41,11 @@ data {
   // Prior information for evidence synthesis (log proportion UK-acquired)
   vector[nquar] eta_mean;
   real<lower=0> eta_sd;
+  
+  // External data-linkage estimates of detection probability (on logit scale).
+  // Set detect_obs_sd = 0 to disable (treated as no observation).
+  vector[nquar] detect_logit_obs;
+  real<lower=0> detect_obs_sd;
 }
 transformed data {
   row_vector[5] empty_vec = rep_row_vector(0, 5);
@@ -52,7 +57,9 @@ transformed data {
   
   // Pre-split penalty matrices (symmetrized to avoid fp noise)
   matrix[np1, np1] S1a = 0.5 * (S1[1 : np1, 1 : np1] + S1[1 : np1, 1 : np1]');
-  matrix[np1, np1] S1b = 0.5 * (S1[1 : np1, npars_inf : (2 * npars_inf - 2)] + S1[1 : np1, npars_inf : (2 * npars_inf - 2)]');
+  matrix[np1, np1] S1b = 0.5
+                         * (S1[1 : np1, npars_inf : (2 * npars_inf - 2)]
+                            + S1[1 : np1, npars_inf : (2 * npars_inf - 2)]');
   
   // Age-group mapping and fast quarter->year index (birthdays at t = 1, 5, 9, ...)
   array[nage] int age_group_lookup;
@@ -171,15 +178,23 @@ transformed parameters {
   //   (variance = step_variance / (1 - rho^2)).
   // t > 1: mean reversion toward alpha_diag_k prevents endpoint drift.
   real inv_stationary = inv_sqrt(1 - square(rho_diag));
-  delta_1[1] = alpha_diag_1 + sqrt(vardelta[1]) * inv_stationary * delta_raw_1[1];
-  delta_2[1] = alpha_diag_2 + sqrt(vardelta[2]) * inv_stationary * delta_raw_2[1];
-  delta_3[1] = alpha_diag_3 + sqrt(vardelta[3]) * inv_stationary * delta_raw_3[1];
-  delta_4[1] = alpha_diag_4 + sqrt(vardelta[4]) * inv_stationary * delta_raw_4[1];
+  delta_1[1] = alpha_diag_1
+               + sqrt(vardelta[1]) * inv_stationary * delta_raw_1[1];
+  delta_2[1] = alpha_diag_2
+               + sqrt(vardelta[2]) * inv_stationary * delta_raw_2[1];
+  delta_3[1] = alpha_diag_3
+               + sqrt(vardelta[3]) * inv_stationary * delta_raw_3[1];
+  delta_4[1] = alpha_diag_4
+               + sqrt(vardelta[4]) * inv_stationary * delta_raw_4[1];
   for (t in 2 : nquar) {
-    delta_1[t] = alpha_diag_1 + rho_diag * (delta_1[t - 1] - alpha_diag_1) + sqrt(vardelta[1]) * delta_raw_1[t];
-    delta_2[t] = alpha_diag_2 + rho_diag * (delta_2[t - 1] - alpha_diag_2) + sqrt(vardelta[2]) * delta_raw_2[t];
-    delta_3[t] = alpha_diag_3 + rho_diag * (delta_3[t - 1] - alpha_diag_3) + sqrt(vardelta[3]) * delta_raw_3[t];
-    delta_4[t] = alpha_diag_4 + rho_diag * (delta_4[t - 1] - alpha_diag_4) + sqrt(vardelta[4]) * delta_raw_4[t];
+    delta_1[t] = alpha_diag_1 + rho_diag * (delta_1[t - 1] - alpha_diag_1)
+                 + sqrt(vardelta[1]) * delta_raw_1[t];
+    delta_2[t] = alpha_diag_2 + rho_diag * (delta_2[t - 1] - alpha_diag_2)
+                 + sqrt(vardelta[2]) * delta_raw_2[t];
+    delta_3[t] = alpha_diag_3 + rho_diag * (delta_3[t - 1] - alpha_diag_3)
+                 + sqrt(vardelta[3]) * delta_raw_3[t];
+    delta_4[t] = alpha_diag_4 + rho_diag * (delta_4[t - 1] - alpha_diag_4)
+                 + sqrt(vardelta[4]) * delta_raw_4[t];
   }
   
   // State-specific zero-sum age effects: each CD4 state has its own
@@ -206,10 +221,18 @@ transformed parameters {
     d_nat[ag,  : , 2] = inv_logit(delta_2 + gamma_age[ag, 2]);
     d_nat[ag,  : , 3] = inv_logit(delta_3 + gamma_age[ag, 3]);
     d_nat[ag,  : , 4] = inv_logit(delta_4 + gamma_age[ag, 4]);
-    d_mig[ag,  : , 1] = inv_logit(delta_1 + gamma_age[ag, 1] + alpha_diag_mig[1]);
-    d_mig[ag,  : , 2] = inv_logit(delta_2 + gamma_age[ag, 2] + alpha_diag_mig[2]);
-    d_mig[ag,  : , 3] = inv_logit(delta_3 + gamma_age[ag, 3] + alpha_diag_mig[3]);
-    d_mig[ag,  : , 4] = inv_logit(delta_4 + gamma_age[ag, 4] + alpha_diag_mig[4]);
+    d_mig[ag,  : , 1] = inv_logit(
+                                  delta_1 + gamma_age[ag, 1]
+                                  + alpha_diag_mig[1]);
+    d_mig[ag,  : , 2] = inv_logit(
+                                  delta_2 + gamma_age[ag, 2]
+                                  + alpha_diag_mig[2]);
+    d_mig[ag,  : , 3] = inv_logit(
+                                  delta_3 + gamma_age[ag, 3]
+                                  + alpha_diag_mig[3]);
+    d_mig[ag,  : , 4] = inv_logit(
+                                  delta_4 + gamma_age[ag, 4]
+                                  + alpha_diag_mig[4]);
   }
   
   // Proportion UK-acquired among migrants
@@ -242,7 +265,7 @@ transformed parameters {
     logits[1] = theta_1[t];
     logits[2] = theta_2[t];
     logits[3] = theta_3[t];
-    logits[4] = 0;  // reference category
+    logits[4] = 0; // reference category
     logits[5] = theta_5[t];
     m[ : , t] = softmax(logits);
   }
@@ -442,13 +465,13 @@ transformed parameters {
           vector[4] raw_p = to_vector(exp_diag[t, a, y, 1 : 4]) + 1e-12;
           if (y == 2 && misclassified_dx[t, a] > 1e-10) {
             real total_lat = sum(m[1 : 4, t]);
-            vector[4] m_lat = (total_lat > 1e-10)
-                              ? m[1 : 4, t] / total_lat
+            vector[4] m_lat = (total_lat > 1e-10) ? m[1 : 4, t] / total_lat
                               : rep_vector(0.25, 4);
             raw_p += misclassified_dx[t, a] * m_lat;
           }
           real total_p = sum(raw_p);
-          exp_p[t, a, y] = (total_p > 1e-10) ? raw_p / total_p : rep_vector(0.25, 4);
+          exp_p[t, a, y] = (total_p > 1e-10) ? raw_p / total_p
+                           : rep_vector(0.25, 4);
         }
       }
     }
@@ -460,14 +483,19 @@ model {
   // infections/quarter at ±2 SD, matching observed incidence scale.
   sigma_inf ~ normal(0, 5);
   beta_inf[1] ~ normal(5.0, 1.5);
-
+  
   matrix[np1, np1] K1_prec = S1a * tau[1] + S1b * tau[2];
   beta_inf[2 : npars_inf] ~ multi_normal_prec(zero_vec, K1_prec);
   
   // Migration priors
+  // log_sigma_mig ~ normal(-0.5, 0.5): sigma_mig mode ~0.6, range [0.22, 1.65].
+  // The previous normal(-2, 0.5) gave sigma_mig ~0.14, which is too tight for
+  // increasing/step_change omega patterns where log(omega) shifts by ~1 unit
+  // over the study; spline coefficients needed 7+ SD from prior — essentially
+  // impossible, causing omega to be estimated with spurious precision.
   beta_mig[1] ~ normal(4, 1);
   beta_mig[2 : npars_mig] ~ normal(0, sigma_mig);
-  log_sigma_mig ~ normal(-2, 0.5);
+  log_sigma_mig ~ normal(-0.5, 0.5);
   
   // Diagnosis priors — centred on midpoints of observed empirical ranges.
   // State 1 (CD4 ≥ 500):    2.5–10%  → logit midpoint ~ -2.90
@@ -522,6 +550,12 @@ model {
   rho_eta ~ normal(0, 0.5);
   
   // Detection probability priors
+  // detect_prob is not separately identified from ABROAD alone: the ABROAD
+  // likelihood constrains omega * m[5] * detect_prob jointly. To identify
+  // detect_prob independently, external data on either (a) total HIV+ migration
+  // flow or (b) a data-linkage-derived detection rate is required. Without it,
+  // a wider prior is more honest; tightening the prior merely hides the
+  // non-identifiability rather than resolving it.
   alpha_detect ~ normal(1.1, 0.5);
   beta_detect[1] ~ normal(0, 0.5);
   beta_detect[2 : npars_mp] ~ normal(0, sigma_detect);
@@ -546,6 +580,12 @@ model {
   sigma_mp_2 ~ gamma(2, 8);
   sigma_mp_3 ~ gamma(2, 8);
   sigma_mp_5 ~ gamma(2, 8);
+  
+  // Auxiliary likelihood for detect_prob from data-linkage study.
+  // Only included when detect_obs_sd > 0.
+  if (detect_obs_sd > 0) {
+    detect_logit_obs ~ normal(detect_logit, detect_obs_sd);
+  }
   
   // Likelihood
   // As in AD_ptens, omit age == 1 from the likelihood (often structurally zero)

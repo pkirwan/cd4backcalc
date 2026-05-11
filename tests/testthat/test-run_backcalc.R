@@ -209,7 +209,9 @@ test_that("age-specific migration back-calculation runs without error", {
     nquar = 40,
     age = TRUE,
     migration = TRUE,
-    sim_type = "combo_3"
+    sim_type = "combo_3",
+    eta_sd = 0.3,
+    detect_obs_sd = 0.3
   )
   # Test run_backcalc
   suppressWarnings({
