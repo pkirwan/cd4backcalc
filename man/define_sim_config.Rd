@@ -34,9 +34,9 @@ define_sim_config(
 )
 }
 \arguments{
-\item{h_pattern}{Pattern type for infections ("constant", "increasing", "varying").}
+\item{h_pattern}{Pattern type for infections ("constant", "increasing", "varying", "varying_2").}
 
-\item{o_pattern}{Pattern type for omega ("constant", "increasing", "step_change", "none").}
+\item{o_pattern}{Pattern type for omega ("constant", "increasing", "step_change_1", "step_change_2", "none").}
 
 \item{d_pattern}{Pattern type for diagnosis probabilities ("constant", "varying").}
 

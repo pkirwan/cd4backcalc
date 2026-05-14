@@ -3,8 +3,8 @@
 #' Defines the patterns for various parameters in the epidemic simulation.
 #' The number of latent and diagnosis states will be inferred from the simulation specification.
 #'
-#' @param h_pattern Pattern type for infections ("constant", "increasing", "varying").
-#' @param o_pattern Pattern type for omega ("constant", "increasing", "step_change", "none").
+#' @param h_pattern Pattern type for infections ("constant", "increasing", "varying", "varying_2").
+#' @param o_pattern Pattern type for omega ("constant", "increasing", "step_change_1", "step_change_2", "none").
 #' @param d_pattern Pattern type for diagnosis probabilities ("constant", "varying").
 #' @param p_pattern Pattern type for proportion UK ("constant", "increasing").
 #' @param m_pattern Pattern type for mu ("constant", "differing", "varying").
@@ -140,8 +140,10 @@ define_sim_config <- function(
 #' - "m_varying": Migration probabilities (mu) vary over time.
 #' - "combo_1": Combination of varying infections, step change migration, and varying diagnosis probabilities.
 #' - "combo_2": Combination of varying infections, step change migration, varying diagnosis probabilities, and increasing proportion UK.
-#' - "combo_3": Combination of varying infections, step change migration, varying diagnosis probabilities, increasing proportion UK, and varying migration probabilities.
-#' - "combo_4": As "combo_3" but with different incidence and migration patterns.
+#' - "combo_3": Combination of early-peaking infections, increasing migration, varying diagnosis probabilities, increasing proportion UK, varying migration probabilities, and age effects.
+#' - "combo_4": Late-peaking infections (varying_2) with a late upward step change in migration (step_change_2),
+#'   representing a surge in arrivals from high-prevalence regions. Shares varying diagnosis probabilities,
+#'   increasing proportion UK, varying migration probabilities, and age effects with combo_3.
 #'
 #' @param config Configuration list to modify.
 #' @param sim_type Type of simulation to define patterns for.
@@ -178,7 +180,7 @@ define_simulation_type <- function(config, sim_type = "constant") {
   } else if (sim_type == "o_increasing") {
     config$o_pattern <- "increasing"
   } else if (sim_type == "o_step_change") {
-    config$o_pattern <- "step_change"
+    config$o_pattern <- "step_change_1"
   } else if (sim_type == "d_varying") {
     config$d_pattern <- "varying"
   } else if (sim_type == "p_increasing") {
@@ -214,8 +216,8 @@ define_simulation_type <- function(config, sim_type = "constant") {
       }
     }
   } else if (sim_type == "combo_4") {
-    config$h_pattern <- "varying_1"
-    config$o_pattern <- "step_change"
+    config$h_pattern <- "varying_2"
+    config$o_pattern <- "step_change_2"
     config$d_pattern <- "varying"
     config$p_pattern <- "increasing"
     config$m_pattern <- "varying"
@@ -459,8 +461,8 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #'
 #' Simulates HIV epidemic data based on the provided configuration.
 #'
-#' @param h_pattern Pattern type for infections ("constant", "increasing", "varying").
-#' @param o_pattern Pattern type for omega ("constant", "increasing", "step_change", "none").
+#' @param h_pattern Pattern type for infections ("constant", "increasing", "varying", "varying_2").
+#' @param o_pattern Pattern type for omega ("constant", "increasing", "step_change", "step_change_late", "none").
 #' @param d_pattern Pattern type for diagnosis probabilities ("constant", "varying").
 #' @param p_pattern Pattern type for proportion UK ("constant", "increasing").
 #' @param m_pattern Pattern type for mu ("constant", "differing", "varying").

@@ -11,11 +11,11 @@ generate_infections(nquar, nlatst, pattern, target_inf = 90000, dist = TRUE)
 
 \item{nlatst}{Number of latent states.}
 
-\item{pattern}{Pattern type for infections ("varying", "constant", "increasing").}
-
 \item{target_inf}{Target total number of infections to simulate (may be higher/lower with Poisson variation).}
 
 \item{dist}{Logical indicating whether to add Poisson variation.}
+
+\item{h_pattern}{Pattern type for infections ("varying", "varying_2", "constant", "increasing").}
 }
 \value{
 Matrix of new infections over time.

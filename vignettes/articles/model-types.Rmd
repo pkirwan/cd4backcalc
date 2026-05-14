@@ -179,7 +179,7 @@ sim_c3 <- simulate_diagnoses(sim_type = "combo_3", migration = TRUE)
 sim_c4 <- simulate_diagnoses(sim_type = "combo_4", migration = TRUE)
 ```
 
-Available simulation types include: `"constant"`, `"h_increasing"`, `"h_varying"`, `"o_increasing"`, `"o_step_change"`, `"d_varying"`, `"p_increasing"`, `"m_differing"`, `"m_varying"`, and `"combo_1"` through `"combo_4"`.
+Available simulation types include: `"constant"`, `"h_increasing"`, `"h_varying"`, `"h_varying_2"`, `"o_increasing"`, `"o_step_change_1"`, `"o_step_change_2"`, `"d_varying"`, `"p_increasing"`, `"m_differing"`, `"m_varying"`, and `"combo_1"` through `"combo_4"`.
 
 ## References
 

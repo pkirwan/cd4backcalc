@@ -9,7 +9,7 @@ generate_omega(nquar, pattern, target_mig = 12000, dist = TRUE)
 \arguments{
 \item{nquar}{Number of time quarters.}
 
-\item{pattern}{Pattern type for omega ("constant", "increasing", "step_change", "none").}
+\item{pattern}{Pattern type for omega ("constant", "increasing", "step_change_1", "step_change_2", "none").}
 
 \item{target_mig}{Target total number of migrations to simulate (may be higher/lower with Poisson variation).}
 

@@ -2,7 +2,7 @@
 #'
 #' @param nquar Number of time quarters.
 #' @param nlatst Number of latent states.
-#' @param pattern Pattern type for infections ("varying", "constant", "increasing").
+#' @param h_pattern Pattern type for infections ("varying", "varying_2", "constant", "increasing").
 #' @param target_inf Target total number of infections to simulate (may be higher/lower with Poisson variation).
 #' @param dist Logical indicating whether to add Poisson variation.
 #' @return Matrix of new infections over time.
@@ -14,7 +14,7 @@ generate_infections <- function(
   dist = TRUE
 ) {
   # check pattern
-  stopifnot(pattern %in% c("varying", "varying_1", "constant", "increasing"))
+  stopifnot(pattern %in% c("varying", "varying_1", "varying_2", "constant", "increasing"))
 
   ann_inf <- target_inf / nquar
   infs <- if (pattern == "varying") {
@@ -34,6 +34,11 @@ generate_infections <- function(
       seq(0.4, 0.45, length.out = round(nquar * 0.3))
     ) *
       ann_inf
+  } else if (pattern == "varying_2") {
+    c(
+      seq(0.8, 1.6, length.out = round(nquar * 0.6)),
+      seq(1.6, 0.9, length.out = round(nquar * 0.4))
+    ) * ann_inf
   } else if (pattern == "constant") {
     rep(ann_inf, nquar)
   } else if (pattern == "increasing") {
@@ -53,19 +58,19 @@ generate_infections <- function(
 #' Generate migration patterns
 #'
 #' @param nquar Number of time quarters.
-#' @param pattern Pattern type for omega ("constant", "increasing", "step_change", "none").
+#' @param pattern Pattern type for omega ("constant", "increasing", "step_change_1", "step_change_2", "none").
 #' @param target_mig Target total number of migrations to simulate (may be higher/lower with Poisson variation).
 #' @param dist Logical indicating whether to add Poisson variation.
 #' @return Vector of omega values over time.
 generate_omega <- function(nquar, pattern, target_mig = 12000, dist = TRUE) {
   # check pattern
-  stopifnot(pattern %in% c("constant", "increasing", "step_change", "none"))
+  stopifnot(pattern %in% c("constant", "increasing", "step_change_1", "step_change_2", "none"))
   ann_mig <- target_mig / nquar
   omega <- if (pattern == "constant") {
     rep(ann_mig, nquar)
   } else if (pattern == "increasing") {
     seq(0.5, 1.5, length.out = nquar) * ann_mig
-  } else if (pattern == "step_change") {
+  } else if (pattern == "step_change_1") {
     c(
       seq(0.4, 0.4, length.out = round(nquar * 0.1)),
       seq(0.4, 1.2, length.out = round(nquar * 0.1)),
@@ -74,6 +79,12 @@ generate_omega <- function(nquar, pattern, target_mig = 12000, dist = TRUE) {
       seq(1.35, 2.5, length.out = round(nquar * 0.15))
     ) *
       ann_mig
+  } else if (pattern == "step_change_2") {
+    c(
+      seq(0.7, 1.0, length.out = round(nquar * 0.65)),
+      seq(1.0, 2.8, length.out = round(nquar * 0.20)),
+      seq(2.8, 3.0, length.out = round(nquar * 0.15))
+    ) * ann_mig
   } else if (pattern == "none") {
     rep(0, nquar)
   }
