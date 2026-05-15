@@ -61,7 +61,7 @@ After fitting a model with `run_backcalc()`, several quantities can be plotted o
 Before fitting, simulated quantities can be inspected with `plot_simulations()`:
 
 ```{r plot-sims, eval=FALSE}
-sim_diags <- simulate_diagnoses(migration = TRUE, h_pattern = "increasing")
+sim_diags <- simulate_diagnoses(sim_type = "combo_3", migration = TRUE)
 
 plot_simulations(sim_diags, quantity = "incidence")
 plot_simulations(sim_diags, quantity = "undiag_prev")
@@ -69,6 +69,26 @@ plot_simulations(sim_diags, quantity = "diag_prob")
 plot_simulations(sim_diags, quantity = "all_migration")
 plot_simulations(sim_diags, quantity = "undiag_migration")
 ```
+
+<div class="figure">
+<img src="figures/analysing-results-sim-incidence.png" alt="Figure: Simulated HIV incidence for analysis examples." width="100%" />
+</div>
+
+<div class="figure">
+<img src="figures/analysing-results-sim-undiag-prev.png" alt="Figure: Simulated undiagnosed prevalence for analysis examples." width="100%" />
+</div>
+
+<div class="figure">
+<img src="figures/analysing-results-sim-diag-prob.png" alt="Figure: Simulated diagnosis probabilities for analysis examples." width="100%" />
+</div>
+
+<div class="figure">
+<img src="figures/analysing-results-sim-all-migration.png" alt="Figure: Simulated all migration for analysis examples." width="100%" />
+</div>
+
+<div class="figure">
+<img src="figures/analysing-results-sim-undiag-migration.png" alt="Figure: Simulated undiagnosed migration for analysis examples." width="100%" />
+</div>
 
 ## Plotting model estimates
 
@@ -78,6 +98,14 @@ plot_simulations(sim_diags, quantity = "undiag_migration")
 hiv_list <- run_backcalc(sim_diags)
 plot_estimates(hiv_list, quantity = "incidence")
 ```
+
+<div class="figure">
+<img src="figures/analysing-results-est-incidence.png" alt="Figure: Estimated incidence from the fitted model." width="100%" />
+</div>
+
+<div class="figure">
+<img src="figures/analysing-results-est-incidence-sampled.png" alt="Figure: Estimated incidence compared against sampled simulation output." width="100%" />
+</div>
 
 By default, plotting and summary diagnostics compare fitted values with the generative expectation from the simulation. To compare against the sampled realisation from a particular simulation seed instead, set `sim_comparison = "sampled"`:
 
@@ -124,18 +152,26 @@ When fitting to simulated data, `bias_plot()` shows how much the model over- or 
 bias_plot(hiv_list, quantity = "incidence")
 ```
 
+<div class="figure">
+<img src="figures/analysing-results-bias-incidence.png" alt="Figure: Bias plot for incidence." width="100%" />
+</div>
+
 When fitting to simulated data, `mse_plot()` summarises mean squared error across one or more simulated fits:
 
 ```{r mse, eval=FALSE}
 mse_plot(hiv_list, quantity = "incidence")
 ```
 
+<div class="figure">
+<img src="figures/analysing-results-mse-incidence.png" alt="Figure: MSE plot for incidence." width="100%" />
+</div>
+
 ## Comparing two models
 
 `plot_estimates()`, `bias_plot()`, and `mse_plot()` all accept a second model for side-by-side comparison:
 
 ```{r compare-two, eval=FALSE}
-sim_diags <- simulate_diagnoses(rita = TRUE, h_pattern = "increasing")
+sim_diags <- simulate_diagnoses(sim_type = "combo_3", rita = TRUE)
 model_rita <- run_backcalc(sim_diags)
 
 sim_cd4 <- sim_remodel(sim_diags, rita = FALSE)
@@ -158,12 +194,20 @@ bias_plot(
 )
 ```
 
+<div class="figure">
+<img src="figures/analysing-results-compare-two-est-incidence.png" alt="Figure: Side-by-side incidence comparison for two models." width="100%" />
+</div>
+
+<div class="figure">
+<img src="figures/analysing-results-compare-two-bias-incidence.png" alt="Figure: Side-by-side bias comparison for two models." width="100%" />
+</div>
+
 ## Comparing multiple models
 
 Pass a list of model fits to compare more than two models simultaneously:
 
 ```{r compare-list, eval=FALSE}
-sim_diags <- simulate_diagnoses(h_pattern = "increasing")
+sim_diags <- simulate_diagnoses(sim_type = "combo_3")
 models <- list()
 for (i in 1:3) {
   models[[i]] <- run_backcalc(sim_diags, model_seed = 100 + i)
@@ -172,6 +216,14 @@ for (i in 1:3) {
 plot_estimates(models, quantity = "incidence")
 mse_plot(models, quantity = "incidence")
 ```
+
+<div class="figure">
+<img src="figures/analysing-results-compare-list-est-incidence.png" alt="Figure: Incidence comparison for multiple models." width="100%" />
+</div>
+
+<div class="figure">
+<img src="figures/analysing-results-compare-list-mse-incidence.png" alt="Figure: MSE comparison for multiple models." width="100%" />
+</div>
 
 ## Working with real data
 
@@ -198,3 +250,7 @@ For detailed convergence analysis, set `chain_results = TRUE` in `run_backcalc()
 hiv_list <- run_backcalc(sim_diags, chain_results = TRUE)
 plot_estimates(hiv_list, quantity = "incidence", chain_results = TRUE)
 ```
+
+<div class="figure">
+<img src="figures/analysing-results-chain-results-incidence.png" alt="Figure: Per-chain incidence estimates." width="100%" />
+</div>

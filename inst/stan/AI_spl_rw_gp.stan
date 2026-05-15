@@ -94,6 +94,9 @@ parameters {
   vector[nquar] delta_raw_3;
   vector[nquar] delta_raw_4;
   vector<lower=0>[4] vardelta; // variances of diagnoses
+  // AR(1) coefficient for diagnosis probability walks (diag_model == 2).
+  // Constrained to (0, 1) so the process is mean-reverting but persistent.
+  real<lower=0, upper=1> rho_diag;
 }
 transformed parameters {
   // Infection process
@@ -155,17 +158,21 @@ transformed parameters {
     delta_3 = alpha_diag_3 + (X_diag * beta_diag_3);
     delta_4 = alpha_diag_4 + (X_diag * beta_diag_4);
   } else if (diag_model == 2) {
-    // Random walk for diagnoses
-    delta_1[1] = -3.2 + 0.2 * delta_raw_1[1];
-    delta_2[1] = -3.2 + 0.2 * delta_raw_2[1];
-    delta_3[1] = -3.0 + 0.2 * delta_raw_3[1];
-    delta_4[1] = -2.5 + 0.3 * delta_raw_4[1];
+    // AR(1) random walk for diagnoses with mean reversion toward alpha_diag_k.
+    // t = 1: initial condition drawn from stationary distribution
+    //   (variance = step_variance / (1 - rho^2)).
+    // t > 1: mean reversion toward alpha_diag_k prevents endpoint drift.
+    real inv_stationary = inv_sqrt(1 - square(rho_diag));
+    delta_1[1] = alpha_diag_1 + sqrt(vardelta[1]) * inv_stationary * delta_raw_1[1];
+    delta_2[1] = alpha_diag_2 + sqrt(vardelta[2]) * inv_stationary * delta_raw_2[1];
+    delta_3[1] = alpha_diag_3 + sqrt(vardelta[3]) * inv_stationary * delta_raw_3[1];
+    delta_4[1] = alpha_diag_4 + sqrt(vardelta[4]) * inv_stationary * delta_raw_4[1];
     
     for (t in 2 : nquar) {
-      delta_1[t] = delta_1[t - 1] + sqrt(vardelta[1]) * delta_raw_1[t];
-      delta_2[t] = delta_2[t - 1] + sqrt(vardelta[2]) * delta_raw_2[t];
-      delta_3[t] = delta_3[t - 1] + sqrt(vardelta[3]) * delta_raw_3[t];
-      delta_4[t] = delta_4[t - 1] + sqrt(vardelta[4]) * delta_raw_4[t];
+      delta_1[t] = alpha_diag_1 + rho_diag * (delta_1[t - 1] - alpha_diag_1) + sqrt(vardelta[1]) * delta_raw_1[t];
+      delta_2[t] = alpha_diag_2 + rho_diag * (delta_2[t - 1] - alpha_diag_2) + sqrt(vardelta[2]) * delta_raw_2[t];
+      delta_3[t] = alpha_diag_3 + rho_diag * (delta_3[t - 1] - alpha_diag_3) + sqrt(vardelta[3]) * delta_raw_3[t];
+      delta_4[t] = alpha_diag_4 + rho_diag * (delta_4[t - 1] - alpha_diag_4) + sqrt(vardelta[4]) * delta_raw_4[t];
     }
   }
   
@@ -283,18 +290,25 @@ model {
     delta_raw_3 ~ normal(0, 1);
     delta_raw_4 ~ normal(0, 1);
     vardelta ~ gamma(2, 2);
+    rho_diag ~ beta(1, 1);
   } else if (diag_model == 2) {
     delta_raw_1 ~ normal(0, 1);
     delta_raw_2 ~ normal(0, 1);
     delta_raw_3 ~ normal(0, 1);
     delta_raw_4 ~ normal(0, 1);
     vardelta ~ gamma(1, 32);
+    // AR(1) coefficient: prior with mode ~ 0.86 (high persistence) but not a
+    // pure random walk. beta(7, 2) has mode = 6/7 ~ 0.857 and mean = 7/9 ~ 0.78,
+    // placing almost no mass below 0.5 and ruling out the RW1 boundary at 1.
+    rho_diag ~ beta(7, 2);
+    
+    // Priors for AR(1) mean-reversion targets
+    alpha_diag_1 ~ normal(-2.9, 0.5);
+    alpha_diag_2 ~ normal(-2.75, 0.5);
+    alpha_diag_3 ~ normal(-2.0, 0.5);
+    alpha_diag_4 ~ normal(-0.5, 0.5);
     
     // weak priors for inactive spline diag params
-    alpha_diag_1 ~ normal(0, 2);
-    alpha_diag_2 ~ normal(0, 2);
-    alpha_diag_3 ~ normal(0, 2);
-    alpha_diag_4 ~ normal(0, 2);
     beta_diag_1 ~ normal(0, 2);
     beta_diag_2 ~ normal(0, 2);
     beta_diag_3 ~ normal(0, 2);

@@ -32,7 +32,8 @@ simulate_diagnoses(
   mig_diag_offset = NULL,
   frr = 0.019,
   eta_sd = 0.1,
-  detect_obs_sd = 0
+  detect_obs_sd = 0,
+  detect_obs_every = 1
 )
 }
 \arguments{
@@ -90,7 +91,9 @@ simulate_diagnoses(
 
 \item{eta_sd}{Standard deviation of the approximate melding prior for the log ratio of abroad-acquired to UK-acquired infections. Passed directly to Stan as data. Smaller values anchor the model more tightly to the external \code{ratio_abroad_uk} evidence. Default is 0.10, which matches the simulation noise on the log scale.}
 
-\item{detect_obs_sd}{Standard deviation of detection probability}
+\item{detect_obs_sd}{Standard deviation of detection probability.}
+
+\item{detect_obs_every}{Positive integer giving the spacing, in quarters, between external detection-probability observations. Use values larger than 1 to weaken the auxiliary likelihood by observing only occasional linkage studies.}
 }
 \value{
 List containing simulated epidemic data.

@@ -59,12 +59,12 @@ get_mse <- function(bias_df) {
 #' Make a list of mean squared error (MSE) values for HIV model estimates.
 #'
 #' @param hiv_list A list of HIV model results.
-#' @param sim_comparison A string specifying which simulated values to compare against. Options are `"generative"` (deterministic expected values, the default) or `"sampled"` (the stochastic realisation for the particular seed).
+#' @param sim_comparison A string specifying which simulated values to compare against. Options are `"sampled"` (the stochastic realisation for the particular seed, the default) or `"generative"` (deterministic expected values).
 #' @return A list of bias and MSE values for incidence, migration, proportion of UK-acquired infections that are migrants, and migration probabilities.
 #' @keywords internal
 make_mse_list <- function(
   hiv_list,
-  sim_comparison = c("generative", "sampled")
+  sim_comparison = c("sampled", "generative")
 ) {
   sim_comparison <- match.arg(sim_comparison)
   use_deterministic <- sim_comparison == "generative"
@@ -145,7 +145,7 @@ make_mse_list <- function(
 #' @param lab A logical indicating whether to add labels.
 #' @param model_1_name The name of the first model for labeling (default is "Model 1").
 #' @param model_2_name The name of the second model for labeling (default is "Model 2").
-#' @param sim_comparison A string specifying which simulated values to compare against. Options are `"generative"` (deterministic expected values, the default) or `"sampled"` (the stochastic realisation for the particular seed).
+#' @param sim_comparison A string specifying which simulated values to compare against. Options are `"sampled"` (the stochastic realisation for the particular seed, the default) or `"generative"` (deterministic expected values).
 #' @return A ggplot object of the MSE box plot.
 #' @export
 mse_plot <- function(
@@ -156,7 +156,7 @@ mse_plot <- function(
   lab = TRUE,
   model_1_name = "Model 1",
   model_2_name = "Model 2",
-  sim_comparison = c("generative", "sampled")
+  sim_comparison = c("sampled", "generative")
 ) {
   sim_comparison <- match.arg(sim_comparison)
   data <- make_mse_list(
@@ -252,7 +252,7 @@ mse_plot <- function(
 #' @param hiv_list_2 A second list returned from the `postproc` function for comparison (default is NULL).
 #' @param model_1_name The name of the first model for labeling (default is "Model 1").
 #' @param model_2_name The name of the second model for labeling (default is "Model 2").
-#' @param sim_comparison A string specifying which simulated values to compare against. Options are `"generative"` (deterministic expected values, the default) or `"sampled"` (the stochastic realisation for the particular seed).
+#' @param sim_comparison A string specifying which simulated values to compare against. Options are `"sampled"` (the stochastic realisation for the particular seed, the default) or `"generative"` (deterministic expected values).
 #' @return A ggplot object of the bias box plot.
 #' @export
 bias_plot <- function(
@@ -263,7 +263,7 @@ bias_plot <- function(
   hiv_list_2 = NULL,
   model_1_name = "Model 1",
   model_2_name = "Model 2",
-  sim_comparison = c("generative", "sampled")
+  sim_comparison = c("sampled", "generative")
 ) {
   sim_comparison <- match.arg(sim_comparison)
   data <- make_mse_list(

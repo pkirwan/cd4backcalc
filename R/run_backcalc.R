@@ -478,6 +478,10 @@ confirm_stan_data <- function(stan_data) {
       ) ==
         stan_data$nquar
     )
+    stopifnot(
+      "detect_logit_obs and detect_obs_index must have the same length" =
+        length(stan_data$detect_logit_obs) == length(stan_data$detect_obs_index)
+    )
     if (stan_data$model_config$rita) {
       stopifnot(
         "Incorrect dimensions in stan_data, CD4 should be (nquar, 2, 5)" = all(
@@ -629,7 +633,6 @@ model_type_prep <- function(
 ) {
   # Check if sim_diags object has been provided
   if ("stan_data" %in% names(stan_data)) {
-    sim_diags <- stan_data$sim_diags
     stan_data <- stan_data$stan_data
   }
 
@@ -660,6 +663,38 @@ model_type_prep <- function(
       stan_data$sim_config$age,
       FALSE
     )
+  }
+
+  if (migration) {
+    if (is.null(stan_data$detect_obs_sd)) {
+      stan_data$detect_obs_sd <- 0
+    }
+    if (is.null(stan_data$detect_logit_obs)) {
+      stan_data$detect_logit_obs <- numeric(0)
+    }
+    if (is.null(stan_data$detect_obs_index)) {
+      if (length(stan_data$detect_logit_obs) == 0) {
+        stan_data$detect_obs_index <- integer(0)
+      } else if (length(stan_data$detect_logit_obs) == stan_data$nquar) {
+        stan_data$detect_obs_index <- seq_len(stan_data$nquar)
+      } else {
+        stop(
+          "detect_obs_index must be supplied when detect_logit_obs is sparse."
+        )
+      }
+    }
+    stan_data$detect_obs_index <- as.integer(stan_data$detect_obs_index)
+
+    if (length(stan_data$detect_logit_obs) != length(stan_data$detect_obs_index)) {
+      stop("detect_logit_obs and detect_obs_index must have the same length.")
+    }
+    if (length(stan_data$detect_obs_index) > 0 &&
+        any(stan_data$detect_obs_index < 1 | stan_data$detect_obs_index > stan_data$nquar)) {
+      stop("detect_obs_index entries must lie between 1 and nquar.")
+    }
+
+    # n_detect_obs is derived, not stored, so always computed fresh here.
+    stan_data$n_detect_obs <- length(stan_data$detect_obs_index)
   }
 
   # Create stan_data$model_config

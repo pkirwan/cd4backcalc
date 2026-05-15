@@ -30,7 +30,8 @@ define_sim_config(
   rita_completeness = 1,
   age_diag_effect = 0,
   mig_diag_offset = NULL,
-  frr = 0.019
+  frr = 0.019,
+  detect_obs_every = 1
 )
 }
 \arguments{
@@ -85,6 +86,8 @@ define_sim_config(
 \item{mig_diag_offset}{Numeric vector of per-state logit-scale offsets applied to diagnosis probabilities for the migrant group (y=2). Length must equal the number of diagnosis states (4 for non-RITA, 5 for RITA). NULL (default) applies no offset.}
 
 \item{frr}{False recency rate for RITA misclassification.}
+
+\item{detect_obs_every}{Positive integer giving the spacing, in quarters, between external detection-probability observations used for simulation diagnostics.}
 }
 \value{
 Configuration list.

@@ -115,6 +115,24 @@ postproc_ad <- function(
   }
   infs <- beta_draws %*% t(x)
 
+  # For migration models, h = exp(X_inf * beta_inf) parameterises only native
+  # (y=1) UK-acquired infections.  Born-abroad UK-acquired infections enter Stan
+  # as h[t,a] * p[t] (where p[t] = exp(eta[t]) = ratio_abroad_uk), so total
+  # UK acquisitions = h[t,a] * (1 + p[t]).  Create a corrected log-scale
+  # surface for incidence reporting; the original `infs` (native only) is kept
+  # unchanged for the Rcpp prevalence back-calculation which handles both groups
+  # separately and expects native-only H.
+  if (config$migration) {
+    p.ind.early <- grep("^p\\[", colnames(fit_mat))
+    p.draws.early <- fit_mat[, p.ind.early, drop = FALSE] # [nsim, nquar]
+    # X_inf rows are ordered as rep(1:nquar, times = nage), so column c of infs
+    # corresponds to time t = ((c - 1) %% nquar) + 1.
+    time_idx <- ((seq_len(nquar * nage) - 1L) %% nquar) + 1L
+    infs_for_incidence <- infs + log1p(p.draws.early[, time_idx, drop = FALSE])
+  } else {
+    infs_for_incidence <- infs
+  }
+
   if (length(tau.ind) > 1) {
     tau <- apply(fit_mat[, tau.ind], 2, get_quantiles)
   } else {
@@ -142,11 +160,11 @@ postproc_ad <- function(
   }
 
   # Posterior mean for all time and ages
-  out$infs.all <- apply(infs, 2, get_quantiles)
+  out$infs.all <- apply(infs_for_incidence, 2, get_quantiles)
 
   # Extract incidence estimates
   out$incidence <- infs.fct.qt(
-    infs,
+    infs_for_incidence,
     age.st = age_bands$all[1],
     age.end = age_bands$all[2],
     nquar,
@@ -155,7 +173,7 @@ postproc_ad <- function(
   )
 
   out$annual_incidence <- infs.fct(
-    infs,
+    infs_for_incidence,
     age.st = age_bands$all[1],
     age.end = age_bands$all[2],
     nquar,
@@ -167,7 +185,7 @@ postproc_ad <- function(
   # Extract incidence estimates by age band
   out$incidence_age <- purrr::imap(age_bands, \(age, bn) {
     infs.fct.qt(
-      infs,
+      infs_for_incidence,
       age[1],
       age[2],
       nquar,
@@ -180,7 +198,7 @@ postproc_ad <- function(
 
   out$annual_incidence_age <- purrr::imap(age_bands, \(age, bn) {
     infs.fct(
-      infs,
+      infs_for_incidence,
       age[1],
       age[2],
       nquar,

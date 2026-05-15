@@ -60,8 +60,10 @@ data {
   real<lower=0> eta_sd;
   
   // External data-linkage estimates of detection probability (on logit scale).
-  // Set detect_obs_sd = 0 to disable (treated as no observation).
-  vector[nquar] detect_logit_obs;
+  // Observations can be sparse, e.g. occasional linkage studies.
+  int<lower=0> n_detect_obs;
+  array[n_detect_obs] int<lower=1, upper=nquar> detect_obs_index;
+  vector[n_detect_obs] detect_logit_obs;
   real<lower=0> detect_obs_sd;
 }
 transformed data {
@@ -395,9 +397,11 @@ model {
   sigma_mp_5 ~ gamma(2, 8);
   
   // Auxiliary likelihood for detect_prob from data-linkage study.
-  // Only included when detect_obs_sd > 0.
-  if (detect_obs_sd > 0) {
-    detect_logit_obs ~ normal(detect_logit, detect_obs_sd);
+  // Only included when detect_obs_sd > 0 and a linkage study is observed.
+  if (detect_obs_sd > 0 && n_detect_obs > 0) {
+    for (i in 1 : n_detect_obs) {
+      detect_logit_obs[i] ~ normal(detect_logit[detect_obs_index[i]], detect_obs_sd);
+    }
   }
   
   // Likelihood

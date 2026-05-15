@@ -16,7 +16,7 @@ test_that("simulated plots are generated correctly", {
 
 test_that("simulated plots are generated correctly", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, migration = TRUE, sim_type = "combo_4", eta_sd = 0.3, detect_obs_sd = 0.3)
+  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, migration = TRUE, sim_type = "combo_4", eta_sd = 0.3, detect_obs_sd = 0.3, detect_obs_every = 20)
   # Generate plots of key quantities
   p1 <- plot_simulations(stan_data, "incidence")
   p2 <- plot_simulations(stan_data, "undiag_prev")
@@ -29,7 +29,7 @@ test_that("simulated plots are generated correctly", {
   p9 <- plot_simulations(stan_data, "detect_prob") +
     ggplot2::geom_point(
       data = data.frame(
-        year = seq(0, 9.75, by=0.25),
+        year = (stan_data$stan_data$detect_obs_index - 1) / 4,
         value = invlogit(stan_data$stan_data$detect_logit_obs),
         group = "detect_prob_obs"),
       color = "red", size = 2)

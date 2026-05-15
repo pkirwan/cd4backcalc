@@ -22,10 +22,10 @@ library(cd4backcalc)
 
 ## Simulate data
 
-We first simulate HIV diagnosis data using `simulate_diagnoses()`. This function propagates a specified number of HIV infections through the back-calculation model to generate diagnoses over time. Key arguments control the incidence pattern (`h_pattern`), whether to include migration, RITA, and/or age structure, and a seed for reproducibility.
+We first simulate HIV diagnosis data using `simulate_diagnoses()`. This function propagates a specified number of HIV infections through the back-calculation model to generate diagnoses over time. Key arguments control the simulation scenario (`sim_type`), whether to include migration, RITA, and/or age structure, and a seed for reproducibility.
 
 ```{r simulate, eval=FALSE}
-sim_diags <- simulate_diagnoses(h_pattern = "increasing", sim_seed = 123)
+sim_diags <- simulate_diagnoses(sim_type = "combo_3", sim_seed = 123)
 ```
 
 If you are working with real data rather than simulated data, you can skip this step and pass a pre-formatted `stan_data` list directly to `run_backcalc()`.
@@ -46,6 +46,10 @@ We can visualise the simulated data using `plot_simulations()`:
 ```{r plot-sim, eval=FALSE}
 plot_simulations(sim_diags, quantity = "incidence")
 ```
+
+<div class="figure">
+<img src="articles/figures/getting-started-sim-incidence.png" alt="Figure: Simulated HIV incidence." width="100%" />
+</div>
 
 ## Fit the model
 
@@ -74,6 +78,10 @@ Use `plot_diagnostics()` to inspect traceplots and posterior density plots for k
 plot_diagnostics(hiv_list, ntraces = 4)
 ```
 
+<div class="figure">
+<img src="articles/figures/getting-started-diagnostics.png" alt="Figure: Convergence diagnostics for the fitted model." width="100%" />
+</div>
+
 You can also access the underlying `cmdstanr` fit object for additional diagnostics:
 
 ```{r cmdstanr-diag, eval=FALSE}
@@ -101,6 +109,10 @@ When working with simulated data, `bias_plot()` compares the model estimates aga
 bias_plot(hiv_list, quantity = "incidence")
 ```
 
+<div class="figure">
+<img src="articles/figures/getting-started-bias-incidence.png" alt="Figure: Bias plot for estimated HIV incidence." width="100%" />
+</div>
+
 ## Plot estimates
 
 `plot_estimates()` produces plots of the posterior estimates with credible intervals. When simulated data is available, the true values are overlaid for comparison.
@@ -119,14 +131,33 @@ plot_estimates(hiv_list, quantity = "diag_prob")
 plot_estimates(hiv_list, quantity = "diagnoses")
 ```
 
+<div class="figure">
+<img src="articles/figures/getting-started-est-incidence.png" alt="Figure: Estimated HIV incidence." width="100%" />
+</div>
+
+<div class="figure">
+<img src="articles/figures/getting-started-est-undiag-prev.png" alt="Figure: Estimated undiagnosed prevalence." width="100%" />
+</div>
+
+<div class="figure">
+<img src="articles/figures/getting-started-est-diag-prob.png" alt="Figure: Estimated diagnosis probabilities." width="100%" />
+</div>
+
+<div class="figure">
+<img src="articles/figures/getting-started-est-diagnoses.png" alt="Figure: Expected versus observed diagnoses." width="100%" />
+</div>
+
 All plotting functions return `ggplot2` objects, so they can be further customised:
 
 ```{r customise, eval=FALSE}
 library(ggplot2)
 plot_estimates(hiv_list, quantity = "incidence") +
-  labs(title = "Estimated HIV incidence") +
-  theme_minimal()
+  theme_gray(14)
 ```
+
+<div class="figure">
+<img src="articles/figures/getting-started-est-incidence-minimal.png" alt="Figure: Estimated HIV incidence." width="100%" />
+</div>
 
 ## Next steps
 

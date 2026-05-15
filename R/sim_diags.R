@@ -29,6 +29,7 @@
 #' @param age_diag_effect Numeric scalar controlling the strength of age variation in diagnosis probabilities. Applied as a logit-additive offset scaled linearly across ages.
 #' @param mig_diag_offset Numeric vector of per-state logit-scale offsets applied to diagnosis probabilities for the migrant group (y=2). Length must equal the number of diagnosis states (4 for non-RITA, 5 for RITA). NULL (default) applies no offset.
 #' @param frr False recency rate for RITA misclassification.
+#' @param detect_obs_every Positive integer giving the spacing, in quarters, between external detection-probability observations used for simulation diagnostics.
 #' @return Configuration list.
 #' @keywords internal
 define_sim_config <- function(
@@ -57,7 +58,8 @@ define_sim_config <- function(
   rita_completeness = 1, # RITA completeness
   age_diag_effect = 0, # age effect on diagnosis probabilities
   mig_diag_offset = NULL, # per-state logit offsets for migrant diagnosis probs
-  frr = 0.019 # false recency rate for RITA misclassification
+  frr = 0.019, # false recency rate for RITA misclassification
+  detect_obs_every = 1 # spacing between detect_prob observations
 ) {
   if (rita) {
     nlatst <- 7
@@ -73,6 +75,15 @@ define_sim_config <- function(
 
   if (is.null(sim_seed)) {
     sim_seed <- sample.int(.Machine$integer.max, 1)
+  }
+
+  if (
+    length(detect_obs_every) != 1 ||
+      is.na(detect_obs_every) ||
+      detect_obs_every < 1 ||
+      detect_obs_every != as.integer(detect_obs_every)
+  ) {
+    stop("detect_obs_every must be a positive integer.")
   }
 
   # Standard configuration parameters
@@ -104,7 +115,8 @@ define_sim_config <- function(
     rita_completeness = rita_completeness,
     age_diag_effect = age_diag_effect,
     mig_diag_offset = mig_diag_offset,
-    frr = frr
+    frr = frr,
+    detect_obs_every = as.integer(detect_obs_every)
   )
 
   if (!is.null(sim_type)) {
@@ -488,7 +500,8 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #' @param mig_diag_offset Numeric vector of per-state logit-scale offsets applied to diagnosis probabilities for the migrant group (y=2). Length must equal the number of diagnosis states (4 for non-RITA, 5 for RITA). NULL (default) applies no offset.
 #' @param frr False recency rate for RITA misclassification.
 #' @param eta_sd Standard deviation of the approximate melding prior for the log ratio of abroad-acquired to UK-acquired infections. Passed directly to Stan as data. Smaller values anchor the model more tightly to the external \code{ratio_abroad_uk} evidence. Default is 0.10, which matches the simulation noise on the log scale.
-#' @param detect_obs_sd Standard deviation of detection probability
+#' @param detect_obs_sd Standard deviation of detection probability.
+#' @param detect_obs_every Positive integer giving the spacing, in quarters, between external detection-probability observations. Use values larger than 1 to weaken the auxiliary likelihood by observing only occasional linkage studies.
 #' @return List containing simulated epidemic data.
 #' @examples
 #' simulate_diagnoses()
@@ -521,7 +534,8 @@ simulate_diagnoses <- function(
   mig_diag_offset = NULL, # per-state logit offsets for migrant diagnosis probs
   frr = 0.019, # false recency rate for RITA misclassification
   eta_sd = 0.10, # sd of the melding prior for log(ratio_abroad_uk)
-  detect_obs_sd = 0
+  detect_obs_sd = 0,
+  detect_obs_every = 1
 ) {
   sim_config <- define_sim_config(
     h_pattern,
@@ -549,7 +563,8 @@ simulate_diagnoses <- function(
     rita_completeness,
     age_diag_effect,
     mig_diag_offset,
-    frr
+    frr,
+    detect_obs_every
   )
   set.seed(sim_config$sim_seed)
 
@@ -1010,10 +1025,21 @@ simulate_diagnoses <- function(
 
   # Generate noisy logit-scale detect_prob observations (data-linkage auxiliary data).
   # detect_obs_sd = 0 disables the auxiliary likelihood in Stan.
-  detect_logit_obs <- if (detect_obs_sd > 0) {
-    stats::rnorm(sim_config$nquar, logit(detect_prob), detect_obs_sd)
+  # Larger detect_obs_every values mimic occasional linkage studies rather than
+  # an observation every quarter.
+  detect_obs_index <- if (detect_obs_sd > 0) {
+    seq.int(1, sim_config$nquar, by = sim_config$detect_obs_every)
   } else {
-    rep(0, sim_config$nquar) # placeholder; ignored in Stan when detect_obs_sd = 0
+    integer(0)
+  }
+  detect_logit_obs <- if (length(detect_obs_index) > 0) {
+    stats::rnorm(
+      length(detect_obs_index),
+      logit(detect_prob[detect_obs_index]),
+      detect_obs_sd
+    )
+  } else {
+    numeric(0)
   }
 
   # ABROAD data: detected portion of diagnosed migrants
@@ -1041,6 +1067,7 @@ simulate_diagnoses <- function(
     # log(p) is the appropriate transformation for the eta parameter in the migration model
     "eta_mean" = log(sim_data$ratio_abroad_uk),
     "eta_sd" = eta_sd,
+    "detect_obs_index" = detect_obs_index,
     "detect_logit_obs" = detect_logit_obs,
     "detect_obs_sd" = detect_obs_sd,
     "sim_config" = sim_config

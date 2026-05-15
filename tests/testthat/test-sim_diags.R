@@ -14,6 +14,18 @@ test_that("age-specific migration simulation produces expected HIV data", {
   )
 })
 
+test_that("sparse detection observations follow requested spacing", {
+  sim_diags <- simulate_diagnoses(
+    sim_seed = 123,
+    migration = TRUE,
+    detect_obs_sd = 0.3,
+    detect_obs_every = 20
+  )
+  expect_equal(sim_diags$stan_data$detect_obs_index, c(1, 21, 41, 61, 81, 101))
+  expect_length(sim_diags$stan_data$detect_logit_obs, 6)
+  expect_null(sim_diags$stan_data$n_detect_obs)
+})
+
 test_that("age-specific migration and rita simulation produces expected HIV data", {
   sim_diags <- simulate_diagnoses(
     sim_seed = 123,

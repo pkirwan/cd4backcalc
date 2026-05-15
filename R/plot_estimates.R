@@ -102,7 +102,7 @@ plot_simulations <- function(
 #' @param model_1_name A string specifying the name of the first model for the legend (default is "Model 1").
 #' @param model_2_name A string specifying the name of the second model for the legend (default is "Model 2").
 #' @param credible_intervals A logical indicating whether to plot 95% credible intervals (default is TRUE).
-#' @param sim_comparison A string specifying which simulated values to compare against when `hiv_list` contains simulated data. Options are `"generative"` (deterministic expected values, the default) or `"sampled"` (the stochastic realisation for the particular seed).
+#' @param sim_comparison A string specifying which simulated values to compare against when `hiv_list` contains simulated data. Options are `"sampled"` (the stochastic realisation for the particular seed, the default) or `"generative"` (deterministic expected values).
 #' @return A ggplot2 object.
 #' @export
 plot_estimates <- function(
@@ -114,7 +114,7 @@ plot_estimates <- function(
   model_1_name = "Model 1",
   model_2_name = "Model 2",
   credible_intervals = TRUE,
-  sim_comparison = c("generative", "sampled")
+  sim_comparison = c("sampled", "generative")
 ) {
   sim_comparison <- match.arg(sim_comparison)
   hiv_list <- purrr::compact(hiv_list)
