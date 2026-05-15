@@ -31,7 +31,7 @@ define_sim_config(
   age_diag_effect = 0,
   mig_diag_offset = NULL,
   frr = 0.019,
-  detect_obs_every = 1
+  detect_obs_times = NULL
 )
 }
 \arguments{
@@ -87,7 +87,7 @@ define_sim_config(
 
 \item{frr}{False recency rate for RITA misclassification.}
 
-\item{detect_obs_every}{Positive integer giving the spacing, in quarters, between external detection-probability observations used for simulation diagnostics.}
+\item{detect_obs_times}{Integer vector of quarter indices (1-based) at which external detection-probability observations are generated.}
 }
 \value{
 Configuration list.

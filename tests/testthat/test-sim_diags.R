@@ -19,9 +19,9 @@ test_that("sparse detection observations follow requested spacing", {
     sim_seed = 123,
     migration = TRUE,
     detect_obs_sd = 0.3,
-    detect_obs_every = 20
+    detect_obs_times = seq(1, 120, by = 20)
   )
-  expect_equal(sim_diags$stan_data$detect_obs_index, c(1, 21, 41, 61, 81, 101))
+  expect_equal(sim_diags$stan_data$detect_obs_index, c(1L, 21L, 41L, 61L, 81L, 101L))
   expect_length(sim_diags$stan_data$detect_logit_obs, 6)
   expect_null(sim_diags$stan_data$n_detect_obs)
 })

@@ -12,7 +12,7 @@ mse_plot(
   lab = TRUE,
   model_1_name = "Model 1",
   model_2_name = "Model 2",
-  sim_comparison = c("generative", "sampled")
+  sim_comparison = c("sampled", "generative")
 )
 }
 \arguments{
@@ -30,7 +30,7 @@ mse_plot(
 
 \item{model_2_name}{The name of the second model for labeling (default is "Model 2").}
 
-\item{sim_comparison}{A string specifying which simulated values to compare against. Options are \code{"generative"} (deterministic expected values, the default) or \code{"sampled"} (the stochastic realisation for the particular seed).}
+\item{sim_comparison}{A string specifying which simulated values to compare against. Options are \code{"sampled"} (the stochastic realisation for the particular seed, the default) or \code{"generative"} (deterministic expected values).}
 }
 \value{
 A ggplot object of the MSE box plot.

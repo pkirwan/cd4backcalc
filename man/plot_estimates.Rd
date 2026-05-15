@@ -13,7 +13,7 @@ plot_estimates(
   model_1_name = "Model 1",
   model_2_name = "Model 2",
   credible_intervals = TRUE,
-  sim_comparison = c("generative", "sampled")
+  sim_comparison = c("sampled", "generative")
 )
 }
 \arguments{
@@ -33,7 +33,7 @@ plot_estimates(
 
 \item{credible_intervals}{A logical indicating whether to plot 95\% credible intervals (default is TRUE).}
 
-\item{sim_comparison}{A string specifying which simulated values to compare against when \code{hiv_list} contains simulated data. Options are \code{"generative"} (deterministic expected values, the default) or \code{"sampled"} (the stochastic realisation for the particular seed).}
+\item{sim_comparison}{A string specifying which simulated values to compare against when \code{hiv_list} contains simulated data. Options are \code{"sampled"} (the stochastic realisation for the particular seed, the default) or \code{"generative"} (deterministic expected values).}
 }
 \value{
 A ggplot2 object.

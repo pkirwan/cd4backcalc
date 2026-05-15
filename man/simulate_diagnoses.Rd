@@ -33,7 +33,7 @@ simulate_diagnoses(
   frr = 0.019,
   eta_sd = 0.1,
   detect_obs_sd = 0,
-  detect_obs_every = 1
+  detect_obs_times = NULL
 )
 }
 \arguments{
@@ -93,7 +93,10 @@ simulate_diagnoses(
 
 \item{detect_obs_sd}{Standard deviation of detection probability.}
 
-\item{detect_obs_every}{Positive integer giving the spacing, in quarters, between external detection-probability observations. Use values larger than 1 to weaken the auxiliary likelihood by observing only occasional linkage studies.}
+\item{detect_obs_times}{Integer vector of quarter indices (1-based) at which external
+detection-probability observations are generated. Defaults to \code{NULL}, which uses
+every 20 quarters (approx. every 5 years). Supply a custom vector, e.g. \code{c(4, 10, 30)},
+to place observations at specific quarters.}
 }
 \value{
 List containing simulated epidemic data.

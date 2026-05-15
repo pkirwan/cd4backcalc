@@ -16,7 +16,7 @@ test_that("simulated plots are generated correctly", {
 
 test_that("simulated plots are generated correctly", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, migration = TRUE, sim_type = "combo_4", eta_sd = 0.3, detect_obs_sd = 0.3, detect_obs_every = 20)
+  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, migration = TRUE, sim_type = "combo_4", eta_sd = 0.3, detect_obs_sd = 0.3, detect_obs_times = seq(1, 40, by = 20))
   # Generate plots of key quantities
   p1 <- plot_simulations(stan_data, "incidence")
   p2 <- plot_simulations(stan_data, "undiag_prev")
