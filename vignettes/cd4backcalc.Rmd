@@ -18,6 +18,7 @@ This vignette walks through a basic workflow using `cd4backcalc`: simulate HIV d
 
 ```{r setup, eval=FALSE}
 library(cd4backcalc)
+library(patchwork)
 ```
 
 ## Simulate data
@@ -119,32 +120,22 @@ bias_plot(hiv_list, quantity = "incidence")
 
 ```{r estimates, eval=FALSE}
 # HIV incidence over time
-plot_estimates(hiv_list, quantity = "incidence")
+p1 <- plot_estimates(hiv_list, quantity = "incidence")
 
 # undiagnosed prevalence over time
-plot_estimates(hiv_list, quantity = "undiag_prev")
+p2 <- plot_estimates(hiv_list, quantity = "undiag_prev")
 
 # diagnosis probabilities
-plot_estimates(hiv_list, quantity = "diag_prob")
+p3 <- plot_estimates(hiv_list, quantity = "diag_prob")
 
 # expected diagnoses vs observed
-plot_estimates(hiv_list, quantity = "diagnoses")
+p4 <- plot_estimates(hiv_list, quantity = "diagnoses")
+
+(p1 + p2) / p3 / p4
 ```
 
 <div class="figure">
-<img src="articles/figures/getting-started-est-incidence.png" alt="Figure: Estimated HIV incidence." width="100%" />
-</div>
-
-<div class="figure">
-<img src="articles/figures/getting-started-est-undiag-prev.png" alt="Figure: Estimated undiagnosed prevalence." width="100%" />
-</div>
-
-<div class="figure">
-<img src="articles/figures/getting-started-est-diag-prob.png" alt="Figure: Estimated diagnosis probabilities." width="100%" />
-</div>
-
-<div class="figure">
-<img src="articles/figures/getting-started-est-diagnoses.png" alt="Figure: Expected versus observed diagnoses." width="100%" />
+<img src="articles/figures/getting-started-estimates-patchwork.png" alt="Figure: Patchwork of incidence, undiagnosed prevalence, diagnosis probabilities, and expected versus observed diagnoses." width="100%" />
 </div>
 
 All plotting functions return `ggplot2` objects, so they can be further customised:

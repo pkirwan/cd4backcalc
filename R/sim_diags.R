@@ -539,7 +539,7 @@ simulate_diagnoses <- function(
   age_diag_effect = 0, # age effect on diagnosis probabilities
   mig_diag_offset = NULL, # per-state logit offsets for migrant diagnosis probs
   frr = 0.019, # false recency rate for RITA misclassification
-  eta_sd = 0.10, # sd of the melding prior for log(ratio_abroad_uk)
+  eta_sd = 0.4, # sd of the melding prior for log(ratio_abroad_uk)
   detect_obs_sd = 0,
   detect_obs_times = NULL
 ) {

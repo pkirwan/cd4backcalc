@@ -9,6 +9,11 @@ knitr::opts_chunk$set(
 )
 ```
 
+```{r setup, eval=FALSE}
+library(cd4backcalc)
+library(patchwork)
+```
+
 The `cd4backcalc` package supports eight model configurations combining CD4-only or CD4 + RITA data, with or without migration, and age-independent or age-dependent structures. This article shows the main arguments used to simulate and fit each family of model, and highlights the outputs available for each combination.
 
 ## Supported models
@@ -46,15 +51,19 @@ HIV diagnosis probabilities ($d_{i,j}$) vary by CD4 stratum and time.
 This model can be fitted with:
 
 ```{r cd4-only, eval=FALSE}
-library(cd4backcalc)
-
 sim_cd4 <- simulate_diagnoses(sim_type = "combo_3")
 fit_cd4 <- run_backcalc(sim_cd4)
-plot_estimates(fit_cd4, quantity = "incidence")
+
+# Plotting estimated quantities
+p1 <- plot_estimates(fit_cd4, quantity = "incidence")
+p2 <- plot_estimates(fit_cd4, quantity = "undiag_prev")
+p3 <- plot_estimates(fit_cd4, quantity = "diag_prob")
+
+(p1 + p2) / p3
 ```
 
 <div class="figure">
-<img src="figures/model-types-cd4-incidence.png" alt="Figure: CD4-only estimated HIV incidence." width="100%" />
+<img src="figures/model-types-cd4-patchwork.png" alt="Figure: CD4-only estimates shown as a patchwork of incidence, undiagnosed prevalence, and diagnosis probabilities." width="100%" />
 </div>
 
 Alternative smoothing choices for the incidence and diagnosis models are available for the age-independent CD4-only model, supplied via `inf_model` and `diag_model`:
@@ -85,28 +94,18 @@ sim_age <- simulate_diagnoses(sim_type = "combo_3", age = TRUE)
 fit_age <- run_backcalc(sim_age)
 
 # age-specific outputs
-plot_estimates(fit_age, quantity = "incidence_age")
-plot_estimates(fit_age, quantity = "undiag_prev_age")
-plot_estimates(fit_age, quantity = "diagnoses_age")
+p1 <- plot_estimates(fit_age, quantity = "incidence_age")
+p2 <- plot_estimates(fit_age, quantity = "undiag_prev_age")
+p3 <- plot_estimates(fit_age, quantity = "diagnoses_age")
 
 # aggregate estimates are also available
-plot_estimates(fit_age, quantity = "incidence")
+p4 <- plot_estimates(fit_age, quantity = "incidence")
+
+p1 / p2 / p3 / p4
 ```
 
 <div class="figure">
-<img src="figures/model-types-age-incidence-age.png" alt="Figure: Age-specific HIV incidence." width="100%" />
-</div>
-
-<div class="figure">
-<img src="figures/model-types-age-undiag-prev-age.png" alt="Figure: Age-specific undiagnosed prevalence." width="100%" />
-</div>
-
-<div class="figure">
-<img src="figures/model-types-age-diagnoses-age.png" alt="Figure: Age-specific diagnoses." width="100%" />
-</div>
-
-<div class="figure">
-<img src="figures/model-types-age-incidence.png" alt="Figure: Aggregate HIV incidence from the age-dependent model." width="100%" />
+<img src="figures/model-types-age-patchwork.png" alt="Figure: Age-dependent estimates shown as a patchwork of age-specific incidence, age-specific undiagnosed prevalence, age-specific diagnoses, and aggregate incidence." width="100%" />
 </div>
 
 ## Adding RITA evidence
@@ -124,11 +123,16 @@ Figure: Dual biomarker back-calculation model with recent incidence assay and no
 ```{r rita, eval=FALSE}
 sim_rita <- simulate_diagnoses(sim_type = "combo_3", rita = TRUE)
 fit_rita <- run_backcalc(sim_rita)
-plot_estimates(fit_rita, quantity = "incidence")
+
+p1 <- plot_estimates(fit_rita, quantity = "incidence")
+p2 <- plot_estimates(fit_rita, quantity = "undiag_prev")
+p3 <- plot_estimates(fit_rita, quantity = "diag_prob")
+
+(p1 + p2) / p3
 ```
 
 <div class="figure">
-<img src="figures/model-types-rita-incidence.png" alt="Figure: CD4 + RITA estimated HIV incidence." width="100%" />
+<img src="figures/model-types-rita-patchwork.png" alt="Figure: CD4 + RITA estimates shown as a patchwork of incidence, undiagnosed prevalence, and diagnosis probabilities." width="100%" />
 </div>
 
 ## Migration-adjusted models
@@ -148,31 +152,18 @@ sim_mig <- simulate_diagnoses(sim_type = "combo_3", migration = TRUE)
 fit_mig <- run_backcalc(sim_mig)
 
 # migration-specific outputs
-plot_estimates(fit_mig, quantity = "undiag_migration")
-plot_estimates(fit_mig, quantity = "migration_prob")
-plot_estimates(fit_mig, quantity = "ratio_abroad_uk")
-plot_estimates(fit_mig, quantity = "transfers")
-plot_estimates(fit_mig, quantity = "detect_prob")
+p1 <- plot_estimates(fit_mig, quantity = "undiag_migration")
+p2 <- plot_estimates(fit_mig, quantity = "all_migration")
+p3 <- plot_estimates(fit_mig, quantity = "ratio_abroad_uk")
+p4 <- plot_estimates(fit_mig, quantity = "detect_prob")
+p5 <- plot_estimates(fit_mig, quantity = "migration_prob")
+p6 <- plot_estimates(fit_mig, quantity = "diag_prob_mig")
+
+(p1 + p2) / (p3 + p4) / p5  / p6
 ```
 
 <div class="figure">
-<img src="figures/model-types-migration-undiag-migration.png" alt="Figure: Estimated undiagnosed migration." width="100%" />
-</div>
-
-<div class="figure">
-<img src="figures/model-types-migration-migration-prob.png" alt="Figure: Estimated migration probabilities." width="100%" />
-</div>
-
-<div class="figure">
-<img src="figures/model-types-migration-ratio-abroad-uk.png" alt="Figure: Estimated ratio of infections acquired abroad versus in the UK." width="100%" />
-</div>
-
-<div class="figure">
-<img src="figures/model-types-migration-transfers.png" alt="Figure: Estimated transfers of care." width="100%" />
-</div>
-
-<div class="figure">
-<img src="figures/model-types-migration-detect-prob.png" alt="Figure: Estimated detection probabilities." width="100%" />
+<img src="figures/model-types-migration-patchwork.png" alt="Figure: Migration-model estimates shown as a patchwork of migration-specific outputs." width="100%" />
 </div>
 
 ## Combined RITA + migration models
@@ -187,21 +178,16 @@ sim_rita_mig <- simulate_diagnoses(
 )
 fit_rita_mig <- run_backcalc(sim_rita_mig)
 
-plot_estimates(fit_rita_mig, quantity = "incidence")
-plot_estimates(fit_rita_mig, quantity = "diag_prob_mig")
-plot_estimates(fit_rita_mig, quantity = "detect_prob")
+p1 <- plot_estimates(fit_rita_mig, quantity = "incidence")
+p2 <- plot_estimates(fit_rita_mig, quantity = "undiag_migration")
+p3 <- plot_estimates(fit_rita_mig, quantity = "diag_prob")
+p4 <- plot_estimates(fit_rita_mig, quantity = "migration_prob")
+
+(p1 + p2) / p3 / p4
 ```
 
 <div class="figure">
-<img src="figures/model-types-rita-migration-incidence.png" alt="Figure: RITA + migration estimated HIV incidence." width="100%" />
-</div>
-
-<div class="figure">
-<img src="figures/model-types-rita-migration-diag-prob-mig.png" alt="Figure: RITA + migration diagnosis probabilities for migrants." width="100%" />
-</div>
-
-<div class="figure">
-<img src="figures/model-types-rita-migration-detect-prob.png" alt="Figure: RITA + migration detection probabilities." width="100%" />
+<img src="figures/model-types-rita-migration-patchwork.png" alt="Figure: RITA + migration estimates shown as a patchwork of incidence, migrant diagnosis probabilities, and detection probabilities." width="100%" />
 </div>
 
 To fit the corresponding age-dependent model, add `age = TRUE` to both `simulate_diagnoses()` and `run_backcalc()`. Age-specific outputs such as `undiag_migration_age` and `diag_prob_mig_age` are then available.
@@ -220,10 +206,6 @@ sim_cd4 <- sim_remodel(sim_rita, rita = FALSE)
 # fit as CD4-only model
 fit_cd4 <- run_backcalc(sim_cd4, rita = FALSE)
 ```
-
-<div class="figure">
-<img src="figures/model-types-remodel-cd4-incidence.png" alt="Figure: CD4-only incidence after remodelling RITA data." width="100%" />
-</div>
 
 ## Simulation types
 

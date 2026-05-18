@@ -423,14 +423,20 @@ model {
   beta_cob[2 : npars_cob] ~ normal(0, sigma_cob);
   sigma_cob ~ gamma(2, 32);
   
-  // Approximate melding for proportion UK-acquired - AR(1)
-  eta_mean[1] ~ normal(eta[1], eta_sd);
-  eta_mean[2 : nquar] ~ normal(
-                               eta[2 : nquar]
-                               + rho_eta
-                                 * (eta_mean[1 : (nquar - 1)]
-                                    - eta[1 : (nquar - 1)]),
-                               eta_sd * sqrt(1 - rho_eta ^ 2));
+  // Approximate melding for proportion UK-acquired - AR(1).
+  // Guard: only active when eta_sd > 0 (i.e. independent external evidence is
+  // available). Set eta_sd = 0 to let the likelihood alone identify eta — this
+  // is the correct choice when the RITA-positive COB proportions used to derive
+  // eta_mean are already in the diagnosis likelihood.
+  if (eta_sd > 0) {
+    eta_mean[1] ~ normal(eta[1], eta_sd);
+    eta_mean[2 : nquar] ~ normal(
+                                 eta[2 : nquar]
+                                 + rho_eta
+                                   * (eta_mean[1 : (nquar - 1)]
+                                      - eta[1 : (nquar - 1)]),
+                                 eta_sd * sqrt(1 - rho_eta ^ 2));
+  }
   rho_eta ~ normal(0, 0.5);
   
   // Detection probability priors

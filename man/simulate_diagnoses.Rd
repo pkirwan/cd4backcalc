@@ -31,7 +31,7 @@ simulate_diagnoses(
   age_diag_effect = 0,
   mig_diag_offset = NULL,
   frr = 0.019,
-  eta_sd = 0.1,
+  eta_sd = 0.4,
   detect_obs_sd = 0,
   detect_obs_times = NULL
 )
