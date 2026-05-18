@@ -31,7 +31,10 @@ simulate_diagnoses(
   rita_completeness = 1,
   age_diag_effect = 0,
   mig_diag_offset = NULL,
-  frr = 0.019
+  frr = 0.019,
+  eta_sd = 0.4,
+  detect_obs_sd = 0,
+  detect_obs_times = NULL
 )
 ```
 
@@ -39,12 +42,13 @@ simulate_diagnoses(
 
 - h_pattern:
 
-  Pattern type for infections ("constant", "increasing", "varying").
+  Pattern type for infections ("constant", "increasing", "varying",
+  "varying_2").
 
 - o_pattern:
 
   Pattern type for omega ("constant", "increasing", "step_change",
-  "none").
+  "step_change_late", "none").
 
 - d_pattern:
 
@@ -148,6 +152,26 @@ simulate_diagnoses(
 - frr:
 
   False recency rate for RITA misclassification.
+
+- eta_sd:
+
+  Standard deviation of the approximate melding prior for the log ratio
+  of abroad-acquired to UK-acquired infections. Passed directly to Stan
+  as data. Smaller values anchor the model more tightly to the external
+  `ratio_abroad_uk` evidence. Default is 0.10, which matches the
+  simulation noise on the log scale.
+
+- detect_obs_sd:
+
+  Standard deviation of detection probability.
+
+- detect_obs_times:
+
+  Integer vector of quarter indices (1-based) at which external
+  detection-probability observations are generated. Defaults to `NULL`,
+  which uses every 20 quarters (approx. every 5 years). Supply a custom
+  vector, e.g. `c(4, 10, 30)`, to place observations at specific
+  quarters.
 
 ## Value
 
@@ -4680,7 +4704,16 @@ simulate_diagnoses()
 #> [120] -1.410892
 #> 
 #> $stan_data$eta_sd
-#> [1] 0.5
+#> [1] 0.4
+#> 
+#> $stan_data$detect_obs_index
+#> integer(0)
+#> 
+#> $stan_data$detect_logit_obs
+#> numeric(0)
+#> 
+#> $stan_data$detect_obs_sd
+#> [1] 0
 #> 
 #> $stan_data$sim_config
 #> $stan_data$sim_config$h_pattern
@@ -4818,6 +4851,9 @@ simulate_diagnoses()
 #> 
 #> $stan_data$sim_config$frr
 #> [1] 0.019
+#> 
+#> $stan_data$sim_config$detect_obs_times
+#> [1]   1  21  41  61  81 101
 #> 
 #> 
 #> 

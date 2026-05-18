@@ -7,6 +7,7 @@ assess convergence and goodness of fit, and plot the model estimates.
 ``` r
 
 library(cd4backcalc)
+library(patchwork)
 ```
 
 ## Simulate data
@@ -15,13 +16,13 @@ We first simulate HIV diagnosis data using
 [`simulate_diagnoses()`](https://pkirwan.github.io/cd4backcalc/reference/simulate_diagnoses.md).
 This function propagates a specified number of HIV infections through
 the back-calculation model to generate diagnoses over time. Key
-arguments control the incidence pattern (`h_pattern`), whether to
+arguments control the simulation scenario (`sim_type`), whether to
 include migration, RITA, and/or age structure, and a seed for
 reproducibility.
 
 ``` r
 
-sim_diags <- simulate_diagnoses(h_pattern = "increasing", sim_seed = 123)
+sim_diags <- simulate_diagnoses(sim_type = "combo_3", sim_seed = 123)
 ```
 
 If you are working with real data rather than simulated data, you can
@@ -55,6 +56,9 @@ We can visualise the simulated data using
 
 plot_simulations(sim_diags, quantity = "incidence")
 ```
+
+![Figure: Simulated HIV
+incidence.](articles/figures/getting-started-sim-incidence.png)
 
 ## Fit the model
 
@@ -93,6 +97,9 @@ to inspect traceplots and posterior density plots for key parameters:
 plot_diagnostics(hiv_list, ntraces = 4)
 ```
 
+![Figure: Convergence diagnostics for the fitted
+model.](articles/figures/getting-started-diagnostics.png)
+
 You can also access the underlying `cmdstanr` fit object for additional
 diagnostics:
 
@@ -128,6 +135,9 @@ compares the model estimates against the known simulated values:
 bias_plot(hiv_list, quantity = "incidence")
 ```
 
+![Figure: Bias plot for estimated HIV
+incidence.](articles/figures/getting-started-bias-incidence.png)
+
 ## Plot estimates
 
 [`plot_estimates()`](https://pkirwan.github.io/cd4backcalc/reference/plot_estimates.md)
@@ -138,17 +148,23 @@ comparison.
 ``` r
 
 # HIV incidence over time
-plot_estimates(hiv_list, quantity = "incidence")
+p1 <- plot_estimates(hiv_list, quantity = "incidence")
 
 # undiagnosed prevalence over time
-plot_estimates(hiv_list, quantity = "undiag_prev")
+p2 <- plot_estimates(hiv_list, quantity = "undiag_prev")
 
 # diagnosis probabilities
-plot_estimates(hiv_list, quantity = "diag_prob")
+p3 <- plot_estimates(hiv_list, quantity = "diag_prob")
 
 # expected diagnoses vs observed
-plot_estimates(hiv_list, quantity = "diagnoses")
+p4 <- plot_estimates(hiv_list, quantity = "diagnoses")
+
+(p1 + p2) / p3 / p4
 ```
+
+![Figure: Patchwork of incidence, undiagnosed prevalence, diagnosis
+probabilities, and expected versus observed
+diagnoses.](articles/figures/getting-started-estimates-patchwork.png)
 
 All plotting functions return `ggplot2` objects, so they can be further
 customised:
@@ -157,9 +173,11 @@ customised:
 
 library(ggplot2)
 plot_estimates(hiv_list, quantity = "incidence") +
-  labs(title = "Estimated HIV incidence") +
-  theme_minimal()
+  theme_gray(14)
 ```
+
+![Figure: Estimated HIV
+incidence.](articles/figures/getting-started-est-incidence-minimal.png)
 
 ## Next steps
 

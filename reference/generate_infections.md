@@ -18,10 +18,6 @@ generate_infections(nquar, nlatst, pattern, target_inf = 90000, dist = TRUE)
 
   Number of latent states.
 
-- pattern:
-
-  Pattern type for infections ("varying", "constant", "increasing").
-
 - target_inf:
 
   Target total number of infections to simulate (may be higher/lower
@@ -30,6 +26,11 @@ generate_infections(nquar, nlatst, pattern, target_inf = 90000, dist = TRUE)
 - dist:
 
   Logical indicating whether to add Poisson variation.
+
+- h_pattern:
+
+  Pattern type for infections ("varying", "varying_2", "constant",
+  "increasing").
 
 ## Value
 

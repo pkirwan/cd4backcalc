@@ -53,9 +53,12 @@ List of available simulation types:
 - "combo_2": Combination of varying infections, step change migration,
   varying diagnosis probabilities, and increasing proportion UK.
 
-- "combo_3": Combination of varying infections, step change migration,
-  varying diagnosis probabilities, increasing proportion UK, and varying
-  migration probabilities.
+- "combo_3": Combination of early-peaking infections, increasing
+  migration, varying diagnosis probabilities, increasing proportion UK,
+  varying migration probabilities, and age effects.
 
-- "combo_4": As "combo_3" but with different incidence and migration
-  patterns.
+- "combo_4": Late-peaking infections (varying_2) with a late upward step
+  change in migration (step_change_2), representing a surge in arrivals
+  from high-prevalence regions. Shares varying diagnosis probabilities,
+  increasing proportion UK, varying migration probabilities, and age
+  effects with combo_3.

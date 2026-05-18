@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Analysing results • cd4backcalc</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Analysing results">
 </head>
@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,7 +61,7 @@
       <h1>Analysing results</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.0.7/vignettes/articles/analysing-results.Rmd" class="external-link"><code>vignettes/articles/analysing-results.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.0.8/vignettes/articles/analysing-results.Rmd" class="external-link"><code>vignettes/articles/analysing-results.Rmd</code></a></small>
       <div class="d-none name"><code>analysing-results.Rmd</code></div>
     </div>
 
@@ -71,7 +71,8 @@
 back-calculation models, including the full set of available quantities,
 model comparison, and working with real data.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://pkirwan.github.io/cd4backcalc/">cd4backcalc</a></span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://pkirwan.github.io/cd4backcalc/">cd4backcalc</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="available-quantities">Available quantities<a class="anchor" aria-label="anchor" href="#available-quantities"></a>
 </h2>
@@ -197,13 +198,18 @@ on the model type:</p>
 <p>Before fitting, simulated quantities can be inspected with
 <code><a href="../reference/plot_simulations.html">plot_simulations()</a></code>:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sim_diags</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>migration <span class="op">=</span> <span class="cn">TRUE</span>, h_pattern <span class="op">=</span> <span class="st">"increasing"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">sim_diags</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>sim_type <span class="op">=</span> <span class="st">"combo_3"</span>, migration <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/plot_simulations.html">plot_simulations</a></span><span class="op">(</span><span class="va">sim_diags</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_simulations.html">plot_simulations</a></span><span class="op">(</span><span class="va">sim_diags</span>, quantity <span class="op">=</span> <span class="st">"undiag_prev"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_simulations.html">plot_simulations</a></span><span class="op">(</span><span class="va">sim_diags</span>, quantity <span class="op">=</span> <span class="st">"diag_prob"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_simulations.html">plot_simulations</a></span><span class="op">(</span><span class="va">sim_diags</span>, quantity <span class="op">=</span> <span class="st">"all_migration"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_simulations.html">plot_simulations</a></span><span class="op">(</span><span class="va">sim_diags</span>, quantity <span class="op">=</span> <span class="st">"undiag_migration"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_simulations.html">plot_simulations</a></span><span class="op">(</span><span class="va">sim_diags</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
+<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_simulations.html">plot_simulations</a></span><span class="op">(</span><span class="va">sim_diags</span>, quantity <span class="op">=</span> <span class="st">"undiag_prev"</span><span class="op">)</span></span>
+<span><span class="va">p3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_simulations.html">plot_simulations</a></span><span class="op">(</span><span class="va">sim_diags</span>, quantity <span class="op">=</span> <span class="st">"all_migration"</span><span class="op">)</span></span>
+<span><span class="va">p4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_simulations.html">plot_simulations</a></span><span class="op">(</span><span class="va">sim_diags</span>, quantity <span class="op">=</span> <span class="st">"undiag_migration"</span><span class="op">)</span></span>
+<span><span class="va">p5</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_simulations.html">plot_simulations</a></span><span class="op">(</span><span class="va">sim_diags</span>, quantity <span class="op">=</span> <span class="st">"diag_prob"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="op">(</span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span><span class="op">)</span> <span class="op">/</span> <span class="op">(</span><span class="va">p3</span> <span class="op">+</span> <span class="va">p4</span><span class="op">)</span> <span class="op">/</span> <span class="va">p5</span></span></code></pre></div>
+<div class="figure">
+<p><img src="figures/analysing-results-sim-patchwork.png" alt="Figure: Patchwork of simulated incidence, undiagnosed prevalence, diagnosis probabilities, all migration, and undiagnosed migration." width="100%"></p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="plotting-model-estimates">Plotting model estimates<a class="anchor" aria-label="anchor" href="#plotting-model-estimates"></a>
@@ -213,17 +219,28 @@ intervals. When simulated data is present, the true values are shown for
 comparison:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hiv_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_diags</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
+<span></span>
+<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
+<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"undiag_prev"</span><span class="op">)</span></span>
+<span><span class="va">p3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"diag_prob"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="op">(</span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span><span class="op">)</span> <span class="op">/</span> <span class="va">p3</span></span></code></pre></div>
+<div class="figure">
+<p><img src="figures/analysing-results-estimates-patchwork.png" alt="Figure: Patchwork of estimated incidence, undiagnosed prevalence, and diagnosis probabilities." width="100%"></p>
+</div>
 <p>By default, plotting and summary diagnostics compare fitted values
-with the generative expectation from the simulation. To compare against
-the sampled realisation from a particular simulation seed instead, set
-<code>sim_comparison = "sampled"</code>:</p>
+with the sampled realisation from the simulation. To compare against the
+generative expectation from a particular simulation seed instead, set
+<code>sim_comparison = "generative"</code>:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span></span>
 <span>  <span class="va">hiv_list</span>,</span>
 <span>  quantity <span class="op">=</span> <span class="st">"incidence"</span>,</span>
-<span>  sim_comparison <span class="op">=</span> <span class="st">"sampled"</span></span>
+<span>  sim_comparison <span class="op">=</span> <span class="st">"generative"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<p><img src="figures/analysing-results-est-incidence-generative.png" alt="Figure: Estimated incidence compared against the generative expectation from the simulation." width="100%"></p>
+</div>
 <p>The same argument is available in <code><a href="../reference/bias_plot.html">bias_plot()</a></code> and
 <code><a href="../reference/mse_plot.html">mse_plot()</a></code>.</p>
 </div>
@@ -254,13 +271,17 @@ used for fitting:</p>
 <h2 id="bias-and-mse">Bias and MSE<a class="anchor" aria-label="anchor" href="#bias-and-mse"></a>
 </h2>
 <p>When fitting to simulated data, <code><a href="../reference/bias_plot.html">bias_plot()</a></code> shows how
-much the model over- or under-estimates each quantity:</p>
+much the model over- or under-estimates each quantity and
+<code><a href="../reference/mse_plot.html">mse_plot()</a></code> summarises mean squared error across one or more
+simulated fits:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/bias_plot.html">bias_plot</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
-<p>When fitting to simulated data, <code><a href="../reference/mse_plot.html">mse_plot()</a></code> summarises
-mean squared error across one or more simulated fits:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/mse_plot.html">mse_plot</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bias_plot.html">bias_plot</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
+<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mse_plot.html">mse_plot</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
+<div class="figure">
+<p><img src="figures/analysing-results-bias-mse-incidence.png" alt="Figure: Bias and MSE plots for incidence." width="100%"></p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="comparing-two-models">Comparing two models<a class="anchor" aria-label="anchor" href="#comparing-two-models"></a>
@@ -268,14 +289,14 @@ mean squared error across one or more simulated fits:</p>
 <p><code><a href="../reference/plot_estimates.html">plot_estimates()</a></code>, <code><a href="../reference/bias_plot.html">bias_plot()</a></code>, and
 <code><a href="../reference/mse_plot.html">mse_plot()</a></code> all accept a second model for side-by-side
 comparison:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sim_diags</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>rita <span class="op">=</span> <span class="cn">TRUE</span>, h_pattern <span class="op">=</span> <span class="st">"increasing"</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sim_diags</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>sim_type <span class="op">=</span> <span class="st">"combo_3"</span>, rita <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">model_rita</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_diags</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">sim_cd4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_remodel.html">sim_remodel</a></span><span class="op">(</span><span class="va">sim_diags</span>, rita <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">model_cd4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_cd4</span>, rita <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span></span>
+<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span></span>
 <span>  <span class="va">model_rita</span>,</span>
 <span>  hiv_list_2 <span class="op">=</span> <span class="va">model_cd4</span>,</span>
 <span>  quantity <span class="op">=</span> <span class="st">"incidence"</span>,</span>
@@ -283,28 +304,38 @@ comparison:</p>
 <span>  model_2_name <span class="op">=</span> <span class="st">"CD4 only"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/bias_plot.html">bias_plot</a></span><span class="op">(</span></span>
+<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bias_plot.html">bias_plot</a></span><span class="op">(</span></span>
 <span>  <span class="va">model_rita</span>,</span>
 <span>  hiv_list_2 <span class="op">=</span> <span class="va">model_cd4</span>,</span>
 <span>  quantity <span class="op">=</span> <span class="st">"incidence"</span>,</span>
 <span>  model_1_name <span class="op">=</span> <span class="st">"CD4 + RITA"</span>,</span>
 <span>  model_2_name <span class="op">=</span> <span class="st">"CD4 only"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">p1</span> <span class="op">/</span> <span class="va">p2</span></span></code></pre></div>
+<div class="figure">
+<p><img src="figures/analysing-results-compare-two-patchwork.png" alt="Figure: Patchwork of incidence and bias comparisons for two models." width="100%"></p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="comparing-multiple-models">Comparing multiple models<a class="anchor" aria-label="anchor" href="#comparing-multiple-models"></a>
 </h2>
 <p>Pass a list of model fits to compare more than two models
 simultaneously:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sim_diags</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>h_pattern <span class="op">=</span> <span class="st">"increasing"</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sim_diags</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>sim_type <span class="op">=</span> <span class="st">"combo_3"</span><span class="op">)</span></span>
 <span><span class="va">models</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">models</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_diags</span>, model_seed <span class="op">=</span> <span class="fl">100</span> <span class="op">+</span> <span class="va">i</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">models</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/mse_plot.html">mse_plot</a></span><span class="op">(</span><span class="va">models</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">models</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
+<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bias_plot.html">bias_plot</a></span><span class="op">(</span><span class="va">models</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">p1</span> <span class="op">/</span> <span class="va">p2</span></span></code></pre></div>
+<div class="figure">
+<p><img src="figures/analysing-results-compare-list-patchwork.png" alt="Figure: Patchwork of incidence and bias comparisons for multiple models." width="100%"></p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="working-with-real-data">Working with real data<a class="anchor" aria-label="anchor" href="#working-with-real-data"></a>
@@ -315,7 +346,7 @@ The <code>stan_data</code> object should contain the diagnosis arrays
 required for the chosen model, with matching <code>migration</code>,
 <code>rita</code>, and <code>age</code> flags supplied to
 <code><a href="../reference/run_backcalc.html">run_backcalc()</a></code>.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hiv_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span></span>
 <span>  <span class="va">real_stan_data</span>,</span>
 <span>  migration <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -333,9 +364,12 @@ required for the chosen model, with matching <code>migration</code>,
 <p>For detailed convergence analysis, set
 <code>chain_results = TRUE</code> in <code><a href="../reference/run_backcalc.html">run_backcalc()</a></code> to
 obtain separate posterior summaries for each chain:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hiv_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_diags</span>, chain_results <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span>, chain_results <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<p><img src="figures/analysing-results-chain-results-incidence.png" alt="Figure: Per-chain incidence estimates." width="100%"></p>
+</div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

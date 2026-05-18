@@ -133,7 +133,7 @@ sim_diags <- simulate_diagnoses(sim_seed = 123)
 hiv_list <- run_backcalc(
  sim_diags, iter_warmup = 10, iter_sampling = 10, chains = 1, messages = FALSE, nworkers = 1
 )
-#> CmdStan model cache dir: /tmp/RtmpZup5bT/cd4backcalc-cmdstan
-#> R tempdir(): /tmp/RtmpZup5bT
+#> CmdStan model cache dir: /tmp/RtmpdrU5QZ/cd4backcalc-cmdstan
+#> R tempdir(): /tmp/RtmpdrU5QZ
 #> Error: CmdStan path has not been set yet. See ?set_cmdstan_path.
 ```

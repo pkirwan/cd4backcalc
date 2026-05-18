@@ -7,6 +7,7 @@ model comparison, and working with real data.
 ``` r
 
 library(cd4backcalc)
+library(patchwork)
 ```
 
 ## Available quantities
@@ -60,14 +61,20 @@ Before fitting, simulated quantities can be inspected with
 
 ``` r
 
-sim_diags <- simulate_diagnoses(migration = TRUE, h_pattern = "increasing")
+sim_diags <- simulate_diagnoses(sim_type = "combo_3", migration = TRUE)
 
-plot_simulations(sim_diags, quantity = "incidence")
-plot_simulations(sim_diags, quantity = "undiag_prev")
-plot_simulations(sim_diags, quantity = "diag_prob")
-plot_simulations(sim_diags, quantity = "all_migration")
-plot_simulations(sim_diags, quantity = "undiag_migration")
+p1 <- plot_simulations(sim_diags, quantity = "incidence")
+p2 <- plot_simulations(sim_diags, quantity = "undiag_prev")
+p3 <- plot_simulations(sim_diags, quantity = "all_migration")
+p4 <- plot_simulations(sim_diags, quantity = "undiag_migration")
+p5 <- plot_simulations(sim_diags, quantity = "diag_prob")
+
+(p1 + p2) / (p3 + p4) / p5
 ```
+
+![Figure: Patchwork of simulated incidence, undiagnosed prevalence,
+diagnosis probabilities, all migration, and undiagnosed
+migration.](figures/analysing-results-sim-patchwork.png)
 
 ## Plotting model estimates
 
@@ -78,22 +85,35 @@ is present, the true values are shown for comparison:
 ``` r
 
 hiv_list <- run_backcalc(sim_diags)
-plot_estimates(hiv_list, quantity = "incidence")
+
+p1 <- plot_estimates(hiv_list, quantity = "incidence")
+p2 <- plot_estimates(hiv_list, quantity = "undiag_prev")
+p3 <- plot_estimates(hiv_list, quantity = "diag_prob")
+
+(p1 + p2) / p3
 ```
 
+![Figure: Patchwork of estimated incidence, undiagnosed prevalence, and
+diagnosis
+probabilities.](figures/analysing-results-estimates-patchwork.png)
+
 By default, plotting and summary diagnostics compare fitted values with
-the generative expectation from the simulation. To compare against the
-sampled realisation from a particular simulation seed instead, set
-`sim_comparison = "sampled"`:
+the sampled realisation from the simulation. To compare against the
+generative expectation from a particular simulation seed instead, set
+`sim_comparison = "generative"`:
 
 ``` r
 
 plot_estimates(
   hiv_list,
   quantity = "incidence",
-  sim_comparison = "sampled"
+  sim_comparison = "generative"
 )
 ```
+
+![Figure: Estimated incidence compared against the generative
+expectation from the
+simulation.](figures/analysing-results-est-incidence-generative.png)
 
 The same argument is available in
 [`bias_plot()`](https://pkirwan.github.io/cd4backcalc/reference/bias_plot.md)
@@ -138,21 +158,20 @@ head(obs)
 
 When fitting to simulated data,
 [`bias_plot()`](https://pkirwan.github.io/cd4backcalc/reference/bias_plot.md)
-shows how much the model over- or under-estimates each quantity:
-
-``` r
-
-bias_plot(hiv_list, quantity = "incidence")
-```
-
-When fitting to simulated data,
+shows how much the model over- or under-estimates each quantity and
 [`mse_plot()`](https://pkirwan.github.io/cd4backcalc/reference/mse_plot.md)
 summarises mean squared error across one or more simulated fits:
 
 ``` r
 
-mse_plot(hiv_list, quantity = "incidence")
+p1 <- bias_plot(hiv_list, quantity = "incidence")
+p2 <- mse_plot(hiv_list, quantity = "incidence")
+
+p1 + p2
 ```
+
+![Figure: Bias and MSE plots for
+incidence.](figures/analysing-results-bias-mse-incidence.png)
 
 ## Comparing two models
 
@@ -164,13 +183,13 @@ all accept a second model for side-by-side comparison:
 
 ``` r
 
-sim_diags <- simulate_diagnoses(rita = TRUE, h_pattern = "increasing")
+sim_diags <- simulate_diagnoses(sim_type = "combo_3", rita = TRUE)
 model_rita <- run_backcalc(sim_diags)
 
 sim_cd4 <- sim_remodel(sim_diags, rita = FALSE)
 model_cd4 <- run_backcalc(sim_cd4, rita = FALSE)
 
-plot_estimates(
+p1 <- plot_estimates(
   model_rita,
   hiv_list_2 = model_cd4,
   quantity = "incidence",
@@ -178,14 +197,19 @@ plot_estimates(
   model_2_name = "CD4 only"
 )
 
-bias_plot(
+p2 <- bias_plot(
   model_rita,
   hiv_list_2 = model_cd4,
   quantity = "incidence",
   model_1_name = "CD4 + RITA",
   model_2_name = "CD4 only"
 )
+
+p1 / p2
 ```
+
+![Figure: Patchwork of incidence and bias comparisons for two
+models.](figures/analysing-results-compare-two-patchwork.png)
 
 ## Comparing multiple models
 
@@ -194,15 +218,20 @@ simultaneously:
 
 ``` r
 
-sim_diags <- simulate_diagnoses(h_pattern = "increasing")
+sim_diags <- simulate_diagnoses(sim_type = "combo_3")
 models <- list()
 for (i in 1:3) {
   models[[i]] <- run_backcalc(sim_diags, model_seed = 100 + i)
 }
 
-plot_estimates(models, quantity = "incidence")
-mse_plot(models, quantity = "incidence")
+p1 <- plot_estimates(models, quantity = "incidence")
+p2 <- bias_plot(models, quantity = "incidence")
+
+p1 / p2
 ```
+
+![Figure: Patchwork of incidence and bias comparisons for multiple
+models.](figures/analysing-results-compare-list-patchwork.png)
 
 ## Working with real data
 
@@ -238,3 +267,6 @@ to obtain separate posterior summaries for each chain:
 hiv_list <- run_backcalc(sim_diags, chain_results = TRUE)
 plot_estimates(hiv_list, quantity = "incidence", chain_results = TRUE)
 ```
+
+![Figure: Per-chain incidence
+estimates.](figures/analysing-results-chain-results-incidence.png)

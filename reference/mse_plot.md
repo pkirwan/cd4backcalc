@@ -13,7 +13,7 @@ mse_plot(
   lab = TRUE,
   model_1_name = "Model 1",
   model_2_name = "Model 2",
-  sim_comparison = c("generative", "sampled")
+  sim_comparison = c("sampled", "generative")
 )
 ```
 
@@ -54,8 +54,8 @@ mse_plot(
 - sim_comparison:
 
   A string specifying which simulated values to compare against. Options
-  are `"generative"` (deterministic expected values, the default) or
-  `"sampled"` (the stochastic realisation for the particular seed).
+  are `"sampled"` (the stochastic realisation for the particular seed,
+  the default) or `"generative"` (deterministic expected values).
 
 ## Value
 

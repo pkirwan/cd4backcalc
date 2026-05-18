@@ -33,7 +33,8 @@ define_sim_config(
   rita_completeness = 1,
   age_diag_effect = 0,
   mig_diag_offset = NULL,
-  frr = 0.019
+  frr = 0.019,
+  detect_obs_times = NULL
 )
 ```
 
@@ -41,12 +42,13 @@ define_sim_config(
 
 - h_pattern:
 
-  Pattern type for infections ("constant", "increasing", "varying").
+  Pattern type for infections ("constant", "increasing", "varying",
+  "varying_2").
 
 - o_pattern:
 
-  Pattern type for omega ("constant", "increasing", "step_change",
-  "none").
+  Pattern type for omega ("constant", "increasing", "step_change_1",
+  "step_change_2", "none").
 
 - d_pattern:
 
@@ -150,6 +152,11 @@ define_sim_config(
 - frr:
 
   False recency rate for RITA misclassification.
+
+- detect_obs_times:
+
+  Integer vector of quarter indices (1-based) at which external
+  detection-probability observations are generated.
 
 ## Value
 

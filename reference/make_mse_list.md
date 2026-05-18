@@ -5,7 +5,7 @@ Make a list of mean squared error (MSE) values for HIV model estimates.
 ## Usage
 
 ``` r
-make_mse_list(hiv_list, sim_comparison = c("generative", "sampled"))
+make_mse_list(hiv_list, sim_comparison = c("sampled", "generative"))
 ```
 
 ## Arguments
@@ -17,8 +17,8 @@ make_mse_list(hiv_list, sim_comparison = c("generative", "sampled"))
 - sim_comparison:
 
   A string specifying which simulated values to compare against. Options
-  are `"generative"` (deterministic expected values, the default) or
-  `"sampled"` (the stochastic realisation for the particular seed).
+  are `"sampled"` (the stochastic realisation for the particular seed,
+  the default) or `"generative"` (deterministic expected values).
 
 ## Value
 

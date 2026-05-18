@@ -16,8 +16,8 @@ generate_omega(nquar, pattern, target_mig = 12000, dist = TRUE)
 
 - pattern:
 
-  Pattern type for omega ("constant", "increasing", "step_change",
-  "none").
+  Pattern type for omega ("constant", "increasing", "step_change_1",
+  "step_change_2", "none").
 
 - target_mig:
 

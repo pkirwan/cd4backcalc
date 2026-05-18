@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Model types • cd4backcalc</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Model types">
 </head>
@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,12 +61,15 @@
       <h1>Model types</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.0.7/vignettes/articles/model-types.Rmd" class="external-link"><code>vignettes/articles/model-types.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.0.8/vignettes/articles/model-types.Rmd" class="external-link"><code>vignettes/articles/model-types.Rmd</code></a></small>
       <div class="d-none name"><code>model-types.Rmd</code></div>
     </div>
 
     
     
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://pkirwan.github.io/cd4backcalc/">cd4backcalc</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span></code></pre></div>
 <p>The <code>cd4backcalc</code> package supports eight model
 configurations combining CD4-only or CD4 + RITA data, with or without
 migration, and age-independent or age-dependent structures. This article
@@ -142,19 +145,27 @@ vary by CD4 stratum and time.
 </p>
 </div>
 <p>This model can be fitted with:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://pkirwan.github.io/cd4backcalc/">cd4backcalc</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">sim_cd4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>h_pattern <span class="op">=</span> <span class="st">"increasing"</span><span class="op">)</span></span>
-<span><span class="va">fit_cd4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_cd4</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_cd4</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
-<p>Alternative smoothing choices are available for the age-independent
-CD4-only model:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sim_cd4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>sim_type <span class="op">=</span> <span class="st">"combo_3"</span><span class="op">)</span></span>
+<span><span class="va">fit_cd4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_cd4</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Plotting estimated quantities</span></span>
+<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_cd4</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
+<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_cd4</span>, quantity <span class="op">=</span> <span class="st">"undiag_prev"</span><span class="op">)</span></span>
+<span><span class="va">p3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_cd4</span>, quantity <span class="op">=</span> <span class="st">"diag_prob"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="op">(</span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span><span class="op">)</span> <span class="op">/</span> <span class="va">p3</span></span></code></pre></div>
+<div class="figure">
+<p><img src="figures/model-types-cd4-patchwork.png" alt="Figure: CD4-only estimates shown as a patchwork of incidence, undiagnosed prevalence, and diagnosis probabilities." width="100%"></p>
+</div>
+<p>Alternative smoothing choices for the incidence and diagnosis models
+are available for the age-independent CD4-only model, supplied via
+<code>inf_model</code> and <code>diag_model</code>:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_cd4_rw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span></span>
 <span>  <span class="va">sim_cd4</span>,</span>
-<span>  inf_model <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>  diag_model <span class="op">=</span> <span class="fl">2</span></span>
+<span>  inf_model <span class="op">=</span> <span class="fl">2</span>, <span class="co"># 1 = spline, 2 = random walk, 3 = GP (incidence only)</span></span>
+<span>  diag_model <span class="op">=</span> <span class="fl">2</span> <span class="co"># 1 = spline, 2 = random walk</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -174,17 +185,22 @@ representing the current age-category and
 representing the age category at HIV acquisition.
 </p>
 </div>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sim_age</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>age <span class="op">=</span> <span class="cn">TRUE</span>, h_pattern <span class="op">=</span> <span class="st">"increasing"</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sim_age</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>sim_type <span class="op">=</span> <span class="st">"combo_3"</span>, age <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">fit_age</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_age</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># age-specific outputs</span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_age</span>, quantity <span class="op">=</span> <span class="st">"incidence_age"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_age</span>, quantity <span class="op">=</span> <span class="st">"undiag_prev_age"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_age</span>, quantity <span class="op">=</span> <span class="st">"diagnoses_age"</span><span class="op">)</span></span>
+<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_age</span>, quantity <span class="op">=</span> <span class="st">"incidence_age"</span><span class="op">)</span></span>
+<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_age</span>, quantity <span class="op">=</span> <span class="st">"undiag_prev_age"</span><span class="op">)</span></span>
+<span><span class="va">p3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_age</span>, quantity <span class="op">=</span> <span class="st">"diagnoses_age"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># aggregate estimates are also available</span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_age</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">p4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_age</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">p1</span> <span class="op">/</span> <span class="va">p2</span> <span class="op">/</span> <span class="va">p3</span> <span class="op">/</span> <span class="va">p4</span></span></code></pre></div>
+<div class="figure">
+<p><img src="figures/model-types-age-patchwork.png" alt="Figure: Age-dependent estimates shown as a patchwork of age-specific incidence, age-specific undiagnosed prevalence, age-specific diagnoses, and aggregate incidence." width="100%"></p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="adding-rita-evidence">Adding RITA evidence<a class="anchor" aria-label="anchor" href="#adding-rita-evidence"></a>
@@ -203,10 +219,18 @@ assay and non-recent incidence assay CD4-staged states. A/w = Acquired
 within, mo. = months.
 </p>
 </div>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sim_rita</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>rita <span class="op">=</span> <span class="cn">TRUE</span>, h_pattern <span class="op">=</span> <span class="st">"increasing"</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sim_rita</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>sim_type <span class="op">=</span> <span class="st">"combo_3"</span>, rita <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">fit_rita</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_rita</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_rita</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
+<span></span>
+<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_rita</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
+<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_rita</span>, quantity <span class="op">=</span> <span class="st">"undiag_prev"</span><span class="op">)</span></span>
+<span><span class="va">p3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_rita</span>, quantity <span class="op">=</span> <span class="st">"diag_prob"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="op">(</span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span><span class="op">)</span> <span class="op">/</span> <span class="va">p3</span></span></code></pre></div>
+<div class="figure">
+<p><img src="figures/model-types-rita-patchwork.png" alt="Figure: CD4 + RITA estimates shown as a patchwork of incidence, undiagnosed prevalence, and diagnosis probabilities." width="100%"></p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="migration-adjusted-models">Migration-adjusted models<a class="anchor" aria-label="anchor" href="#migration-adjusted-models"></a>
@@ -225,33 +249,45 @@ lines are HIV acquisition or migration arrivals among individuals born
 abroad.
 </p>
 </div>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sim_mig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>migration <span class="op">=</span> <span class="cn">TRUE</span>, h_pattern <span class="op">=</span> <span class="st">"increasing"</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sim_mig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>sim_type <span class="op">=</span> <span class="st">"combo_3"</span>, migration <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">fit_mig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_mig</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># migration-specific outputs</span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"undiag_migration"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"migration_prob"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"ratio_abroad_uk"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"transfers"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"detect_prob"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"undiag_migration"</span><span class="op">)</span></span>
+<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"all_migration"</span><span class="op">)</span></span>
+<span><span class="va">p3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"ratio_abroad_uk"</span><span class="op">)</span></span>
+<span><span class="va">p4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"detect_prob"</span><span class="op">)</span></span>
+<span><span class="va">p5</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"migration_prob"</span><span class="op">)</span></span>
+<span><span class="va">p6</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"diag_prob_mig"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="op">(</span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span><span class="op">)</span> <span class="op">/</span> <span class="op">(</span><span class="va">p3</span> <span class="op">+</span> <span class="va">p4</span><span class="op">)</span> <span class="op">/</span> <span class="va">p5</span>  <span class="op">/</span> <span class="va">p6</span></span></code></pre></div>
+<div class="figure">
+<p><img src="figures/model-types-migration-patchwork.png" alt="Figure: Migration-model estimates shown as a patchwork of migration-specific outputs." width="100%"></p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="combined-rita-migration-models">Combined RITA + migration models<a class="anchor" aria-label="anchor" href="#combined-rita-migration-models"></a>
 </h2>
 <p>When both recent infection evidence and migration data are available,
 the same interface extends to the combined model:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sim_rita_mig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span></span>
+<span>  sim_type <span class="op">=</span> <span class="st">"combo_4"</span>,</span>
 <span>  rita <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  migration <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  h_pattern <span class="op">=</span> <span class="st">"increasing"</span></span>
+<span>  migration <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">fit_rita_mig</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_rita_mig</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_rita_mig</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_rita_mig</span>, quantity <span class="op">=</span> <span class="st">"diag_prob_mig"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_rita_mig</span>, quantity <span class="op">=</span> <span class="st">"detect_prob"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_rita_mig</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
+<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_rita_mig</span>, quantity <span class="op">=</span> <span class="st">"undiag_migration"</span><span class="op">)</span></span>
+<span><span class="va">p3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_rita_mig</span>, quantity <span class="op">=</span> <span class="st">"diag_prob"</span><span class="op">)</span></span>
+<span><span class="va">p4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_rita_mig</span>, quantity <span class="op">=</span> <span class="st">"migration_prob"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="op">(</span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span><span class="op">)</span> <span class="op">/</span> <span class="va">p3</span> <span class="op">/</span> <span class="va">p4</span></span></code></pre></div>
+<div class="figure">
+<p><img src="figures/model-types-rita-migration-patchwork.png" alt="Figure: RITA + migration estimates shown as a patchwork of incidence, migrant diagnosis probabilities, and detection probabilities." width="100%"></p>
+</div>
 <p>To fit the corresponding age-dependent model, add
 <code>age = TRUE</code> to both <code><a href="../reference/simulate_diagnoses.html">simulate_diagnoses()</a></code> and
 <code><a href="../reference/run_backcalc.html">run_backcalc()</a></code>. Age-specific outputs such as
@@ -264,9 +300,9 @@ then available.</p>
 <p>If data was simulated with RITA evidence but you want to fit a
 CD4-only model (e.g. for comparison), use <code><a href="../reference/sim_remodel.html">sim_remodel()</a></code> to
 restructure the data:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># simulate with RITA</span></span>
-<span><span class="va">sim_rita</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>rita <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">sim_rita</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>sim_type <span class="op">=</span> <span class="st">"combo_3"</span>, rita <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># remodel to CD4-only format</span></span>
 <span><span class="va">sim_cd4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sim_remodel.html">sim_remodel</a></span><span class="op">(</span><span class="va">sim_rita</span>, rita <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -280,7 +316,7 @@ restructure the data:</p>
 <p>For reproducible simulation studies, pre-defined simulation types
 combine multiple parameter patterns. These are specified via the
 <code>sim_type</code> argument:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># combo_3: varying acquisition + step-change migration + varying diagnosis +</span></span>
 <span><span class="co">#          increasing proportion UK + varying migration probabilities +</span></span>
 <span><span class="co">#          non-uniform age distribution</span></span>
@@ -290,7 +326,8 @@ combine multiple parameter patterns. These are specified via the
 <span><span class="va">sim_c4</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>sim_type <span class="op">=</span> <span class="st">"combo_4"</span>, migration <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>Available simulation types include: <code>"constant"</code>,
 <code>"h_increasing"</code>, <code>"h_varying"</code>,
-<code>"o_increasing"</code>, <code>"o_step_change"</code>,
+<code>"h_varying_2"</code>, <code>"o_increasing"</code>,
+<code>"o_step_change_1"</code>, <code>"o_step_change_2"</code>,
 <code>"d_varying"</code>, <code>"p_increasing"</code>,
 <code>"m_differing"</code>, <code>"m_varying"</code>, and
 <code>"combo_1"</code> through <code>"combo_4"</code>.</p>
