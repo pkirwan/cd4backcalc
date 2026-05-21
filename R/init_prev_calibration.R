@@ -28,6 +28,9 @@
 #'   `init_prev` input; `"equal"` splits it equally across states 1:3.
 #' @param min_prob Lower bound used when inverting fitted diagnosis
 #'   probabilities.
+#' @param init_floor Small positive floor applied to calibrated initial
+#'   prevalence values to avoid exact zeros/non-finite values that can cause
+#'   Stan initialisation failures.
 #' @param return_draws Logical; if `TRUE`, include draw-level calibrated values
 #'   in the output.
 #'
@@ -43,6 +46,7 @@ calibrate_init_prev <- function(
   smooth_span = 0.5,
   recent_split = c("current", "equal"),
   min_prob = 1e-6,
+  init_floor = 1e-8,
   return_draws = FALSE
 ) {
   summary <- match.arg(summary)
@@ -159,6 +163,7 @@ calibrate_init_prev <- function(
     if (isTRUE(smooth_age)) {
       init_prev_age <- .smooth_init_matrix(init_prev_age, smooth_span)
     }
+    init_prev_age <- .sanitize_init_values(init_prev_age, floor = init_floor)
 
     out <- list(
       init_prev_age = init_prev_age,
@@ -170,6 +175,7 @@ calibrate_init_prev <- function(
       if (isTRUE(smooth_age)) {
         init_prev_abroad_age <- .smooth_init_matrix(init_prev_abroad_age, smooth_span)
       }
+      init_prev_abroad_age <- .sanitize_init_values(init_prev_abroad_age, floor = init_floor)
       out$init_prev_abroad_age <- init_prev_abroad_age
       out$stan_data$init_prev_abroad_age <- init_prev_abroad_age
     }
@@ -247,6 +253,7 @@ calibrate_init_prev <- function(
   }
 
   init_prev <- as.numeric(.summarize_init_draws(native_draws, summary))
+  init_prev <- as.numeric(.sanitize_init_values(init_prev, floor = init_floor))
   out <- list(
     init_prev = init_prev,
     stan_data = utils::modifyList(stan_data, list(init_prev = init_prev))
@@ -254,6 +261,7 @@ calibrate_init_prev <- function(
 
   if (isTRUE(config$migration)) {
     init_prev_abroad <- as.numeric(.summarize_init_draws(migrant_draws, summary))
+    init_prev_abroad <- as.numeric(.sanitize_init_values(init_prev_abroad, floor = init_floor))
     out$init_prev_abroad <- init_prev_abroad
     out$stan_data$init_prev_abroad <- init_prev_abroad
   }
@@ -522,6 +530,20 @@ calibrate_init_prev <- function(
   } else {
     apply(draws, c(2, 3), fun)
   }
+}
+
+.sanitize_init_values <- function(x, floor) {
+  floor <- as.numeric(floor)
+  if (!is.finite(floor) || floor <= 0) {
+    stop("init_floor must be a finite positive number.")
+  }
+
+  vals <- as.numeric(x)
+  vals[!is.finite(vals)] <- floor
+  vals <- pmax(vals, floor)
+  dim(vals) <- dim(x)
+  dimnames(vals) <- dimnames(x)
+  vals
 }
 
 .smooth_init_matrix <- function(init_mat, span) {
