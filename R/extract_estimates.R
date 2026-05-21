@@ -478,6 +478,12 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
       year = seq(0, plot_years, by = 0.25),
       group = "Generative values"
     )
+  } else if (quantity == "transfers_detected") {
+    out <- tibble::tibble(
+      value = stan_data$ABROAD,
+      year = seq(0, plot_years, by = 0.25),
+      group = "Generative values"
+    )
   } else if (quantity == "cd4_strata") {
     out <- if (stan_data$sim_config$rita) {
       if (stan_data$sim_config$migration) {
@@ -590,7 +596,7 @@ extract_real_data <- function(hiv_list, quantity) {
             age_band = "all"
           )
       )
-  } else if (quantity == "transfers") {
+  } else if (quantity %in% c("transfers", "transfers_detected")) {
     out <- tibble::tibble(
       value = stan_data$ABROAD,
       year = seq(0, plot_years, by = 0.25),

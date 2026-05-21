@@ -3,7 +3,7 @@
 #' Generate a ggplot2 object plotting simulated quantities over time.
 #'
 #' @param sim_diags A list containing the simulated diagnosis data objects sim_data and stan_data.
-#' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "undiag_migration", "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "ratio_abroad_uk", and "detect_prob".
+#' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "undiag_migration", "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "transfers_detected", "ratio_abroad_uk", and "detect_prob".
 #' @return A ggplot2 object.
 #' @export
 plot_simulations <- function(
@@ -95,7 +95,7 @@ plot_simulations <- function(
 #' Generate a ggplot2 object plotting estimated quantities over time, optionally compared to the simulated values.
 #'
 #' @param hiv_list A list returned from the `postproc` function containing model estimates.
-#' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "undiag_migration", "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "ratio_abroad_uk", and "detect_prob".
+#' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "undiag_migration", "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "transfers_detected", "ratio_abroad_uk", and "detect_prob".
 #' @param start_year An integer specifying the starting year for the x-axis (default is 0).
 #' @param chain_results A logical indicating whether to plot chain-by-chain estimates (default is FALSE).
 #' @param hiv_list_2 An optional second list of model estimates for comparison (default is NULL).
@@ -330,7 +330,12 @@ plot_estimates <- function(
         size = 1.1,
         shape = 3
       )
-  } else if (quantity %in% c("diagnoses", "diagnoses_age", "transfers")) {
+  } else if (quantity %in% c(
+    "diagnoses",
+    "diagnoses_age",
+    "transfers",
+    "transfers_detected"
+  )) {
     # add observed diagnoses if real data
     observed_data <- extract_real_data(hiv_list[[1]], quantity)
     if ("age_band" %in% names(observed_data) && grepl("_age$", quantity)) {
@@ -493,6 +498,8 @@ get_plot_title <- function(quantity) {
     "migration probabilities, by CD4 strata"
   } else if (quantity == "transfers") {
     "transfers of care"
+  } else if (quantity == "transfers_detected") {
+    "detected transfers of care"
   } else if (quantity == "ratio_abroad_uk") {
     "born-abroad:native-born ratio"
   } else if (quantity == "detect_prob") {

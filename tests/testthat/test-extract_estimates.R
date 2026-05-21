@@ -76,6 +76,14 @@ test_that("extract_simulated_quantity correctly extracts values for ai", {
   )
   sim_estimates <- extract_simulated_quantity(
     stan_data,
+    quantity = "transfers_detected"
+  )
+  expect_equal(
+    sim_estimates$value[1],
+    stan_data$stan_data$ABROAD[1]
+  )
+  sim_estimates <- extract_simulated_quantity(
+    stan_data,
     quantity = "detect_prob"
   )
   expect_equal(

@@ -19,7 +19,7 @@ plot_estimates(
 \arguments{
 \item{hiv_list}{A list returned from the \code{postproc} function containing model estimates.}
 
-\item{quantity}{A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "undiag_migration", "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "ratio_abroad_uk", and "detect_prob".}
+\item{quantity}{A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "undiag_migration", "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "transfers_detected", "ratio_abroad_uk", and "detect_prob".}
 
 \item{start_year}{An integer specifying the starting year for the x-axis (default is 0).}
 

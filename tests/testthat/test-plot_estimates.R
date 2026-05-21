@@ -25,15 +25,16 @@ test_that("simulated plots are generated correctly", {
   p5 <- plot_simulations(stan_data, "undiag_migration")
   p6 <- plot_simulations(stan_data, "migration_prob")
   p7 <- plot_simulations(stan_data, "transfers")
-  p8 <- plot_simulations(stan_data, "ratio_abroad_uk")
-  p9 <- plot_simulations(stan_data, "detect_prob") +
+  p8 <- plot_simulations(stan_data, "transfers_detected")
+  p9 <- plot_simulations(stan_data, "ratio_abroad_uk")
+  p10 <- plot_simulations(stan_data, "detect_prob") +
     ggplot2::geom_point(
       data = data.frame(
         year = (stan_data$stan_data$detect_obs_index - 1) / 4,
         value = invlogit(stan_data$stan_data$detect_logit_obs),
         group = "detect_prob_obs"),
       color = "red", size = 2)
-  p10 <- plot_simulations(stan_data, "diag_prob_mig")
+  p11 <- plot_simulations(stan_data, "diag_prob_mig")
   expect_s3_class(p1, "ggplot")
   expect_s3_class(p2, "ggplot")
   expect_s3_class(p3, "ggplot")
@@ -44,6 +45,7 @@ test_that("simulated plots are generated correctly", {
   expect_s3_class(p8, "ggplot")
   expect_s3_class(p9, "ggplot")
   expect_s3_class(p10, "ggplot")
+  expect_s3_class(p11, "ggplot")
 })
 
 test_that("simulated plots are generated correctly for migration_prob", {
@@ -200,13 +202,15 @@ test_that("plots are generated correctly for migration model", {
   p1 <- plot_estimates(hiv_list, "undiag_migration")
   p2 <- plot_estimates(hiv_list, "migration_prob")
   p3 <- plot_estimates(hiv_list, "transfers")
-  p4 <- plot_estimates(hiv_list, "ratio_abroad_uk")
-  p5 <- plot_estimates(hiv_list, "detect_prob")
+  p4 <- plot_estimates(hiv_list, "transfers_detected")
+  p5 <- plot_estimates(hiv_list, "ratio_abroad_uk")
+  p6 <- plot_estimates(hiv_list, "detect_prob")
   expect_s3_class(p1, "ggplot")
   expect_s3_class(p2, "ggplot")
   expect_s3_class(p3, "ggplot")
   expect_s3_class(p4, "ggplot")
   expect_s3_class(p5, "ggplot")
+  expect_s3_class(p6, "ggplot")
 })
 
 test_that("plots work for migration model lists", {
@@ -244,13 +248,15 @@ test_that("plots work for migration model lists", {
   p5 <- plot_estimates(hiv_list, "undiag_migration")
   p6 <- plot_estimates(hiv_list, "migration_prob")
   p7 <- plot_estimates(hiv_list, "transfers")
-  p8 <- plot_estimates(hiv_list, "ratio_abroad_uk")
-  p9 <- plot_estimates(hiv_list, "detect_prob")
+  p8 <- plot_estimates(hiv_list, "transfers_detected")
+  p9 <- plot_estimates(hiv_list, "ratio_abroad_uk")
+  p10 <- plot_estimates(hiv_list, "detect_prob")
   expect_s3_class(p5, "ggplot")
   expect_s3_class(p6, "ggplot")
   expect_s3_class(p7, "ggplot")
   expect_s3_class(p8, "ggplot")
   expect_s3_class(p9, "ggplot")
+  expect_s3_class(p10, "ggplot")
 })
 
 test_that("plots work for rita model lists", {
@@ -428,7 +434,9 @@ test_that("start_year and overlay of real values works", {
   p1 <- plot_estimates(hiv_list, "diagnoses", start_year = 2000)
   p2 <- plot_estimates(hiv_list, "diagnoses_age", start_year = 2000)
   p3 <- plot_estimates(hiv_list, "transfers", start_year = 2000)
+  p4 <- plot_estimates(hiv_list, "transfers_detected", start_year = 2000)
   expect_s3_class(p1, "ggplot")
   expect_s3_class(p2, "ggplot")
   expect_s3_class(p3, "ggplot")
+  expect_s3_class(p4, "ggplot")
 })
