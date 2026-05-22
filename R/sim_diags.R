@@ -119,7 +119,7 @@ define_sim_config <- function(
     age_diag_effect = age_diag_effect,
     mig_diag_offset = mig_diag_offset,
     frr = frr,
-    detect_obs_times = if (is.null(detect_obs_times)) seq(1L, nquar, by = 20L) else as.integer(detect_obs_times)
+    detect_obs_times = if (is.null(detect_obs_times)) seq(4L, nquar, by = 8L) else as.integer(detect_obs_times)
   )
 
   if (!is.null(sim_type)) {

@@ -449,7 +449,7 @@ model {
   alpha_detect ~ normal(1.1, 0.5);
   beta_detect[1] ~ normal(0, 0.5);
   beta_detect[2 : npars_mp] ~ normal(0, sigma_detect);
-  sigma_detect ~ gamma(2, 32);
+  sigma_detect ~ gamma(2, 8);
   
   // Migration distribution priors
   alpha_mp[1] ~ normal(0, 1.5);
