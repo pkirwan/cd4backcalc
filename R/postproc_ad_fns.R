@@ -16,6 +16,14 @@ get_quantiles <- function(x) {
   out
 }
 
+.posterior_predictive_poisson <- function(x) {
+  array(
+    stats::rpois(length(x), lambda = as.numeric(x)),
+    dim = dim(x),
+    dimnames = dimnames(x)
+  )
+}
+
 .validate_infs_dims <- function(infs, nt, nage) {
   if (!is.matrix(infs)) {
     stop("infs must be a matrix (draws x (nt*nage)).")

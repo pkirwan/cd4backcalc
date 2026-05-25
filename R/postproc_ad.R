@@ -915,15 +915,8 @@ postproc_ad <- function(
 
   ### POSTERIOR PREDICTIVE DISTRIBUTIONS ###
 
-  HIV.m <- apply(HIV, c(1, 2), mean)
-
-  HIV.p <- apply(HIV.m, c(1, 2), function(x) stats::rpois(N.Poiss, lambda = x))
-
-  AIDS.m <- apply(AIDS, c(1, 2), mean)
-
-  AIDS.p <- apply(AIDS.m, c(1, 2), function(x) {
-    stats::rpois(N.Poiss, lambda = x)
-  })
+  HIV.p <- aperm(.posterior_predictive_poisson(HIV), c(3, 1, 2))
+  AIDS.p <- aperm(.posterior_predictive_poisson(AIDS), c(3, 1, 2))
 
   # Probability of diagnosis by stage
 
@@ -1165,9 +1158,10 @@ postproc_ad <- function(
     # transfers detected / misclassified
     transfers_detected.draws <- transfers.draws * detect.draws
     transfers_misclassified.draws <- transfers.draws * (1 - detect.draws)
+    transfers_detected.pp <- .posterior_predictive_poisson(transfers_detected.draws)
 
     out$transfers_detected <- make_tibble(
-      apply(transfers_detected.draws, 2, get_quantiles),
+      apply(transfers_detected.pp, 2, get_quantiles),
       nt = nquar,
       start_yr = start_yr,
       qt.flag = TRUE
