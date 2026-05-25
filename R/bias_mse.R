@@ -138,43 +138,42 @@ make_mse_list <- function(
 
 #' Box plots of mean squared error (MSE).
 #'
-#' @param hiv_list A list returned from the `postproc` function containing model estimates.
-#' @param hiv_list_2 A second list returned from the `postproc` function for comparison (default is NULL).
-#' @param quantity The quantity to plot MSE for (default is `"incidence"`). Migration-model options are `"undiag_migration"`, `"ratio_abroad_uk"`, and `"mp"`.
+#' @param hiv_lists A named list of model result lists, each returned from the
+#'   `postproc` function. Names are used as model labels. If unnamed, models are
+#'   labelled "Model 1", "Model 2", etc.
+#' @param quantity The quantity to plot MSE for (default is `"incidence"`).
+#'   Migration-model options are `"undiag_migration"`, `"ratio_abroad_uk"`, and
+#'   `"mp"`.
 #' @param offset The offset for text labels.
 #' @param lab A logical indicating whether to add labels.
-#' @param model_1_name The name of the first model for labeling (default is "Model 1").
-#' @param model_2_name The name of the second model for labeling (default is "Model 2").
-#' @param sim_comparison A string specifying which simulated values to compare against. Options are `"sampled"` (the stochastic realisation for the particular seed, the default) or `"generative"` (deterministic expected values).
+#' @param colours An optional named character vector of colours for each model.
+#'   Names must match the names of `hiv_lists`. If `NULL` (default), ggplot's
+#'   default discrete colour palette is used.
+#' @param sim_comparison A string specifying which simulated values to compare
+#'   against. Options are `"sampled"` (the stochastic realisation for the
+#'   particular seed, the default) or `"generative"` (deterministic expected
+#'   values).
 #' @return A ggplot object of the MSE box plot.
 #' @export
 mse_plot <- function(
-  hiv_list,
-  hiv_list_2 = NULL,
+  hiv_lists,
   quantity = "incidence",
   offset = 0.1,
   lab = TRUE,
-  model_1_name = "Model 1",
-  model_2_name = "Model 2",
+  colours = NULL,
   sim_comparison = c("sampled", "generative")
 ) {
   sim_comparison <- match.arg(sim_comparison)
-  data <- make_mse_list(
-    hiv_list,
-    sim_comparison = sim_comparison
-  )[[paste0(quantity, "_mse")]]
 
-  if (!is.null(hiv_list_2)) {
-    data_2 <- make_mse_list(
-      hiv_list_2,
-      sim_comparison = sim_comparison
-    )[[paste0(quantity, "_mse")]]
-
-    data <- dplyr::bind_rows(
-      data |> dplyr::mutate(group = model_1_name),
-      data_2 |> dplyr::mutate(group = model_2_name)
-    )
+  if (is.null(names(hiv_lists))) {
+    names(hiv_lists) <- paste0("Model ", seq_along(hiv_lists))
   }
+
+  data <- purrr::imap(hiv_lists, function(hl, name) {
+    make_mse_list(hl, sim_comparison = sim_comparison)[[paste0(quantity, "_mse")]] |>
+      dplyr::mutate(group = name)
+  }) |>
+    dplyr::bind_rows()
 
   # create box plot
   p1 <- data |>
@@ -203,13 +202,8 @@ mse_plot <- function(
       legend.position = "none"
     )
 
-  if (!is.null(hiv_list_2)) {
-    p1 <- p1 +
-      ggplot2::scale_color_manual(
-        values = c("mediumorchid3", "coral1"),
-        name = "Model",
-        labels = c(model_1_name, model_2_name)
-      )
+  if (!is.null(colours)) {
+    p1 <- p1 + ggplot2::scale_color_manual(values = colours)
   }
 
   if (lab) {
@@ -245,43 +239,42 @@ mse_plot <- function(
 
 #' Box plots of bias.
 #'
-#' @param hiv_list A list returned from the `postproc` function containing model estimates.
-#' @param quantity The quantity to plot bias for (default is `"incidence"`). Migration-model options are `"undiag_migration"`, `"ratio_abroad_uk"`, and `"mp"`.
+#' @param hiv_lists A named list of model result lists, each returned from the
+#'   `postproc` function. Names are used as model labels. If unnamed, models are
+#'   labelled "Model 1", "Model 2", etc.
+#' @param quantity The quantity to plot bias for (default is `"incidence"`).
+#'   Migration-model options are `"undiag_migration"`, `"ratio_abroad_uk"`, and
+#'   `"mp"`.
 #' @param offset The offset for text labels.
 #' @param lab A logical indicating whether to add labels.
-#' @param hiv_list_2 A second list returned from the `postproc` function for comparison (default is NULL).
-#' @param model_1_name The name of the first model for labeling (default is "Model 1").
-#' @param model_2_name The name of the second model for labeling (default is "Model 2").
-#' @param sim_comparison A string specifying which simulated values to compare against. Options are `"sampled"` (the stochastic realisation for the particular seed, the default) or `"generative"` (deterministic expected values).
+#' @param colours An optional named character vector of colours for each model.
+#'   Names must match the names of `hiv_lists`. If `NULL` (default), ggplot's
+#'   default discrete colour palette is used.
+#' @param sim_comparison A string specifying which simulated values to compare
+#'   against. Options are `"sampled"` (the stochastic realisation for the
+#'   particular seed, the default) or `"generative"` (deterministic expected
+#'   values).
 #' @return A ggplot object of the bias box plot.
 #' @export
 bias_plot <- function(
-  hiv_list,
+  hiv_lists,
   quantity = "incidence",
   offset = 0.1,
   lab = TRUE,
-  hiv_list_2 = NULL,
-  model_1_name = "Model 1",
-  model_2_name = "Model 2",
+  colours = NULL,
   sim_comparison = c("sampled", "generative")
 ) {
   sim_comparison <- match.arg(sim_comparison)
-  data <- make_mse_list(
-    hiv_list,
-    sim_comparison = sim_comparison
-  )[[paste0(quantity, "_bias")]]
 
-  if (!is.null(hiv_list_2)) {
-    data_2 <- make_mse_list(
-      hiv_list_2,
-      sim_comparison = sim_comparison
-    )[[paste0(quantity, "_bias")]]
-
-    data <- dplyr::bind_rows(
-      data |> dplyr::mutate(group = model_1_name),
-      data_2 |> dplyr::mutate(group = model_2_name)
-    )
+  if (is.null(names(hiv_lists))) {
+    names(hiv_lists) <- paste0("Model ", seq_along(hiv_lists))
   }
+
+  data <- purrr::imap(hiv_lists, function(hl, name) {
+    make_mse_list(hl, sim_comparison = sim_comparison)[[paste0(quantity, "_bias")]] |>
+      dplyr::mutate(group = name)
+  }) |>
+    dplyr::bind_rows()
 
   p1 <- data |>
     ggplot2::ggplot() +
@@ -302,13 +295,8 @@ bias_plot <- function(
       legend.position = "none"
     )
 
-  if (!is.null(hiv_list_2)) {
-    p1 <- p1 +
-      ggplot2::scale_color_manual(
-        values = c("mediumorchid3", "coral1"),
-        name = "Model",
-        labels = c(model_1_name, model_2_name)
-      )
+  if (!is.null(colours)) {
+    p1 <- p1 + ggplot2::scale_color_manual(values = colours)
   }
 
   if (lab) {

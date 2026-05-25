@@ -13,6 +13,7 @@ calibrate_init_prev(
   smooth_span = 0.5,
   recent_split = c("current", "equal"),
   min_prob = 1e-06,
+  init_floor = 1e-08,
   return_draws = FALSE
 )
 }
@@ -41,6 +42,10 @@ models. \code{"current"} preserves the relative weights in the current
 
 \item{min_prob}{Lower bound used when inverting fitted diagnosis
 probabilities.}
+
+\item{init_floor}{Small positive floor applied to calibrated initial
+prevalence values to avoid exact zeros/non-finite values that can cause
+Stan initialisation failures.}
 
 \item{return_draws}{Logical; if \code{TRUE}, include draw-level calibrated values
 in the output.}

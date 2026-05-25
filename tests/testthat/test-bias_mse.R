@@ -17,9 +17,9 @@ test_that("mse_list and plots are generated correctly", {
   # Test extraction and plotting functions
   mse_list <- make_mse_list(hiv_list)
   # expect_true(mse_list$incidence_bias[1, 8] == -1146)
-  p1 <- mse_plot(hiv_list, quantity = "incidence")
+  p1 <- mse_plot(list(hiv_list), quantity = "incidence")
   expect_s3_class(p1, "ggplot")
-  p2 <- bias_plot(hiv_list, quantity = "incidence")
+  p2 <- bias_plot(list(hiv_list), quantity = "incidence")
   expect_s3_class(p2, "ggplot")
 })
 
@@ -55,9 +55,9 @@ test_that("mse_list and plots are generated correctly for dual fits", {
   # Test extraction and plotting functions
   mse_list <- make_mse_list(hiv_list)
   # expect_true(mse_list$incidence_bias[1, 8] == -1146)
-  p1 <- mse_plot(hiv_list, quantity = "incidence", hiv_list_2 = hiv_list_2, model_1_name = "Fit 1", model_2_name = "Fit 2")
+  p1 <- mse_plot(list("Fit 1" = hiv_list, "Fit 2" = hiv_list_2), quantity = "incidence")
   expect_s3_class(p1, "ggplot")
-  p2 <- bias_plot(hiv_list, quantity = "incidence", hiv_list_2 = hiv_list_2, model_1_name = "Fit 1", model_2_name = "Fit 2")
+  p2 <- bias_plot(list("Fit 1" = hiv_list, "Fit 2" = hiv_list_2), quantity = "incidence")
   expect_s3_class(p2, "ggplot")
 })
 
@@ -78,9 +78,9 @@ test_that("mse_list and plots are generated correctly for migration model", {
     )
   })
   # Test extraction and plotting functions
-  p1 <- mse_plot(hiv_list, quantity = "undiag_migration")
+  p1 <- mse_plot(list(hiv_list), quantity = "undiag_migration")
   expect_s3_class(p1, "ggplot")
-  p2 <- bias_plot(hiv_list, quantity = "undiag_migration")
+  p2 <- bias_plot(list(hiv_list), quantity = "undiag_migration")
   expect_s3_class(p2, "ggplot")
 })
 
@@ -108,8 +108,8 @@ test_that("mse_list and plots work for lists", {
   # expect_true(mse_list$incidence_bias[1, 8] == -1108)
   
   # Test extraction and plotting functions
-  p1 <- mse_plot(hiv_list, quantity = "incidence")
+  p1 <- mse_plot(list(hiv_list), quantity = "incidence")
   expect_s3_class(p1, "ggplot")
-  p2 <- bias_plot(hiv_list, quantity = "incidence")
+  p2 <- bias_plot(list(hiv_list), quantity = "incidence")
   expect_s3_class(p2, "ggplot")
 })

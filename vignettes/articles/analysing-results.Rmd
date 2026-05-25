@@ -177,8 +177,8 @@ head(obs)
 When fitting to simulated data, `bias_plot()` shows how much the model over- or under-estimates each quantity and `mse_plot()` summarises mean squared error across one or more simulated fits:
 
 ```{r bias, eval=FALSE}
-p1 <- bias_plot(hiv_list, quantity = "incidence")
-p2 <- mse_plot(hiv_list, quantity = "incidence")
+p1 <- bias_plot(list(hiv_list), quantity = "incidence")
+p2 <- mse_plot(list(hiv_list), quantity = "incidence")
 
 p1 + p2
 ```
@@ -189,7 +189,7 @@ p1 + p2
 
 ## Comparing two models
 
-`plot_estimates()`, `bias_plot()`, and `mse_plot()` all accept a second model for side-by-side comparison:
+`bias_plot()` and `mse_plot()` accept a named list of models for side-by-side comparison:
 
 ```{r compare-two, eval=FALSE}
 sim_diags <- simulate_diagnoses(sim_type = "combo_3", rita = TRUE)
@@ -207,11 +207,8 @@ p1 <- plot_estimates(
 )
 
 p2 <- bias_plot(
-  model_rita,
-  hiv_list_2 = model_cd4,
-  quantity = "incidence",
-  model_1_name = "CD4 + RITA",
-  model_2_name = "CD4 only"
+  list("CD4 + RITA" = model_rita, "CD4 only" = model_cd4),
+  quantity = "incidence"
 )
 
 p1 / p2

@@ -128,7 +128,7 @@ hiv_list <- run_backcalc(
 When working with simulated data, `bias_plot()` compares the model estimates against the known simulated values:
 
 ```{r bias, eval=FALSE}
-bias_plot(hiv_list, quantity = "incidence")
+bias_plot(list(hiv_list), quantity = "incidence")
 ```
 
 <div class="figure">

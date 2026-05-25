@@ -322,7 +322,7 @@ test_that("plots work for migration and rita model bias plots", {
   p0 <- plot_diagnostics(hiv_list)
   expect_s3_class(p0, "ggplot")
   # Generate plots of key quantities
-  p1 <- bias_plot(hiv_list, "incidence")
+  p1 <- bias_plot(list(hiv_list), "incidence")
   p2 <- plot_estimates(hiv_list, "migration_prob")
   expect_s3_class(p1, "ggplot")
   expect_s3_class(p2, "ggplot")
