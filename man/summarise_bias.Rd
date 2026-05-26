@@ -15,3 +15,4 @@ A data frame of empirical bias values averaged across simulations.
 \description{
 Get empirical bias between HIV model estimates and simulation results.
 }
+\keyword{internal}

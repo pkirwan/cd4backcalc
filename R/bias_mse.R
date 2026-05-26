@@ -54,6 +54,7 @@ get_bias <- function(
 #'
 #' @param bias_df A data frame of raw bias values.
 #' @return A data frame of empirical bias values averaged across simulations.
+#' @keywords internal
 summarise_bias <- function(bias_df) {
   group_cols <- intersect(c("year", "strata", "age_band"), names(bias_df))
   bias_df |>

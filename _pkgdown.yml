@@ -19,6 +19,7 @@ reference:
     contents:
       - run_backcalc
       - create_stan_inits
+      - calibrate_init_prev
 
   - title: Visualisation
     desc: Plot model estimates, diagnostics, and goodness of fit
