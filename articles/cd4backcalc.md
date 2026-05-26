@@ -86,6 +86,37 @@ hiv_list <- run_backcalc(
 )
 ```
 
+## Calibrate initial prevalence
+
+If the fit to the data is poor in the first few quarters, especially
+with real data, a common issue is that the fixed baseline prevalence
+inputs (`init_prev`, `init_prev_age`, `init_prev_abroad`, or
+`init_prev_abroad_age`) are not well calibrated. The
+[`calibrate_init_prev()`](https://pkirwan.github.io/cd4backcalc/reference/calibrate_init_prev.md)
+function uses the fitted first quarter diagnosis probabilities together
+with the observed first quarter diagnoses to back-calculate improved
+initial prevalence values.
+
+``` r
+
+# first fit
+hiv_list <- run_backcalc(real_stan_data, migration = TRUE, age = TRUE)
+
+# back-calculate improved baseline prevalence inputs
+init_update <- calibrate_init_prev(hiv_list)
+
+# refit using the updated stan_data
+hiv_list <- run_backcalc(
+  init_update$stan_data,
+  migration = TRUE,
+  age = TRUE
+)
+```
+
+By default, age-specific initial prevalence is smoothed over age after
+summarising the fitted draws. Set `smooth_age = FALSE` to obtain the raw
+values.
+
 ## Assess convergence
 
 Use
@@ -132,7 +163,7 @@ compares the model estimates against the known simulated values:
 
 ``` r
 
-bias_plot(hiv_list, quantity = "incidence")
+bias_plot(list(hiv_list), quantity = "incidence")
 ```
 
 ![Figure: Bias plot for estimated HIV

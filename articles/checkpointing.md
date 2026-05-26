@@ -94,10 +94,10 @@ preserves the checkpointed adaptation state.
 
 Checkpointing is most useful for:
 
-- **Age-dependent models** which can take hours or days to fit
-- **SLURM or HPC environments** with wall-time limits
+- **Age-dependent models** which can take hours or days to fit;
+- **SLURM or HPC environments** with wall-time limits;
 - **Iterative model development** where you want to extend a run without
-  starting from scratch
+  starting from scratch.
 
 For age-independent models, fitting is typically fast enough that
 checkpointing is unnecessary.

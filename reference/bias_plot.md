@@ -6,23 +6,22 @@ Box plots of bias.
 
 ``` r
 bias_plot(
-  hiv_list,
+  hiv_lists,
   quantity = "incidence",
   offset = 0.1,
   lab = TRUE,
-  hiv_list_2 = NULL,
-  model_1_name = "Model 1",
-  model_2_name = "Model 2",
+  colours = NULL,
   sim_comparison = c("sampled", "generative")
 )
 ```
 
 ## Arguments
 
-- hiv_list:
+- hiv_lists:
 
-  A list returned from the `postproc` function containing model
-  estimates.
+  A named list of model result lists, each returned from the `postproc`
+  function. Names are used as model labels. If unnamed, models are
+  labelled "Model 1", "Model 2", etc.
 
 - quantity:
 
@@ -38,18 +37,11 @@ bias_plot(
 
   A logical indicating whether to add labels.
 
-- hiv_list_2:
+- colours:
 
-  A second list returned from the `postproc` function for comparison
-  (default is NULL).
-
-- model_1_name:
-
-  The name of the first model for labeling (default is "Model 1").
-
-- model_2_name:
-
-  The name of the second model for labeling (default is "Model 2").
+  An optional named character vector of colours for each model. Names
+  must match the names of `hiv_lists`. If `NULL` (default), ggplot's
+  default discrete colour palette is used.
 
 - sim_comparison:
 

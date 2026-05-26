@@ -14,6 +14,7 @@
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/apply_frr.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/bias_plot.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/build_ppq_list.html</loc></url>
+<url><loc>https://pkirwan.github.io/cd4backcalc/reference/calibrate_init_prev.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/cd4backcalc-package.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/confirm_stan_data.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/create_stan_inits.html</loc></url>
@@ -36,7 +37,6 @@
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/generate_omega.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/generate_ratio_abroad_uk.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/get_bias.html</loc></url>
-<url><loc>https://pkirwan.github.io/cd4backcalc/reference/get_bias_strata.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/get_estimates.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/get_mse.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/get_plot_title.html</loc></url>
@@ -77,6 +77,7 @@
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/simulate_ar1_logit.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/simulate_diagnoses.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/stan_model_config.html</loc></url>
+<url><loc>https://pkirwan.github.io/cd4backcalc/reference/summarise_bias.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/tidy_bind.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/total.migration.df.html</loc></url>
 <url><loc>https://pkirwan.github.io/cd4backcalc/reference/transfers.df.html</loc></url>

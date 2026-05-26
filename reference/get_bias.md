@@ -5,7 +5,7 @@ Get bias between HIV model estimates and simulation results.
 ## Usage
 
 ``` r
-get_bias(hiv_list, model_estimates, type)
+get_bias(hiv_list, type, deterministic = FALSE)
 ```
 
 ## Arguments
@@ -14,13 +14,14 @@ get_bias(hiv_list, model_estimates, type)
 
   A list of HIV model results.
 
-- model_estimates:
-
-  The model estimates for comparison.
-
 - type:
 
   The variable type to calculate bias for.
+
+- deterministic:
+
+  Logical indicating whether to compare against deterministic generative
+  values.
 
 ## Value
 

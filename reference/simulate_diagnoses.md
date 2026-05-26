@@ -4853,7 +4853,7 @@ simulate_diagnoses()
 #> [1] 0.019
 #> 
 #> $stan_data$sim_config$detect_obs_times
-#> [1]   1  21  41  61  81 101
+#>  [1]   4  12  20  28  36  44  52  60  68  76  84  92 100 108 116
 #> 
 #> 
 #> 

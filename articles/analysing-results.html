@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,7 +61,7 @@
       <h1>Analysing results</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.0.8/vignettes/articles/analysing-results.Rmd" class="external-link"><code>vignettes/articles/analysing-results.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.0.9/vignettes/articles/analysing-results.Rmd" class="external-link"><code>vignettes/articles/analysing-results.Rmd</code></a></small>
       <div class="d-none name"><code>analysing-results.Rmd</code></div>
     </div>
 
@@ -252,20 +252,47 @@ tibble for custom analysis:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">inc_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_estimates.html">get_estimates</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">inc_df</span><span class="op">)</span></span></code></pre></div>
+<pre><code># A tibble: 6 × 6
+   year `2.5%` `50%` `97.5%` group   iteration
+  &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt; &lt;chr&gt;       &lt;int&gt;
+1  0        0      0      0  Model 1         1
+2  0.25   964   1072   1173  Model 1         1
+3  0.5   1007.  1106   1204  Model 1         1
+4  0.75  1054.  1140   1230. Model 1         1
+5  1     1085.  1166   1252. Model 1         1
+6  1.25  1115.  1195   1273  Model 1         1</code></pre>
 </div>
 <div class="section level2">
 <h2 id="extracting-simulated-quantities">Extracting simulated quantities<a class="anchor" aria-label="anchor" href="#extracting-simulated-quantities"></a>
 </h2>
 <p>Use <code><a href="../reference/extract_simulated_quantity.html">extract_simulated_quantity()</a></code> to extract the true
 simulated values for comparison:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sim_inc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/extract_simulated_quantity.html">extract_simulated_quantity</a></span><span class="op">(</span><span class="va">sim_diags</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sim_inc</span><span class="op">)</span></span></code></pre></div>
+<pre><code># A tibble: 6 × 3
+  value  year group            
+  &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;            
+1   978  0    Generative values
+2  1029  0.25 Generative values
+3  1039  0.5  Generative values
+4  1149  0.75 Generative values
+5  1195  1    Generative values
+6  1152  1.25 Generative values</code></pre>
 <p>Use <code><a href="../reference/extract_real_data.html">extract_real_data()</a></code> to extract the observed data
 used for fitting:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">obs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/extract_real_data.html">extract_real_data</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"diagnoses"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">obs</span><span class="op">)</span></span></code></pre></div>
+<pre><code># A tibble: 6 × 3
+  value  year group          
+  &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;          
+1   715  0    Observed values
+2   769  0.25 Observed values
+3   771  0.5  Observed values
+4   737  0.75 Observed values
+5   689  1    Observed values
+6   703  1.25 Observed values</code></pre>
 </div>
 <div class="section level2">
 <h2 id="bias-and-mse">Bias and MSE<a class="anchor" aria-label="anchor" href="#bias-and-mse"></a>
@@ -274,9 +301,9 @@ used for fitting:</p>
 much the model over- or under-estimates each quantity and
 <code><a href="../reference/mse_plot.html">mse_plot()</a></code> summarises mean squared error across one or more
 simulated fits:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bias_plot.html">bias_plot</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
-<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mse_plot.html">mse_plot</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bias_plot.html">bias_plot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">hiv_list</span><span class="op">)</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
+<span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/mse_plot.html">mse_plot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">hiv_list</span><span class="op">)</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span></span></code></pre></div>
 <div class="figure">
@@ -286,10 +313,9 @@ simulated fits:</p>
 <div class="section level2">
 <h2 id="comparing-two-models">Comparing two models<a class="anchor" aria-label="anchor" href="#comparing-two-models"></a>
 </h2>
-<p><code><a href="../reference/plot_estimates.html">plot_estimates()</a></code>, <code><a href="../reference/bias_plot.html">bias_plot()</a></code>, and
-<code><a href="../reference/mse_plot.html">mse_plot()</a></code> all accept a second model for side-by-side
-comparison:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<p><code><a href="../reference/bias_plot.html">bias_plot()</a></code> and <code><a href="../reference/mse_plot.html">mse_plot()</a></code> accept a named
+list of models for side-by-side comparison:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sim_diags</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>sim_type <span class="op">=</span> <span class="st">"combo_3"</span>, rita <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">model_rita</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_diags</span><span class="op">)</span></span>
 <span></span>
@@ -305,11 +331,8 @@ comparison:</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bias_plot.html">bias_plot</a></span><span class="op">(</span></span>
-<span>  <span class="va">model_rita</span>,</span>
-<span>  hiv_list_2 <span class="op">=</span> <span class="va">model_cd4</span>,</span>
-<span>  quantity <span class="op">=</span> <span class="st">"incidence"</span>,</span>
-<span>  model_1_name <span class="op">=</span> <span class="st">"CD4 + RITA"</span>,</span>
-<span>  model_2_name <span class="op">=</span> <span class="st">"CD4 only"</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"CD4 + RITA"</span> <span class="op">=</span> <span class="va">model_rita</span>, <span class="st">"CD4 only"</span> <span class="op">=</span> <span class="va">model_cd4</span><span class="op">)</span>,</span>
+<span>  quantity <span class="op">=</span> <span class="st">"incidence"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">p1</span> <span class="op">/</span> <span class="va">p2</span></span></code></pre></div>
@@ -322,7 +345,7 @@ comparison:</p>
 </h2>
 <p>Pass a list of model fits to compare more than two models
 simultaneously:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">sim_diags</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>sim_type <span class="op">=</span> <span class="st">"combo_3"</span><span class="op">)</span></span>
 <span><span class="va">models</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">)</span> <span class="op">{</span></span>
@@ -346,7 +369,7 @@ The <code>stan_data</code> object should contain the diagnosis arrays
 required for the chosen model, with matching <code>migration</code>,
 <code>rita</code>, and <code>age</code> flags supplied to
 <code><a href="../reference/run_backcalc.html">run_backcalc()</a></code>.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hiv_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span></span>
 <span>  <span class="va">real_stan_data</span>,</span>
 <span>  migration <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -364,7 +387,7 @@ required for the chosen model, with matching <code>migration</code>,
 <p>For detailed convergence analysis, set
 <code>chain_results = TRUE</code> in <code><a href="../reference/run_backcalc.html">run_backcalc()</a></code> to
 obtain separate posterior summaries for each chain:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hiv_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_diags</span>, chain_results <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span>, chain_results <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">

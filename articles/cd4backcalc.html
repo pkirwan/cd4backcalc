@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,7 +61,7 @@
       <h1>Getting started</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.0.8/vignettes/cd4backcalc.Rmd" class="external-link"><code>vignettes/cd4backcalc.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.0.9/vignettes/cd4backcalc.Rmd" class="external-link"><code>vignettes/cd4backcalc.Rmd</code></a></small>
       <div class="d-none name"><code>cd4backcalc.Rmd</code></div>
     </div>
 
@@ -130,25 +130,53 @@ iterations and chains:</p>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
+<h2 id="calibrate-initial-prevalence">Calibrate initial prevalence<a class="anchor" aria-label="anchor" href="#calibrate-initial-prevalence"></a>
+</h2>
+<p>If the fit to the data is poor in the first few quarters, especially
+with real data, a common issue is that the fixed baseline prevalence
+inputs (<code>init_prev</code>, <code>init_prev_age</code>,
+<code>init_prev_abroad</code>, or <code>init_prev_abroad_age</code>) are
+not well calibrated. The <code><a href="../reference/calibrate_init_prev.html">calibrate_init_prev()</a></code> function
+uses the fitted first quarter diagnosis probabilities together with the
+observed first quarter diagnoses to back-calculate improved initial
+prevalence values.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># first fit</span></span>
+<span><span class="va">hiv_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">real_stan_data</span>, migration <span class="op">=</span> <span class="cn">TRUE</span>, age <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># back-calculate improved baseline prevalence inputs</span></span>
+<span><span class="va">init_update</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/calibrate_init_prev.html">calibrate_init_prev</a></span><span class="op">(</span><span class="va">hiv_list</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># refit using the updated stan_data</span></span>
+<span><span class="va">hiv_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span></span>
+<span>  <span class="va">init_update</span><span class="op">$</span><span class="va">stan_data</span>,</span>
+<span>  migration <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  age <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>By default, age-specific initial prevalence is smoothed over age
+after summarising the fitted draws. Set <code>smooth_age = FALSE</code>
+to obtain the raw values.</p>
+</div>
+<div class="section level2">
 <h2 id="assess-convergence">Assess convergence<a class="anchor" aria-label="anchor" href="#assess-convergence"></a>
 </h2>
 <p>Use <code><a href="../reference/plot_diagnostics.html">plot_diagnostics()</a></code> to inspect traceplots and
 posterior density plots for key parameters:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_diagnostics.html">plot_diagnostics</a></span><span class="op">(</span><span class="va">hiv_list</span>, ntraces <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
 <p><img src="articles/figures/getting-started-diagnostics.png" alt="Figure: Convergence diagnostics for the fitted model." width="100%"></p>
 </div>
 <p>You can also access the underlying <code>cmdstanr</code> fit object
 for additional diagnostics:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hiv_list</span><span class="op">$</span><span class="va">fit</span><span class="op">$</span><span class="fu">summary</span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">hiv_list</span><span class="op">$</span><span class="va">fit</span><span class="op">$</span><span class="fu">cmdstan_diagnose</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>If diagnostics show divergent transitions or maximum treedepth
 warnings, first try increasing <code>adapt_delta</code> and
 <code>max_treedepth</code>. If chains still mix poorly, increase the
 warmup or sampling iterations and refit:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hiv_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span></span>
 <span>  <span class="va">sim_diags</span>,</span>
 <span>  adapt_delta <span class="op">=</span> <span class="fl">0.99</span>,</span>
@@ -162,8 +190,8 @@ warmup or sampling iterations and refit:</p>
 </h2>
 <p>When working with simulated data, <code><a href="../reference/bias_plot.html">bias_plot()</a></code> compares
 the model estimates against the known simulated values:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/bias_plot.html">bias_plot</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/bias_plot.html">bias_plot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">hiv_list</span><span class="op">)</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
 <p><img src="articles/figures/getting-started-bias-incidence.png" alt="Figure: Bias plot for estimated HIV incidence." width="100%"></p>
 </div>
@@ -174,7 +202,7 @@ the model estimates against the known simulated values:</p>
 <p><code><a href="../reference/plot_estimates.html">plot_estimates()</a></code> produces plots of the posterior
 estimates with credible intervals. When simulated data is available, the
 true values are overlaid for comparison.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># HIV incidence over time</span></span>
 <span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
 <span></span>
@@ -193,7 +221,7 @@ true values are overlaid for comparison.</p>
 </div>
 <p>All plotting functions return <code>ggplot2</code> objects, so they
 can be further customised:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_gray</a></span><span class="op">(</span><span class="fl">14</span><span class="op">)</span></span></code></pre></div>

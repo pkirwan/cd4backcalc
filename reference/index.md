@@ -18,6 +18,8 @@ Fit and configure CD4-staged back-calculation models
   : Run CD4 back-calculation model
 - [`create_stan_inits()`](https://pkirwan.github.io/cd4backcalc/reference/create_stan_inits.md)
   : Create initial values for Stan from a fitted model
+- [`calibrate_init_prev()`](https://pkirwan.github.io/cd4backcalc/reference/calibrate_init_prev.md)
+  : Calibrate initial prevalence from fitted draws
 
 ## Visualisation
 

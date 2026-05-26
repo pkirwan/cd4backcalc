@@ -12,7 +12,7 @@ get_mse(bias_df)
 
 - bias_df:
 
-  A data frame of bias values.
+  A data frame of raw bias values.
 
 ## Value
 

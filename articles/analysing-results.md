@@ -132,6 +132,16 @@ inc_df <- get_estimates(hiv_list, quantity = "incidence")
 head(inc_df)
 ```
 
+    # A tibble: 6 × 6
+       year `2.5%` `50%` `97.5%` group   iteration
+      <dbl>  <dbl> <dbl>   <dbl> <chr>       <int>
+    1  0        0      0      0  Model 1         1
+    2  0.25   964   1072   1173  Model 1         1
+    3  0.5   1007.  1106   1204  Model 1         1
+    4  0.75  1054.  1140   1230. Model 1         1
+    5  1     1085.  1166   1252. Model 1         1
+    6  1.25  1115.  1195   1273  Model 1         1
+
 ## Extracting simulated quantities
 
 Use
@@ -144,6 +154,16 @@ sim_inc <- extract_simulated_quantity(sim_diags, quantity = "incidence")
 head(sim_inc)
 ```
 
+    # A tibble: 6 × 3
+      value  year group            
+      <dbl> <dbl> <chr>            
+    1   978  0    Generative values
+    2  1029  0.25 Generative values
+    3  1039  0.5  Generative values
+    4  1149  0.75 Generative values
+    5  1195  1    Generative values
+    6  1152  1.25 Generative values
+
 Use
 [`extract_real_data()`](https://pkirwan.github.io/cd4backcalc/reference/extract_real_data.md)
 to extract the observed data used for fitting:
@@ -153,6 +173,16 @@ to extract the observed data used for fitting:
 obs <- extract_real_data(hiv_list, quantity = "diagnoses")
 head(obs)
 ```
+
+    # A tibble: 6 × 3
+      value  year group          
+      <dbl> <dbl> <chr>          
+    1   715  0    Observed values
+    2   769  0.25 Observed values
+    3   771  0.5  Observed values
+    4   737  0.75 Observed values
+    5   689  1    Observed values
+    6   703  1.25 Observed values
 
 ## Bias and MSE
 
@@ -164,8 +194,8 @@ summarises mean squared error across one or more simulated fits:
 
 ``` r
 
-p1 <- bias_plot(hiv_list, quantity = "incidence")
-p2 <- mse_plot(hiv_list, quantity = "incidence")
+p1 <- bias_plot(list(hiv_list), quantity = "incidence")
+p2 <- mse_plot(list(hiv_list), quantity = "incidence")
 
 p1 + p2
 ```
@@ -175,11 +205,10 @@ incidence.](figures/analysing-results-bias-mse-incidence.png)
 
 ## Comparing two models
 
-[`plot_estimates()`](https://pkirwan.github.io/cd4backcalc/reference/plot_estimates.md),
-[`bias_plot()`](https://pkirwan.github.io/cd4backcalc/reference/bias_plot.md),
+[`bias_plot()`](https://pkirwan.github.io/cd4backcalc/reference/bias_plot.md)
 and
 [`mse_plot()`](https://pkirwan.github.io/cd4backcalc/reference/mse_plot.md)
-all accept a second model for side-by-side comparison:
+accept a named list of models for side-by-side comparison:
 
 ``` r
 
@@ -198,11 +227,8 @@ p1 <- plot_estimates(
 )
 
 p2 <- bias_plot(
-  model_rita,
-  hiv_list_2 = model_cd4,
-  quantity = "incidence",
-  model_1_name = "CD4 + RITA",
-  model_2_name = "CD4 only"
+  list("CD4 + RITA" = model_rita, "CD4 only" = model_cd4),
+  quantity = "incidence"
 )
 
 p1 / p2
