@@ -4,14 +4,15 @@
 \alias{get_bias}
 \title{Get bias between HIV model estimates and simulation results.}
 \usage{
-get_bias(hiv_list, model_estimates, type)
+get_bias(hiv_list, type, deterministic = FALSE)
 }
 \arguments{
 \item{hiv_list}{A list of HIV model results.}
 
-\item{model_estimates}{The model estimates for comparison.}
-
 \item{type}{The variable type to calculate bias for.}
+
+\item{deterministic}{Logical indicating whether to compare against
+deterministic generative values.}
 }
 \value{
 A data frame of bias values.

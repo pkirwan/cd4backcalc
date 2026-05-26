@@ -7,7 +7,7 @@
 get_mse(bias_df)
 }
 \arguments{
-\item{bias_df}{A data frame of bias values.}
+\item{bias_df}{A data frame of raw bias values.}
 }
 \value{
 A data frame of MSE values.

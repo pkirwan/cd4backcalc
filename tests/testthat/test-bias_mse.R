@@ -23,6 +23,58 @@ test_that("mse_list and plots are generated correctly", {
   expect_s3_class(p2, "ggplot")
 })
 
+test_that("make_mse_list uses posterior means and fit-specific truths", {
+  make_mock_fit <- function(truth, estimate_mean, estimate_median) {
+    zero_matrix <- matrix(0, nrow = 3, ncol = 1)
+    zero_migration <- matrix(0, nrow = 3, ncol = 2)
+    list(
+      incidence = tibble::tibble(
+        year = c(0, 0.25, 0.5),
+        `50%` = estimate_median,
+        mean = estimate_mean
+      ),
+      stan_data = list(
+        nquar = 3,
+        nage = 1,
+        HIV = c(0, 0, 0),
+        AIDS = c(0, 0, 0),
+        model_config = list(migration = FALSE),
+        sim_config = list(
+          migration = FALSE,
+          rita = FALSE,
+          nlatst = 2
+        )
+      ),
+      sim_data = list(
+        epi_uk = list(lat = zero_matrix),
+        epi_uk_abroad = list(lat = zero_matrix),
+        infs = cbind(truth),
+        m = zero_migration,
+        omega = c(0, 0, 0),
+        d_probs = array(0, dim = c(3, 1, 4))
+      )
+    )
+  }
+
+  fit_1 <- make_mock_fit(
+    truth = c(0, 8, 18),
+    estimate_mean = c(0, 10, 20),
+    estimate_median = c(0, 100, 200)
+  )
+  fit_2 <- make_mock_fit(
+    truth = c(0, 11, 21),
+    estimate_mean = c(0, 13, 23),
+    estimate_median = c(0, 130, 230)
+  )
+
+  mse_list <- make_mse_list(list(fit_1, fit_2))
+
+  expect_equal(mse_list$incidence_bias$year, c(0.25, 0.5))
+  expect_equal(mse_list$incidence_bias$bias, c(2, 2))
+  expect_equal(mse_list$incidence_mse$mse, c(4, 4))
+  expect_equal(mse_list$incidence_mse$n, c(2L, 2L))
+})
+
 test_that("mse_list and plots are generated correctly for dual fits", {
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 60, sim_seed = 123)

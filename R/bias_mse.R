@@ -1,59 +1,113 @@
 #' Get bias between HIV model estimates and simulation results.
 #'
 #' @param hiv_list A list of HIV model results.
-#' @param model_estimates The model estimates for comparison.
 #' @param type The variable type to calculate bias for.
+#' @param deterministic Logical indicating whether to compare against
+#'   deterministic generative values.
 #' @return A data frame of bias values.
 get_bias <- function(
   hiv_list,
-  model_estimates,
-  type
+  type,
+  deterministic = FALSE
 ) {
-  dplyr::left_join(
-    get_estimates(hiv_list, type),
-    model_estimates,
-    by = c("year")
-  ) |>
-    # bias should not be calculated for year 0
-    dplyr::filter(.data$year > 0) |>
-    dplyr::mutate(
-      bias = .data$`50%` - .data$value
-    ) |>
-    dplyr::rename(group = "group.x")
+  purrr::imap(hiv_list, function(x, simulation) {
+    estimates <- get_estimates(x, type)
+    if (!("mean" %in% names(estimates))) {
+      stop(sprintf(
+        "Estimate '%s' must contain a 'mean' column for bias/MSE calculations.",
+        type
+      ))
+    }
+
+    join_cols <- intersect(c("year", "strata", "age_band"), names(estimates))
+    joined <- estimates |>
+      dplyr::select(dplyr::all_of(c(join_cols, "mean"))) |>
+      dplyr::left_join(
+        extract_simulated_quantity(
+          x,
+          quantity = type,
+          deterministic = deterministic
+        ) |>
+          dplyr::select(dplyr::all_of(c(join_cols, "value"))),
+        by = join_cols
+      )
+
+    if (any(is.na(joined$value))) {
+      stop(sprintf(
+        "Failed to match simulated values to '%s' estimates when calculating bias/MSE.",
+        type
+      ))
+    }
+
+    joined |>
+      dplyr::filter(.data$year > 0) |>
+      dplyr::mutate(
+        simulation = as.character(simulation),
+        bias = .data$mean - .data$value
+      ) |>
+      dplyr::select(dplyr::all_of(join_cols), "simulation", "bias")
+  }) |>
+    purrr::list_rbind()
 }
 
-#' Get bias between HIV model estimates and simulation results for strata.
+#' Get empirical bias between HIV model estimates and simulation results.
 #'
-#' @param hiv_list A list of HIV model results.
-#' @param model_estimates The model estimates for comparison.
-#' @param type The variable type to calculate bias for.
-#' @return A data frame of bias values for strata.
-get_bias_strata <- function(
-  hiv_list,
-  model_estimates,
-  type
-) {
-  dplyr::left_join(
-    get_estimates(hiv_list, type),
-    model_estimates,
-    by = c("year", "strata")
-  ) |>
-    # bias should not be calculated for year 0
-    dplyr::filter(.data$year > 0) |>
-    dplyr::mutate(
-      bias = .data$`50%` - .data$value
-    ) |>
-    dplyr::rename(group = "group.x")
+#' @param bias_df A data frame of raw bias values.
+#' @return A data frame of empirical bias values averaged across simulations.
+summarise_bias <- function(bias_df) {
+  group_cols <- intersect(c("year", "strata", "age_band"), names(bias_df))
+  bias_df |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(group_cols))) |>
+    dplyr::summarise(bias = mean(.data$bias), .groups = "drop")
 }
 
 #' Get mean squared error (MSE) list for HIV model estimates.
 #'
-#' @param bias_df A data frame of bias values.
+#' @param bias_df A data frame of raw bias values.
 #' @return A data frame of MSE values.
 get_mse <- function(bias_df) {
   bias_df |>
-    dplyr::group_by(.data$group) |>
-    dplyr::summarise(mse = mean(.data$bias^2), .groups = "drop")
+    dplyr::group_by(.data$simulation) |>
+    dplyr::summarise(
+      mse = mean(.data$bias^2),
+      n = dplyr::n(),
+      .groups = "drop"
+    )
+}
+
+format_bias_summary <- function(value) {
+  if (abs(value) >= 1000) {
+    format(round(value, 0), big.mark = ",")
+  } else if (abs(value) >= 1) {
+    format(round(value, 1), nsmall = 1)
+  } else {
+    format(round(value, 5), nsmall = 5, scientific = FALSE)
+  }
+}
+
+add_bias_outputs <- function(
+  out,
+  out_name,
+  hiv_list,
+  quantity,
+  deterministic,
+  strip_total = FALSE
+) {
+  raw_bias <- get_bias(
+    hiv_list,
+    type = quantity,
+    deterministic = deterministic
+  )
+
+  # Remove the aggregate "all" row when age-band-specific summaries are wanted,
+  # to avoid double-counting the total in bias/MSE calculations.
+  if (strip_total && "age_band" %in% names(raw_bias)) {
+    raw_bias <- dplyr::filter(raw_bias, .data$age_band != "all")
+  }
+
+  out[[paste0(out_name, "_bias")]] <- summarise_bias(raw_bias)
+  out[[paste0(out_name, "_mse")]] <- get_mse(raw_bias)
+  out
 }
 
 #' Make a list of mean squared error (MSE) values for HIV model estimates.
@@ -79,59 +133,54 @@ make_mse_list <- function(
 
   out <- list()
 
-  out$incidence_bias <- get_bias(
-    hiv_list,
-    extract_simulated_quantity(
-      hiv_list[[1]],
-      quantity = "incidence",
-      deterministic = use_deterministic
-    ),
-    "incidence"
+  out <- add_bias_outputs(
+    out,
+    out_name = "incidence",
+    hiv_list = hiv_list,
+    quantity = "incidence",
+    deterministic = use_deterministic
   )
-  out$incidence_mse <- get_mse(out$incidence_bias)
+
+  if (hiv_list[[1]]$stan_data$model_config$age) {
+    out <- add_bias_outputs(
+      out,
+      out_name = "incidence_age",
+      hiv_list = hiv_list,
+      quantity = "incidence_age",
+      deterministic = use_deterministic,
+      strip_total = TRUE
+    )
+  }
 
   if (hiv_list[[1]]$stan_data$model_config$migration) {
-    out$undiag_migration_bias <- get_bias(
-      hiv_list,
-      extract_simulated_quantity(
-        hiv_list[[1]],
-        quantity = "undiag_migration",
-        deterministic = use_deterministic
-      ),
-      "undiag_migration"
+    out <- add_bias_outputs(
+      out,
+      out_name = "undiag_migration",
+      hiv_list = hiv_list,
+      quantity = "undiag_migration",
+      deterministic = use_deterministic
     )
-    out$all_migration_bias <- get_bias(
-      hiv_list,
-      extract_simulated_quantity(
-        hiv_list[[1]],
-        quantity = "all_migration",
-        deterministic = use_deterministic
-      ),
-      "all_migration"
+    out <- add_bias_outputs(
+      out,
+      out_name = "all_migration",
+      hiv_list = hiv_list,
+      quantity = "all_migration",
+      deterministic = use_deterministic
     )
-    out$ratio_abroad_uk_bias <- get_bias(
-      hiv_list,
-      extract_simulated_quantity(
-        hiv_list[[1]],
-        quantity = "ratio_abroad_uk",
-        deterministic = use_deterministic
-      ),
-      "ratio_abroad_uk"
+    out <- add_bias_outputs(
+      out,
+      out_name = "ratio_abroad_uk",
+      hiv_list = hiv_list,
+      quantity = "ratio_abroad_uk",
+      deterministic = use_deterministic
     )
-    out$mp_bias <- get_bias_strata(
-      hiv_list,
-      extract_simulated_quantity(
-        hiv_list[[1]],
-        quantity = "migration_prob",
-        deterministic = use_deterministic
-      ),
-      "migration_prob"
+    out <- add_bias_outputs(
+      out,
+      out_name = "mp",
+      hiv_list = hiv_list,
+      quantity = "migration_prob",
+      deterministic = use_deterministic
     )
-
-    out$undiag_migration_mse <- get_mse(out$undiag_migration_bias)
-    out$all_migration_mse <- get_mse(out$all_migration_bias)
-    out$ratio_abroad_uk_mse <- get_mse(out$ratio_abroad_uk_bias)
-    out$mp_mse <- get_mse(out$mp_bias)
   }
   return(out)
 }
@@ -212,23 +261,13 @@ mse_plot <- function(
         data = data |>
           dplyr::group_by(.data$group) |>
           dplyr::summarise(
-            bias = mean(.data$mse),
+            pmse = stats::weighted.mean(.data$mse, .data$n),
             pos = stats::quantile(.data$mse, 0.75) + offset,
-            # Format bias based on its magnitude
-            formatted_bias = if (abs(.data$bias) >= 1000) {
-              format(
-                round(.data$bias, 0),
-                big.mark = ","
-              )
-            } else if (abs(.data$bias) >= 1) {
-              format(round(.data$bias, 1), nsmall = 1)
-            } else {
-              format(round(.data$bias, 5), nsmall = 5, scientific = FALSE)
-            }
+            formatted_pmse = format_bias_summary(.data$pmse)
           ),
         ggplot2::aes(
           y = .data$pos,
-          label = paste0("PMSE: ", .data$formatted_bias),
+          label = paste0("PMSE: ", .data$formatted_pmse),
         ),
         nudge_x = 0.4,
         size = 4
@@ -307,17 +346,7 @@ bias_plot <- function(
           dplyr::summarise(
             meanbias = mean(.data$bias),
             pos = stats::quantile(.data$bias, 0.75) + offset,
-            # Format bias based on its magnitude
-            formatted_bias = if (abs(.data$meanbias) >= 1000) {
-              format(
-                round(.data$meanbias, 0),
-                big.mark = ","
-              )
-            } else if (abs(.data$meanbias) >= 1) {
-              format(round(.data$meanbias, 1), nsmall = 1)
-            } else {
-              format(round(.data$meanbias, 5), nsmall = 5, scientific = FALSE)
-            }
+            formatted_bias = format_bias_summary(.data$meanbias)
           ),
         ggplot2::aes(
           y = .data$pos,
