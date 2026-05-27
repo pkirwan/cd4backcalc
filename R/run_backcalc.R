@@ -210,6 +210,8 @@ fit_stan_model <- function(
       call. = FALSE
     )
   }
+  cmdstan_output_dir <- file.path(checkpoint_dir, "cmdstan-output")
+  dir.create(cmdstan_output_dir, recursive = TRUE, showWarnings = FALSE)
   draws_list <- if (!is.null(cp)) cp$draws_list else list()
   diagnostics_list <- if (!is.null(cp)) cp$diagnostics_list else list()
   total_time <- if (!is.null(cp)) cp$total_time else 0
@@ -242,6 +244,7 @@ fit_stan_model <- function(
           chains = chains,
           seed = model_seed,
           init = init,
+          output_dir = cmdstan_output_dir,
           adapt_delta = adapt_delta,
           max_treedepth = max_treedepth,
           refresh = refresh,
@@ -257,6 +260,7 @@ fit_stan_model <- function(
           iter_sampling = 0,
           chains = chains,
           seed = model_seed,
+          output_dir = cmdstan_output_dir,
           adapt_delta = adapt_delta,
           max_treedepth = max_treedepth,
           init_buffer = 0,
@@ -320,6 +324,7 @@ fit_stan_model <- function(
       iter_sampling = this_chunk,
       chains = chains,
       seed = model_seed,
+      output_dir = cmdstan_output_dir,
       adapt_engaged = FALSE,
       inv_metric = cp$inv_metric,
       step_size = cp$step_size,

@@ -113,6 +113,7 @@ postproc_ai <- function(
         hiv_list[[paste0("undiag_migration_", ch)]] <- ppq$undiag_migration
         hiv_list[[paste0("migration_prob_", ch)]] <- ppq$migration_prob
         hiv_list[[paste0("transfers_", ch)]] <- ppq$transfers
+        hiv_list[[paste0("transfers_detected_", ch)]] <- ppq$transfers_detected
         hiv_list[[paste0("ratio_abroad_uk_", ch)]] <- ppq$ratio_abroad_uk
         hiv_list[[paste0("detect_prob_", ch)]] <- ppq$detect_prob
       }
@@ -327,6 +328,12 @@ build_ppq_list <- function(
           prev_dist,
           start.yr = start_yr
         ),
+        transfers_detected = transfers_detected.df(
+          stan_data,
+          prev_dist,
+          fit_slice,
+          start.yr = start_yr
+        ),
         ratio_abroad_uk = ratio_abroad_uk.df(
           stan_data,
           fit_slice,
@@ -341,6 +348,21 @@ build_ppq_list <- function(
     )
   }
 
+  out
+}
+
+# Internal helpers for age-independent posterior summaries.
+.posterior_summary_vec <- function(x) {
+  x <- as.numeric(x)
+  qs <- stats::quantile(
+    x,
+    probs = c(0.025, 0.5, 0.975),
+    na.rm = TRUE,
+    names = FALSE,
+    type = 7
+  )
+  out <- c(qs[1], qs[2], mean(x, na.rm = TRUE), qs[3])
+  names(out) <- c("2.5%", "50%", "mean", "97.5%")
   out
 }
 
@@ -1178,8 +1200,7 @@ incidence.df <- function(
     q.infections.total <- apply(
       infections.total,
       1,
-      stats::quantile,
-      probs = c(0.025, 0.5, 0.975)
+      .posterior_summary_vec
     )
     df <- as.data.frame(t(q.infections.total))
     df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 0.25)
@@ -1191,8 +1212,7 @@ incidence.df <- function(
     q.infections.years <- apply(
       infections.years,
       1,
-      stats::quantile,
-      probs = c(0.025, 0.5, 0.975)
+      .posterior_summary_vec
     )
     df <- as.data.frame(t(q.infections.years))
     df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 1)
@@ -1224,8 +1244,7 @@ total.migration.df <- function(
     q.migration.total <- apply(
       migration.total,
       1,
-      stats::quantile,
-      probs = c(0.025, 0.5, 0.975)
+      .posterior_summary_vec
     )
     df <- as.data.frame(t(q.migration.total))
     df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 0.25)
@@ -1237,8 +1256,7 @@ total.migration.df <- function(
     q.migration.years <- apply(
       migration.years,
       1,
-      stats::quantile,
-      probs = c(0.025, 0.5, 0.975)
+      .posterior_summary_vec
     )
     df <- as.data.frame(t(q.migration.years))
     df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 1)
@@ -1270,8 +1288,7 @@ transfers.df <- function(
     q.transfers <- apply(
       transfers,
       1,
-      stats::quantile,
-      probs = c(0.025, 0.5, 0.975)
+      .posterior_summary_vec
     )
     df <- as.data.frame(t(q.transfers))
     df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 0.25)
@@ -1283,14 +1300,76 @@ transfers.df <- function(
     q.transfers.years <- apply(
       transfers.years,
       1,
-      stats::quantile,
-      probs = c(0.025, 0.5, 0.975)
+      .posterior_summary_vec
     )
     df <- as.data.frame(t(q.transfers.years))
     df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 1)
     df <- df |> tidyr::pivot_longer(-"year", names_to = "quartile")
   }
   return(df)
+}
+
+#' Detected transfers dataframe
+#'
+#' Calculates detected transfers dataframe from prevalence distribution and
+#' detection probabilities.
+#'
+#' @param stan_data Data list used in stan model fitting.
+#' @param prev_dist Prevalence distribution by year of infection.
+#' @param fit_mat Matrix of posterior samples from stan model.
+#' @param start.yr Starting year for the dataframe.
+#' @param annual Logical indicating if annual detected transfers is required.
+#' @return Dataframe of detected transfer estimates.
+transfers_detected.df <- function(
+  stan_data,
+  prev_dist,
+  fit_mat,
+  start.yr = 1978,
+  annual = FALSE
+) {
+  nyr <- stan_data$nquar / 4
+  transfers <- as.matrix(simplify2array(prev_dist["transfers", ]))
+  if (nrow(transfers) != stan_data$nquar && ncol(transfers) == stan_data$nquar) {
+    transfers <- t(transfers)
+  }
+
+  detect.ind <- grep("^detect_prob\\[", colnames(fit_mat))
+  detect_draws <- if (length(detect.ind) == 0) {
+    matrix(
+      rep(stan_data$detect_prob, ncol(transfers)),
+      nrow = stan_data$nquar,
+      ncol = ncol(transfers)
+    )
+  } else {
+    t(as.matrix(fit_mat[, detect.ind, drop = FALSE]))
+  }
+
+  detected_transfers <- transfers * detect_draws
+
+  if (annual == FALSE) {
+    q.detected_transfers <- apply(
+      detected_transfers,
+      1,
+      .posterior_summary_vec
+    )
+    df <- as.data.frame(t(q.detected_transfers))
+    df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 0.25)
+    df <- df |> tidyr::pivot_longer(-"year", names_to = "quartile")
+  } else {
+    detected_transfers.years <- apply(detected_transfers, 2, function(x) {
+      tapply(x, rep(1:(stan_data$nquar / 4), each = 4), sum)
+    })
+    q.detected_transfers.years <- apply(
+      detected_transfers.years,
+      1,
+      .posterior_summary_vec
+    )
+    df <- as.data.frame(t(q.detected_transfers.years))
+    df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 1)
+    df <- df |> tidyr::pivot_longer(-"year", names_to = "quartile")
+  }
+
+  df
 }
 
 #' Undiagnosed migration dataframe
@@ -1316,8 +1395,7 @@ undx.migration.df <- function(
     q.undx <- apply(
       undx_migration,
       1,
-      stats::quantile,
-      probs = c(0.025, 0.5, 0.975)
+      .posterior_summary_vec
     )
     df <- as.data.frame(t(q.undx))
     df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 0.25)
@@ -1329,8 +1407,7 @@ undx.migration.df <- function(
     q.undx_years <- apply(
       undx_years,
       1,
-      stats::quantile,
-      probs = c(0.025, 0.5, 0.975)
+      .posterior_summary_vec
     )
     df <- as.data.frame(t(q.undx_years))
     df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 1)
@@ -1397,8 +1474,7 @@ undiag.prev.df <- function(
   q.undiagnosed.prevalence <- apply(
     undiagnosed.prevalence,
     1,
-    stats::quantile,
-    probs = c(0.025, 0.5, 0.975)
+    .posterior_summary_vec
   )[, 1:(stan_data$nquar)]
   df <- as.data.frame(t(q.undiagnosed.prevalence))
   df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 0.25)
@@ -1438,26 +1514,22 @@ diag.prob.df <- function(stan_data, fit_mat, start.yr = 1978, group = c("nat", "
   d1.q <- apply(
     fit_mat[, grep(sprintf("^%s\\[1,", dp), colnames(fit_mat))],
     2,
-    stats::quantile,
-    probs = c(0.025, 0.5, 0.975)
+    .posterior_summary_vec
   )
   d2.q <- apply(
     fit_mat[, grep(sprintf("^%s\\[2,", dp), colnames(fit_mat))],
     2,
-    stats::quantile,
-    probs = c(0.025, 0.5, 0.975)
+    .posterior_summary_vec
   )
   d3.q <- apply(
     fit_mat[, grep(sprintf("^%s\\[3,", dp), colnames(fit_mat))],
     2,
-    stats::quantile,
-    probs = c(0.025, 0.5, 0.975)
+    .posterior_summary_vec
   )
   d4.q <- apply(
     fit_mat[, grep(sprintf("^%s\\[4,", dp), colnames(fit_mat))],
     2,
-    stats::quantile,
-    probs = c(0.025, 0.5, 0.975)
+    .posterior_summary_vec
   )
 
   year <- seq(start.yr, start.yr + nyr - 0.25, by = 0.25)
@@ -1466,8 +1538,7 @@ diag.prob.df <- function(stan_data, fit_mat, start.yr = 1978, group = c("nat", "
     d5.q <- apply(
         fit_mat[, grep(sprintf("^%s\\[5,", dp), colnames(fit_mat))],
         2,
-        stats::quantile,
-        probs = c(0.025, 0.5, 0.975)
+        .posterior_summary_vec
       )
 
     d1.q <- t(d1.q) |>
@@ -1547,8 +1618,7 @@ diagnoses.df <- function(
   q.diagnosed <- apply(
     diagnosed.HIV + diagnosed.AIDS,
     1,
-    stats::quantile,
-    probs = c(0.025, 0.5, 0.975)
+    .posterior_summary_vec
   )[, 1:(stan_data$nquar)]
   df <- as.data.frame(t(q.diagnosed))
   df$year <- seq(start.yr, start.yr + nyr - 0.25, by = 0.25)
@@ -1584,32 +1654,27 @@ migration.prob.df <- function(stan_data, fit_mat, start.yr = 1978) {
   m1.q <- apply(
     fit_mat[, m1.ind],
     2,
-    stats::quantile,
-    probs = c(0.025, 0.5, 0.975)
+    .posterior_summary_vec
   )
   m2.q <- apply(
     fit_mat[, m2.ind],
     2,
-    stats::quantile,
-    probs = c(0.025, 0.5, 0.975)
+    .posterior_summary_vec
   )
   m3.q <- apply(
     fit_mat[, m3.ind],
     2,
-    stats::quantile,
-    probs = c(0.025, 0.5, 0.975)
+    .posterior_summary_vec
   )
   m4.q <- apply(
     fit_mat[, m4.ind],
     2,
-    stats::quantile,
-    probs = c(0.025, 0.5, 0.975)
+    .posterior_summary_vec
   )
   m5.q <- apply(
     fit_mat[, m5.ind],
     2,
-    stats::quantile,
-    probs = c(0.025, 0.5, 0.975)
+    .posterior_summary_vec
   )
   year <- seq(start.yr, start.yr + nyr - 0.25, by = 0.25)
 
@@ -1652,13 +1717,13 @@ ratio_abroad_uk.df <- function(stan_data, fit_mat, start.yr = 1978) {
 
   ### Quantiles of diagnosis
   if (length(puk.ind) == 0) {
-    puk.q <- stan_data$p
+    puk.q <- matrix(rep(stan_data$p, each = 4), nrow = 4)
+    rownames(puk.q) <- c("2.5%", "50%", "mean", "97.5%")
   } else {
     puk.q <- apply(
       fit_mat[, puk.ind],
       2,
-      stats::quantile,
-      probs = c(0.025, 0.5, 0.975)
+      .posterior_summary_vec
     )
   }
 
@@ -1687,13 +1752,13 @@ detect.prob.df <- function(stan_data, fit_mat, start.yr = 1978) {
 
   ### Quantiles of diagnosis
   if (length(detect.ind) == 0) {
-    detect.q <- stan_data$detect_prob
+    detect.q <- matrix(rep(stan_data$detect_prob, each = 4), nrow = 4)
+    rownames(detect.q) <- c("2.5%", "50%", "mean", "97.5%")
   } else {
     detect.q <- apply(
       fit_mat[, detect.ind],
       2,
-      stats::quantile,
-      probs = c(0.025, 0.5, 0.975)
+      .posterior_summary_vec
     )
   }
 

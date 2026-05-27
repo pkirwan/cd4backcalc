@@ -29,8 +29,8 @@
 #' @param min_prob Lower bound used when inverting fitted diagnosis
 #'   probabilities.
 #' @param init_floor Small positive floor applied to calibrated initial
-#'   prevalence values to avoid exact zeros/non-finite values that can cause
-#'   Stan initialisation failures.
+#'   prevalence values to avoid non-finite or tiny positive values that can
+#'   cause Stan initialisation failures; exact structural zeros are preserved.
 #' @param return_draws Logical; if `TRUE`, include draw-level calibrated values
 #'   in the output.
 #'
@@ -539,8 +539,11 @@ calibrate_init_prev <- function(
   }
 
   vals <- as.numeric(x)
+  zero_mask <- vals == 0
   vals[!is.finite(vals)] <- floor
-  vals <- pmax(vals, floor)
+  vals[vals < 0] <- floor
+  vals[vals > 0 & vals < floor] <- floor
+  vals[zero_mask] <- 0
   dim(vals) <- dim(x)
   dimnames(vals) <- dimnames(x)
   vals

@@ -227,7 +227,16 @@ plot_estimates <- function(
       dplyr::filter(.data$age_band != "all")
   }
 
-  model_linetypes <- make_model_linetypes(unique(quantiles$group), chain_results)
+  model_groups <- unique(quantiles$group)
+  model_linetypes <- make_model_linetypes(model_groups, chain_results)
+  model_colors <- make_model_colors(
+    model_groups,
+    chain_results = chain_results,
+    has_second_model = !is.null(hiv_list_2),
+    model_1_name = model_1_name,
+    model_2_name = model_2_name
+  )
+  legend_breaks <- model_groups
 
   p1 <- quantiles |>
     ggplot2::ggplot() +
@@ -289,37 +298,13 @@ plot_estimates <- function(
       panel.grid.major = ggplot2::element_line(color = "grey80")
     )
 
-  # define model colors
   sim_ref_label <- if (sim_comparison == "sampled") "Sampled values" else "Generative values"
-  if (!is.null(hiv_list_2)) {
-    model_colors <- stats::setNames(
-      c("mediumorchid", "coral", "mediumturquoise"),
-      c(model_1_name, model_2_name, sim_ref_label)
-    )
-  } else {
-    model_colors <- stats::setNames(
-      c(rep("mediumorchid", length(unique(quantiles$group))), "mediumturquoise"),
-      c(unique(quantiles$group), sim_ref_label)
-    )
-  }
-
-  p1 <- p1 +
-    ggplot2::scale_color_manual(
-      values = model_colors,
-      name = ""
-    ) +
-    ggplot2::scale_fill_manual(
-      values = model_colors,
-      name = ""
-    ) +
-    ggplot2::scale_linetype_manual(
-      values = model_linetypes,
-      name = ""
-    )
 
   # add simulated values if data were simulated
   if ("sim_data" %in% names(hiv_list[[1]])) {
     use_deterministic <- sim_comparison == "generative"
+    model_colors <- c(model_colors, stats::setNames("mediumturquoise", sim_ref_label))
+    legend_breaks <- c(legend_breaks, sim_ref_label)
     sim_estimates <- extract_simulated_quantity(
       hiv_list[[1]],
       quantity,
@@ -353,10 +338,8 @@ plot_estimates <- function(
         dplyr::filter(.data$age_band != "all")
     }
 
-    model_colors <- stats::setNames(
-      c("mediumorchid", "coral", "mediumturquoise"),
-      c(unique(quantiles$group), "Observed values")
-    )
+    model_colors <- c(model_colors, "Observed values" = "mediumturquoise")
+    legend_breaks <- c(legend_breaks, "Observed values")
 
     p1 <- p1 +
       ggplot2::geom_point(
@@ -364,16 +347,41 @@ plot_estimates <- function(
         ggplot2::aes(y = .data$value, group = .data$group),
         size = 1.1,
         shape = 3
-      ) +
-      ggplot2::scale_color_manual(
-        values = model_colors,
-        name = ""
-      ) +
-      ggplot2::scale_fill_manual(
-        values = model_colors,
-        name = ""
       )
   }
+
+  legend_linetypes <- stats::setNames(rep("blank", length(legend_breaks)), legend_breaks)
+  legend_linetypes[model_groups] <- unname(model_linetypes[model_groups])
+  legend_shapes <- stats::setNames(rep(NA, length(legend_breaks)), legend_breaks)
+  legend_shapes[setdiff(legend_breaks, model_groups)] <- 3
+
+  p1 <- p1 +
+    ggplot2::scale_color_manual(
+      values = model_colors,
+      breaks = legend_breaks,
+      name = ""
+    ) +
+    ggplot2::scale_fill_manual(
+      values = model_colors,
+      breaks = legend_breaks,
+      name = ""
+    ) +
+    ggplot2::scale_linetype_manual(
+      values = model_linetypes,
+      breaks = model_groups,
+      name = ""
+    ) +
+    ggplot2::guides(
+      fill = "none",
+      linetype = "none",
+      color = ggplot2::guide_legend(
+        override.aes = list(
+          linetype = unname(legend_linetypes[legend_breaks]),
+          shape = unname(legend_shapes[legend_breaks]),
+          fill = NA
+        )
+      )
+    )
 
   p1 <- do_facetting(p1, quantity)
 
@@ -539,7 +547,6 @@ get_plot_title <- function(quantity) {
 }
 
 # Internal helper to assign line types to plotted model groups.
-# @
 make_model_linetypes <- function(groups, chain_results = FALSE) {
   if (length(groups) == 0) {
     return(stats::setNames(character(), character()))
@@ -558,6 +565,36 @@ make_model_linetypes <- function(groups, chain_results = FALSE) {
   )
 
   stats::setNames(unname(model_linetypes[model_groups]), groups)
+}
+
+# Internal helper to assign colours to plotted model groups.
+make_model_colors <- function(
+  groups,
+  chain_results = FALSE,
+  has_second_model = FALSE,
+  model_1_name = "Model 1",
+  model_2_name = "Model 2"
+) {
+  if (length(groups) == 0) {
+    return(stats::setNames(character(), character()))
+  }
+
+  if (!has_second_model) {
+    return(stats::setNames(rep("mediumorchid", length(groups)), groups))
+  }
+
+  model_groups <- if (chain_results) {
+    sub(", Chain [0-9]+$", "", groups)
+  } else {
+    groups
+  }
+
+  model_colors <- stats::setNames(
+    c("mediumorchid", "coral"),
+    c(model_1_name, model_2_name)
+  )
+
+  stats::setNames(unname(model_colors[model_groups]), groups)
 }
 
 #' Helper function to do facetting for plots

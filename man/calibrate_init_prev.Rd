@@ -44,8 +44,8 @@ models. \code{"current"} preserves the relative weights in the current
 probabilities.}
 
 \item{init_floor}{Small positive floor applied to calibrated initial
-prevalence values to avoid exact zeros/non-finite values that can cause
-Stan initialisation failures.}
+prevalence values to avoid non-finite or tiny positive values that can
+cause Stan initialisation failures; exact structural zeros are preserved.}
 
 \item{return_draws}{Logical; if \code{TRUE}, include draw-level calibrated values
 in the output.}

@@ -111,6 +111,11 @@ add_bias_outputs <- function(
   out
 }
 
+.model_flag_enabled <- function(hiv_result, flag_name) {
+  isTRUE(hiv_result$stan_data$model_config[[flag_name]]) ||
+    isTRUE(hiv_result$stan_data$sim_config[[flag_name]])
+}
+
 #' Make a list of mean squared error (MSE) values for HIV model estimates.
 #'
 #' @param hiv_list A list of HIV model results.
@@ -142,7 +147,7 @@ make_mse_list <- function(
     deterministic = use_deterministic
   )
 
-  if (hiv_list[[1]]$stan_data$model_config$age) {
+  if (.model_flag_enabled(hiv_list[[1]], "age")) {
     out <- add_bias_outputs(
       out,
       out_name = "incidence_age",
@@ -153,7 +158,7 @@ make_mse_list <- function(
     )
   }
 
-  if (hiv_list[[1]]$stan_data$model_config$migration) {
+  if (.model_flag_enabled(hiv_list[[1]], "migration")) {
     out <- add_bias_outputs(
       out,
       out_name = "undiag_migration",
