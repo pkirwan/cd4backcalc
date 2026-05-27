@@ -62,6 +62,7 @@ reference:
       - starts_with("load_")
       - starts_with("logit")
       - starts_with("make_fit")
+      - starts_with("make_model")
       - starts_with("make_tibble")
       - starts_with("peak")
       - starts_with("postproc")

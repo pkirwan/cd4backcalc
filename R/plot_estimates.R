@@ -227,6 +227,8 @@ plot_estimates <- function(
       dplyr::filter(.data$age_band != "all")
   }
 
+  model_linetypes <- make_model_linetypes(unique(quantiles$group), chain_results)
+
   p1 <- quantiles |>
     ggplot2::ggplot() +
     ggplot2::aes(
@@ -240,12 +242,12 @@ plot_estimates <- function(
   if (credible_intervals) {
     p1 <- p1 +
       ggplot2::geom_line(
-        ggplot2::aes(y = .data$`2.5%`),
+        ggplot2::aes(y = .data$`2.5%`, linetype = .data$group),
         linewidth = 0.5,
         alpha = 0.5
       ) +
       ggplot2::geom_line(
-        ggplot2::aes(y = .data$`97.5%`),
+        ggplot2::aes(y = .data$`97.5%`, linetype = .data$group),
         linewidth = 0.5,
         alpha = 0.5
       ) +
@@ -256,7 +258,11 @@ plot_estimates <- function(
   }
 
   p1 <- p1 +
-    ggplot2::geom_line(linewidth = 1, alpha = 0.7) +
+    ggplot2::geom_line(
+      ggplot2::aes(linetype = .data$group),
+      linewidth = 1,
+      alpha = 0.7
+    ) +
     ggplot2::labs(
       title = plot_title,
       x = "Year",
@@ -304,6 +310,10 @@ plot_estimates <- function(
     ) +
     ggplot2::scale_fill_manual(
       values = model_colors,
+      name = ""
+    ) +
+    ggplot2::scale_linetype_manual(
+      values = model_linetypes,
       name = ""
     )
 
@@ -526,6 +536,28 @@ get_plot_title <- function(quantity) {
     stop("Invalid quantity specified.")
   }
   return(plot_title)
+}
+
+# Internal helper to assign line types to plotted model groups.
+# @
+make_model_linetypes <- function(groups, chain_results = FALSE) {
+  if (length(groups) == 0) {
+    return(stats::setNames(character(), character()))
+  }
+
+  base_linetypes <- c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
+  model_groups <- if (chain_results) {
+    sub(", Chain [0-9]+$", "", groups)
+  } else {
+    groups
+  }
+
+  model_linetypes <- stats::setNames(
+    rep(base_linetypes, length.out = length(unique(model_groups))),
+    unique(model_groups)
+  )
+
+  stats::setNames(unname(model_linetypes[model_groups]), groups)
 }
 
 #' Helper function to do facetting for plots
