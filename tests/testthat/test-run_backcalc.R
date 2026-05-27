@@ -156,7 +156,7 @@ test_that("rita data with cd4-only back-calculation produces a stanfit object", 
     )
   })
   expect_r6_class(hiv_list$fit, "CmdStanMCMC")
-  expect_equal(nrow(hiv_list$diag_prob), 120 * 3 * 4) # 120 quarters, 3 quantiles, 4 cd4 states
+  expect_equal(nrow(hiv_list$diag_prob), 120 * 4 * 4) # 120 quarters, 4 summaries (including mean), 4 cd4 states
 })
 
 
