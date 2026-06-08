@@ -38,3 +38,15 @@ test_that("age-specific migration and rita simulation produces expected HIV data
     rowSums(sim_diags$stan_data$ABROAD_age)
   )
 })
+
+test_that("age-specific migration simulation produces expected AIDS data", {
+  sim_diags <- simulate_diagnoses(sim_seed = 123, age = TRUE, migration = TRUE)
+  expect_equal(
+    sim_diags$stan_data$AIDS[,1],
+    rowSums(sim_diags$stan_data$AIDS_age[, , 1])
+  )
+  expect_equal(
+    sim_diags$stan_data$AIDS[,2],
+    rowSums(sim_diags$stan_data$AIDS_age[, , 2])
+  )
+})

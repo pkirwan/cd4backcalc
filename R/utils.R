@@ -78,6 +78,55 @@ round_array_preserve <- function(arr) {
   array(rounded, dim = dims)
 }
 
+#' Round age-stratified arrays to match pre-rounded quarter/state totals
+#'
+#' @param arr Numeric array with age in the first dimension.
+#' @param totals Numeric array giving the target sums for each combination of
+#'   the remaining dimensions.
+#' @return Rounded array whose sums over age match \\code{totals} exactly.
+round_age_array_to_totals <- function(arr, totals) {
+  dims <- dim(arr)
+
+  if (length(dims) < 2) {
+    return(round_preserve(arr))
+  }
+
+  if (length(dims) == 2) {
+    rounded <- matrix(0, nrow = dims[1], ncol = dims[2])
+    for (j in seq_len(dims[2])) {
+      slice <- arr[, j]
+      target <- totals[j]
+      slice_total <- sum(slice)
+      rounded[, j] <- if (target <= 0 || slice_total <= 0) {
+        rep(0, length(slice))
+      } else {
+        round_preserve(target * slice / slice_total)
+      }
+    }
+    return(rounded)
+  }
+
+  if (length(dims) != 3) {
+    stop("round_age_array_to_totals expects a 2D or 3D array with age in the first dimension")
+  }
+
+  rounded <- array(0, dim = dims)
+  for (j in seq_len(dims[2])) {
+    for (k in seq_len(dims[3])) {
+      slice <- arr[, j, k]
+      target <- totals[j, k]
+      slice_total <- sum(slice)
+      rounded[, j, k] <- if (target <= 0 || slice_total <= 0) {
+        rep(0, length(slice))
+      } else {
+        round_preserve(target * slice / slice_total)
+      }
+    }
+  }
+
+  rounded
+}
+
 #' Round specified fields in an epidemic object
 #'
 #' @param epi_obj Epidemic object containing fields to round.
@@ -87,9 +136,37 @@ round_fields <- function(
   epi_obj,
   fields = c("lat", "diags", "lat_age", "diags_age")
 ) {
-  for (field in fields) {
+  if ("lat_age" %in% fields && !is.null(epi_obj$lat_age)) {
+    lat_totals <- if ("lat" %in% fields && !is.null(epi_obj$lat)) {
+      round_matrix_preserve(epi_obj$lat)
+    } else {
+      round_matrix_preserve(apply(epi_obj$lat_age, c(2, 3), sum))
+    }
+    epi_obj$lat_age <- round_age_array_to_totals(epi_obj$lat_age, lat_totals)
+    if ("lat" %in% fields) {
+      epi_obj$lat <- lat_totals
+    }
+  } else if ("lat" %in% fields && !is.null(epi_obj$lat)) {
+    epi_obj$lat <- round_matrix_preserve(epi_obj$lat)
+  }
+
+  if ("diags_age" %in% fields && !is.null(epi_obj$diags_age)) {
+    diags_totals <- if ("diags" %in% fields && !is.null(epi_obj$diags)) {
+      round_matrix_preserve(epi_obj$diags)
+    } else {
+      round_matrix_preserve(apply(epi_obj$diags_age, c(2, 3), sum))
+    }
+    epi_obj$diags_age <- round_age_array_to_totals(epi_obj$diags_age, diags_totals)
+    if ("diags" %in% fields) {
+      epi_obj$diags <- diags_totals
+    }
+  } else if ("diags" %in% fields && !is.null(epi_obj$diags)) {
+    epi_obj$diags <- round_matrix_preserve(epi_obj$diags)
+  }
+
+  remaining_fields <- setdiff(fields, c("lat", "diags", "lat_age", "diags_age"))
+  for (field in remaining_fields) {
     if (!is.null(epi_obj[[field]])) {
-      # Check if array (3+ dimensions) or matrix (2 dimensions)
       if (length(dim(epi_obj[[field]])) > 2) {
         epi_obj[[field]] <- round_array_preserve(epi_obj[[field]])
       } else {
