@@ -70,8 +70,8 @@ calibrate_init_prev(
 - init_floor:
 
   Small positive floor applied to calibrated initial prevalence values
-  to avoid exact zeros/non-finite values that can cause Stan
-  initialisation failures.
+  to avoid non-finite or tiny positive values that can cause Stan
+  initialisation failures; exact structural zeros are preserved.
 
 - return_draws:
 

@@ -36,6 +36,7 @@ depend on the model type:
 | `"migration_prob"` | Estimated migration probabilities |
 | `"ratio_abroad_uk"` | Proportion of infections acquired in the UK |
 | `"transfers"` | Estimated transfers of care |
+| `"transfers_detected"` | Estimated detected transfers of care |
 | `"detect_prob"` | Estimated detection probabilities |
 
 **Age-dependent models** (additional):

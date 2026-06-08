@@ -12,15 +12,15 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/pkirwan/cd4backcalc/blob/v0.0.9/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/pkirwan/cd4backcalc/blob/v0.1.1/DESCRIPTION)
 
 Kirwan P (2026). *cd4backcalc: CD4 Back-Calculation R package*. R
-package version 0.0.9, <https://pkirwan.github.io/cd4backcalc/>.
+package version 0.1.1, <https://pkirwan.github.io/cd4backcalc/>.
 
     @Manual{,
       title = {cd4backcalc: CD4 Back-Calculation R package},
       author = {Peter Kirwan},
       year = {2026},
-      note = {R package version 0.0.9},
+      note = {R package version 0.1.1},
       url = {https://pkirwan.github.io/cd4backcalc/},
     }

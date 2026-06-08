@@ -13,7 +13,7 @@ for both CD4-only and CD4-plus-RITA variants."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,7 +41,7 @@ for both CD4-only and CD4-plus-RITA variants."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Calibrate initial prevalence from fitted draws</h1>
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.0.9/R/init_prev_calibration.R" class="external-link"><code>R/init_prev_calibration.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.1/R/init_prev_calibration.R" class="external-link"><code>R/init_prev_calibration.R</code></a></small>
       <div class="d-none name"><code>calibrate_init_prev.Rd</code></div>
     </div>
 
@@ -115,8 +115,8 @@ probabilities.</p></dd>
 
 <dt id="arg-init-floor">init_floor<a class="anchor" aria-label="anchor" href="#arg-init-floor"></a></dt>
 <dd><p>Small positive floor applied to calibrated initial
-prevalence values to avoid exact zeros/non-finite values that can cause
-Stan initialisation failures.</p></dd>
+prevalence values to avoid non-finite or tiny positive values that can
+cause Stan initialisation failures; exact structural zeros are preserved.</p></dd>
 
 
 <dt id="arg-return-draws">return_draws<a class="anchor" aria-label="anchor" href="#arg-return-draws"></a></dt>
