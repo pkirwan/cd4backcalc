@@ -83,7 +83,7 @@ round_array_preserve <- function(arr) {
 #' @param arr Numeric array with age in the first dimension.
 #' @param totals Numeric array giving the target sums for each combination of
 #'   the remaining dimensions.
-#' @return Rounded array whose sums over age match \\code{totals} exactly.
+#' @return Rounded array whose sums over age match totals exactly.
 round_age_array_to_totals <- function(arr, totals) {
   dims <- dim(arr)
 

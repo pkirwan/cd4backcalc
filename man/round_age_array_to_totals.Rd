@@ -13,7 +13,7 @@ round_age_array_to_totals(arr, totals)
 the remaining dimensions.}
 }
 \value{
-Rounded array whose sums over age match \\code{totals} exactly.
+Rounded array whose sums over age match totals exactly.
 }
 \description{
 Round age-stratified arrays to match pre-rounded quarter/state totals
