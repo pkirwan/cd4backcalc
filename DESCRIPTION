@@ -1,6 +1,6 @@
 Package: cd4backcalc
 Title: CD4 Back-Calculation R package
-Version: 0.0.9
+Version: 0.1.1
 Authors@R: c(
     person("Peter", "Kirwan", , "pdk29@cam.ac.uk", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-6904-0500")),
