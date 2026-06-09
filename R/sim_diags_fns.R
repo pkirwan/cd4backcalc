@@ -397,8 +397,8 @@ generate_age_dist <- function(
   } else if (pattern == "wedge") {
     age_dist <- matrix(
       c(
-        seq(0.8, 1.4, length.out = nage / 8 * 2),
-        seq(1.4, 0.8, length.out = nage / 8 * 6)
+        seq(0.8, 1.4, length.out = ceiling(nage / 8 * 3)),
+        seq(1.4, 0.8, length.out = floor(nage / 8 * 5))
       ),
       ncol = nquar,
       nrow = nage
