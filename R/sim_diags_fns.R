@@ -476,3 +476,118 @@ apply_frr <- function(cd4_arr, frr, dist = TRUE) {
 
   array(mat, dim = dims)
 }
+
+#' Derive equilibrium initial state proportions
+#'
+#' Computes quasi-steady-state latent compartment proportions by solving the
+#' linear no-aging system \code{(I - Q) lat = h}, where \code{Q} is the
+#' single-age-group transition matrix built from the supplied diagnosis
+#' probabilities and progression rates.  The result gives good starting values
+#' for \code{init_props} or \code{init_props_abroad} when the undiagnosed stock
+#' is assumed to be near equilibrium before the simulation window.
+#'
+#' The function mirrors the compartment logic in \code{\link{Q_mat}}: for the
+#' native group (\code{abroad = FALSE}) all inflow enters state 1; for the
+#' migrant stock (\code{abroad = TRUE}) inflow is distributed across latent
+#' states proportionally to \code{mu_lat_t1}.
+#'
+#' @param d_probs_t1 Numeric vector of diagnosis probabilities at t = 1.
+#'   Length 4 for CD4-only (\code{rita = FALSE}); length 5 for RITA
+#'   (\code{rita = TRUE}): element 1 is the RITA (recent-infection) diagnosis
+#'   probability, elements 2–5 are the CD4-stratified probabilities.
+#' @param q Numeric vector of length 4: quarterly CD4 progression probabilities,
+#'   matching the default \code{q = c(0.0976, 0.115, 0.116, 0.148)}.
+#' @param mu_lat_t1 Numeric vector of relative inflow weights across latent
+#'   states at t = 1.  Required when \code{abroad = TRUE}.  For RITA, the first
+#'   three elements should be 0 (migrants enter long-standing states only).
+#'   Will be normalised internally to sum to 1.
+#' @param abroad Logical.  \code{FALSE} (default): solve for the native group
+#'   with all inflow entering state 1.  \code{TRUE}: solve for the migrant stock
+#'   with inflow distributed via \code{mu_lat_t1}.
+#' @param scale Numeric or \code{NULL}.  When non-\code{NULL}, the output is
+#'   scaled so that its first non-zero element equals \code{scale}.  Defaults to
+#'   7 for the native group so the result is on the same scale as the built-in
+#'   \code{init_props} default.  Defaults to \code{NULL} for the migrant group:
+#'   the unscaled solve already gives values in the correct units for direct use
+#'   as \code{init_props_abroad} (latent stock per unit of quarterly migration
+#'   into latent states).
+#' @param rita Logical.  Use the RITA compartment structure (7 latent states).
+#' @return Numeric vector of length \code{nlatst} (4 for CD4-only, 7 for RITA).
+#' @keywords internal
+derive_init_props <- function(
+  d_probs_t1 = c(0.055, 0.065, 0.13, 0.35),
+  q          = c(0.0976, 0.115, 0.116, 0.148),
+  mu_lat_t1  = NULL,
+  abroad     = FALSE,
+  scale      = if (!abroad) 7 else NULL,
+  rita       = FALSE
+) {
+  nlatst <- if (rita) 7L else 4L
+
+  if (rita) {
+    if (length(d_probs_t1) != 5L) {
+      stop("For rita = TRUE, d_probs_t1 must have length 5 (RITA + 4 CD4 states).")
+    }
+  } else {
+    if (length(d_probs_t1) != 4L) {
+      stop("For rita = FALSE, d_probs_t1 must have length 4.")
+    }
+  }
+  if (length(q) != 4L) stop("q must have length 4.")
+  if (abroad) {
+    if (is.null(mu_lat_t1)) stop("mu_lat_t1 is required when abroad = TRUE.")
+    if (length(mu_lat_t1) != nlatst) {
+      stop(sprintf("mu_lat_t1 must have length %d (= nlatst).", nlatst))
+    }
+    if (sum(mu_lat_t1) == 0) stop("mu_lat_t1 must have at least one non-zero element.")
+  }
+
+  d <- d_probs_t1
+
+  # Build Q matrix (mirrors Q_mat for a single representative age group) --------
+  Q <- matrix(0, nlatst, nlatst)
+
+  if (rita) {
+    # Recent (RITA-positive) states 1–3: all diagnosed at the RITA rate d[1]
+    Q[1L, 2L] <- (1 - d[1L]) * (1 - q[1L])   # state 1 → 2 (CD4 > 500, 3–6 mo)
+    Q[1L, 3L] <- (1 - d[1L]) *      q[1L]    # state 1 → 3 (CD4 350–500, 3–6 mo)
+    Q[2L, 4L] <- (1 - d[1L]) * (1 - q[1L])   # state 2 → 4 (CD4 > 500, long-standing)
+    Q[2L, 5L] <- (1 - d[1L]) *      q[1L]    # state 2 → 5 (CD4 350–500, long-standing)
+    Q[3L, 5L] <- (1 - d[1L]) * (1 - q[2L])   # state 3 → 5 (CD4 350–500, long-standing)
+    Q[3L, 6L] <- (1 - d[1L]) *      q[2L]    # state 3 → 6 (CD4 200–350, long-standing)
+    # Long-standing states 4–7: diagnosed at d[2:5]
+    for (k in 4L:7L) {
+      dk        <- d[k - 2L]
+      qk        <- q[k - 3L]
+      Q[k, k]   <- (1 - dk) * (1 - qk)
+    }
+    for (i in 4L:6L) {
+      Q[i, i + 1L] <- (1 - d[i - 2L]) * q[i - 3L]
+    }
+  } else {
+    for (k in 1L:4L) {
+      Q[k, k] <- (1 - d[k]) * (1 - q[k])
+    }
+    for (k in 1L:3L) {
+      Q[k, k + 1L] <- (1 - d[k]) * q[k]
+    }
+  }
+
+  # Inflow vector h --------------------------------------------------------------
+  h <- if (abroad) {
+    mu_lat_t1 / sum(mu_lat_t1)
+  } else {
+    c(1, rep(0, nlatst - 1L))
+  }
+
+  # Solve (I - t(Q)) lat = h  (steady-state: lat = t(Q) %*% lat + h) ------------
+  lat_ss <- solve(diag(nlatst) - t(Q), h)
+
+  # Optional scaling -------------------------------------------------------------
+  if (!is.null(scale)) {
+    first_nz <- which(lat_ss > 0)[1L]
+    lat_ss   <- lat_ss * (scale / lat_ss[first_nz])
+  }
+
+  lat_ss
+}

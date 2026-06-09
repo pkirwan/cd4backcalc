@@ -21,8 +21,6 @@
 #' @param q Vector of progression probabilities.
 #' @param target_inf Target total number of HIV acquisitions.
 #' @param target_mig Target total number of migrations.
-#' @param init_props Initial state proportions.
-#' @param init_props_abroad Initial state proportions for infections acquired abroad.
 #' @param abroad_prop Proportion of infections acquired abroad at the outset.
 #' @param cd4_completeness CD4 completeness.
 #' @param rita_completeness RITA completeness.
@@ -46,13 +44,11 @@ define_sim_config <- function(
   migration = FALSE,
   rita = FALSE,
   age = FALSE,
-  nquar = 120, # number of quarters
+  nquar = 40, # number of quarters
   nage = 52, # number of age groups
   q = c(0.0976, 0.115, 0.116, 0.148), # progression probabilities
-  target_inf = 90000, # target total number of HIV acquisitions
-  target_mig = 12000, # target total number of migrations
-  init_props = c(7, 3.5, 1.75, 0.5), # initial state proportions
-  init_props_abroad = c(1.75, 2.25, 2.25, 1.25), # initial state proportions abroad
+  target_inf = 30000, # target total number of HIV acquisitions
+  target_mig = 6000, # target total number of migrations
   abroad_prop = 0.2, # proportion acquired abroad at outset
   cd4_completeness = 1, # CD4 completeness
   rita_completeness = 1, # RITA completeness
@@ -64,8 +60,6 @@ define_sim_config <- function(
   if (rita) {
     nlatst <- 7
     ndiagst <- 6
-    init_props <- c(1.2, 1.0, 0.1, 4.8, 3.4, 1.75, 0.5)
-    init_props_abroad <- c(0, 0, 0, 1.75, 2.25, 2.25, 1.25)
   } else {
     nlatst <- 4
     ndiagst <- 5
@@ -111,8 +105,6 @@ define_sim_config <- function(
     q_age = q_age,
     target_inf = target_inf,
     target_mig = target_mig,
-    init_props = init_props,
-    init_props_abroad = init_props_abroad,
     abroad_prop = abroad_prop,
     cd4_completeness = cd4_completeness,
     rita_completeness = rita_completeness,
@@ -494,8 +486,6 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #' @param q Vector of progression probabilities.
 #' @param target_inf Target total number of HIV acquisitions.
 #' @param target_mig Target total number of migrations.
-#' @param init_props Initial state proportions.
-#' @param init_props_abroad Initial state proportions for infections acquired abroad.
 #' @param abroad_prop Proportion of infections acquired abroad at the outset.
 #' @param cd4_completeness CD4 completeness.
 #' @param rita_completeness RITA completeness.
@@ -531,8 +521,6 @@ simulate_diagnoses <- function(
   q = c(0.0976, 0.115, 0.116, 0.148), # progression probabilities
   target_inf = 90000, # target total number of HIV acquisitions
   target_mig = 12000, # target total number of migrations
-  init_props = c(7, 3.5, 1.75, 0.5), # initial state proportions
-  init_props_abroad = c(1.75, 2.25, 2.25, 1.25), # initial state proportions abroad
   abroad_prop = 0.2, # proportion acquired abroad at outset
   cd4_completeness = 1, # CD4 completeness
   rita_completeness = 1, # RITA completeness
@@ -562,8 +550,6 @@ simulate_diagnoses <- function(
     q,
     target_inf,
     target_mig,
-    init_props,
-    init_props_abroad,
     abroad_prop,
     cd4_completeness,
     rita_completeness,
@@ -670,6 +656,22 @@ simulate_diagnoses <- function(
       d_probs_mig[,, k] <- invlogit(logit(d_probs[,, k]) + mig_offset[k])
     }
   }
+
+  # Derive equilibrium initial state proportions analytically from t=1 diagnosis
+  # probabilities and progression rates, so init_props always match the
+  # d_pattern/mig_diag_offset used in this simulation call.
+  sim_config$init_props <- derive_init_props(
+    d_probs_t1 = d_probs[1, 1, ],
+    q          = sim_config$q,
+    rita       = sim_config$rita
+  )
+  sim_config$init_props_abroad <- derive_init_props(
+    d_probs_t1 = d_probs_mig[1, 1, ],
+    q          = sim_config$q,
+    mu_lat_t1  = mu[1, 1:sim_config$nlatst],
+    abroad     = TRUE,
+    rita       = sim_config$rita
+  )
 
   # Generate initial prevalence
   lat_init_uk <- round(

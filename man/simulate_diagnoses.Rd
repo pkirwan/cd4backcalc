@@ -23,8 +23,6 @@ simulate_diagnoses(
   q = c(0.0976, 0.115, 0.116, 0.148),
   target_inf = 90000,
   target_mig = 12000,
-  init_props = c(7, 3.5, 1.75, 0.5),
-  init_props_abroad = c(1.75, 2.25, 2.25, 1.25),
   abroad_prop = 0.2,
   cd4_completeness = 1,
   rita_completeness = 1,
@@ -72,10 +70,6 @@ simulate_diagnoses(
 \item{target_inf}{Target total number of HIV acquisitions.}
 
 \item{target_mig}{Target total number of migrations.}
-
-\item{init_props}{Initial state proportions.}
-
-\item{init_props_abroad}{Initial state proportions for infections acquired abroad.}
 
 \item{abroad_prop}{Proportion of infections acquired abroad at the outset.}
 
