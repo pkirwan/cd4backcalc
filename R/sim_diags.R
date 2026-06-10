@@ -79,7 +79,9 @@ define_sim_config <- function(
         any(detect_obs_times != as.integer(detect_obs_times)) ||
         any(detect_obs_times > nquar)
     ) {
-      stop("detect_obs_times must be a non-empty integer vector with values in 1:nquar.")
+      stop(
+        "detect_obs_times must be a non-empty integer vector with values in 1:nquar."
+      )
     }
   }
 
@@ -111,7 +113,11 @@ define_sim_config <- function(
     age_diag_effect = age_diag_effect,
     mig_diag_offset = mig_diag_offset,
     frr = frr,
-    detect_obs_times = if (is.null(detect_obs_times)) seq(4L, nquar, by = 8L) else as.integer(detect_obs_times)
+    detect_obs_times = if (is.null(detect_obs_times)) {
+      seq(4L, nquar, by = 8L)
+    } else {
+      as.integer(detect_obs_times)
+    }
   )
 
   if (!is.null(sim_type)) {
@@ -662,15 +668,15 @@ simulate_diagnoses <- function(
   # d_pattern/mig_diag_offset used in this simulation call.
   sim_config$init_props <- derive_init_props(
     d_probs_t1 = d_probs[1, 1, ],
-    q          = sim_config$q,
-    rita       = sim_config$rita
+    q = sim_config$q,
+    rita = sim_config$rita
   )
   sim_config$init_props_abroad <- derive_init_props(
     d_probs_t1 = d_probs_mig[1, 1, ],
-    q          = sim_config$q,
-    mu_lat_t1  = mu[1, 1:sim_config$nlatst],
-    abroad     = TRUE,
-    rita       = sim_config$rita
+    q = sim_config$q,
+    mu_lat_t1 = mu[1, 1:sim_config$nlatst],
+    abroad = TRUE,
+    rita = sim_config$rita
   )
 
   # Generate initial prevalence
