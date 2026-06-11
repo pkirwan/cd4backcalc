@@ -202,6 +202,7 @@ fit_stan_model <- function(
     iter_per_chunk <- iter_sampling
   }
 
+  message("Checkpointing enabled. Checkpoint directory: ", checkpoint_dir)
   cp <- load_checkpoint(checkpoint_dir)
   if (!is.null(cp)) cp <- pad_checkpoint_chains(cp, chains)
   if (!is.null(init) && !is.null(cp)) {
