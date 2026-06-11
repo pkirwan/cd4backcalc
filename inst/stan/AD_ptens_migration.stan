@@ -129,7 +129,7 @@ parameters {
   // the undiagnosed migrant CD4 mix. This preserves varying m_pattern among
   // states 1:4 while reducing the omega vs m[5] trade-off.
   vector[4] alpha_mp;
-  vector[npars_cob] beta_mp_5_raw;
+  vector[npars_mp] beta_mp_5_raw;
   vector[npars_mp] beta_mp_1_raw;
   vector[npars_mp] beta_mp_2_raw;
   vector[npars_mp] beta_mp_3_raw;
@@ -249,7 +249,7 @@ transformed parameters {
   
   // Non-centred reconstruction of the softmax components for the undiagnosed
   // migrant CD4 mix (states 1:4, reference = state 4).
-  vector[npars_cob] beta_mp_5;
+  vector[npars_mp] beta_mp_5;
   vector[npars_mp] beta_mp_1;
   vector[npars_mp] beta_mp_2;
   vector[npars_mp] beta_mp_3;
@@ -257,7 +257,7 @@ transformed parameters {
   beta_mp_1[1] = beta_mp_1_raw[1];
   beta_mp_2[1] = beta_mp_2_raw[1];
   beta_mp_3[1] = beta_mp_3_raw[1];
-  beta_mp_5[2 : npars_cob] = beta_mp_5_raw[2 : npars_cob] * sigma_mp_5;
+  beta_mp_5[2 : npars_mp] = beta_mp_5_raw[2 : npars_mp] * sigma_mp_5;
   beta_mp_1[2 : npars_mp] = beta_mp_1_raw[2 : npars_mp] * sigma_mp_1;
   beta_mp_2[2 : npars_mp] = beta_mp_2_raw[2 : npars_mp] * sigma_mp_2;
   beta_mp_3[2 : npars_mp] = beta_mp_3_raw[2 : npars_mp] * sigma_mp_3;
@@ -267,7 +267,7 @@ transformed parameters {
   vector[nquar] theta_3 = alpha_mp[4] + X_mp * beta_mp_3;
   
   // Low-dimensional transfer share with reduced-rank spline time variation.
-  vector[nquar] theta_5 = alpha_mp[1] + X_cob * beta_mp_5;
+  vector[nquar] theta_5 = alpha_mp[1] + X_mp * beta_mp_5;
   vector<lower=0, upper=1>[nquar] m5 = inv_logit(theta_5);
   matrix<lower=0>[5, nquar] m;
   
@@ -581,7 +581,7 @@ model {
   // Transfer share prior: centered near 25% but wide enough to allow much
   // lower or higher levels, with spline-smoothed time variation. The
   // undiagnosed CD4 mix keeps a time-varying softmax.
-  alpha_mp[1] ~ normal(logit(0.25), 2);
+  alpha_mp[1] ~ normal(logit(0.25), 0.5);
   alpha_mp[2 : 4] ~ std_normal();
   beta_mp_5_raw ~ std_normal();
   beta_mp_1_raw ~ std_normal();

@@ -779,7 +779,7 @@ model_type_prep <- function(
     # Migration model splines
     jagam_out_mig <- create_spline(knots)
     jagam_out_cob <- create_spline(knots - 4)
-    jagam_out_mp <- create_spline(knots - 2)
+    jagam_out_mp <- create_spline(knots - 4)
 
     # Augment stan_data with design matrix and prior info
     stan_data$X_mig <- jagam_out_mig$jags.data$X
