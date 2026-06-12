@@ -36,9 +36,7 @@ data {
   int<lower=1> npars_mp;
   matrix[nquar, npars_mig] X_mig;
   matrix[nquar, npars_cob] X_cob;
-  // Retained for the reduced-rank transfer-share spline.
-  // X_mp remains the basis for the undiagnosed-mix softmax and the
-  // detection-probability spline.
+  // Basis for the undiagnosed-mix softmax and the detection-probability spline.
   matrix[nquar, npars_mp] X_mp;
   
   // Prior information for evidence synthesis (log proportion UK-acquired)
@@ -66,12 +64,14 @@ transformed data {
                          * (S1[1 : np1, npars_inf : (2 * npars_inf - 2)]
                             + S1[1 : np1, npars_inf : (2 * npars_inf - 2)]');
   
-  // Age-group mapping and fast quarter->year index (birthdays at t = 1, 5,
-  // 9, ...)
+  // Age-group mapping, centred time trend, and fast quarter->year index
+  // (birthdays at t = 1, 5, 9, ...)
   array[nage] int age_group_lookup;
   array[nquar] int year_index;
+  vector[nquar] t_std;
   for (t in 1 : nquar) {
     year_index[t] = (t - 1) %/% 4;
+    t_std[t] = (t - 0.5 * (nquar + 1)) / nquar;
   }
   
   // age 1-10 -> 1, 11-20 -> 2, 21-30 -> 3, 31+ -> 4
@@ -125,15 +125,15 @@ parameters {
   real alpha_cob;
   real<lower=-1, upper=1> rho_eta;
   
-  // Low-dimensional transfer share plus a separate time-varying softmax for
-  // the undiagnosed migrant CD4 mix. This preserves varying m_pattern among
-  // states 1:4 while reducing the omega vs m[5] trade-off.
+  // Hybrid transfer-share parameterization: m[5,t] follows a linear logit
+  // trend (intercept + slope), reflecting that the diagnosed fraction of
+  // arriving HIV-positive migrants changes on decade scales, not quarterly.
+  // The undiagnosed CD4 mix m[1:4,t] retains a time-varying softmax on X_mp.
   vector[4] alpha_mp;
-  vector[npars_mp] beta_mp_5_raw;
+  real beta_mp_5;
   vector[npars_mp] beta_mp_1_raw;
   vector[npars_mp] beta_mp_2_raw;
   vector[npars_mp] beta_mp_3_raw;
-  real<lower=0> sigma_mp_5;
   real<lower=0> sigma_mp_1;
   real<lower=0> sigma_mp_2;
   real<lower=0> sigma_mp_3;
@@ -249,15 +249,12 @@ transformed parameters {
   
   // Non-centred reconstruction of the softmax components for the undiagnosed
   // migrant CD4 mix (states 1:4, reference = state 4).
-  vector[npars_mp] beta_mp_5;
   vector[npars_mp] beta_mp_1;
   vector[npars_mp] beta_mp_2;
   vector[npars_mp] beta_mp_3;
-  beta_mp_5[1] = beta_mp_5_raw[1];
   beta_mp_1[1] = beta_mp_1_raw[1];
   beta_mp_2[1] = beta_mp_2_raw[1];
   beta_mp_3[1] = beta_mp_3_raw[1];
-  beta_mp_5[2 : npars_mp] = beta_mp_5_raw[2 : npars_mp] * sigma_mp_5;
   beta_mp_1[2 : npars_mp] = beta_mp_1_raw[2 : npars_mp] * sigma_mp_1;
   beta_mp_2[2 : npars_mp] = beta_mp_2_raw[2 : npars_mp] * sigma_mp_2;
   beta_mp_3[2 : npars_mp] = beta_mp_3_raw[2 : npars_mp] * sigma_mp_3;
@@ -266,8 +263,10 @@ transformed parameters {
   vector[nquar] theta_2 = alpha_mp[3] + X_mp * beta_mp_2;
   vector[nquar] theta_3 = alpha_mp[4] + X_mp * beta_mp_3;
   
-  // Low-dimensional transfer share with reduced-rank spline time variation.
-  vector[nquar] theta_5 = alpha_mp[1] + X_mp * beta_mp_5;
+  // Transfer share: linear trend on logit scale. Source-country testing
+  // coverage evolves on decade scales so a slow drift is all that is
+  // identifiable from the ABROAD signal.
+  vector[nquar] theta_5 = alpha_mp[1] + beta_mp_5 * t_std;
   vector<lower=0, upper=1>[nquar] m5 = inv_logit(theta_5);
   matrix<lower=0>[5, nquar] m;
   
@@ -578,16 +577,16 @@ model {
   beta_detect[2 : npars_mp] ~ normal(0, sigma_detect);
   sigma_detect ~ gamma(2, 8);
   
-  // Transfer share prior: centered near 25% but wide enough to allow much
-  // lower or higher levels, with spline-smoothed time variation. The
-  // undiagnosed CD4 mix keeps a time-varying softmax.
-  alpha_mp[1] ~ normal(logit(0.25), 0.5);
+  // Transfer share priors: vague intercept so m5 can sit well away from 25%
+  // when data support it; unit-scale slope allows a ~13pp drift over the full
+  // study period at 2 SD without forcing a trend. The undiagnosed CD4 mix
+  // keeps a time-varying softmax.
+  alpha_mp[1] ~ normal(logit(0.25), 2);
   alpha_mp[2 : 4] ~ std_normal();
-  beta_mp_5_raw ~ std_normal();
+  beta_mp_5 ~ normal(0, 1);
   beta_mp_1_raw ~ std_normal();
   beta_mp_2_raw ~ std_normal();
   beta_mp_3_raw ~ std_normal();
-  sigma_mp_5 ~ gamma(2, 8);
   sigma_mp_1 ~ gamma(2, 8);
   sigma_mp_2 ~ gamma(2, 8);
   sigma_mp_3 ~ gamma(2, 8);
