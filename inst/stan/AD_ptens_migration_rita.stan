@@ -46,6 +46,14 @@ data {
   array[n_detect_obs] int<lower=1, upper=nquar> detect_obs_index;
   vector[n_detect_obs] detect_logit_obs;
   real<lower=0> detect_obs_sd;
+  
+  // AI-model-derived auxiliary observations for log migration volume (gamma = log omega).
+  // Pass the AI model posterior mean of gamma[t] at selected quarters and a shared
+  // posterior SD. Set gamma_obs_sd = 0 (or n_gamma_obs = 0) to disable.
+  int<lower=0> n_gamma_obs;
+  array[n_gamma_obs] int<lower=1, upper=nquar> gamma_obs_index;
+  vector[n_gamma_obs] gamma_obs_mean;
+  real<lower=0> gamma_obs_sd;
 }
 transformed data {
   row_vector[6] empty_vec = rep_row_vector(0, 6);
@@ -624,6 +632,18 @@ model {
   if (detect_obs_sd > 0 && n_detect_obs > 0) {
     for (i in 1 : n_detect_obs) {
       detect_logit_obs[i] ~ normal(detect_logit[detect_obs_index[i]], detect_obs_sd);
+    }
+  }
+  
+  // Auxiliary likelihood for log migration volume from AI model posterior.
+  // gamma[t] = log(omega[t]) = X_mig[t,] * beta_mig is age-independent and
+  // identified much more strongly by the AI model's aggregate likelihood.
+  // Passing the AI posterior mean/SD here acts as an informative prior that
+  // anchors the overall migration trend without over-constraining the AD model.
+  // Set gamma_obs_sd = 0 or n_gamma_obs = 0 to disable.
+  if (gamma_obs_sd > 0 && n_gamma_obs > 0) {
+    for (i in 1 : n_gamma_obs) {
+      gamma_obs_mean[i] ~ normal(gamma[gamma_obs_index[i]], gamma_obs_sd);
     }
   }
   

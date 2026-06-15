@@ -701,6 +701,38 @@ model_type_prep <- function(
 
     # n_detect_obs is derived, not stored, so always computed fresh here.
     stan_data$n_detect_obs <- length(stan_data$detect_obs_index)
+
+    # gamma_obs: AI-model-derived auxiliary observations for log migration volume.
+    # Set gamma_obs_sd = 0 (default) to disable. Supply gamma_obs_mean (vector of
+    # AI posterior means of gamma[t]) and gamma_obs_sd (shared posterior SD) to enable.
+    if (is.null(stan_data$gamma_obs_sd)) {
+      stan_data$gamma_obs_sd <- 0
+    }
+    if (is.null(stan_data$gamma_obs_mean)) {
+      stan_data$gamma_obs_mean <- numeric(0)
+    }
+    if (is.null(stan_data$gamma_obs_index)) {
+      if (length(stan_data$gamma_obs_mean) == 0) {
+        stan_data$gamma_obs_index <- integer(0)
+      } else if (length(stan_data$gamma_obs_mean) == stan_data$nquar) {
+        stan_data$gamma_obs_index <- seq_len(stan_data$nquar)
+      } else {
+        stop(
+          "gamma_obs_index must be supplied when gamma_obs_mean is sparse."
+        )
+      }
+    }
+    stan_data$gamma_obs_index <- as.integer(stan_data$gamma_obs_index)
+
+    if (length(stan_data$gamma_obs_mean) != length(stan_data$gamma_obs_index)) {
+      stop("gamma_obs_mean and gamma_obs_index must have the same length.")
+    }
+    if (length(stan_data$gamma_obs_index) > 0 &&
+        any(stan_data$gamma_obs_index < 1 | stan_data$gamma_obs_index > stan_data$nquar)) {
+      stop("gamma_obs_index entries must lie between 1 and nquar.")
+    }
+
+    stan_data$n_gamma_obs <- length(stan_data$gamma_obs_index)
   }
 
   # Create stan_data$model_config
