@@ -598,7 +598,7 @@ simulate_diagnoses <- function(
   )
 
   # detection probabilities for those migrating already diagnosed
-  # In Stan: detect_prob[t] = inv_logit(alpha_detect + 0.5 * X_mp * beta_detect)
+  # In Stan: detect_prob[t] = inv_logit(alpha_detect + beta_detect_slope * t_std)
   if (sim_config$dist) {
     detect_prob <- invlogit(stats::rnorm(
       sim_config$nquar,

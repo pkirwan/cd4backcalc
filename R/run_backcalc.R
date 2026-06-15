@@ -702,9 +702,13 @@ model_type_prep <- function(
     # n_detect_obs is derived, not stored, so always computed fresh here.
     stan_data$n_detect_obs <- length(stan_data$detect_obs_index)
 
-    # gamma_obs: AI-model-derived auxiliary observations for log migration volume.
-    # Set gamma_obs_sd = 0 (default) to disable. Supply gamma_obs_mean (vector of
-    # AI posterior means of gamma[t]) and gamma_obs_sd (shared posterior SD) to enable.
+    # gamma_obs: EXTERNAL auxiliary observations for log migration volume gamma[t].
+    # Use only with evidence independent of the HIV/AIDS/CD4/ABROAD counts (e.g.
+    # ONS migration flows x source-country prevalence). Do NOT pass the posterior
+    # of another model (e.g. the age-independent model) fit to these same counts:
+    # that double-uses the data and yields an overconfident posterior.
+    # Set gamma_obs_sd = 0 (default) to disable; supply gamma_obs_mean (external
+    # estimate of gamma[t]) and gamma_obs_sd (its SD) to enable.
     if (is.null(stan_data$gamma_obs_sd)) {
       stan_data$gamma_obs_sd <- 0
     }

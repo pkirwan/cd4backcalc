@@ -47,9 +47,13 @@ data {
   vector[n_detect_obs] detect_logit_obs;
   real<lower=0> detect_obs_sd;
   
-  // AI-model-derived auxiliary observations for log migration volume (gamma = log omega).
-  // Pass the AI model posterior mean of gamma[t] at selected quarters and a shared
-  // posterior SD. Set gamma_obs_sd = 0 (or n_gamma_obs = 0) to disable.
+  // External auxiliary observations for log migration volume (gamma = log omega).
+  // Intended for INDEPENDENT external evidence on HIV-positive migration volume
+  // (e.g. ONS migration statistics combined with source-country prevalence).
+  // gamma[t] = log(omega[t]) is age-independent, so a quarterly external estimate
+  // can anchor it directly. Do NOT feed in the posterior of another model (e.g. the
+  // age-independent model) fit to these same counts: that double-uses the data and
+  // yields an overconfident, incoherent posterior. Set gamma_obs_sd = 0 to disable.
   int<lower=0> n_gamma_obs;
   array[n_gamma_obs] int<lower=1, upper=nquar> gamma_obs_index;
   vector[n_gamma_obs] gamma_obs_mean;
@@ -635,12 +639,13 @@ model {
     }
   }
   
-  // Auxiliary likelihood for log migration volume from AI model posterior.
-  // gamma[t] = log(omega[t]) = X_mig[t,] * beta_mig is age-independent and
-  // identified much more strongly by the AI model's aggregate likelihood.
-  // Passing the AI posterior mean/SD here acts as an informative prior that
-  // anchors the overall migration trend without over-constraining the AD model.
-  // Set gamma_obs_sd = 0 or n_gamma_obs = 0 to disable.
+  // Auxiliary likelihood for log migration volume from EXTERNAL evidence.
+  // gamma[t] = log(omega[t]) = X_mig[t,] * beta_mig is age-independent, so an
+  // external quarterly estimate of HIV-positive migration volume anchors it
+  // directly. This is legitimate only when that estimate is independent of the
+  // HIV/AIDS/CD4/ABROAD counts already in the likelihood below. Feeding in a
+  // posterior from a model fit to the same data would use the data twice and
+  // produce an overconfident posterior. Set gamma_obs_sd = 0 to disable.
   if (gamma_obs_sd > 0 && n_gamma_obs > 0) {
     for (i in 1 : n_gamma_obs) {
       gamma_obs_mean[i] ~ normal(gamma[gamma_obs_index[i]], gamma_obs_sd);

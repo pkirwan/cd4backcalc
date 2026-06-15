@@ -50,9 +50,13 @@ data {
   vector[n_detect_obs] detect_logit_obs;
   real<lower=0> detect_obs_sd;
   
-  // AI-model-derived auxiliary observations for log migration volume (gamma = log omega).
-  // Pass the AI model posterior mean of gamma[t] at selected quarters and a shared
-  // posterior SD. Set gamma_obs_sd = 0 (or n_gamma_obs = 0) to disable.
+  // External auxiliary observations for log migration volume (gamma = log omega).
+  // Intended for INDEPENDENT external evidence on HIV-positive migration volume
+  // (e.g. ONS migration statistics combined with source-country prevalence).
+  // gamma[t] = log(omega[t]) is age-independent, so a quarterly external estimate
+  // can anchor it directly. Do NOT feed in the posterior of another model (e.g. the
+  // age-independent model) fit to these same counts: that double-uses the data and
+  // yields an overconfident, incoherent posterior. Set gamma_obs_sd = 0 to disable.
   int<lower=0> n_gamma_obs;
   array[n_gamma_obs] int<lower=1, upper=nquar> gamma_obs_index;
   vector[n_gamma_obs] gamma_obs_mean;
@@ -146,10 +150,15 @@ parameters {
   real<lower=0> sigma_mp_2;
   real<lower=0> sigma_mp_3;
   
-  // Misclassification of abroad diagnoses
+  // Misclassification of abroad diagnoses.
+  // detect_prob follows a linear logit trend (intercept + slope) rather than a
+  // spline: ABROAD only constrains omega * m5 * detect_prob, so a flexible
+  // detect_prob on the shared X_mp basis competes with omega and m[1:4] and
+  // leaves the product non-identifiable. A low-dimensional trend converts
+  // ABROAD into a tight constraint on omega * m5 (and hence the misclassified
+  // inflow), letting the migrant diagnosis flow identify omega * (1 - m5).
   real alpha_detect;
-  vector[npars_mp] beta_detect;
-  real<lower=0> sigma_detect;
+  real beta_detect_slope;
   
   // AR(1) coefficient shared across diagnosis-probability walks.
   // Constrained to (0, 1) so the process is mean-reverting but persistent.
@@ -295,8 +304,8 @@ transformed parameters {
     omega_m[ : , t] = m[ : , t] * omega[t];
   }
   
-  // Misclassification model for abroad diagnoses
-  vector[nquar] detect_logit = alpha_detect + 0.5 * (X_mp * beta_detect);
+  // Misclassification model for abroad diagnoses: linear logit trend in time.
+  vector[nquar] detect_logit = alpha_detect + beta_detect_slope * t_std;
   vector<lower=0, upper=1>[nquar] detect_prob;
   vector<lower=0>[nquar] true_abroad_dx;
   vector<lower=0>[nquar] exp_ABROAD_dx;
@@ -575,15 +584,15 @@ model {
   
   // Detection probability priors
   // detect_prob is not separately identified from ABROAD alone: the ABROAD
-  // likelihood constrains omega * m[5] * detect_prob jointly. To identify
-  // detect_prob independently, external data on either (a) total HIV+ migration
-  // flow or (b) a data-linkage-derived detection rate is required. Without it,
-  // a wider prior is more honest; tightening the prior merely hides the
-  // non-identifiability rather than resolving it.
+  // likelihood constrains omega * m[5] * detect_prob jointly. Restricting
+  // detect_prob to a linear logit trend (intercept + slope) makes ABROAD a
+  // tight constraint on omega * m5, which in turn pins the misclassified inflow
+  // omega * m5 * (1 - detect_prob) and frees the migrant diagnosis flow to
+  // identify omega * (1 - m5). The slope prior allows a ~13pp drift over the
+  // full study period at 2 SD without forcing a trend; an external
+  // data-linkage detection rate (detect_logit_obs) can still anchor the level.
   alpha_detect ~ normal(1.1, 0.5);
-  beta_detect[1] ~ normal(0, 0.5);
-  beta_detect[2 : npars_mp] ~ normal(0, sigma_detect);
-  sigma_detect ~ gamma(2, 8);
+  beta_detect_slope ~ normal(0, 1);
   
   // Transfer share priors: vague intercept so m5 can sit well away from 25%
   // when data support it; unit-scale slope allows a ~13pp drift over the full
@@ -607,12 +616,13 @@ model {
     }
   }
   
-  // Auxiliary likelihood for log migration volume from AI model posterior.
-  // gamma[t] = log(omega[t]) = X_mig[t,] * beta_mig is age-independent and
-  // identified much more strongly by the AI model's aggregate likelihood.
-  // Passing the AI posterior mean/SD here acts as an informative prior that
-  // anchors the overall migration trend without over-constraining the AD model.
-  // Set gamma_obs_sd = 0 or n_gamma_obs = 0 to disable.
+  // Auxiliary likelihood for log migration volume from EXTERNAL evidence.
+  // gamma[t] = log(omega[t]) = X_mig[t,] * beta_mig is age-independent, so an
+  // external quarterly estimate of HIV-positive migration volume anchors it
+  // directly. This is legitimate only when that estimate is independent of the
+  // HIV/AIDS/CD4/ABROAD counts already in the likelihood below. Feeding in a
+  // posterior from a model fit to the same data would use the data twice and
+  // produce an overconfident posterior. Set gamma_obs_sd = 0 to disable.
   if (gamma_obs_sd > 0 && n_gamma_obs > 0) {
     for (i in 1 : n_gamma_obs) {
       gamma_obs_mean[i] ~ normal(gamma[gamma_obs_index[i]], gamma_obs_sd);
