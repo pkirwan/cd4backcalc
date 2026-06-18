@@ -731,9 +731,13 @@ model_type_prep <- function(
     if (length(stan_data$gamma_obs_mean) != length(stan_data$gamma_obs_index)) {
       stop("gamma_obs_mean and gamma_obs_index must have the same length.")
     }
+    # External counts are quarterly ROLLING ANNUAL (year-ending) values, matched
+    # to the log sum of omega over the four quarters ending at each index. The
+    # end-quarter index must therefore be at least 4 so a full annual window of
+    # preceding quarters exists.
     if (length(stan_data$gamma_obs_index) > 0 &&
-        any(stan_data$gamma_obs_index < 1 | stan_data$gamma_obs_index > stan_data$nquar)) {
-      stop("gamma_obs_index entries must lie between 1 and nquar.")
+        any(stan_data$gamma_obs_index < 4 | stan_data$gamma_obs_index > stan_data$nquar)) {
+      stop("gamma_obs_index entries must lie between 4 and nquar.")
     }
 
     stan_data$n_gamma_obs <- length(stan_data$gamma_obs_index)

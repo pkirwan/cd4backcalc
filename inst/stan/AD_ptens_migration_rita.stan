@@ -50,17 +50,22 @@ data {
   // External auxiliary observations informing the TREND of log migration volume
   // (gamma = log omega). Intended for an INDEPENDENT external migration index on
   // an arbitrary (typically much larger) scale, e.g. ONS total long-term
-  // immigration to England. The series enters as
-  //   gamma_obs_mean[i] ~ normal(gamma[idx] + gamma_obs_offset, gamma_obs_sd),
-  // where the free parameter gamma_obs_offset absorbs the unknown level
-  // difference (log ratio of total migration to HIV-positive migration). Hence
-  // only the SHAPE/trend of the series constrains gamma; its absolute level (and
-  // so the level of omega) stays identified by the HIV/AIDS/CD4/ABROAD counts.
-  // Provide log-scale values (e.g. log of ONS counts). Do NOT feed in the
-  // posterior of another model fit to these same counts: that double-uses the
-  // data. Set gamma_obs_sd = 0 to disable.
+  // immigration to England, reported as QUARTERLY ROLLING ANNUAL (year-ending)
+  // counts. Each observation is matched to gamma_agg[idx] = log of the sum of
+  // omega over the four quarters ending at idx, so the rolling-annual series is
+  // used directly (no unstable deconvolution to quarterly values). The series
+  // enters as
+  //   gamma_obs_mean[i] ~ normal(gamma_agg[idx] + gamma_obs_offset, gamma_obs_sd).
+  // The free parameter gamma_obs_offset absorbs the unknown level difference
+  // (log ratio of total migration to HIV-positive migration), so only the
+  // SHAPE/trend of the series constrains gamma; its absolute level (and so the
+  // level of omega) stays identified by the HIV/AIDS/CD4/ABROAD counts. Provide
+  // log-scale values (e.g. log of ONS counts), indexed by the END quarter of
+  // each annual window (index >= 4). Do NOT feed in the posterior of another
+  // model fit to these same counts: that double-uses the data. Set
+  // gamma_obs_sd = 0 to disable.
   int<lower=0> n_gamma_obs;
-  array[n_gamma_obs] int<lower=1, upper=nquar> gamma_obs_index;
+  array[n_gamma_obs] int<lower=4, upper=nquar> gamma_obs_index;
   vector[n_gamma_obs] gamma_obs_mean;
   real<lower=0> gamma_obs_sd;
 }
@@ -183,6 +188,22 @@ transformed parameters {
   real<lower=0> sigma_mig = exp(log_sigma_mig);
   vector[nquar] gamma = X_mig * beta_mig;
   vector<lower=0>[nquar] omega = exp(gamma);
+  
+  // Rolling 4-quarter (annual) aggregation of omega on the log scale, matching
+  // the quarterly rolling-annual external migration index. gamma_agg[t] is the
+  // log of the migration volume over the four quarters ending at t; only
+  // t >= 4 carries a full annual window and is supplied as an observation.
+  vector[nquar] gamma_agg;
+  {
+    real running = 0;
+    for (t in 1 : nquar) {
+      running += omega[t];
+      if (t > 4) {
+        running -= omega[t - 4];
+      }
+      gamma_agg[t] = log(running);
+    }
+  }
   
   // Age distribution used for allocating migrant flows by age
   matrix<lower=0, upper=1>[nquar, nage] abroad_age_prop;
@@ -654,14 +675,16 @@ model {
   // Auxiliary likelihood for the TREND of log migration volume from an EXTERNAL
   // migration index (e.g. ONS total immigration). The series sits on an
   // arbitrary, typically much larger scale; gamma_obs_offset absorbs that level
-  // difference so only its trend constrains gamma = log(omega). The level of
-  // omega therefore remains identified by the HIV/AIDS/CD4/ABROAD counts below.
-  // This is legitimate only when the index is independent of those counts.
-  // Set gamma_obs_sd = 0 to disable.
+  // difference so only its trend constrains gamma = log(omega). Each observation
+  // is matched to gamma_agg, the log rolling 4-quarter (annual) sum of omega, so
+  // quarterly rolling-annual counts are used directly. The level of omega
+  // remains identified by the HIV/AIDS/CD4/ABROAD counts below. Legitimate only
+  // when the index is independent of those counts. Set gamma_obs_sd = 0 to
+  // disable.
   gamma_obs_offset ~ normal(0, 10);
   if (gamma_obs_sd > 0 && n_gamma_obs > 0) {
     for (i in 1 : n_gamma_obs) {
-      gamma_obs_mean[i] ~ normal(gamma[gamma_obs_index[i]] + gamma_obs_offset,
+      gamma_obs_mean[i] ~ normal(gamma_agg[gamma_obs_index[i]] + gamma_obs_offset,
                                  gamma_obs_sd);
     }
   }

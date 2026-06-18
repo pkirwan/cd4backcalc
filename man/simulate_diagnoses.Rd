@@ -31,7 +31,10 @@ simulate_diagnoses(
   frr = 0.019,
   eta_sd = 0.4,
   detect_obs_sd = 0,
-  detect_obs_times = NULL
+  detect_obs_times = NULL,
+  gamma_obs_sd = 0,
+  gamma_obs_scale = 200,
+  gamma_obs_times = NULL
 )
 }
 \arguments{

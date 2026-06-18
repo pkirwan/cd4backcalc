@@ -57,7 +57,7 @@ define_sim_config <- function(
   frr = 0.019, # false recency rate for RITA misclassification
   detect_obs_times = NULL, # quarter indices for detect_prob observations
   gamma_obs_sd = 0, # sd of the external migration-index trend likelihood (0 disables)
-  gamma_obs_scale = 50, # ratio of total external migration to HIV+ migration volume
+  gamma_obs_scale = 200, # ratio of total external migration to HIV+ migration volume
   gamma_obs_times = NULL # quarter indices for external migration-index observations
 ) {
   if (rita) {
@@ -1092,8 +1092,12 @@ simulate_diagnoses <- function(
   # level difference so only the trend informs gamma = log(omega). We build the
   # mean from the deterministic (smooth) omega trend so the index reflects the
   # population-level migration trend rather than the realised Poisson noise.
+  # The index emulates quarterly ROLLING ANNUAL (year-ending) reporting: each
+  # value is the sum over the four quarters ending at the index quarter, which
+  # must therefore be >= 4.
   gamma_obs_index <- if (gamma_obs_sd > 0) {
-    as.integer(sim_config$gamma_obs_times)
+    idx <- as.integer(sim_config$gamma_obs_times)
+    idx[idx >= 4L]
   } else {
     integer(0)
   }
@@ -1104,9 +1108,15 @@ simulate_diagnoses <- function(
       sim_config$target_mig,
       dist = FALSE
     )
+    # rolling annual sum of the smooth trend (4 quarters), then scale up
+    rolling_vol <- vapply(
+      gamma_obs_index,
+      function(t) sum(omega_trend[(t - 3L):t]),
+      numeric(1)
+    )
     stats::rnorm(
       length(gamma_obs_index),
-      log(sim_config$gamma_obs_scale * omega_trend[gamma_obs_index]),
+      log(sim_config$gamma_obs_scale * rolling_vol),
       gamma_obs_sd
     )
   } else {

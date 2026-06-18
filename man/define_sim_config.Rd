@@ -29,7 +29,10 @@ define_sim_config(
   age_diag_effect = 0,
   mig_diag_offset = NULL,
   frr = 0.019,
-  detect_obs_times = NULL
+  detect_obs_times = NULL,
+  gamma_obs_sd = 0,
+  gamma_obs_scale = 200,
+  gamma_obs_times = NULL
 )
 }
 \arguments{
