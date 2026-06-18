@@ -561,7 +561,7 @@ simulate_diagnoses <- function(
   detect_obs_sd = 0,
   detect_obs_times = NULL,
   gamma_obs_sd = 0, # sd of the external migration-index trend likelihood (0 disables)
-  gamma_obs_scale = 50, # ratio of total external migration to HIV+ migration volume
+  gamma_obs_scale = 200, # ratio of total external migration to HIV+ migration volume
   gamma_obs_times = NULL # quarter indices for external migration-index observations
 ) {
   sim_config <- define_sim_config(
