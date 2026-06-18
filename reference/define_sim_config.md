@@ -21,20 +21,21 @@ define_sim_config(
   migration = FALSE,
   rita = FALSE,
   age = FALSE,
-  nquar = 120,
+  nquar = 40,
   nage = 52,
   q = c(0.0976, 0.115, 0.116, 0.148),
-  target_inf = 90000,
-  target_mig = 12000,
-  init_props = c(7, 3.5, 1.75, 0.5),
-  init_props_abroad = c(1.75, 2.25, 2.25, 1.25),
+  target_inf = 30000,
+  target_mig = 6000,
   abroad_prop = 0.2,
   cd4_completeness = 1,
   rita_completeness = 1,
   age_diag_effect = 0,
   mig_diag_offset = NULL,
   frr = 0.019,
-  detect_obs_times = NULL
+  detect_obs_times = NULL,
+  gamma_obs_sd = 0,
+  gamma_obs_scale = 500,
+  gamma_obs_times = NULL
 )
 ```
 
@@ -115,14 +116,6 @@ define_sim_config(
 - target_mig:
 
   Target total number of migrations.
-
-- init_props:
-
-  Initial state proportions.
-
-- init_props_abroad:
-
-  Initial state proportions for infections acquired abroad.
 
 - abroad_prop:
 

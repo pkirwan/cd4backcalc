@@ -21,4 +21,4 @@ round_age_array_to_totals(arr, totals)
 
 ## Value
 
-Rounded array whose sums over age match \codetotals exactly.
+Rounded array whose sums over age match totals exactly.
