@@ -58,3 +58,21 @@ test_that("age-specific migration simulation produces expected AIDS data", {
     rowSums(sim_diags$stan_data$AIDS_age[,, 2])
   )
 })
+
+test_that("age-specific migration simulation with gamma produces expected external migration data", {
+  sim_diags <- simulate_diagnoses(
+    sim_seed = 123,
+    age = TRUE,
+    migration = TRUE,
+    sim_type = "combo_3",
+    gamma_obs_sd = 0.1
+  )
+  expect_equal(
+    sim_diags$stan_data$gamma_obs_sd,
+    0.1
+  )
+  expect_equal(
+    sim_diags$stan_data$gamma_obs_index,
+    c(4:120)
+  )
+})

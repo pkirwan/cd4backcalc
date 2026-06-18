@@ -57,7 +57,7 @@ define_sim_config <- function(
   frr = 0.019, # false recency rate for RITA misclassification
   detect_obs_times = NULL, # quarter indices for detect_prob observations
   gamma_obs_sd = 0, # sd of the external migration-index trend likelihood (0 disables)
-  gamma_obs_scale = 200, # ratio of total external migration to HIV+ migration volume
+  gamma_obs_scale = 500, # ratio of total external migration to HIV+ migration volume
   gamma_obs_times = NULL # quarter indices for external migration-index observations
 ) {
   if (rita) {
@@ -561,7 +561,7 @@ simulate_diagnoses <- function(
   detect_obs_sd = 0,
   detect_obs_times = NULL,
   gamma_obs_sd = 0, # sd of the external migration-index trend likelihood (0 disables)
-  gamma_obs_scale = 200, # ratio of total external migration to HIV+ migration volume
+  gamma_obs_scale = 500, # ratio of total external migration to HIV+ migration volume
   gamma_obs_times = NULL # quarter indices for external migration-index observations
 ) {
   sim_config <- define_sim_config(
@@ -1116,7 +1116,7 @@ simulate_diagnoses <- function(
     )
     stats::rnorm(
       length(gamma_obs_index),
-      log(sim_config$gamma_obs_scale * rolling_vol),
+      log(round(sim_config$gamma_obs_scale * rolling_vol, -3)),
       gamma_obs_sd
     )
   } else {
