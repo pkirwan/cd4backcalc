@@ -55,7 +55,10 @@ define_sim_config <- function(
   age_diag_effect = 0, # age effect on diagnosis probabilities
   mig_diag_offset = NULL, # per-state logit offsets for migrant diagnosis probs
   frr = 0.019, # false recency rate for RITA misclassification
-  detect_obs_times = NULL # quarter indices for detect_prob observations
+  detect_obs_times = NULL, # quarter indices for detect_prob observations
+  gamma_obs_sd = 0, # sd of the external migration-index trend likelihood (0 disables)
+  gamma_obs_scale = 50, # ratio of total external migration to HIV+ migration volume
+  gamma_obs_times = NULL # quarter indices for external migration-index observations
 ) {
   if (rita) {
     nlatst <- 7
@@ -81,6 +84,20 @@ define_sim_config <- function(
     ) {
       stop(
         "detect_obs_times must be a non-empty integer vector with values in 1:nquar."
+      )
+    }
+  }
+
+  if (!is.null(gamma_obs_times)) {
+    if (
+      length(gamma_obs_times) == 0 ||
+        anyNA(gamma_obs_times) ||
+        any(gamma_obs_times < 1) ||
+        any(gamma_obs_times != as.integer(gamma_obs_times)) ||
+        any(gamma_obs_times > nquar)
+    ) {
+      stop(
+        "gamma_obs_times must be a non-empty integer vector with values in 1:nquar."
       )
     }
   }
@@ -117,6 +134,13 @@ define_sim_config <- function(
       seq(4L, nquar, by = 8L)
     } else {
       as.integer(detect_obs_times)
+    },
+    gamma_obs_sd = gamma_obs_sd,
+    gamma_obs_scale = gamma_obs_scale,
+    gamma_obs_times = if (is.null(gamma_obs_times)) {
+      seq_len(nquar)
+    } else {
+      as.integer(gamma_obs_times)
     }
   )
 
@@ -535,7 +559,10 @@ simulate_diagnoses <- function(
   frr = 0.019, # false recency rate for RITA misclassification
   eta_sd = 0.4, # sd of the melding prior for log(ratio_abroad_uk)
   detect_obs_sd = 0,
-  detect_obs_times = NULL
+  detect_obs_times = NULL,
+  gamma_obs_sd = 0, # sd of the external migration-index trend likelihood (0 disables)
+  gamma_obs_scale = 50, # ratio of total external migration to HIV+ migration volume
+  gamma_obs_times = NULL # quarter indices for external migration-index observations
 ) {
   sim_config <- define_sim_config(
     h_pattern,
@@ -562,7 +589,10 @@ simulate_diagnoses <- function(
     age_diag_effect,
     mig_diag_offset,
     frr,
-    detect_obs_times
+    detect_obs_times,
+    gamma_obs_sd,
+    gamma_obs_scale,
+    gamma_obs_times
   )
   set.seed(sim_config$sim_seed)
 
@@ -1055,6 +1085,34 @@ simulate_diagnoses <- function(
     numeric(0)
   }
 
+  # External migration-index auxiliary data (e.g. ONS total immigration trend).
+  # gamma_obs_sd = 0 disables the auxiliary likelihood in Stan.
+  # The index shares the underlying omega TREND but sits on a much larger scale
+  # (gamma_obs_scale x HIV+ migration volume); in Stan a free offset absorbs that
+  # level difference so only the trend informs gamma = log(omega). We build the
+  # mean from the deterministic (smooth) omega trend so the index reflects the
+  # population-level migration trend rather than the realised Poisson noise.
+  gamma_obs_index <- if (gamma_obs_sd > 0) {
+    as.integer(sim_config$gamma_obs_times)
+  } else {
+    integer(0)
+  }
+  gamma_obs_mean <- if (length(gamma_obs_index) > 0) {
+    omega_trend <- generate_omega(
+      sim_config$nquar,
+      sim_config$o_pattern,
+      sim_config$target_mig,
+      dist = FALSE
+    )
+    stats::rnorm(
+      length(gamma_obs_index),
+      log(sim_config$gamma_obs_scale * omega_trend[gamma_obs_index]),
+      gamma_obs_sd
+    )
+  } else {
+    numeric(0)
+  }
+
   # ABROAD data: detected portion of diagnosed migrants
   ABROAD <- colSums(ABROAD_age_mat)
   ABROAD_age <- t(ABROAD_age_mat)
@@ -1083,6 +1141,9 @@ simulate_diagnoses <- function(
     "detect_obs_index" = detect_obs_index,
     "detect_logit_obs" = detect_logit_obs,
     "detect_obs_sd" = detect_obs_sd,
+    "gamma_obs_index" = gamma_obs_index,
+    "gamma_obs_mean" = gamma_obs_mean,
+    "gamma_obs_sd" = gamma_obs_sd,
     "sim_config" = sim_config
   )
 

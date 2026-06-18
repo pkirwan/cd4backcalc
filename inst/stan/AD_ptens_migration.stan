@@ -50,13 +50,18 @@ data {
   vector[n_detect_obs] detect_logit_obs;
   real<lower=0> detect_obs_sd;
   
-  // External auxiliary observations for log migration volume (gamma = log omega).
-  // Intended for INDEPENDENT external evidence on HIV-positive migration volume
-  // (e.g. ONS migration statistics combined with source-country prevalence).
-  // gamma[t] = log(omega[t]) is age-independent, so a quarterly external estimate
-  // can anchor it directly. Do NOT feed in the posterior of another model (e.g. the
-  // age-independent model) fit to these same counts: that double-uses the data and
-  // yields an overconfident, incoherent posterior. Set gamma_obs_sd = 0 to disable.
+  // External auxiliary observations informing the TREND of log migration volume
+  // (gamma = log omega). Intended for an INDEPENDENT external migration index on
+  // an arbitrary (typically much larger) scale, e.g. ONS total long-term
+  // immigration to England. The series enters as
+  //   gamma_obs_mean[i] ~ normal(gamma[idx] + gamma_obs_offset, gamma_obs_sd),
+  // where the free parameter gamma_obs_offset absorbs the unknown level
+  // difference (log ratio of total migration to HIV-positive migration). Hence
+  // only the SHAPE/trend of the series constrains gamma; its absolute level (and
+  // so the level of omega) stays identified by the HIV/AIDS/CD4/ABROAD counts.
+  // Provide log-scale values (e.g. log of ONS counts). Do NOT feed in the
+  // posterior of another model fit to these same counts: that double-uses the
+  // data. Set gamma_obs_sd = 0 to disable.
   int<lower=0> n_gamma_obs;
   array[n_gamma_obs] int<lower=1, upper=nquar> gamma_obs_index;
   vector[n_gamma_obs] gamma_obs_mean;
@@ -114,7 +119,13 @@ parameters {
   // Migration process
   vector[npars_mig] beta_mig;
   real log_sigma_mig;
-  
+  // Level offset between the external migration index (e.g. ONS total migration
+  // counts) and log HIV-positive migration volume gamma = log(omega). The
+  // external series informs only the SHAPE/trend of gamma; this free offset
+  // absorbs the (large, unknown) scale difference so the level of omega stays
+  // identified by the HIV/AIDS/CD4/ABROAD likelihood. When the gamma_obs hook is
+  // disabled it is simply sampled from its prior (harmless).
+  real gamma_obs_offset;
   // Diagnosis probability parameters (random walk)
   vector[nquar] delta_raw_1;
   vector[nquar] delta_raw_2;
@@ -616,16 +627,18 @@ model {
     }
   }
   
-  // Auxiliary likelihood for log migration volume from EXTERNAL evidence.
-  // gamma[t] = log(omega[t]) = X_mig[t,] * beta_mig is age-independent, so an
-  // external quarterly estimate of HIV-positive migration volume anchors it
-  // directly. This is legitimate only when that estimate is independent of the
-  // HIV/AIDS/CD4/ABROAD counts already in the likelihood below. Feeding in a
-  // posterior from a model fit to the same data would use the data twice and
-  // produce an overconfident posterior. Set gamma_obs_sd = 0 to disable.
+  // Auxiliary likelihood for the TREND of log migration volume from an EXTERNAL
+  // migration index (e.g. ONS total immigration). The series sits on an
+  // arbitrary, typically much larger scale; gamma_obs_offset absorbs that level
+  // difference so only its trend constrains gamma = log(omega). The level of
+  // omega therefore remains identified by the HIV/AIDS/CD4/ABROAD counts below.
+  // This is legitimate only when the index is independent of those counts.
+  // Set gamma_obs_sd = 0 to disable.
+  gamma_obs_offset ~ normal(0, 10);
   if (gamma_obs_sd > 0 && n_gamma_obs > 0) {
     for (i in 1 : n_gamma_obs) {
-      gamma_obs_mean[i] ~ normal(gamma[gamma_obs_index[i]], gamma_obs_sd);
+      gamma_obs_mean[i] ~ normal(gamma[gamma_obs_index[i]] + gamma_obs_offset,
+                                 gamma_obs_sd);
     }
   }
   
