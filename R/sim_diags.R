@@ -528,6 +528,10 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #'   detection-probability observations are generated. Defaults to \code{NULL}, which uses
 #'   every 20 quarters (approx. every 5 years). Supply a custom vector, e.g. \code{c(4, 10, 30)},
 #'   to place observations at specific quarters.
+#' @param gamma_obs_sd Standard deviation of the external migration-index trend likelihood (0 disables).
+#' @param gamma_obs_scale Ratio of total external migration to HIV+ migration volume.
+#' @param gamma_obs_times Integer vector of quarter indices (1-based) at which external
+#'   migration-index observations are generated.
 #' @return List containing simulated epidemic data.
 #' @examples
 #' simulate_diagnoses()
