@@ -57,8 +57,7 @@ define_sim_config <- function(
   frr = 0.019, # false recency rate for RITA misclassification
   detect_obs_times = NULL, # quarter indices for detect_prob observations
   gamma_obs_sd = 0, # sd of the external migration-index trend likelihood (0 disables)
-  gamma_obs_scale = 500, # ratio of total external migration to HIV+ migration volume
-  gamma_obs_times = NULL # quarter indices for external migration-index observations
+  gamma_obs_scale = 500 # ratio of total external migration to HIV+ migration volume
 ) {
   if (rita) {
     nlatst <- 7
@@ -84,20 +83,6 @@ define_sim_config <- function(
     ) {
       stop(
         "detect_obs_times must be a non-empty integer vector with values in 1:nquar."
-      )
-    }
-  }
-
-  if (!is.null(gamma_obs_times)) {
-    if (
-      length(gamma_obs_times) == 0 ||
-        anyNA(gamma_obs_times) ||
-        any(gamma_obs_times < 1) ||
-        any(gamma_obs_times != as.integer(gamma_obs_times)) ||
-        any(gamma_obs_times > nquar)
-    ) {
-      stop(
-        "gamma_obs_times must be a non-empty integer vector with values in 1:nquar."
       )
     }
   }
@@ -136,12 +121,7 @@ define_sim_config <- function(
       as.integer(detect_obs_times)
     },
     gamma_obs_sd = gamma_obs_sd,
-    gamma_obs_scale = gamma_obs_scale,
-    gamma_obs_times = if (is.null(gamma_obs_times)) {
-      seq_len(nquar)
-    } else {
-      as.integer(gamma_obs_times)
-    }
+    gamma_obs_scale = gamma_obs_scale
   )
 
   if (!is.null(sim_type)) {
@@ -530,8 +510,6 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #'   to place observations at specific quarters.
 #' @param gamma_obs_sd Standard deviation of the external migration-index trend likelihood (0 disables).
 #' @param gamma_obs_scale Ratio of total external migration to HIV+ migration volume.
-#' @param gamma_obs_times Integer vector of quarter indices (1-based) at which external
-#'   migration-index observations are generated.
 #' @return List containing simulated epidemic data.
 #' @examples
 #' simulate_diagnoses()
@@ -565,8 +543,7 @@ simulate_diagnoses <- function(
   detect_obs_sd = 0,
   detect_obs_times = NULL,
   gamma_obs_sd = 0, # sd of the external migration-index trend likelihood (0 disables)
-  gamma_obs_scale = 500, # ratio of total external migration to HIV+ migration volume
-  gamma_obs_times = NULL # quarter indices for external migration-index observations
+  gamma_obs_scale = 500 # ratio of total external migration to HIV+ migration volume
 ) {
   sim_config <- define_sim_config(
     h_pattern,
@@ -595,8 +572,7 @@ simulate_diagnoses <- function(
     frr,
     detect_obs_times,
     gamma_obs_sd,
-    gamma_obs_scale,
-    gamma_obs_times
+    gamma_obs_scale
   )
   set.seed(sim_config$sim_seed)
 
@@ -1097,34 +1073,40 @@ simulate_diagnoses <- function(
   # mean from the deterministic (smooth) omega trend so the index reflects the
   # population-level migration trend rather than the realised Poisson noise.
   # The index emulates quarterly ROLLING ANNUAL (year-ending) reporting: each
-  # value is the sum over the four quarters ending at the index quarter, which
-  # must therefore be >= 4.
-  gamma_obs_index <- if (gamma_obs_sd > 0) {
-    idx <- as.integer(sim_config$gamma_obs_times)
-    idx[idx >= 4L]
-  } else {
-    integer(0)
-  }
-  gamma_obs_mean <- if (length(gamma_obs_index) > 0) {
+  # value is the sum over the four quarters ending at the index quarter. For
+  # quarters 1:3, pre-study quarterly omega values are used to complete the
+  # annual window, matching ONS data that are available before the model period.
+  gamma_obs_mean <- if (gamma_obs_sd > 0) {
     omega_trend <- generate_omega(
       sim_config$nquar,
       sim_config$o_pattern,
       sim_config$target_mig,
       dist = FALSE
     )
-    # rolling annual sum of the smooth trend (4 quarters), then scale up
+    omega_start_slope <- if (length(omega_trend) > 1L) {
+      omega_trend[2L] - omega_trend[1L]
+    } else {
+      0
+    }
+    omega_pre <- pmax(
+      .Machine$double.eps,
+      omega_trend[1L] - 3:1 * omega_start_slope
+    )
+    omega_ext <- c(omega_pre, omega_trend)
+    # rolling annual sum of the smooth trend (including pre-study quarters for
+    # early windows), then scale up
     rolling_vol <- vapply(
-      gamma_obs_index,
-      function(t) sum(omega_trend[(t - 3L):t]),
+      seq_len(sim_config$nquar),
+      function(t) sum(omega_ext[t:(t + 3L)]),
       numeric(1)
     )
     stats::rnorm(
-      length(gamma_obs_index),
+      sim_config$nquar,
       log(round(sim_config$gamma_obs_scale * rolling_vol, -3)),
       gamma_obs_sd
     )
   } else {
-    numeric(0)
+    rep(0, sim_config$nquar)
   }
 
   # ABROAD data: detected portion of diagnosed migrants
@@ -1155,7 +1137,6 @@ simulate_diagnoses <- function(
     "detect_obs_index" = detect_obs_index,
     "detect_logit_obs" = detect_logit_obs,
     "detect_obs_sd" = detect_obs_sd,
-    "gamma_obs_index" = gamma_obs_index,
     "gamma_obs_mean" = gamma_obs_mean,
     "gamma_obs_sd" = gamma_obs_sd,
     "sim_config" = sim_config

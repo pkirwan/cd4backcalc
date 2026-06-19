@@ -58,18 +58,17 @@ data {
   // omega over the four quarters ending at idx, so the rolling-annual series is
   // used directly (no unstable deconvolution to quarterly values). The series
   // enters as
-  //   gamma_obs_mean[i] ~ normal(gamma_agg[idx] + gamma_obs_offset, gamma_obs_sd).
+  //   gamma_obs_mean ~ normal(gamma_agg + gamma_obs_offset, gamma_obs_sd).
   // The free parameter gamma_obs_offset absorbs the unknown level difference
   // (log ratio of total migration to HIV-positive migration), so only the
   // SHAPE/trend of the series constrains gamma; its absolute level (and so the
   // level of omega) stays identified by the HIV/AIDS/CD4/ABROAD counts. Provide
-  // log-scale values (e.g. log of ONS counts), indexed by the END quarter of
-  // each annual window (index >= 4). Do NOT feed in the posterior of another
-  // model fit to these same counts: that double-uses the data. Set
+  // log-scale values (e.g. log of ONS counts), one for every study quarter.
+  // For quarters 1:3, the model uses three latent pre-study quarterly migration
+  // volumes to complete the rolling annual window. Do NOT feed in the posterior
+  // of another model fit to these same counts: that double-uses the data. Set
   // gamma_obs_sd = 0 to disable.
-  int<lower=0> n_gamma_obs;
-  array[n_gamma_obs] int<lower=4, upper=nquar> gamma_obs_index;
-  vector[n_gamma_obs] gamma_obs_mean;
+  vector[nquar] gamma_obs_mean;
   real<lower=0> gamma_obs_sd;
 }
 transformed data {
@@ -131,6 +130,10 @@ parameters {
   // identified by the HIV/AIDS/CD4/ABROAD likelihood. When the gamma_obs hook is
   // disabled it is simply sampled from its prior (harmless).
   real gamma_obs_offset;
+  // Three pre-study quarterly migration log-volumes used only to complete the
+  // first three rolling-annual external migration observations. They do not
+  // enter the HIV/AIDS/CD4/ABROAD likelihood.
+  vector[3] gamma_pre;
   // Diagnosis probability parameters (random walk)
   vector[nquar] delta_raw_1;
   vector[nquar] delta_raw_2;
@@ -192,18 +195,24 @@ transformed parameters {
   real<lower=0> sigma_mig = exp(log_sigma_mig);
   vector[nquar] gamma = X_mig * beta_mig;
   vector<lower=0>[nquar] omega = exp(gamma);
+  vector<lower=0>[3] omega_pre = exp(gamma_pre);
   
   // Rolling 4-quarter (annual) aggregation of omega on the log scale, matching
   // the quarterly rolling-annual external migration index. gamma_agg[t] is the
-  // log of the migration volume over the four quarters ending at t; only
-  // t >= 4 carries a full annual window and is supplied as an observation.
+  // log of the migration volume over the four quarters ending at t. For t=1:3,
+  // the window is completed with omega_pre, representing the three quarters
+  // immediately before the surveillance window.
   vector[nquar] gamma_agg;
   {
-    real running = 0;
+    real running = sum(omega_pre);
     for (t in 1 : nquar) {
       running += omega[t];
-      if (t > 4) {
-        running -= omega[t - 4];
+      if (t > 1) {
+        if (t <= 4) {
+          running -= omega_pre[t - 1];
+        } else {
+          running -= omega[t - 4];
+        }
       }
       gamma_agg[t] = log(running);
     }
@@ -555,6 +564,9 @@ model {
   beta_mig[1] ~ normal(4, 1);
   beta_mig[2 : npars_mig] ~ normal(0, sigma_mig);
   log_sigma_mig ~ normal(-0.5, 0.5);
+  gamma_pre[3] ~ normal(gamma[1], sigma_mig);
+  gamma_pre[2] ~ normal(gamma_pre[3], sigma_mig);
+  gamma_pre[1] ~ normal(gamma_pre[2], sigma_mig);
   
   // Diagnosis priors — centred on midpoints of observed empirical ranges.
   // State 1 (CD4 ≥ 500):    2.5–10%  → logit midpoint ~ -2.90
@@ -658,11 +670,8 @@ model {
   // when the index is independent of those counts. Set gamma_obs_sd = 0 to
   // disable.
   gamma_obs_offset ~ normal(0, 10);
-  if (gamma_obs_sd > 0 && n_gamma_obs > 0) {
-    for (i in 1 : n_gamma_obs) {
-      gamma_obs_mean[i] ~ normal(gamma_agg[gamma_obs_index[i]] + gamma_obs_offset,
-                                 gamma_obs_sd);
-    }
+  if (gamma_obs_sd > 0) {
+    gamma_obs_mean ~ normal(gamma_agg + gamma_obs_offset, gamma_obs_sd);
   }
   
   // Likelihood

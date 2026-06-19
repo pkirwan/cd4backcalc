@@ -72,7 +72,7 @@ test_that("age-specific migration simulation with gamma produces expected extern
     0.1
   )
   expect_equal(
-    sim_diags$stan_data$gamma_obs_index,
-    c(4:120)
+    length(sim_diags$stan_data$gamma_obs_mean),
+    sim_diags$stan_data$nquar
   )
 })

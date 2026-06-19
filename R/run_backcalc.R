@@ -707,40 +707,25 @@ model_type_prep <- function(
     # ONS migration flows x source-country prevalence). Do NOT pass the posterior
     # of another model (e.g. the age-independent model) fit to these same counts:
     # that double-uses the data and yields an overconfident posterior.
-    # Set gamma_obs_sd = 0 (default) to disable; supply gamma_obs_mean (external
-    # estimate of gamma[t]) and gamma_obs_sd (its SD) to enable.
+    # Set gamma_obs_sd = 0 (default) to disable; supply gamma_obs_mean as a
+    # dense length-nquar vector of rolling-annual log migration volume values.
+    # The Stan model uses three latent pre-study quarterly migration volumes to
+    # complete the first three annual windows.
     if (is.null(stan_data$gamma_obs_sd)) {
       stan_data$gamma_obs_sd <- 0
     }
     if (is.null(stan_data$gamma_obs_mean)) {
-      stan_data$gamma_obs_mean <- numeric(0)
-    }
-    if (is.null(stan_data$gamma_obs_index)) {
-      if (length(stan_data$gamma_obs_mean) == 0) {
-        stan_data$gamma_obs_index <- integer(0)
-      } else if (length(stan_data$gamma_obs_mean) == stan_data$nquar) {
-        stan_data$gamma_obs_index <- seq_len(stan_data$nquar)
-      } else {
-        stop(
-          "gamma_obs_index must be supplied when gamma_obs_mean is sparse."
-        )
+      if (stan_data$gamma_obs_sd > 0) {
+        stop("gamma_obs_mean must be supplied when gamma_obs_sd > 0.")
       }
+      stan_data$gamma_obs_mean <- rep(0, stan_data$nquar)
     }
-    stan_data$gamma_obs_index <- as.integer(stan_data$gamma_obs_index)
-
-    if (length(stan_data$gamma_obs_mean) != length(stan_data$gamma_obs_index)) {
-      stop("gamma_obs_mean and gamma_obs_index must have the same length.")
+    if (length(stan_data$gamma_obs_mean) == 0 && stan_data$gamma_obs_sd == 0) {
+      stan_data$gamma_obs_mean <- rep(0, stan_data$nquar)
     }
-    # External counts are quarterly ROLLING ANNUAL (year-ending) values, matched
-    # to the log sum of omega over the four quarters ending at each index. The
-    # end-quarter index must therefore be at least 4 so a full annual window of
-    # preceding quarters exists.
-    if (length(stan_data$gamma_obs_index) > 0 &&
-        any(stan_data$gamma_obs_index < 4 | stan_data$gamma_obs_index > stan_data$nquar)) {
-      stop("gamma_obs_index entries must lie between 4 and nquar.")
+    if (length(stan_data$gamma_obs_mean) != stan_data$nquar) {
+      stop("gamma_obs_mean must have length nquar.")
     }
-
-    stan_data$n_gamma_obs <- length(stan_data$gamma_obs_index)
   }
 
   # Create stan_data$model_config

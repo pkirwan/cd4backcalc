@@ -31,8 +31,7 @@ define_sim_config(
   frr = 0.019,
   detect_obs_times = NULL,
   gamma_obs_sd = 0,
-  gamma_obs_scale = 500,
-  gamma_obs_times = NULL
+  gamma_obs_scale = 500
 )
 }
 \arguments{

@@ -33,8 +33,7 @@ simulate_diagnoses(
   detect_obs_sd = 0,
   detect_obs_times = NULL,
   gamma_obs_sd = 0,
-  gamma_obs_scale = 500,
-  gamma_obs_times = NULL
+  gamma_obs_scale = 500
 )
 }
 \arguments{
@@ -98,9 +97,6 @@ to place observations at specific quarters.}
 \item{gamma_obs_sd}{Standard deviation of the external migration-index trend likelihood (0 disables).}
 
 \item{gamma_obs_scale}{Ratio of total external migration to HIV+ migration volume.}
-
-\item{gamma_obs_times}{Integer vector of quarter indices (1-based) at which external
-migration-index observations are generated.}
 }
 \value{
 List containing simulated epidemic data.
