@@ -10,9 +10,13 @@ data {
   array[nquar, nage, 2] int<lower=0> AIDS_age; // new AIDS diagnoses
   array[nquar, nage, 2, 4] int<lower=0> CD4_age; // CD4 categories among HIV diagnoses
   
-  // Age distribution of prior diagnoses from abroad by quarter.
-  // The model derives quarterly totals as ABROAD[t] = sum_a ABROAD_age[t,a].
-  array[nquar, nage] int<lower=0> ABROAD_age;
+  // Observed prior diagnoses from abroad: quarterly totals and their
+  // breakdown into the 4 diagnosis age groups (1-10, 11-20, 21-30, 31+).
+  // These are constructed from the raw single-year ABROAD_age matrix in R
+  // (model_type_prep / simulate_diagnoses) so the Stan model receives the
+  // sufficient data it actually models rather than noisy single-year counts.
+  array[nquar] int<lower=0> ABROAD;           // quarterly total detected abroad diagnoses
+  array[nquar, 4] int<lower=0> ABROAD_group;  // grouped by diagnosis age group
   
   // Progression probabilities by age at entry (age at infection for natives/UK-acquired,
   // age at arrival for abroad-acquired migrants)
@@ -109,10 +113,15 @@ transformed data {
     }
   }
   
-  // Derived totals for likelihood and log_lik
-  array[nquar] int<lower=0> ABROAD;
-  for (t in 1 : nquar) {
-    ABROAD[t] = sum(ABROAD_age[t]);
+  // Number of single-year ages within each diagnosis age group, derived from
+  // the age_group_lookup built above. Used to expand the group-level simplex
+  // uniformly to single ages when building abroad_age_prop.
+  array[4] int<lower=0> age_group_size;
+  for (ag in 1 : 4) {
+    age_group_size[ag] = 0;
+  }
+  for (a in 1 : nage) {
+    age_group_size[age_group_lookup[a]] += 1;
   }
 }
 parameters {
@@ -134,6 +143,9 @@ parameters {
   // first three rolling-annual external migration observations. They do not
   // enter the HIV/AIDS/CD4/ABROAD likelihood.
   vector[3] gamma_pre;
+  // Shared age composition for abroad-acquired migrant inflow, estimated on the
+  // same 4 age groups used by the diagnosis model.
+  simplex[4] abroad_age_group_prop;
   // Diagnosis probability parameters (random walk)
   vector[nquar] delta_raw_1;
   vector[nquar] delta_raw_2;
@@ -218,16 +230,14 @@ transformed parameters {
     }
   }
   
-  // Age distribution used for allocating migrant flows by age
+  // Age distribution used for allocating migrant flows by age. The group-level
+  // simplex abroad_age_group_prop is expanded uniformly within each decade band
+  // by dividing by age_group_size, ensuring the per-age values sum to 1.
   matrix<lower=0, upper=1>[nquar, nage] abroad_age_prop;
   for (t in 1 : nquar) {
-    real total = ABROAD[t]; // ABROAD is int array; promoted to real here
-    if (total > 1e-6) {
-      for (a in 1 : nage) {
-        abroad_age_prop[t, a] = ABROAD_age[t, a] / total;
-      }
-    } else {
-      abroad_age_prop[t,  : ] = rep_row_vector(1.0 / nage, nage);
+    for (a in 1 : nage) {
+      abroad_age_prop[t, a] = abroad_age_group_prop[age_group_lookup[a]]
+                              / age_group_size[age_group_lookup[a]];
     }
   }
   
@@ -567,6 +577,14 @@ model {
   gamma_pre[3] ~ normal(gamma[1], sigma_mig);
   gamma_pre[2] ~ normal(gamma_pre[3], sigma_mig);
   gamma_pre[1] ~ normal(gamma_pre[2], sigma_mig);
+
+  // ABROAD is modelled as a Poisson total plus a conditional multinomial age
+  // composition, which avoids injecting quarter-level small-count noise into the
+  // migrant inflow allocator.
+  abroad_age_group_prop ~ dirichlet(rep_vector(2.0, 4));
+  for (t in 1 : nquar) {
+    ABROAD_group[t] ~ multinomial(abroad_age_group_prop);
+  }
   
   // Diagnosis priors — centred on midpoints of observed empirical ranges.
   // State 1 (CD4 ≥ 500):    2.5–10%  → logit midpoint ~ -2.90
@@ -694,7 +712,9 @@ generated quantities {
   vector[nquar] log_lik_abroad;
   
   for (t in 1 : nquar) {
-    log_lik_abroad[t] = poisson_lpmf(ABROAD[t] | exp_ABROAD_dx[t]);
+    log_lik_abroad[t] = poisson_lpmf(ABROAD[t] | exp_ABROAD_dx[t])
+                        + multinomial_lpmf(ABROAD_group[t]
+                                           | abroad_age_group_prop);
     
     for (y in 1 : 2) {
       for (a in 1 : nage) {

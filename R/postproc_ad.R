@@ -451,18 +451,12 @@ postproc_ad <- function(
 
     # Migration-consistent undiagnosed prevalence via C++
 
-    # abroad_age_prop as in Stan (uniform if a quarter total is zero)
-    ABROAD_age <- as.matrix(stan_data$ABROAD_age)
-
-    ABROAD_tot <- rowSums(ABROAD_age)
-    abroad_age_prop <- ABROAD_age
-    for (t in seq_len(nquar)) {
-      if (ABROAD_tot[t] > 0) {
-        abroad_age_prop[t, ] <- ABROAD_age[t, ] / ABROAD_tot[t]
-      } else {
-        abroad_age_prop[t, ] <- rep(1 / nage, nage)
-      }
-    }
+    # Posterior migrant age allocation from Stan transformed parameters [draw, t, a].
+    abroad_age_prop_idx <- grep("^abroad_age_prop\\[", colnames(fit_mat))
+    abroad_age_prop <- array(
+      fit_mat[, abroad_age_prop_idx, drop = FALSE],
+      dim = c(ndraws, nquar, nage)
+    ) # [draw, t, a]
 
     # Build d-cube indices (agegrp, state, t) from fit_mat colnames, then per draw create (state,t,agegrp).
     # Migration models expose d_nat[ag,t,k] (y=1, native) and d_mig[ag,t,k] (y=2, migrant).
@@ -557,6 +551,7 @@ postproc_ad <- function(
 
       omega_i <- fit_mat[i, omega.ind]
       p_i <- fit_mat[i, p.ind]
+      abroad_age_prop_i <- matrix(abroad_age_prop[i, , ], nrow = nquar, ncol = nage)
 
       # m_mat: 5 x nquar (rows are k=1..5)
       m_mat <- matrix(fit_mat[i, m.ind], nrow = 5, ncol = nquar)
@@ -577,7 +572,7 @@ postproc_ad <- function(
           omega = omega_zero,
           p = p_zero,
           m = m_mat,
-          abroad_age_prop = abroad_age_prop,
+          abroad_age_prop = abroad_age_prop_i,
           nquar = nquar,
           nage = nage
         )
@@ -590,7 +585,7 @@ postproc_ad <- function(
           omega = omega_i,
           p = p_zero,
           m = m_mat,
-          abroad_age_prop = abroad_age_prop,
+          abroad_age_prop = abroad_age_prop_i,
           nquar = nquar,
           nage = nage
         )
@@ -604,7 +599,7 @@ postproc_ad <- function(
           omega = omega_zero,
           p = p_zero,
           m = m_mat,
-          abroad_age_prop = abroad_age_prop,
+          abroad_age_prop = abroad_age_prop_i,
           nquar = nquar,
           nage = nage
         )
@@ -617,7 +612,7 @@ postproc_ad <- function(
           omega = omega_i,
           p = p_zero,
           m = m_mat,
-          abroad_age_prop = abroad_age_prop,
+          abroad_age_prop = abroad_age_prop_i,
           nquar = nquar,
           nage = nage
         )

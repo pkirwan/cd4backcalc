@@ -1111,7 +1111,18 @@ simulate_diagnoses <- function(
 
   # ABROAD data: detected portion of diagnosed migrants
   ABROAD <- colSums(ABROAD_age_mat)
-  ABROAD_age <- t(ABROAD_age_mat)
+  ABROAD_age <- t(ABROAD_age_mat) # [nquar, nage], kept for R-side use
+
+  # Pre-aggregate ABROAD into the 4 diagnosis age groups used by the Stan model
+  # (1-10 -> 1, 11-20 -> 2, 21-30 -> 3, 31+ -> 4), matching age_group_lookup.
+  # This is the sufficient statistic for the multinomial age-composition likelihood;
+  # the raw single-year ABROAD_age is retained in stan_data for diagnostics/plots.
+  age_group_lookup_r <- pmin(4L, 1L + (seq_len(sim_config$nage) - 1L) %/% 10L)
+  ABROAD_group <- matrix(0L, nrow = sim_config$nquar, ncol = 4L)
+  for (ag in 1:4) {
+    idx <- which(age_group_lookup_r == ag)
+    ABROAD_group[, ag] <- as.integer(rowSums(ABROAD_age[, idx, drop = FALSE]))
+  }
 
   # Make stan data list
   stan_data <- list(
@@ -1122,7 +1133,8 @@ simulate_diagnoses <- function(
     "CD4" = cd4_dx,
     "CD4_age" = cd4_dx_age,
     "ABROAD" = ABROAD,
-    "ABROAD_age" = ABROAD_age,
+    "ABROAD_group" = ABROAD_group,
+    "ABROAD_age" = ABROAD_age, # retained for R-side diagnostics; not passed to Stan
     "nquar" = sim_config$nquar,
     "nage" = sim_config$nage,
     "q" = sim_config$q,

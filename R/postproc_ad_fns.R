@@ -345,7 +345,8 @@ gof.fct <- function(
 #' Function to get posterior quantiles of undiagnosed migration by age band
 #'
 #' @param draws A matrix of posterior draws for undiagnosed migration.
-#' @param abroad_age_prop A matrix of migrant age proportions.
+#' @param abroad_age_prop An array of posterior migrant age proportions indexed
+#'   by draw, quarter, and age (dimensions: \code{[draw, quarter, age]}).
 #' @param age.st Starting age for the band.
 #' @param age.end Ending age for the band.
 #' @param nage Number of single-year age groups.
@@ -354,8 +355,8 @@ gof.fct <- function(
 #' @return A tibble with summary statistics (2.5%, 50%, mean, 97.5%) for each time point.
 undiag.mig.fct.qt <- function(draws, abroad_age_prop, age.st, age.end, nage, nt, start_yr) {
   age_idx <- .age_to_idx(age.st, age.end, nage = nage)
-  prop_band <- rowSums(abroad_age_prop[, age_idx, drop = FALSE])
-  band.draws <- sweep(draws, 2, prop_band, `*`)
+  prop_band <- apply(abroad_age_prop[, , age_idx, drop = FALSE], c(1, 2), sum)
+  band.draws <- draws * prop_band
   band.q <- apply(band.draws, 2, get_quantiles)
   make_tibble(band.q, nt = nt, start_yr = start_yr, qt.flag = TRUE)
 }

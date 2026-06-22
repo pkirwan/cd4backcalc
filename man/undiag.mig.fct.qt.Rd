@@ -9,7 +9,8 @@ undiag.mig.fct.qt(draws, abroad_age_prop, age.st, age.end, nage, nt, start_yr)
 \arguments{
 \item{draws}{A matrix of posterior draws for undiagnosed migration.}
 
-\item{abroad_age_prop}{A matrix of migrant age proportions.}
+\item{abroad_age_prop}{An array of posterior migrant age proportions indexed
+by draw, quarter, and age (dimensions: \code{[draw, quarter, age]}).}
 
 \item{age.st}{Starting age for the band.}
 

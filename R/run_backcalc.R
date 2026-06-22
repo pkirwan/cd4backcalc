@@ -176,7 +176,7 @@ fit_stan_model <- function(
   model <- load_stan_model(stan_data$model_config)
 
   model_data <- stan_data[
-    !names(stan_data) %in% c("sim_config", "model_config")
+    !names(stan_data) %in% c("sim_config", "model_config", "ABROAD_age")
   ]
 
   # ---- Non-checkpoint path (original behaviour) ----
@@ -454,6 +454,16 @@ confirm_stan_data <- function(stan_data) {
         dim(stan_data$ABROAD_age) == c(stan_data$nquar, stan_data$nage)
       )
     )
+    stopifnot(
+      "Incorrect dimensions in stan_data, ABROAD_group should be (nquar, 4)" = all(
+        dim(stan_data$ABROAD_group) == c(stan_data$nquar, 4L)
+      )
+    )
+    stopifnot(
+      "ABROAD_group row sums must equal ABROAD" = all(
+        rowSums(stan_data$ABROAD_group) == stan_data$ABROAD
+      )
+    )
   } else if (stan_data$model_config$age) {
     stopifnot(
       "Incorrect dimensions in stan_data, HIV_age should be (nquar, nage)" = all(
@@ -701,6 +711,29 @@ model_type_prep <- function(
 
     # n_detect_obs is derived, not stored, so always computed fresh here.
     stan_data$n_detect_obs <- length(stan_data$detect_obs_index)
+
+    # For age + migration models, pre-aggregate the single-year ABROAD_age into
+    # the 4 diagnosis age groups used by the Stan multinomial likelihood.  This
+    # is the sufficient statistic the model actually fits; the raw ABROAD_age is
+    # retained in stan_data for R-side diagnostics but is excluded from the Stan
+    # input (see fit_stan_model).  If ABROAD_group is already present (e.g.
+    # supplied directly by a real-data pipeline) it is left unchanged.
+    if (isTRUE(age) || isTRUE(stan_data$sim_config$age)) {
+      if (is.null(stan_data$ABROAD_group)) {
+        if (is.null(stan_data$ABROAD_age)) {
+          stop("stan_data must contain ABROAD_age (or ABROAD_group) for age + migration models.")
+        }
+        nage_prep <- stan_data$nage
+        agl <- pmin(4L, 1L + (seq_len(nage_prep) - 1L) %/% 10L)
+        abroad_mat <- as.matrix(stan_data$ABROAD_age)
+        grp <- matrix(0L, nrow = stan_data$nquar, ncol = 4L)
+        for (ag in 1:4) {
+          idx <- which(agl == ag)
+          grp[, ag] <- as.integer(rowSums(abroad_mat[, idx, drop = FALSE]))
+        }
+        stan_data$ABROAD_group <- grp
+      }
+    }
 
     # gamma_obs: EXTERNAL auxiliary observations for log migration volume gamma[t].
     # Use only with evidence independent of the HIV/AIDS/CD4/ABROAD counts (e.g.
