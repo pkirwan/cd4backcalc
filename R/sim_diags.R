@@ -1065,48 +1065,61 @@ simulate_diagnoses <- function(
     numeric(0)
   }
 
-  # External migration-index auxiliary data (e.g. ONS total immigration trend).
-  # gamma_obs_sd = 0 disables the auxiliary likelihood in Stan.
-  # The index shares the underlying omega TREND but sits on a much larger scale
-  # (gamma_obs_scale x HIV+ migration volume); in Stan a free offset absorbs that
-  # level difference so only the trend informs gamma = log(omega). We build the
-  # mean from the deterministic (smooth) omega trend so the index reflects the
-  # population-level migration trend rather than the realised Poisson noise.
-  # The index emulates quarterly ROLLING ANNUAL (year-ending) reporting: each
-  # value is the sum over the four quarters ending at the index quarter. For
-  # quarters 1:3, pre-study quarterly omega values are used to complete the
-  # annual window, matching ONS data that are available before the model period.
-  gamma_obs_mean <- if (gamma_obs_sd > 0) {
+  age_group_lookup_r <- pmin(4L, 1L + (seq_len(sim_config$nage) - 1L) %/% 10L)
+
+  # External migration-index auxiliary data (e.g. ONS total immigration trend)
+  # by the same 4 age groups used by ABROAD_group. gamma_obs_sd = 0 disables the
+  # auxiliary likelihood in Stan. The index shares the underlying migrant age-group
+  # rolling-annual volumes but sits on a much larger scale
+  # (gamma_obs_scale x HIV+ migration volume); in Stan a single free offset absorbs
+  # that level difference so only the shared trend and static age composition inform
+  # the fit. We build the mean from the deterministic (smooth) migration trend so
+  # the index reflects the population-level pattern rather than realised Poisson noise.
+  gamma_obs_mean_group <- if (gamma_obs_sd > 0) {
     omega_trend <- generate_omega(
       sim_config$nquar,
       sim_config$o_pattern,
       sim_config$target_mig,
       dist = FALSE
     )
-    omega_start_slope <- if (length(omega_trend) > 1L) {
-      omega_trend[2L] - omega_trend[1L]
-    } else {
-      0
+    omega_age_trend <- sweep(agedist_abroad, 1, omega_trend, "*")
+    omega_group_trend <- matrix(0, nrow = sim_config$nquar, ncol = 4L)
+    for (ag in 1:4) {
+      idx <- which(age_group_lookup_r == ag)
+      omega_group_trend[, ag] <- rowSums(omega_age_trend[, idx, drop = FALSE])
     }
-    omega_pre <- pmax(
-      .Machine$double.eps,
-      omega_trend[1L] - 3:1 * omega_start_slope
-    )
-    omega_ext <- c(omega_pre, omega_trend)
-    # rolling annual sum of the smooth trend (including pre-study quarters for
-    # early windows), then scale up
-    rolling_vol <- vapply(
-      seq_len(sim_config$nquar),
-      function(t) sum(omega_ext[t:(t + 3L)]),
-      numeric(1)
-    )
-    stats::rnorm(
-      sim_config$nquar,
-      log(round(sim_config$gamma_obs_scale * rolling_vol, -3)),
-      gamma_obs_sd
+    omega_group_start_slope <- if (sim_config$nquar > 1L) {
+      omega_group_trend[2L, ] - omega_group_trend[1L, ]
+    } else {
+      rep(0, 4L)
+    }
+    omega_group_pre <- matrix(0, nrow = 3L, ncol = 4L)
+    for (ag in 1:4) {
+      omega_group_pre[, ag] <- pmax(
+        .Machine$double.eps,
+        omega_group_trend[1L, ag] - 3:1 * omega_group_start_slope[ag]
+      )
+    }
+    omega_group_ext <- rbind(omega_group_pre, omega_group_trend)
+    rolling_vol_group <- matrix(0, nrow = sim_config$nquar, ncol = 4L)
+    for (ag in 1:4) {
+      rolling_vol_group[, ag] <- vapply(
+        seq_len(sim_config$nquar),
+        function(t) sum(omega_group_ext[t:(t + 3L), ag]),
+        numeric(1)
+      )
+    }
+    matrix(
+      stats::rnorm(
+        sim_config$nquar * 4L,
+        as.vector(log(pmax(1, round(sim_config$gamma_obs_scale * rolling_vol_group, -3)))),
+        gamma_obs_sd
+      ),
+      nrow = sim_config$nquar,
+      ncol = 4L
     )
   } else {
-    rep(0, sim_config$nquar)
+    matrix(0, nrow = sim_config$nquar, ncol = 4L)
   }
 
   # ABROAD data: detected portion of diagnosed migrants
@@ -1117,7 +1130,6 @@ simulate_diagnoses <- function(
   # (1-10 -> 1, 11-20 -> 2, 21-30 -> 3, 31+ -> 4), matching age_group_lookup.
   # This is the sufficient statistic for the multinomial age-composition likelihood;
   # the raw single-year ABROAD_age is retained in stan_data for diagnostics/plots.
-  age_group_lookup_r <- pmin(4L, 1L + (seq_len(sim_config$nage) - 1L) %/% 10L)
   ABROAD_group <- matrix(0L, nrow = sim_config$nquar, ncol = 4L)
   for (ag in 1:4) {
     idx <- which(age_group_lookup_r == ag)
@@ -1149,7 +1161,7 @@ simulate_diagnoses <- function(
     "detect_obs_index" = detect_obs_index,
     "detect_logit_obs" = detect_logit_obs,
     "detect_obs_sd" = detect_obs_sd,
-    "gamma_obs_mean" = gamma_obs_mean,
+    "gamma_obs_mean_group" = gamma_obs_mean_group,
     "gamma_obs_sd" = gamma_obs_sd,
     "sim_config" = sim_config
   )

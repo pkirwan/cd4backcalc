@@ -53,24 +53,25 @@ data {
   real<lower=0> detect_obs_sd;
   
   // External auxiliary observations informing the TREND of log migration volume
-  // (gamma = log omega). Intended for an INDEPENDENT external migration index on
-  // an arbitrary (typically much larger) scale, e.g. ONS total long-term
-  // immigration to England, reported as QUARTERLY ROLLING ANNUAL (year-ending)
-  // counts. Each observation is matched to gamma_agg[idx] = log of the sum of
-  // omega over the four quarters ending at idx, so the rolling-annual series is
-  // used directly (no unstable deconvolution to quarterly values). The series
-  // enters as
-  //   gamma_obs_mean ~ normal(gamma_agg + gamma_obs_offset, gamma_obs_sd).
-  // The free parameter gamma_obs_offset absorbs the unknown level difference
-  // (log ratio of total migration to HIV-positive migration), so only the
-  // SHAPE/trend of the series constrains gamma; its absolute level (and so the
-  // level of omega) stays identified by the HIV/AIDS/CD4/ABROAD counts. Provide
-  // log-scale values (e.g. log of ONS counts), one for every study quarter.
-  // For quarters 1:3, the model uses three latent pre-study quarterly migration
-  // volumes to complete the rolling annual window. Do NOT feed in the posterior
-  // of another model fit to these same counts: that double-uses the data. Set
-  // gamma_obs_sd = 0 to disable.
-  vector[nquar] gamma_obs_mean;
+  // by the same 4 age groups used in ABROAD_group. Intended for an INDEPENDENT
+  // external migration index on an arbitrary (typically much larger) scale,
+  // e.g. ONS long-term immigration counts by age group, reported as QUARTERLY
+  // ROLLING ANNUAL (year-ending) counts. Each observation is matched to the log
+  // of the rolling 4-quarter migrant volume in that age group:
+  //   gamma_obs_mean_group[, ag] ~ normal(
+  //     gamma_agg + log(abroad_age_group_prop[ag]) + gamma_obs_offset,
+  //     gamma_obs_sd
+  //   ).
+  // The single free offset gamma_obs_offset absorbs the unknown overall level
+  // difference between total migration and HIV-positive migration, so the
+  // external series informs the shared total trend gamma = log(omega) and the
+  // static age composition abroad_age_group_prop without fixing the absolute
+  // level of omega. Provide log-scale values for every study quarter and each
+  // of the 4 age groups. For quarters 1:3, the model uses three latent
+  // pre-study quarterly migration volumes to complete the rolling annual
+  // window. Do NOT feed in the posterior of another model fit to these same
+  // counts: that double-uses the data. Set gamma_obs_sd = 0 to disable.
+  matrix[nquar, 4] gamma_obs_mean_group;
   real<lower=0> gamma_obs_sd;
 }
 transformed data {
@@ -229,11 +230,15 @@ transformed parameters {
   // simplex abroad_age_group_prop is expanded uniformly within each decade band
   // by dividing by age_group_size, ensuring the per-age values sum to 1.
   matrix<lower=0, upper=1>[nquar, nage] abroad_age_prop;
+  matrix[nquar, 4] gamma_agg_group;
   for (t in 1 : nquar) {
     for (a in 1 : nage) {
       abroad_age_prop[t, a] = abroad_age_group_prop[age_group_lookup[a]]
                               / age_group_size[age_group_lookup[a]];
     }
+  }
+  for (ag in 1 : 4) {
+    gamma_agg_group[ : , ag] = gamma_agg + log(abroad_age_group_prop[ag]);
   }
   
   // Step variances on natural scale (non-centred)
@@ -702,17 +707,18 @@ model {
   }
   
   // Auxiliary likelihood for the TREND of log migration volume from an EXTERNAL
-  // migration index (e.g. ONS total immigration). The series sits on an
-  // arbitrary, typically much larger scale; gamma_obs_offset absorbs that level
-  // difference so only its trend constrains gamma = log(omega). Each observation
-  // is matched to gamma_agg, the log rolling 4-quarter (annual) sum of omega, so
-  // quarterly rolling-annual counts are used directly. The level of omega
-  // remains identified by the HIV/AIDS/CD4/ABROAD counts below. Legitimate only
-  // when the index is independent of those counts. Set gamma_obs_sd = 0 to
-  // disable.
+  // migration index (e.g. ONS total immigration) by the same 4 age groups used
+  // in ABROAD_group. A single gamma_obs_offset absorbs the overall level
+  // difference so the grouped external series constrains the total migration
+  // trend gamma = log(omega) and the static migrant age composition
+  // abroad_age_group_prop, while the level of omega remains identified by the
+  // HIV/AIDS/CD4/ABROAD counts below. Legitimate only when the index is
+  // independent of those counts. Set gamma_obs_sd = 0 to disable.
   gamma_obs_offset ~ normal(0, 10);
   if (gamma_obs_sd > 0) {
-    gamma_obs_mean ~ normal(gamma_agg + gamma_obs_offset, gamma_obs_sd);
+    to_vector(gamma_obs_mean_group)
+      ~ normal(to_vector(gamma_agg_group + rep_matrix(gamma_obs_offset, nquar, 4)),
+               gamma_obs_sd);
   }
   
   // Likelihood (omit age == 1)

@@ -176,7 +176,7 @@ fit_stan_model <- function(
   model <- load_stan_model(stan_data$model_config)
 
   model_data <- stan_data[
-    !names(stan_data) %in% c("sim_config", "model_config", "ABROAD_age")
+    !names(stan_data) %in% c("sim_config", "model_config", "ABROAD_age", "gamma_obs_mean")
   ]
 
   # ---- Non-checkpoint path (original behaviour) ----
@@ -464,6 +464,11 @@ confirm_stan_data <- function(stan_data) {
         rowSums(stan_data$ABROAD_group) == stan_data$ABROAD
       )
     )
+    stopifnot(
+      "Incorrect dimensions in stan_data, gamma_obs_mean_group should be (nquar, 4)" = all(
+        dim(stan_data$gamma_obs_mean_group) == c(stan_data$nquar, 4L)
+      )
+    )
   } else if (stan_data$model_config$age) {
     stopifnot(
       "Incorrect dimensions in stan_data, HIV_age should be (nquar, nage)" = all(
@@ -735,30 +740,35 @@ model_type_prep <- function(
       }
     }
 
-    # gamma_obs: EXTERNAL auxiliary observations for log migration volume gamma[t].
-    # Use only with evidence independent of the HIV/AIDS/CD4/ABROAD counts (e.g.
-    # ONS migration flows x source-country prevalence). Do NOT pass the posterior
-    # of another model (e.g. the age-independent model) fit to these same counts:
-    # that double-uses the data and yields an overconfident posterior.
-    # Set gamma_obs_sd = 0 (default) to disable; supply gamma_obs_mean as a
-    # dense length-nquar vector of rolling-annual log migration volume values.
-    # The Stan model uses three latent pre-study quarterly migration volumes to
-    # complete the first three annual windows.
+    # gamma_obs: EXTERNAL auxiliary observations for log migration volume by the
+    # same 4 age groups used in ABROAD_group. Use only with evidence independent
+    # of the HIV/AIDS/CD4/ABROAD counts (e.g. ONS migration flows by age group).
+    # Do NOT pass the posterior of another model fit to these same counts: that
+    # double-uses the data and yields an overconfident posterior. Set
+    # gamma_obs_sd = 0 (default) to disable; otherwise supply gamma_obs_mean_group
+    # as a dense (nquar x 4) matrix of rolling-annual log migration volumes by
+    # age group. The Stan model uses three latent pre-study quarterly migration
+    # volumes to complete the first three annual windows.
     if (is.null(stan_data$gamma_obs_sd)) {
       stan_data$gamma_obs_sd <- 0
     }
-    if (is.null(stan_data$gamma_obs_mean)) {
+    if (is.null(stan_data$gamma_obs_mean_group)) {
       if (stan_data$gamma_obs_sd > 0) {
-        stop("gamma_obs_mean must be supplied when gamma_obs_sd > 0.")
+        if (!is.null(stan_data$gamma_obs_mean)) {
+          stop("gamma_obs_mean_group must be supplied when gamma_obs_sd > 0; gamma_obs_mean has been replaced by the grouped age-series input.")
+        }
+        stop("gamma_obs_mean_group must be supplied when gamma_obs_sd > 0.")
       }
-      stan_data$gamma_obs_mean <- rep(0, stan_data$nquar)
+      stan_data$gamma_obs_mean_group <- matrix(0, nrow = stan_data$nquar, ncol = 4L)
     }
-    if (length(stan_data$gamma_obs_mean) == 0 && stan_data$gamma_obs_sd == 0) {
-      stan_data$gamma_obs_mean <- rep(0, stan_data$nquar)
+    if (length(stan_data$gamma_obs_mean_group) == 0 && stan_data$gamma_obs_sd == 0) {
+      stan_data$gamma_obs_mean_group <- matrix(0, nrow = stan_data$nquar, ncol = 4L)
     }
-    if (length(stan_data$gamma_obs_mean) != stan_data$nquar) {
-      stop("gamma_obs_mean must have length nquar.")
+    stan_data$gamma_obs_mean_group <- as.matrix(stan_data$gamma_obs_mean_group)
+    if (!all(dim(stan_data$gamma_obs_mean_group) == c(stan_data$nquar, 4L))) {
+      stop("gamma_obs_mean_group must have dimensions (nquar, 4).")
     }
+    stan_data$gamma_obs_mean <- NULL
   }
 
   # Create stan_data$model_config
