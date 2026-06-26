@@ -15,7 +15,6 @@ derive_init_props(
   q = c(0.0976, 0.115, 0.116, 0.148),
   mu_lat_t1 = NULL,
   abroad = FALSE,
-  scale = if (!abroad) 7 else NULL,
   rita = FALSE
 )
 ```
@@ -46,16 +45,6 @@ derive_init_props(
   Logical. `FALSE` (default): solve for the native group with all inflow
   entering state 1. `TRUE`: solve for the migrant stock with inflow
   distributed via `mu_lat_t1`.
-
-- scale:
-
-  Numeric or `NULL`. When non-`NULL`, the output is scaled so that its
-  first non-zero element equals `scale`. Defaults to 7 for the native
-  group so the result is on the same scale as the built-in `init_props`
-  default. Defaults to `NULL` for the migrant group: the unscaled solve
-  already gives values in the correct units for direct use as
-  `init_props_abroad` (latent stock per unit of quarterly migration into
-  latent states).
 
 - rita:
 

@@ -65,7 +65,6 @@ is assumed to be near equilibrium before the simulation window.</p>
 <span>  q <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.0976</span>, <span class="fl">0.115</span>, <span class="fl">0.116</span>, <span class="fl">0.148</span><span class="op">)</span>,</span>
 <span>  mu_lat_t1 <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  abroad <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  scale <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="va">abroad</span><span class="op">)</span> <span class="fl">7</span> <span class="kw">else</span> <span class="cn">NULL</span>,</span>
 <span>  rita <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -97,16 +96,6 @@ Will be normalised internally to sum to 1.</p></dd>
 <dd><p>Logical.  <code>FALSE</code> (default): solve for the native group
 with all inflow entering state 1.  <code>TRUE</code>: solve for the migrant stock
 with inflow distributed via <code>mu_lat_t1</code>.</p></dd>
-
-
-<dt id="arg-scale">scale<a class="anchor" aria-label="anchor" href="#arg-scale"></a></dt>
-<dd><p>Numeric or <code>NULL</code>.  When non-<code>NULL</code>, the output is
-scaled so that its first non-zero element equals <code>scale</code>.  Defaults to
-7 for the native group so the result is on the same scale as the built-in
-<code>init_props</code> default.  Defaults to <code>NULL</code> for the migrant group:
-the unscaled solve already gives values in the correct units for direct use
-as <code>init_props_abroad</code> (latent stock per unit of quarterly migration
-into latent states).</p></dd>
 
 
 <dt id="arg-rita">rita<a class="anchor" aria-label="anchor" href="#arg-rita"></a></dt>
