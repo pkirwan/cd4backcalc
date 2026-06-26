@@ -29,13 +29,14 @@ define_sim_config(
   abroad_prop = 0.2,
   cd4_completeness = 1,
   rita_completeness = 1,
+  rita_completeness_by_state = NULL,
   age_diag_effect = 0,
   mig_diag_offset = NULL,
   frr = 0.019,
   detect_obs_times = NULL,
+  gamma_obs_grouped = FALSE,
   gamma_obs_sd = 0,
-  gamma_obs_scale = 500,
-  gamma_obs_times = NULL
+  gamma_obs_scale = 500
 )
 ```
 
@@ -129,6 +130,13 @@ define_sim_config(
 
   RITA completeness.
 
+- rita_completeness_by_state:
+
+  Optional numeric vector of length 5 for RITA simulations giving
+  state-specific completeness for \codeCD4 = c(RITA+, CD4\>500, 500-350,
+  350-200, \<200). Use lower values in lower CD4 states to simulate
+  informative missingness.
+
 - age_diag_effect:
 
   Numeric scalar controlling the strength of age variation in diagnosis
@@ -150,6 +158,14 @@ define_sim_config(
 
   Integer vector of quarter indices (1-based) at which external
   detection-probability observations are generated.
+
+- gamma_obs_grouped:
+
+  Logical scalar or logical vector of length `nquar` controlling which
+  quarters receive age-stratified external migration observations on the
+  same 4 age groups as `ABROAD_group`. The scalar `gamma_obs` series is
+  always simulated; quarters where `gamma_obs_grouped` is `FALSE` have
+  `-1` rows in `gamma_obs_group`.
 
 ## Value
 

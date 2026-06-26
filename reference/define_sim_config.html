@@ -9,7 +9,7 @@ The number of latent and diagnosis states will be inferred from the simulation s
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -37,7 +37,7 @@ The number of latent and diagnosis states will be inferred from the simulation s
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Define simulation configuration</h1>
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.2/R/sim_diags.R" class="external-link"><code>R/sim_diags.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.3/R/sim_diags.R" class="external-link"><code>R/sim_diags.R</code></a></small>
       <div class="d-none name"><code>define_sim_config.Rd</code></div>
     </div>
 
@@ -70,13 +70,14 @@ The number of latent and diagnosis states will be inferred from the simulation s
 <span>  abroad_prop <span class="op">=</span> <span class="fl">0.2</span>,</span>
 <span>  cd4_completeness <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  rita_completeness <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  rita_completeness_by_state <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  age_diag_effect <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  mig_diag_offset <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  frr <span class="op">=</span> <span class="fl">0.019</span>,</span>
 <span>  detect_obs_times <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  gamma_obs_grouped <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  gamma_obs_sd <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>  gamma_obs_scale <span class="op">=</span> <span class="fl">500</span>,</span>
-<span>  gamma_obs_times <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  gamma_obs_scale <span class="op">=</span> <span class="fl">500</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -168,6 +169,13 @@ The number of latent and diagnosis states will be inferred from the simulation s
 <dd><p>RITA completeness.</p></dd>
 
 
+<dt id="arg-rita-completeness-by-state">rita_completeness_by_state<a class="anchor" aria-label="anchor" href="#arg-rita-completeness-by-state"></a></dt>
+<dd><p>Optional numeric vector of length 5
+for RITA simulations giving state-specific completeness for
+\codeCD4 = c(RITA+, CD4&gt;500, 500-350, 350-200, &lt;200).
+Use lower values in lower CD4 states to simulate informative missingness.</p></dd>
+
+
 <dt id="arg-age-diag-effect">age_diag_effect<a class="anchor" aria-label="anchor" href="#arg-age-diag-effect"></a></dt>
 <dd><p>Numeric scalar controlling the strength of age variation in diagnosis probabilities. Applied as a logit-additive offset scaled linearly across ages.</p></dd>
 
@@ -182,6 +190,15 @@ The number of latent and diagnosis states will be inferred from the simulation s
 
 <dt id="arg-detect-obs-times">detect_obs_times<a class="anchor" aria-label="anchor" href="#arg-detect-obs-times"></a></dt>
 <dd><p>Integer vector of quarter indices (1-based) at which external detection-probability observations are generated.</p></dd>
+
+
+<dt id="arg-gamma-obs-grouped">gamma_obs_grouped<a class="anchor" aria-label="anchor" href="#arg-gamma-obs-grouped"></a></dt>
+<dd><p>Logical scalar or logical vector of length
+<code>nquar</code> controlling which quarters receive age-stratified external
+migration observations on the same 4 age groups as <code>ABROAD_group</code>.
+The scalar <code>gamma_obs</code> series is always simulated; quarters where
+<code>gamma_obs_grouped</code> is <code>FALSE</code> have <code>-1</code> rows in
+<code>gamma_obs_group</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

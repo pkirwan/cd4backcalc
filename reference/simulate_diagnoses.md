@@ -27,15 +27,16 @@ simulate_diagnoses(
   abroad_prop = 0.2,
   cd4_completeness = 1,
   rita_completeness = 1,
+  rita_completeness_by_state = NULL,
   age_diag_effect = 0,
   mig_diag_offset = NULL,
   frr = 0.019,
   eta_sd = 0.4,
   detect_obs_sd = 0,
   detect_obs_times = NULL,
+  gamma_obs_grouped = FALSE,
   gamma_obs_sd = 0,
-  gamma_obs_scale = 500,
-  gamma_obs_times = NULL
+  gamma_obs_scale = 500
 )
 ```
 
@@ -129,6 +130,13 @@ simulate_diagnoses(
 
   RITA completeness.
 
+- rita_completeness_by_state:
+
+  Optional numeric vector of length 5 for RITA simulations giving
+  state-specific completeness for \codeCD4 = c(RITA+, CD4\>500, 500-350,
+  350-200, \<200). Use lower values in lower CD4 states to simulate
+  informative missingness.
+
 - age_diag_effect:
 
   Numeric scalar controlling the strength of age variation in diagnosis
@@ -166,6 +174,14 @@ simulate_diagnoses(
   vector, e.g. `c(4, 10, 30)`, to place observations at specific
   quarters.
 
+- gamma_obs_grouped:
+
+  Logical scalar or logical vector of length `nquar` controlling which
+  quarters receive age-stratified external migration observations on the
+  same 4 age groups as `ABROAD_group`. The scalar `gamma_obs` series is
+  always simulated; quarters where `gamma_obs_grouped` is `FALSE` have
+  `-1` rows in `gamma_obs_group`.
+
 - gamma_obs_sd:
 
   Standard deviation of the external migration-index trend likelihood (0
@@ -174,11 +190,6 @@ simulate_diagnoses(
 - gamma_obs_scale:
 
   Ratio of total external migration to HIV+ migration volume.
-
-- gamma_obs_times:
-
-  Integer vector of quarter indices (1-based) at which external
-  migration-index observations are generated.
 
 ## Value
 
@@ -3982,6 +3993,129 @@ simulate_diagnoses()
 #>  [75] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 #> [112] 0 0 0 0 0 0 0 0 0
 #> 
+#> $stan_data$ABROAD_group
+#>        [,1] [,2] [,3] [,4]
+#>   [1,]    0    0    0    0
+#>   [2,]    0    0    0    0
+#>   [3,]    0    0    0    0
+#>   [4,]    0    0    0    0
+#>   [5,]    0    0    0    0
+#>   [6,]    0    0    0    0
+#>   [7,]    0    0    0    0
+#>   [8,]    0    0    0    0
+#>   [9,]    0    0    0    0
+#>  [10,]    0    0    0    0
+#>  [11,]    0    0    0    0
+#>  [12,]    0    0    0    0
+#>  [13,]    0    0    0    0
+#>  [14,]    0    0    0    0
+#>  [15,]    0    0    0    0
+#>  [16,]    0    0    0    0
+#>  [17,]    0    0    0    0
+#>  [18,]    0    0    0    0
+#>  [19,]    0    0    0    0
+#>  [20,]    0    0    0    0
+#>  [21,]    0    0    0    0
+#>  [22,]    0    0    0    0
+#>  [23,]    0    0    0    0
+#>  [24,]    0    0    0    0
+#>  [25,]    0    0    0    0
+#>  [26,]    0    0    0    0
+#>  [27,]    0    0    0    0
+#>  [28,]    0    0    0    0
+#>  [29,]    0    0    0    0
+#>  [30,]    0    0    0    0
+#>  [31,]    0    0    0    0
+#>  [32,]    0    0    0    0
+#>  [33,]    0    0    0    0
+#>  [34,]    0    0    0    0
+#>  [35,]    0    0    0    0
+#>  [36,]    0    0    0    0
+#>  [37,]    0    0    0    0
+#>  [38,]    0    0    0    0
+#>  [39,]    0    0    0    0
+#>  [40,]    0    0    0    0
+#>  [41,]    0    0    0    0
+#>  [42,]    0    0    0    0
+#>  [43,]    0    0    0    0
+#>  [44,]    0    0    0    0
+#>  [45,]    0    0    0    0
+#>  [46,]    0    0    0    0
+#>  [47,]    0    0    0    0
+#>  [48,]    0    0    0    0
+#>  [49,]    0    0    0    0
+#>  [50,]    0    0    0    0
+#>  [51,]    0    0    0    0
+#>  [52,]    0    0    0    0
+#>  [53,]    0    0    0    0
+#>  [54,]    0    0    0    0
+#>  [55,]    0    0    0    0
+#>  [56,]    0    0    0    0
+#>  [57,]    0    0    0    0
+#>  [58,]    0    0    0    0
+#>  [59,]    0    0    0    0
+#>  [60,]    0    0    0    0
+#>  [61,]    0    0    0    0
+#>  [62,]    0    0    0    0
+#>  [63,]    0    0    0    0
+#>  [64,]    0    0    0    0
+#>  [65,]    0    0    0    0
+#>  [66,]    0    0    0    0
+#>  [67,]    0    0    0    0
+#>  [68,]    0    0    0    0
+#>  [69,]    0    0    0    0
+#>  [70,]    0    0    0    0
+#>  [71,]    0    0    0    0
+#>  [72,]    0    0    0    0
+#>  [73,]    0    0    0    0
+#>  [74,]    0    0    0    0
+#>  [75,]    0    0    0    0
+#>  [76,]    0    0    0    0
+#>  [77,]    0    0    0    0
+#>  [78,]    0    0    0    0
+#>  [79,]    0    0    0    0
+#>  [80,]    0    0    0    0
+#>  [81,]    0    0    0    0
+#>  [82,]    0    0    0    0
+#>  [83,]    0    0    0    0
+#>  [84,]    0    0    0    0
+#>  [85,]    0    0    0    0
+#>  [86,]    0    0    0    0
+#>  [87,]    0    0    0    0
+#>  [88,]    0    0    0    0
+#>  [89,]    0    0    0    0
+#>  [90,]    0    0    0    0
+#>  [91,]    0    0    0    0
+#>  [92,]    0    0    0    0
+#>  [93,]    0    0    0    0
+#>  [94,]    0    0    0    0
+#>  [95,]    0    0    0    0
+#>  [96,]    0    0    0    0
+#>  [97,]    0    0    0    0
+#>  [98,]    0    0    0    0
+#>  [99,]    0    0    0    0
+#> [100,]    0    0    0    0
+#> [101,]    0    0    0    0
+#> [102,]    0    0    0    0
+#> [103,]    0    0    0    0
+#> [104,]    0    0    0    0
+#> [105,]    0    0    0    0
+#> [106,]    0    0    0    0
+#> [107,]    0    0    0    0
+#> [108,]    0    0    0    0
+#> [109,]    0    0    0    0
+#> [110,]    0    0    0    0
+#> [111,]    0    0    0    0
+#> [112,]    0    0    0    0
+#> [113,]    0    0    0    0
+#> [114,]    0    0    0    0
+#> [115,]    0    0    0    0
+#> [116,]    0    0    0    0
+#> [117,]    0    0    0    0
+#> [118,]    0    0    0    0
+#> [119,]    0    0    0    0
+#> [120,]    0    0    0    0
+#> 
 #> $stan_data$ABROAD_age
 #>        [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10] [,11] [,12] [,13]
 #>   [1,]    0    0    0    0    0    0    0    0    0     0     0     0     0
@@ -4722,11 +4856,134 @@ simulate_diagnoses()
 #> $stan_data$detect_obs_sd
 #> [1] 0
 #> 
-#> $stan_data$gamma_obs_index
-#> integer(0)
+#> $stan_data$gamma_obs
+#>   [1] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+#>  [38] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+#>  [75] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+#> [112] 0 0 0 0 0 0 0 0 0
 #> 
-#> $stan_data$gamma_obs_mean
-#> numeric(0)
+#> $stan_data$gamma_obs_group
+#>        [,1] [,2] [,3] [,4]
+#>   [1,]   -1   -1   -1   -1
+#>   [2,]   -1   -1   -1   -1
+#>   [3,]   -1   -1   -1   -1
+#>   [4,]   -1   -1   -1   -1
+#>   [5,]   -1   -1   -1   -1
+#>   [6,]   -1   -1   -1   -1
+#>   [7,]   -1   -1   -1   -1
+#>   [8,]   -1   -1   -1   -1
+#>   [9,]   -1   -1   -1   -1
+#>  [10,]   -1   -1   -1   -1
+#>  [11,]   -1   -1   -1   -1
+#>  [12,]   -1   -1   -1   -1
+#>  [13,]   -1   -1   -1   -1
+#>  [14,]   -1   -1   -1   -1
+#>  [15,]   -1   -1   -1   -1
+#>  [16,]   -1   -1   -1   -1
+#>  [17,]   -1   -1   -1   -1
+#>  [18,]   -1   -1   -1   -1
+#>  [19,]   -1   -1   -1   -1
+#>  [20,]   -1   -1   -1   -1
+#>  [21,]   -1   -1   -1   -1
+#>  [22,]   -1   -1   -1   -1
+#>  [23,]   -1   -1   -1   -1
+#>  [24,]   -1   -1   -1   -1
+#>  [25,]   -1   -1   -1   -1
+#>  [26,]   -1   -1   -1   -1
+#>  [27,]   -1   -1   -1   -1
+#>  [28,]   -1   -1   -1   -1
+#>  [29,]   -1   -1   -1   -1
+#>  [30,]   -1   -1   -1   -1
+#>  [31,]   -1   -1   -1   -1
+#>  [32,]   -1   -1   -1   -1
+#>  [33,]   -1   -1   -1   -1
+#>  [34,]   -1   -1   -1   -1
+#>  [35,]   -1   -1   -1   -1
+#>  [36,]   -1   -1   -1   -1
+#>  [37,]   -1   -1   -1   -1
+#>  [38,]   -1   -1   -1   -1
+#>  [39,]   -1   -1   -1   -1
+#>  [40,]   -1   -1   -1   -1
+#>  [41,]   -1   -1   -1   -1
+#>  [42,]   -1   -1   -1   -1
+#>  [43,]   -1   -1   -1   -1
+#>  [44,]   -1   -1   -1   -1
+#>  [45,]   -1   -1   -1   -1
+#>  [46,]   -1   -1   -1   -1
+#>  [47,]   -1   -1   -1   -1
+#>  [48,]   -1   -1   -1   -1
+#>  [49,]   -1   -1   -1   -1
+#>  [50,]   -1   -1   -1   -1
+#>  [51,]   -1   -1   -1   -1
+#>  [52,]   -1   -1   -1   -1
+#>  [53,]   -1   -1   -1   -1
+#>  [54,]   -1   -1   -1   -1
+#>  [55,]   -1   -1   -1   -1
+#>  [56,]   -1   -1   -1   -1
+#>  [57,]   -1   -1   -1   -1
+#>  [58,]   -1   -1   -1   -1
+#>  [59,]   -1   -1   -1   -1
+#>  [60,]   -1   -1   -1   -1
+#>  [61,]   -1   -1   -1   -1
+#>  [62,]   -1   -1   -1   -1
+#>  [63,]   -1   -1   -1   -1
+#>  [64,]   -1   -1   -1   -1
+#>  [65,]   -1   -1   -1   -1
+#>  [66,]   -1   -1   -1   -1
+#>  [67,]   -1   -1   -1   -1
+#>  [68,]   -1   -1   -1   -1
+#>  [69,]   -1   -1   -1   -1
+#>  [70,]   -1   -1   -1   -1
+#>  [71,]   -1   -1   -1   -1
+#>  [72,]   -1   -1   -1   -1
+#>  [73,]   -1   -1   -1   -1
+#>  [74,]   -1   -1   -1   -1
+#>  [75,]   -1   -1   -1   -1
+#>  [76,]   -1   -1   -1   -1
+#>  [77,]   -1   -1   -1   -1
+#>  [78,]   -1   -1   -1   -1
+#>  [79,]   -1   -1   -1   -1
+#>  [80,]   -1   -1   -1   -1
+#>  [81,]   -1   -1   -1   -1
+#>  [82,]   -1   -1   -1   -1
+#>  [83,]   -1   -1   -1   -1
+#>  [84,]   -1   -1   -1   -1
+#>  [85,]   -1   -1   -1   -1
+#>  [86,]   -1   -1   -1   -1
+#>  [87,]   -1   -1   -1   -1
+#>  [88,]   -1   -1   -1   -1
+#>  [89,]   -1   -1   -1   -1
+#>  [90,]   -1   -1   -1   -1
+#>  [91,]   -1   -1   -1   -1
+#>  [92,]   -1   -1   -1   -1
+#>  [93,]   -1   -1   -1   -1
+#>  [94,]   -1   -1   -1   -1
+#>  [95,]   -1   -1   -1   -1
+#>  [96,]   -1   -1   -1   -1
+#>  [97,]   -1   -1   -1   -1
+#>  [98,]   -1   -1   -1   -1
+#>  [99,]   -1   -1   -1   -1
+#> [100,]   -1   -1   -1   -1
+#> [101,]   -1   -1   -1   -1
+#> [102,]   -1   -1   -1   -1
+#> [103,]   -1   -1   -1   -1
+#> [104,]   -1   -1   -1   -1
+#> [105,]   -1   -1   -1   -1
+#> [106,]   -1   -1   -1   -1
+#> [107,]   -1   -1   -1   -1
+#> [108,]   -1   -1   -1   -1
+#> [109,]   -1   -1   -1   -1
+#> [110,]   -1   -1   -1   -1
+#> [111,]   -1   -1   -1   -1
+#> [112,]   -1   -1   -1   -1
+#> [113,]   -1   -1   -1   -1
+#> [114,]   -1   -1   -1   -1
+#> [115,]   -1   -1   -1   -1
+#> [116,]   -1   -1   -1   -1
+#> [117,]   -1   -1   -1   -1
+#> [118,]   -1   -1   -1   -1
+#> [119,]   -1   -1   -1   -1
+#> [120,]   -1   -1   -1   -1
 #> 
 #> $stan_data$gamma_obs_sd
 #> [1] 0
@@ -4853,6 +5110,9 @@ simulate_diagnoses()
 #> $stan_data$sim_config$rita_completeness
 #> [1] 1
 #> 
+#> $stan_data$sim_config$rita_completeness_by_state
+#> NULL
+#> 
 #> $stan_data$sim_config$age_diag_effect
 #> [1] 0
 #> 
@@ -4865,20 +5125,23 @@ simulate_diagnoses()
 #> $stan_data$sim_config$detect_obs_times
 #>  [1]   4  12  20  28  36  44  52  60  68  76  84  92 100 108 116
 #> 
+#> $stan_data$sim_config$gamma_obs_grouped
+#>   [1] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+#>  [13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+#>  [25] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+#>  [37] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+#>  [49] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+#>  [61] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+#>  [73] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+#>  [85] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+#>  [97] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+#> [109] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+#> 
 #> $stan_data$sim_config$gamma_obs_sd
 #> [1] 0
 #> 
 #> $stan_data$sim_config$gamma_obs_scale
 #> [1] 500
-#> 
-#> $stan_data$sim_config$gamma_obs_times
-#>   [1]   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18
-#>  [19]  19  20  21  22  23  24  25  26  27  28  29  30  31  32  33  34  35  36
-#>  [37]  37  38  39  40  41  42  43  44  45  46  47  48  49  50  51  52  53  54
-#>  [55]  55  56  57  58  59  60  61  62  63  64  65  66  67  68  69  70  71  72
-#>  [73]  73  74  75  76  77  78  79  80  81  82  83  84  85  86  87  88  89  90
-#>  [91]  91  92  93  94  95  96  97  98  99 100 101 102 103 104 105 106 107 108
-#> [109] 109 110 111 112 113 114 115 116 117 118 119 120
 #> 
 #> $stan_data$sim_config$init_props
 #> [1] 7.0000000 3.0415339 0.9634226 0.1886407

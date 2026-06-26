@@ -16,7 +16,8 @@ undiag.mig.fct.qt(draws, abroad_age_prop, age.st, age.end, nage, nt, start_yr)
 
 - abroad_age_prop:
 
-  A matrix of migrant age proportions.
+  An array of posterior migrant age proportions indexed by draw,
+  quarter, and age (dimensions: `[draw, quarter, age]`).
 
 - age.st:
 
