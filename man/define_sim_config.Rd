@@ -26,6 +26,7 @@ define_sim_config(
   abroad_prop = 0.2,
   cd4_completeness = 1,
   rita_completeness = 1,
+  rita_completeness_by_state = NULL,
   age_diag_effect = 0,
   mig_diag_offset = NULL,
   frr = 0.019,
@@ -76,6 +77,11 @@ define_sim_config(
 \item{cd4_completeness}{CD4 completeness.}
 
 \item{rita_completeness}{RITA completeness.}
+
+\item{rita_completeness_by_state}{Optional numeric vector of length 5
+for RITA simulations giving state-specific completeness for
+\\code{CD4 = c(RITA+, CD4>500, 500-350, 350-200, <200)}.
+Use lower values in lower CD4 states to simulate informative missingness.}
 
 \item{age_diag_effect}{Numeric scalar controlling the strength of age variation in diagnosis probabilities. Applied as a logit-additive offset scaled linearly across ages.}
 
