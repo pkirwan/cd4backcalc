@@ -24,6 +24,10 @@
 #' @param abroad_prop Proportion of infections acquired abroad at the outset.
 #' @param cd4_completeness CD4 completeness.
 #' @param rita_completeness RITA completeness.
+#' @param rita_completeness_by_state Optional numeric vector of length 5
+#'   for RITA simulations giving state-specific completeness for
+#'   \\code{CD4 = c(RITA+, CD4>500, 500-350, 350-200, <200)}.
+#'   Use lower values in lower CD4 states to simulate informative missingness.
 #' @param age_diag_effect Numeric scalar controlling the strength of age variation in diagnosis probabilities. Applied as a logit-additive offset scaled linearly across ages.
 #' @param mig_diag_offset Numeric vector of per-state logit-scale offsets applied to diagnosis probabilities for the migrant group (y=2). Length must equal the number of diagnosis states (4 for non-RITA, 5 for RITA). NULL (default) applies no offset.
 #' @param frr False recency rate for RITA misclassification.
@@ -52,6 +56,7 @@ define_sim_config <- function(
   abroad_prop = 0.2, # proportion acquired abroad at outset
   cd4_completeness = 1, # CD4 completeness
   rita_completeness = 1, # RITA completeness
+  rita_completeness_by_state = NULL, # optional state-specific RITA completeness
   age_diag_effect = 0, # age effect on diagnosis probabilities
   mig_diag_offset = NULL, # per-state logit offsets for migrant diagnosis probs
   frr = 0.019, # false recency rate for RITA misclassification
@@ -87,6 +92,20 @@ define_sim_config <- function(
     }
   }
 
+  if (!is.null(rita_completeness_by_state)) {
+    if (
+      !is.numeric(rita_completeness_by_state) ||
+        anyNA(rita_completeness_by_state) ||
+        length(rita_completeness_by_state) != 5 ||
+        any(rita_completeness_by_state < 0) ||
+        any(rita_completeness_by_state > 1)
+    ) {
+      stop(
+        "rita_completeness_by_state must be a numeric vector of length 5 with values in [0, 1]."
+      )
+    }
+  }
+
   # Standard configuration parameters
   config <- list(
     h_pattern = h_pattern,
@@ -112,6 +131,7 @@ define_sim_config <- function(
     abroad_prop = abroad_prop,
     cd4_completeness = cd4_completeness,
     rita_completeness = rita_completeness,
+    rita_completeness_by_state = rita_completeness_by_state,
     age_diag_effect = age_diag_effect,
     mig_diag_offset = mig_diag_offset,
     frr = frr,
@@ -499,6 +519,10 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #' @param abroad_prop Proportion of infections acquired abroad at the outset.
 #' @param cd4_completeness CD4 completeness.
 #' @param rita_completeness RITA completeness.
+#' @param rita_completeness_by_state Optional numeric vector of length 5
+#'   for RITA simulations giving state-specific completeness for
+#'   \\code{CD4 = c(RITA+, CD4>500, 500-350, 350-200, <200)}.
+#'   Use lower values in lower CD4 states to simulate informative missingness.
 #' @param age_diag_effect Numeric scalar controlling the strength of age variation in diagnosis probabilities. Applied as a logit-additive offset scaled linearly across ages.
 #' @param mig_diag_offset Numeric vector of per-state logit-scale offsets applied to diagnosis probabilities for the migrant group (y=2). Length must equal the number of diagnosis states (4 for non-RITA, 5 for RITA). NULL (default) applies no offset.
 #' @param frr False recency rate for RITA misclassification.
@@ -536,6 +560,7 @@ simulate_diagnoses <- function(
   abroad_prop = 0.2, # proportion acquired abroad at outset
   cd4_completeness = 1, # CD4 completeness
   rita_completeness = 1, # RITA completeness
+  rita_completeness_by_state = NULL, # optional state-specific RITA completeness
   age_diag_effect = 0, # age effect on diagnosis probabilities
   mig_diag_offset = NULL, # per-state logit offsets for migrant diagnosis probs
   frr = 0.019, # false recency rate for RITA misclassification
@@ -567,6 +592,7 @@ simulate_diagnoses <- function(
     abroad_prop,
     cd4_completeness,
     rita_completeness,
+    rita_completeness_by_state,
     age_diag_effect,
     mig_diag_offset,
     frr,
@@ -1190,30 +1216,45 @@ simulate_diagnoses <- function(
         )
     )
   }
-  # Adjust RITA counts if completeness less than 100% using a normal approximation to the binomial distribution
-  if (sim_config$rita && sim_config$rita_completeness < 1) {
-    stan_data$CD4 <- round(
-      stan_data$CD4 *
-        pmin(
-          1,
-          stats::rnorm(
-            length(stan_data$CD4),
-            sim_config$rita_completeness,
-            0.05
-          )
-        )
-    )
-    stan_data$CD4_age <- round(
-      stan_data$CD4_age *
-        pmin(
-          1,
-          stats::rnorm(
-            length(stan_data$CD4_age),
-            sim_config$rita_completeness,
-            0.05
-          )
-        )
-    )
+  # Adjust RITA counts for completeness; optionally use state-specific values
+  # to induce informative missingness (e.g. lower completeness at low CD4).
+  if (sim_config$rita) {
+    rita_state_probs <- if (is.null(sim_config$rita_completeness_by_state)) {
+      rep(sim_config$rita_completeness, sim_config$ndiagst - 1)
+    } else {
+      as.numeric(sim_config$rita_completeness_by_state)
+    }
+
+    if (any(rita_state_probs < 1)) {
+      apply_rita_completeness <- function(x, state_probs, dist) {
+        dims <- dim(x)
+        nstates <- dims[length(dims)]
+        if (nstates != length(state_probs)) {
+          stop("RITA completeness vector length must match CD4 state dimension.")
+        }
+
+        n_per_state <- prod(dims[-length(dims)])
+        probs <- rep(state_probs, each = n_per_state)
+        counts <- pmax(0L, as.integer(round(as.vector(x))))
+        out <- if (dist) {
+          stats::rbinom(length(counts), counts, probs)
+        } else {
+          round(counts * probs)
+        }
+        array(out, dim = dims)
+      }
+
+      stan_data$CD4 <- apply_rita_completeness(
+        stan_data$CD4,
+        rita_state_probs,
+        sim_config$dist
+      )
+      stan_data$CD4_age <- apply_rita_completeness(
+        stan_data$CD4_age,
+        rita_state_probs,
+        sim_config$dist
+      )
+    }
   }
 
   return(list(
