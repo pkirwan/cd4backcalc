@@ -1,3 +1,15 @@
+test_that("rita completeness by state simulation produces expected HIV data", {
+  sim_diags <- simulate_diagnoses(
+    sim_seed = 123,
+    age = TRUE,
+    rita = TRUE,
+    rita_completeness_by_state = c(0.8, 0.8, 0.7, 0.6, 0.5)
+  )
+  expect_true(all(
+    rowSums(sim_diags$stan_data$CD4) < 0.8 * sim_diags$stan_data$HIV
+  ))
+})
+
 test_that("migration simulation produces expected HIV data", {
   sim_diags <- simulate_diagnoses(sim_seed = 123, migration = TRUE)
   expect_equal(
@@ -90,9 +102,16 @@ test_that("gamma_obs_grouped vector controls grouped external migration by quart
   )
 
   expect_equal(length(sim_diags$stan_data$gamma_obs), sim_diags$stan_data$nquar)
-  expect_equal(dim(sim_diags$stan_data$gamma_obs_group), c(sim_diags$stan_data$nquar, 4L))
+  expect_equal(
+    dim(sim_diags$stan_data$gamma_obs_group),
+    c(sim_diags$stan_data$nquar, 4L)
+  )
   expect_false("gamma_obs_grouped" %in% names(sim_diags$stan_data))
 
-  expect_true(all(sim_diags$stan_data$gamma_obs_group[!gamma_grouped_schedule, ] == -1))
-  expect_true(all(sim_diags$stan_data$gamma_obs_group[gamma_grouped_schedule, ] > -1))
+  expect_true(all(
+    sim_diags$stan_data$gamma_obs_group[!gamma_grouped_schedule, ] == -1
+  ))
+  expect_true(all(
+    sim_diags$stan_data$gamma_obs_group[gamma_grouped_schedule, ] > -1
+  ))
 })

@@ -9,7 +9,6 @@ derive_init_props(
   q = c(0.0976, 0.115, 0.116, 0.148),
   mu_lat_t1 = NULL,
   abroad = FALSE,
-  scale = if (!abroad) 7 else NULL,
   rita = FALSE
 )
 }
@@ -30,14 +29,6 @@ Will be normalised internally to sum to 1.}
 \item{abroad}{Logical.  \code{FALSE} (default): solve for the native group
 with all inflow entering state 1.  \code{TRUE}: solve for the migrant stock
 with inflow distributed via \code{mu_lat_t1}.}
-
-\item{scale}{Numeric or \code{NULL}.  When non-\code{NULL}, the output is
-scaled so that its first non-zero element equals \code{scale}.  Defaults to
-7 for the native group so the result is on the same scale as the built-in
-\code{init_props} default.  Defaults to \code{NULL} for the migrant group:
-the unscaled solve already gives values in the correct units for direct use
-as \code{init_props_abroad} (latent stock per unit of quarterly migration
-into latent states).}
 
 \item{rita}{Logical.  Use the RITA compartment structure (7 latent states).}
 }

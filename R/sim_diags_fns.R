@@ -14,7 +14,10 @@ generate_infections <- function(
   dist = TRUE
 ) {
   # check pattern
-  stopifnot(pattern %in% c("varying", "varying_1", "varying_2", "constant", "increasing"))
+  stopifnot(
+    pattern %in%
+      c("varying", "varying_1", "varying_2", "constant", "increasing")
+  )
 
   ann_inf <- target_inf / nquar
   infs <- if (pattern == "varying") {
@@ -38,7 +41,8 @@ generate_infections <- function(
     c(
       seq(0.8, 1.6, length.out = round(nquar * 0.6)),
       seq(1.6, 0.9, length.out = round(nquar * 0.4))
-    ) * ann_inf
+    ) *
+      ann_inf
   } else if (pattern == "constant") {
     rep(ann_inf, nquar)
   } else if (pattern == "increasing") {
@@ -64,7 +68,10 @@ generate_infections <- function(
 #' @return Vector of omega values over time.
 generate_omega <- function(nquar, pattern, target_mig = 12000, dist = TRUE) {
   # check pattern
-  stopifnot(pattern %in% c("constant", "increasing", "step_change_1", "step_change_2", "none"))
+  stopifnot(
+    pattern %in%
+      c("constant", "increasing", "step_change_1", "step_change_2", "none")
+  )
   ann_mig <- target_mig / nquar
   omega <- if (pattern == "constant") {
     rep(ann_mig, nquar)
@@ -84,7 +91,8 @@ generate_omega <- function(nquar, pattern, target_mig = 12000, dist = TRUE) {
       seq(0.7, 1.0, length.out = round(nquar * 0.65)),
       seq(1.0, 2.8, length.out = round(nquar * 0.20)),
       seq(2.8, 3.0, length.out = round(nquar * 0.15))
-    ) * ann_mig
+    ) *
+      ann_mig
   } else if (pattern == "none") {
     rep(0, nquar)
   }
@@ -218,7 +226,12 @@ generate_migration <- function(nquar, nlatst, omega, mu, dist = TRUE) {
 #' @param vardelta Innovation variance (step variance per quarter).
 #' @return Numeric vector of length \code{nquar} on the logit scale.
 #' @keywords internal
-simulate_ar1_logit <- function(nquar, trend_logit, rho = 0.86, vardelta = exp(-4.0)) {
+simulate_ar1_logit <- function(
+  nquar,
+  trend_logit,
+  rho = 0.86,
+  vardelta = exp(-4.0)
+) {
   resid <- numeric(nquar)
   resid[1] <- sqrt(vardelta / (1 - rho^2)) * stats::rnorm(1)
   for (t in 2:nquar) {
@@ -257,24 +270,26 @@ generate_diagnosis_probs <- function(
     # rho and vardelta are set to the prior mode / tightened prior centre so that
     # the simulated trajectories are drawn from a distribution the model can fit.
     # Stationary SD = sqrt(vardelta / (1 - rho^2)) ~ 0.26 logit units.
-    rho_sim <- 0.86       # prior mode of beta(7, 2)
-    vardelta_sim <- exp(-4.0)  # tightened prior centre of mu_log_var
+    rho_sim <- 0.86 # prior mode of beta(7, 2)
+    vardelta_sim <- exp(-4.0) # tightened prior centre of mu_log_var
 
     if (pattern == "constant") {
       trend <- matrix(
         c(logit(0.055), logit(0.065), logit(0.13), logit(0.35)),
-        nrow = nquar, ncol = 4, byrow = TRUE
+        nrow = nquar,
+        ncol = 4,
+        byrow = TRUE
       )
       if (rita) trend <- cbind(rep(logit(0.15), nquar), trend)
     } else if (pattern == "varying") {
       start_values <- c(logit(0.040), logit(0.050), logit(0.10), logit(0.28))
-      mid_values   <- c(logit(0.055), logit(0.065), logit(0.13), logit(0.35))
-      end_values   <- c(logit(0.065), logit(0.080), logit(0.16), logit(0.40))
+      mid_values <- c(logit(0.055), logit(0.065), logit(0.13), logit(0.35))
+      end_values <- c(logit(0.065), logit(0.080), logit(0.16), logit(0.40))
       trend <- matrix(0, nrow = nquar, ncol = 4)
       for (k in 1:4) {
         trend[, k] <- c(
           seq(start_values[k], mid_values[k], length.out = nquar / 2),
-          seq(mid_values[k],   end_values[k], length.out = nquar / 2)
+          seq(mid_values[k], end_values[k], length.out = nquar / 2)
         )
       }
       if (rita) {
@@ -290,7 +305,10 @@ generate_diagnosis_probs <- function(
     logit_d_probs <- matrix(0, nrow = nquar, ncol = nstates_sim)
     for (k in seq_len(nstates_sim)) {
       logit_d_probs[, k] <- simulate_ar1_logit(
-        nquar, trend[, k], rho_sim, vardelta_sim
+        nquar,
+        trend[, k],
+        rho_sim,
+        vardelta_sim
       )
     }
     d_probs <- invlogit(logit_d_probs)
@@ -446,11 +464,13 @@ generate_age_dist <- function(
 #' @return An integer array with the same dimensions as \code{cd4_arr}.
 #' @keywords internal
 apply_frr <- function(cd4_arr, frr, dist = TRUE) {
-  if (frr <= 0) return(cd4_arr)
+  if (frr <= 0) {
+    return(cd4_arr)
+  }
 
-  dims     <- dim(cd4_arr)
+  dims <- dim(cd4_arr)
   n_states <- dims[length(dims)]
-  n_cells  <- prod(dims[-length(dims)])
+  n_cells <- prod(dims[-length(dims)])
 
   # Reshape to (n_cells x n_states) for vectorised operations
   mat <- matrix(as.integer(cd4_arr), nrow = n_cells, ncol = n_states)
@@ -468,8 +488,8 @@ apply_frr <- function(cd4_arr, frr, dist = TRUE) {
   # Subtract proportionally from long-standing states, add to recent (state 1)
   idx <- which(n_mis > 0 & n_long > 0)
   for (i in idx) {
-    props              <- mat[i, 2:n_states] / n_long[i]
-    reduction          <- round_preserve(n_mis[i] * props)
+    props <- mat[i, 2:n_states] / n_long[i]
+    reduction <- round_preserve(n_mis[i] * props)
     mat[i, 2:n_states] <- mat[i, 2:n_states] - reduction
   }
   mat[, 1] <- mat[, 1] + n_mis
@@ -504,42 +524,42 @@ apply_frr <- function(cd4_arr, frr, dist = TRUE) {
 #' @param abroad Logical.  \code{FALSE} (default): solve for the native group
 #'   with all inflow entering state 1.  \code{TRUE}: solve for the migrant stock
 #'   with inflow distributed via \code{mu_lat_t1}.
-#' @param scale Numeric or \code{NULL}.  When non-\code{NULL}, the output is
-#'   scaled so that its first non-zero element equals \code{scale}.  Defaults to
-#'   7 for the native group so the result is on the same scale as the built-in
-#'   \code{init_props} default.  Defaults to \code{NULL} for the migrant group:
-#'   the unscaled solve already gives values in the correct units for direct use
-#'   as \code{init_props_abroad} (latent stock per unit of quarterly migration
-#'   into latent states).
 #' @param rita Logical.  Use the RITA compartment structure (7 latent states).
 #' @return Numeric vector of length \code{nlatst} (4 for CD4-only, 7 for RITA).
 #' @keywords internal
 derive_init_props <- function(
   d_probs_t1 = c(0.055, 0.065, 0.13, 0.35),
-  q          = c(0.0976, 0.115, 0.116, 0.148),
-  mu_lat_t1  = NULL,
-  abroad     = FALSE,
-  scale      = if (!abroad) 7 else NULL,
-  rita       = FALSE
+  q = c(0.0976, 0.115, 0.116, 0.148),
+  mu_lat_t1 = NULL,
+  abroad = FALSE,
+  rita = FALSE
 ) {
   nlatst <- if (rita) 7L else 4L
 
   if (rita) {
     if (length(d_probs_t1) != 5L) {
-      stop("For rita = TRUE, d_probs_t1 must have length 5 (RITA + 4 CD4 states).")
+      stop(
+        "For rita = TRUE, d_probs_t1 must have length 5 (RITA + 4 CD4 states)."
+      )
     }
   } else {
     if (length(d_probs_t1) != 4L) {
       stop("For rita = FALSE, d_probs_t1 must have length 4.")
     }
   }
-  if (length(q) != 4L) stop("q must have length 4.")
+  if (length(q) != 4L) {
+    stop("q must have length 4.")
+  }
   if (abroad) {
-    if (is.null(mu_lat_t1)) stop("mu_lat_t1 is required when abroad = TRUE.")
+    if (is.null(mu_lat_t1)) {
+      stop("mu_lat_t1 is required when abroad = TRUE.")
+    }
     if (length(mu_lat_t1) != nlatst) {
       stop(sprintf("mu_lat_t1 must have length %d (= nlatst).", nlatst))
     }
-    if (sum(mu_lat_t1) == 0) stop("mu_lat_t1 must have at least one non-zero element.")
+    if (sum(mu_lat_t1) == 0) {
+      stop("mu_lat_t1 must have at least one non-zero element.")
+    }
   }
 
   d <- d_probs_t1
@@ -549,17 +569,17 @@ derive_init_props <- function(
 
   if (rita) {
     # Recent (RITA-positive) states 1–3: all diagnosed at the RITA rate d[1]
-    Q[1L, 2L] <- (1 - d[1L]) * (1 - q[1L])   # state 1 → 2 (CD4 > 500, 3–6 mo)
-    Q[1L, 3L] <- (1 - d[1L]) *      q[1L]    # state 1 → 3 (CD4 350–500, 3–6 mo)
-    Q[2L, 4L] <- (1 - d[1L]) * (1 - q[1L])   # state 2 → 4 (CD4 > 500, long-standing)
-    Q[2L, 5L] <- (1 - d[1L]) *      q[1L]    # state 2 → 5 (CD4 350–500, long-standing)
-    Q[3L, 5L] <- (1 - d[1L]) * (1 - q[2L])   # state 3 → 5 (CD4 350–500, long-standing)
-    Q[3L, 6L] <- (1 - d[1L]) *      q[2L]    # state 3 → 6 (CD4 200–350, long-standing)
+    Q[1L, 2L] <- (1 - d[1L]) * (1 - q[1L]) # state 1 → 2 (CD4 > 500, 3–6 mo)
+    Q[1L, 3L] <- (1 - d[1L]) * q[1L] # state 1 → 3 (CD4 350–500, 3–6 mo)
+    Q[2L, 4L] <- (1 - d[1L]) * (1 - q[1L]) # state 2 → 4 (CD4 > 500, long-standing)
+    Q[2L, 5L] <- (1 - d[1L]) * q[1L] # state 2 → 5 (CD4 350–500, long-standing)
+    Q[3L, 5L] <- (1 - d[1L]) * (1 - q[2L]) # state 3 → 5 (CD4 350–500, long-standing)
+    Q[3L, 6L] <- (1 - d[1L]) * q[2L] # state 3 → 6 (CD4 200–350, long-standing)
     # Long-standing states 4–7: diagnosed at d[2:5]
     for (k in 4L:7L) {
-      dk        <- d[k - 2L]
-      qk        <- q[k - 3L]
-      Q[k, k]   <- (1 - dk) * (1 - qk)
+      dk <- d[k - 2L]
+      qk <- q[k - 3L]
+      Q[k, k] <- (1 - dk) * (1 - qk)
     }
     for (i in 4L:6L) {
       Q[i, i + 1L] <- (1 - d[i - 2L]) * q[i - 3L]
@@ -582,12 +602,6 @@ derive_init_props <- function(
 
   # Solve (I - t(Q)) lat = h  (steady-state: lat = t(Q) %*% lat + h) ------------
   lat_ss <- solve(diag(nlatst) - t(Q), h)
-
-  # Optional scaling -------------------------------------------------------------
-  if (!is.null(scale)) {
-    first_nz <- which(lat_ss > 0)[1L]
-    lat_ss   <- lat_ss * (scale / lat_ss[first_nz])
-  }
 
   lat_ss
 }
