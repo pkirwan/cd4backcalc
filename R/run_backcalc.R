@@ -176,7 +176,7 @@ fit_stan_model <- function(
   model <- load_stan_model(stan_data$model_config)
 
   model_data <- stan_data[
-    !names(stan_data) %in% c("sim_config", "model_config", "ABROAD_age", "gamma_obs_mean")
+    !names(stan_data) %in% c("sim_config", "model_config", "ABROAD_age", "gamma_obs_grouped")
   ]
 
   # ---- Non-checkpoint path (original behaviour) ----
@@ -465,9 +465,18 @@ confirm_stan_data <- function(stan_data) {
       )
     )
     stopifnot(
-      "Incorrect dimensions in stan_data, gamma_obs_mean_group should be (nquar, 4)" = all(
-        dim(stan_data$gamma_obs_mean_group) == c(stan_data$nquar, 4L)
+      "Incorrect length in stan_data, gamma_obs should be (nquar)" =
+        length(stan_data$gamma_obs) == stan_data$nquar
+    )
+    stopifnot(
+      "Incorrect dimensions in stan_data, gamma_obs_group should be (nquar, 4)" = all(
+        dim(stan_data$gamma_obs_group) == c(stan_data$nquar, 4L)
       )
+    )
+    gamma_group_available <- rowSums(stan_data$gamma_obs_group >= 0)
+    stopifnot(
+      "Each row of gamma_obs_group must be either all -1 or have all 4 age-group values" =
+        all(gamma_group_available %in% c(0L, 4L))
     )
   } else if (stan_data$model_config$age) {
     stopifnot(
@@ -740,35 +749,73 @@ model_type_prep <- function(
       }
     }
 
-    # gamma_obs: EXTERNAL auxiliary observations for log migration volume by the
-    # same 4 age groups used in ABROAD_group. Use only with evidence independent
-    # of the HIV/AIDS/CD4/ABROAD counts (e.g. ONS migration flows by age group).
-    # Do NOT pass the posterior of another model fit to these same counts: that
-    # double-uses the data and yields an overconfident posterior. Set
-    # gamma_obs_sd = 0 (default) to disable; otherwise supply gamma_obs_mean_group
-    # as a dense (nquar x 4) matrix of rolling-annual log migration volumes by
-    # age group. The Stan model uses three latent pre-study quarterly migration
-    # volumes to complete the first three annual windows.
+    # gamma_obs: EXTERNAL auxiliary observations for log migration volume.
+    # Support a dense scalar rolling-annual log series (gamma_obs) plus an
+    # optional dense (nquar x 4) grouped matrix (gamma_obs_group) on the same
+    # age groups as ABROAD_group. If gamma_obs_grouped is supplied, it is used
+    # only to convert inactive grouped quarters into -1 sentinel rows.
+    # Use only with evidence independent of the HIV/AIDS/CD4/ABROAD counts
+    # (e.g. ONS migration flows). Do NOT pass the posterior of another model fit
+    # to these same counts: that double-uses the data and yields an overconfident
+    # posterior.
     if (is.null(stan_data$gamma_obs_sd)) {
       stan_data$gamma_obs_sd <- 0
     }
-    if (is.null(stan_data$gamma_obs_mean_group)) {
-      if (stan_data$gamma_obs_sd > 0) {
-        if (!is.null(stan_data$gamma_obs_mean)) {
-          stop("gamma_obs_mean_group must be supplied when gamma_obs_sd > 0; gamma_obs_mean has been replaced by the grouped age-series input.")
+    if (is.null(stan_data$gamma_obs) && !is.null(stan_data$gamma_obs_mean)) {
+      stan_data$gamma_obs <- stan_data$gamma_obs_mean
+    }
+    if (is.null(stan_data$gamma_obs_group) && !is.null(stan_data$gamma_obs_mean_group)) {
+      stan_data$gamma_obs_group <- stan_data$gamma_obs_mean_group
+    }
+    if (is.null(stan_data$gamma_obs)) {
+      stan_data$gamma_obs <- rep(0, stan_data$nquar)
+    }
+    if (length(stan_data$gamma_obs) == 0 && stan_data$gamma_obs_sd == 0) {
+      stan_data$gamma_obs <- rep(0, stan_data$nquar)
+    }
+    if (length(stan_data$gamma_obs) != stan_data$nquar) {
+      stop("gamma_obs must have length nquar.")
+    }
+    if (is.null(stan_data$gamma_obs_group)) {
+      stan_data$gamma_obs_group <- matrix(-1, nrow = stan_data$nquar, ncol = 4L)
+    }
+    if (length(stan_data$gamma_obs_group) == 0 && stan_data$gamma_obs_sd == 0) {
+      stan_data$gamma_obs_group <- matrix(-1, nrow = stan_data$nquar, ncol = 4L)
+    }
+    stan_data$gamma_obs_group <- as.matrix(stan_data$gamma_obs_group)
+    if (!all(dim(stan_data$gamma_obs_group) == c(stan_data$nquar, 4L))) {
+      stop("gamma_obs_group must have dimensions (nquar, 4).")
+    }
+    if (!is.null(stan_data$gamma_obs_grouped)) {
+      if (is.logical(stan_data$gamma_obs_grouped)) {
+        if (length(stan_data$gamma_obs_grouped) == 1L) {
+          stan_data$gamma_obs_grouped <- rep(as.integer(stan_data$gamma_obs_grouped), stan_data$nquar)
+        } else {
+          stan_data$gamma_obs_grouped <- as.integer(stan_data$gamma_obs_grouped)
         }
-        stop("gamma_obs_mean_group must be supplied when gamma_obs_sd > 0.")
       }
-      stan_data$gamma_obs_mean_group <- matrix(0, nrow = stan_data$nquar, ncol = 4L)
+      if (length(stan_data$gamma_obs_grouped) != stan_data$nquar) {
+        stop("gamma_obs_grouped must have length nquar.")
+      }
+      if (!all(stan_data$gamma_obs_grouped %in% c(0L, 1L))) {
+        stop("gamma_obs_grouped must contain only 0/1 values.")
+      }
+      if (any(stan_data$gamma_obs_grouped == 1L)) {
+        grp_rows <- stan_data$gamma_obs_group[stan_data$gamma_obs_grouped == 1L, , drop = FALSE]
+        if (!all(rowSums(grp_rows >= 0) == 4L)) {
+          stop("Rows with gamma_obs_grouped == 1 must provide all 4 gamma_obs_group values.")
+        }
+      }
+      stan_data$gamma_obs_group[stan_data$gamma_obs_grouped == 0L, ] <- -1
     }
-    if (length(stan_data$gamma_obs_mean_group) == 0 && stan_data$gamma_obs_sd == 0) {
-      stan_data$gamma_obs_mean_group <- matrix(0, nrow = stan_data$nquar, ncol = 4L)
+    gamma_group_available <- rowSums(stan_data$gamma_obs_group >= 0)
+    if (!all(gamma_group_available %in% c(0L, 4L))) {
+      stop("Each row of gamma_obs_group must be either all -1 or have all 4 age-group values.")
     }
-    stan_data$gamma_obs_mean_group <- as.matrix(stan_data$gamma_obs_mean_group)
-    if (!all(dim(stan_data$gamma_obs_mean_group) == c(stan_data$nquar, 4L))) {
-      stop("gamma_obs_mean_group must have dimensions (nquar, 4).")
+    if (stan_data$gamma_obs_sd > 0 && any(stan_data$gamma_obs < 0)) {
+      stop("gamma_obs must be provided for every quarter when gamma_obs_sd > 0.")
     }
-    stan_data$gamma_obs_mean <- NULL
+    stan_data$gamma_obs_grouped <- NULL
   }
 
   # Create stan_data$model_config

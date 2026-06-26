@@ -54,26 +54,27 @@ data {
   vector[n_detect_obs] detect_logit_obs;
   real<lower=0> detect_obs_sd;
   
-  // External auxiliary observations informing the TREND of log migration volume
-  // by the same 4 age groups used in ABROAD_group. Intended for an INDEPENDENT
-  // external migration index on an arbitrary (typically much larger) scale,
-  // e.g. ONS long-term immigration counts by age group, reported as QUARTERLY
-  // ROLLING ANNUAL (year-ending) counts. Each observation is matched to the log
-  // of the rolling 4-quarter migrant volume in that age group:
-  //   gamma_obs_mean_group[, ag] ~ normal(
-  //     gamma_agg + log(abroad_age_group_prop[ag]) + gamma_obs_offset,
-  //     gamma_obs_sd
-  //   ).
+  // External auxiliary observations informing the TREND of log migration volume.
+  // Support a single non-age-specific rolling-annual series plus an optional
+  // age-stratified set of four rolling-annual series on the same age groups as
+  // ABROAD_group. gamma_obs is always supplied. gamma_obs_group uses -1 as
+  // the sentinel for "age breakdown not available yet". At each quarter t, if
+  // all 4 grouped values are greater than -1 the grouped likelihood is used;
+  // otherwise the scalar gamma_obs[t] likelihood is used.
+  // In the grouped case, the expected log series is
+  //   gamma_agg + log(abroad_age_group_prop[ag]) + gamma_obs_offset.
   // The single free offset gamma_obs_offset absorbs the unknown overall level
   // difference between total migration and HIV-positive migration, so the
-  // external series informs the shared total trend gamma = log(omega) and the
-  // static age composition abroad_age_group_prop without fixing the absolute
-  // level of omega. Provide log-scale values for every study quarter and each
-  // of the 4 age groups. For quarters 1:3, the model uses three latent
-  // pre-study quarterly migration volumes to complete the rolling annual
-  // window. Do NOT feed in the posterior of another model fit to these same
-  // counts: that double-uses the data. Set gamma_obs_sd = 0 to disable.
-  matrix[nquar, 4] gamma_obs_mean_group;
+  // external series informs the total trend gamma = log(omega), and in the
+  // grouped case also the static age composition abroad_age_group_prop,
+  // without fixing the absolute level of omega. Provide dense log-scale rolling
+  // annual values for either the single series or all 4 age groups. For
+  // quarters 1:3, the model uses three latent pre-study quarterly migration
+  // volumes to complete the rolling annual window. Do NOT feed in the posterior
+  // of another model fit to these same counts: that double-uses the data. Set
+  // gamma_obs_sd = 0 to disable.
+  vector[nquar] gamma_obs;
+  matrix[nquar, 4] gamma_obs_group;
   real<lower=0> gamma_obs_sd;
 }
 transformed data {
@@ -693,9 +694,21 @@ model {
   // independent of those counts. Set gamma_obs_sd = 0 to disable.
   gamma_obs_offset ~ normal(0, 10);
   if (gamma_obs_sd > 0) {
-    to_vector(gamma_obs_mean_group)
-      ~ normal(to_vector(gamma_agg_group + rep_matrix(gamma_obs_offset, nquar, 4)),
-               gamma_obs_sd);
+    for (t in 1 : nquar) {
+      int has_group = 1;
+      for (ag in 1 : 4) {
+        if (gamma_obs_group[t, ag] < 0) {
+          has_group = 0;
+        }
+      }
+      if (has_group == 1) {
+        gamma_obs_group[t, ]
+          ~ normal(gamma_agg_group[t, ] + rep_row_vector(gamma_obs_offset, 4),
+                   gamma_obs_sd);
+      } else {
+        gamma_obs[t] ~ normal(gamma_agg[t] + gamma_obs_offset, gamma_obs_sd);
+      }
+    }
   }
   
   // Likelihood

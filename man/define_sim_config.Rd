@@ -31,6 +31,7 @@ define_sim_config(
   mig_diag_offset = NULL,
   frr = 0.019,
   detect_obs_times = NULL,
+  gamma_obs_grouped = FALSE,
   gamma_obs_sd = 0,
   gamma_obs_scale = 500
 )
@@ -90,6 +91,13 @@ Use lower values in lower CD4 states to simulate informative missingness.}
 \item{frr}{False recency rate for RITA misclassification.}
 
 \item{detect_obs_times}{Integer vector of quarter indices (1-based) at which external detection-probability observations are generated.}
+
+\item{gamma_obs_grouped}{Logical scalar or logical vector of length
+\code{nquar} controlling which quarters receive age-stratified external
+migration observations on the same 4 age groups as \code{ABROAD_group}.
+The scalar \code{gamma_obs} series is always simulated; quarters where
+\code{gamma_obs_grouped} is \code{FALSE} have \code{-1} rows in
+\code{gamma_obs_group}.}
 }
 \value{
 Configuration list.

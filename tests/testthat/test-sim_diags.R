@@ -72,7 +72,27 @@ test_that("age-specific migration simulation with gamma produces expected extern
     0.1
   )
   expect_equal(
-    length(sim_diags$stan_data$gamma_obs_mean),
+    length(sim_diags$stan_data$gamma_obs),
     sim_diags$stan_data$nquar
   )
+})
+
+test_that("gamma_obs_grouped vector controls grouped external migration by quarter", {
+  gamma_grouped_schedule <- c(rep(FALSE, 20), rep(TRUE, 20), rep(FALSE, 20))
+  sim_diags <- simulate_diagnoses(
+    sim_seed = 123,
+    age = TRUE,
+    migration = TRUE,
+    nquar = 60,
+    sim_type = "combo_3",
+    gamma_obs_grouped = gamma_grouped_schedule,
+    gamma_obs_sd = 0.1
+  )
+
+  expect_equal(length(sim_diags$stan_data$gamma_obs), sim_diags$stan_data$nquar)
+  expect_equal(dim(sim_diags$stan_data$gamma_obs_group), c(sim_diags$stan_data$nquar, 4L))
+  expect_false("gamma_obs_grouped" %in% names(sim_diags$stan_data))
+
+  expect_true(all(sim_diags$stan_data$gamma_obs_group[!gamma_grouped_schedule, ] == -1))
+  expect_true(all(sim_diags$stan_data$gamma_obs_group[gamma_grouped_schedule, ] > -1))
 })

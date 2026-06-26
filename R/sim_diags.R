@@ -32,6 +32,12 @@
 #' @param mig_diag_offset Numeric vector of per-state logit-scale offsets applied to diagnosis probabilities for the migrant group (y=2). Length must equal the number of diagnosis states (4 for non-RITA, 5 for RITA). NULL (default) applies no offset.
 #' @param frr False recency rate for RITA misclassification.
 #' @param detect_obs_times Integer vector of quarter indices (1-based) at which external detection-probability observations are generated.
+#' @param gamma_obs_grouped Logical scalar or logical vector of length
+#'   \code{nquar} controlling which quarters receive age-stratified external
+#'   migration observations on the same 4 age groups as \code{ABROAD_group}.
+#'   The scalar \code{gamma_obs} series is always simulated; quarters where
+#'   \code{gamma_obs_grouped} is \code{FALSE} have \code{-1} rows in
+#'   \code{gamma_obs_group}.
 #' @return Configuration list.
 #' @keywords internal
 define_sim_config <- function(
@@ -61,6 +67,7 @@ define_sim_config <- function(
   mig_diag_offset = NULL, # per-state logit offsets for migrant diagnosis probs
   frr = 0.019, # false recency rate for RITA misclassification
   detect_obs_times = NULL, # quarter indices for detect_prob observations
+  gamma_obs_grouped = FALSE, # whether external migration data are age-stratified
   gamma_obs_sd = 0, # sd of the external migration-index trend likelihood (0 disables)
   gamma_obs_scale = 500 # ratio of total external migration to HIV+ migration volume
 ) {
@@ -106,6 +113,16 @@ define_sim_config <- function(
     }
   }
 
+  if (
+    !is.logical(gamma_obs_grouped) ||
+      anyNA(gamma_obs_grouped) ||
+      !(length(gamma_obs_grouped) %in% c(1L, nquar))
+  ) {
+    stop(
+      "gamma_obs_grouped must be a logical scalar or a logical vector of length nquar."
+    )
+  }
+
   # Standard configuration parameters
   config <- list(
     h_pattern = h_pattern,
@@ -139,6 +156,11 @@ define_sim_config <- function(
       seq(4L, nquar, by = 8L)
     } else {
       as.integer(detect_obs_times)
+    },
+    gamma_obs_grouped = if (length(gamma_obs_grouped) == 1L) {
+      rep(gamma_obs_grouped, nquar)
+    } else {
+      as.logical(gamma_obs_grouped)
     },
     gamma_obs_sd = gamma_obs_sd,
     gamma_obs_scale = gamma_obs_scale
@@ -532,6 +554,12 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #'   detection-probability observations are generated. Defaults to \code{NULL}, which uses
 #'   every 20 quarters (approx. every 5 years). Supply a custom vector, e.g. \code{c(4, 10, 30)},
 #'   to place observations at specific quarters.
+#' @param gamma_obs_grouped Logical scalar or logical vector of length
+#'   \code{nquar} controlling which quarters receive age-stratified external
+#'   migration observations on the same 4 age groups as \code{ABROAD_group}.
+#'   The scalar \code{gamma_obs} series is always simulated; quarters where
+#'   \code{gamma_obs_grouped} is \code{FALSE} have \code{-1} rows in
+#'   \code{gamma_obs_group}.
 #' @param gamma_obs_sd Standard deviation of the external migration-index trend likelihood (0 disables).
 #' @param gamma_obs_scale Ratio of total external migration to HIV+ migration volume.
 #' @return List containing simulated epidemic data.
@@ -567,6 +595,7 @@ simulate_diagnoses <- function(
   eta_sd = 0.4, # sd of the melding prior for log(ratio_abroad_uk)
   detect_obs_sd = 0,
   detect_obs_times = NULL,
+  gamma_obs_grouped = FALSE,
   gamma_obs_sd = 0, # sd of the external migration-index trend likelihood (0 disables)
   gamma_obs_scale = 500 # ratio of total external migration to HIV+ migration volume
 ) {
@@ -597,6 +626,7 @@ simulate_diagnoses <- function(
     mig_diag_offset,
     frr,
     detect_obs_times,
+    gamma_obs_grouped,
     gamma_obs_sd,
     gamma_obs_scale
   )
@@ -1101,51 +1131,77 @@ simulate_diagnoses <- function(
   # that level difference so only the shared trend and static age composition inform
   # the fit. We build the mean from the deterministic (smooth) migration trend so
   # the index reflects the population-level pattern rather than realised Poisson noise.
-  gamma_obs_mean_group <- if (gamma_obs_sd > 0) {
+  gamma_obs <- rep(0, sim_config$nquar)
+  gamma_obs_group <- matrix(-1, nrow = sim_config$nquar, ncol = 4L)
+  if (gamma_obs_sd > 0) {
     omega_trend <- generate_omega(
       sim_config$nquar,
       sim_config$o_pattern,
       sim_config$target_mig,
       dist = FALSE
     )
-    omega_age_trend <- sweep(agedist_abroad, 1, omega_trend, "*")
-    omega_group_trend <- matrix(0, nrow = sim_config$nquar, ncol = 4L)
-    for (ag in 1:4) {
-      idx <- which(age_group_lookup_r == ag)
-      omega_group_trend[, ag] <- rowSums(omega_age_trend[, idx, drop = FALSE])
-    }
-    omega_group_start_slope <- if (sim_config$nquar > 1L) {
-      omega_group_trend[2L, ] - omega_group_trend[1L, ]
+    omega_start_slope <- if (length(omega_trend) > 1L) {
+      omega_trend[2L] - omega_trend[1L]
     } else {
-      rep(0, 4L)
+      0
     }
-    omega_group_pre <- matrix(0, nrow = 3L, ncol = 4L)
-    for (ag in 1:4) {
-      omega_group_pre[, ag] <- pmax(
-        .Machine$double.eps,
-        omega_group_trend[1L, ag] - 3:1 * omega_group_start_slope[ag]
-      )
-    }
-    omega_group_ext <- rbind(omega_group_pre, omega_group_trend)
-    rolling_vol_group <- matrix(0, nrow = sim_config$nquar, ncol = 4L)
-    for (ag in 1:4) {
-      rolling_vol_group[, ag] <- vapply(
-        seq_len(sim_config$nquar),
-        function(t) sum(omega_group_ext[t:(t + 3L), ag]),
-        numeric(1)
-      )
-    }
-    matrix(
-      stats::rnorm(
-        sim_config$nquar * 4L,
-        as.vector(log(pmax(1, round(sim_config$gamma_obs_scale * rolling_vol_group, -3)))),
-        gamma_obs_sd
-      ),
-      nrow = sim_config$nquar,
-      ncol = 4L
+    omega_pre <- pmax(
+      .Machine$double.eps,
+      omega_trend[1L] - 3:1 * omega_start_slope
     )
-  } else {
-    matrix(0, nrow = sim_config$nquar, ncol = 4L)
+    omega_ext <- c(omega_pre, omega_trend)
+    rolling_vol <- vapply(
+      seq_len(sim_config$nquar),
+      function(t) sum(omega_ext[t:(t + 3L)]),
+      numeric(1)
+    )
+
+    gamma_obs <- stats::rnorm(
+      seq_len(sim_config$nquar),
+      log(pmax(1, round(sim_config$gamma_obs_scale * rolling_vol, -3))),
+      gamma_obs_sd
+    )
+
+    if (any(sim_config$gamma_obs_grouped)) {
+      omega_age_trend <- sweep(agedist_abroad, 1, omega_trend, "*")
+      omega_group_trend <- matrix(0, nrow = sim_config$nquar, ncol = 4L)
+      for (ag in 1:4) {
+        idx <- which(age_group_lookup_r == ag)
+        omega_group_trend[, ag] <- rowSums(omega_age_trend[, idx, drop = FALSE])
+      }
+      omega_group_start_slope <- if (sim_config$nquar > 1L) {
+        omega_group_trend[2L, ] - omega_group_trend[1L, ]
+      } else {
+        rep(0, 4L)
+      }
+      omega_group_pre <- matrix(0, nrow = 3L, ncol = 4L)
+      for (ag in 1:4) {
+        omega_group_pre[, ag] <- pmax(
+          .Machine$double.eps,
+          omega_group_trend[1L, ag] - 3:1 * omega_group_start_slope[ag]
+        )
+      }
+      omega_group_ext <- rbind(omega_group_pre, omega_group_trend)
+      rolling_vol_group <- matrix(0, nrow = sim_config$nquar, ncol = 4L)
+      for (ag in 1:4) {
+        rolling_vol_group[, ag] <- vapply(
+          seq_len(sim_config$nquar),
+          function(t) sum(omega_group_ext[t:(t + 3L), ag]),
+          numeric(1)
+        )
+      }
+      gamma_obs_group_full <- matrix(
+        stats::rnorm(
+          sim_config$nquar * 4L,
+          as.vector(log(pmax(1, round(sim_config$gamma_obs_scale * rolling_vol_group, -3)))),
+          gamma_obs_sd
+        ),
+        nrow = sim_config$nquar,
+        ncol = 4L
+      )
+      gamma_obs_group[sim_config$gamma_obs_grouped, ] <-
+        gamma_obs_group_full[sim_config$gamma_obs_grouped, , drop = FALSE]
+    }
   }
 
   # ABROAD data: detected portion of diagnosed migrants
@@ -1187,7 +1243,8 @@ simulate_diagnoses <- function(
     "detect_obs_index" = detect_obs_index,
     "detect_logit_obs" = detect_logit_obs,
     "detect_obs_sd" = detect_obs_sd,
-    "gamma_obs_mean_group" = gamma_obs_mean_group,
+    "gamma_obs" = gamma_obs,
+    "gamma_obs_group" = gamma_obs_group,
     "gamma_obs_sd" = gamma_obs_sd,
     "sim_config" = sim_config
   )
