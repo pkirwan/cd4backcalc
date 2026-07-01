@@ -8,7 +8,8 @@
 get_bias <- function(
   hiv_list,
   type,
-  deterministic = FALSE
+  deterministic = FALSE,
+  years = NULL
 ) {
   purrr::imap(hiv_list, function(x, simulation) {
     estimates <- get_estimates(x, type)
@@ -40,7 +41,10 @@ get_bias <- function(
     }
 
     joined |>
-      dplyr::filter(.data$year > 0) |>
+      dplyr::filter(
+        .data$year > 0,
+        if (is.null(years)) TRUE else .data$year %in% years
+      ) |>
       dplyr::mutate(
         simulation = as.character(simulation),
         bias = .data$mean - .data$value
@@ -92,12 +96,14 @@ add_bias_outputs <- function(
   hiv_list,
   quantity,
   deterministic,
-  strip_total = FALSE
+  strip_total = FALSE,
+  years = NULL
 ) {
   raw_bias <- get_bias(
     hiv_list,
     type = quantity,
-    deterministic = deterministic
+    deterministic = deterministic,
+    years = years
   )
 
   # Remove the aggregate "all" row when age-band-specific summaries are wanted,
@@ -120,11 +126,15 @@ add_bias_outputs <- function(
 #'
 #' @param hiv_list A list of HIV model results.
 #' @param sim_comparison A string specifying which simulated values to compare against. Options are `"sampled"` (the stochastic realisation for the particular seed, the default) or `"generative"` (deterministic expected values).
+#' @param years Optional numeric/integer vector specifying which years to
+#'   include in bias/MSE calculations. If `NULL` (default), all available years
+#'   are used.
 #' @return A list of bias and MSE values for incidence, migration, proportion of UK-acquired infections that are migrants, and migration probabilities.
 #' @keywords internal
 make_mse_list <- function(
   hiv_list,
-  sim_comparison = c("sampled", "generative")
+  sim_comparison = c("sampled", "generative"),
+  years = NULL
 ) {
   sim_comparison <- match.arg(sim_comparison)
   use_deterministic <- sim_comparison == "generative"
@@ -144,7 +154,8 @@ make_mse_list <- function(
     out_name = "incidence",
     hiv_list = hiv_list,
     quantity = "incidence",
-    deterministic = use_deterministic
+    deterministic = use_deterministic,
+    years = years
   )
 
   if (.model_flag_enabled(hiv_list[[1]], "age")) {
@@ -154,7 +165,8 @@ make_mse_list <- function(
       hiv_list = hiv_list,
       quantity = "incidence_age",
       deterministic = use_deterministic,
-      strip_total = TRUE
+      strip_total = TRUE,
+      years = years
     )
   }
 
@@ -164,28 +176,32 @@ make_mse_list <- function(
       out_name = "undiag_migration",
       hiv_list = hiv_list,
       quantity = "undiag_migration",
-      deterministic = use_deterministic
+      deterministic = use_deterministic,
+      years = years
     )
     out <- add_bias_outputs(
       out,
       out_name = "all_migration",
       hiv_list = hiv_list,
       quantity = "all_migration",
-      deterministic = use_deterministic
+      deterministic = use_deterministic,
+      years = years
     )
     out <- add_bias_outputs(
       out,
       out_name = "ratio_abroad_uk",
       hiv_list = hiv_list,
       quantity = "ratio_abroad_uk",
-      deterministic = use_deterministic
+      deterministic = use_deterministic,
+      years = years
     )
     out <- add_bias_outputs(
       out,
       out_name = "mp",
       hiv_list = hiv_list,
       quantity = "migration_prob",
-      deterministic = use_deterministic
+      deterministic = use_deterministic,
+      years = years
     )
   }
   return(out)
@@ -208,6 +224,9 @@ make_mse_list <- function(
 #'   against. Options are `"sampled"` (the stochastic realisation for the
 #'   particular seed, the default) or `"generative"` (deterministic expected
 #'   values).
+#' @param years Optional numeric/integer vector specifying which years to
+#'   include in bias/MSE calculations. If `NULL` (default), all available years
+#'   are used.
 #' @return A ggplot object of the MSE box plot.
 #' @export
 mse_plot <- function(
@@ -216,7 +235,8 @@ mse_plot <- function(
   offset = 0.1,
   lab = TRUE,
   colours = NULL,
-  sim_comparison = c("sampled", "generative")
+  sim_comparison = c("sampled", "generative"),
+  years = NULL
 ) {
   sim_comparison <- match.arg(sim_comparison)
 
@@ -225,7 +245,7 @@ mse_plot <- function(
   }
 
   data <- purrr::imap(hiv_lists, function(hl, name) {
-    make_mse_list(hl, sim_comparison = sim_comparison)[[paste0(quantity, "_mse")]] |>
+    make_mse_list(hl, sim_comparison = sim_comparison, years = years)[[paste0(quantity, "_mse")]] |>
       dplyr::mutate(group = name)
   }) |>
     dplyr::bind_rows()
@@ -299,6 +319,9 @@ mse_plot <- function(
 #'   against. Options are `"sampled"` (the stochastic realisation for the
 #'   particular seed, the default) or `"generative"` (deterministic expected
 #'   values).
+#' @param years Optional numeric/integer vector specifying which years to
+#'   include in bias/MSE calculations. If `NULL` (default), all available years
+#'   are used.
 #' @return A ggplot object of the bias box plot.
 #' @export
 bias_plot <- function(
@@ -307,7 +330,8 @@ bias_plot <- function(
   offset = 0.1,
   lab = TRUE,
   colours = NULL,
-  sim_comparison = c("sampled", "generative")
+  sim_comparison = c("sampled", "generative"),
+  years = NULL
 ) {
   sim_comparison <- match.arg(sim_comparison)
 
@@ -316,7 +340,7 @@ bias_plot <- function(
   }
 
   data <- purrr::imap(hiv_lists, function(hl, name) {
-    make_mse_list(hl, sim_comparison = sim_comparison)[[paste0(quantity, "_bias")]] |>
+    make_mse_list(hl, sim_comparison = sim_comparison, years = years)[[paste0(quantity, "_bias")]] |>
       dplyr::mutate(group = name)
   }) |>
     dplyr::bind_rows()
