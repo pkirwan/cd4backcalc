@@ -32,6 +32,9 @@ get_sims <- function(sim_list, var, var2, plot_years = 29.75) {
 #' @param hiv_list A list of HIV model results.
 #' @param quantity The variable to extract.
 #' @return A data frame of model estimates for plotting.
+#' @examples
+#' # See ?run_backcalc for a full end-to-end workflow.
+#' invisible(NULL)
 #' @export
 get_estimates <- function(hiv_list, quantity) {
   hiv_list <- purrr::compact(hiv_list)
@@ -95,6 +98,9 @@ get_estimates <- function(hiv_list, quantity) {
 #' @param quantity The quantity to extract.
 #' @param deterministic Logical indicating whether to re-run the simulation deterministically (dist = FALSE) to obtain the expected values (lambda) rather than the stochastic realisation. Useful for bias/MSE calculations across multiple seeds (default is FALSE).
 #' @return A list of model estimates including undiagnosed prevalence, incidence, migration, diagnosis probabilities, diagnoses, migration probabilities, proportion of UK-acquired infections that are migrants, transfers of care, and CD4 strata.
+#' @examples
+#' # See ?run_backcalc for a full end-to-end workflow.
+#' invisible(NULL)
 #' @export
 extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALSE) {
   if (deterministic) {
@@ -546,6 +552,9 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
 #' @param hiv_list A list of HIV model results.
 #' @param quantity A string specifying the quantity to extract.
 #' @return A data frame of observed diagnoses for plotting.
+#' @examples
+#' # See ?run_backcalc for a full end-to-end workflow.
+#' invisible(NULL)
 #' @export
 extract_real_data <- function(hiv_list, quantity) {
   stan_data <- hiv_list$stan_data

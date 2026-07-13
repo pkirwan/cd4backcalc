@@ -4,7 +4,7 @@
 \alias{get_bias}
 \title{Get bias between HIV model estimates and simulation results.}
 \usage{
-get_bias(hiv_list, type, deterministic = FALSE)
+get_bias(hiv_list, type, deterministic = FALSE, years = NULL)
 }
 \arguments{
 \item{hiv_list}{A list of HIV model results.}

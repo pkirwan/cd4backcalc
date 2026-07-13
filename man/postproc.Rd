@@ -25,10 +25,10 @@ This function decides which post-processing routine needs to be run
 and passes the relevant data and arguments.
 }
 \examples{
-\dontrun{
+\donttest{
 sim_diags <- simulate_diagnoses(sim_seed = 123)
 stan_data <- model_type_prep(sim_diags, model_seed = 123)
-fit <- fit_stan_model(
+fit <- cd4backcalc:::fit_stan_model(
    stan_data,
    iter_warmup = 10,
    iter_sampling = 10,
@@ -36,7 +36,7 @@ fit <- fit_stan_model(
    refresh = 0,
    messages = FALSE
 )
-hiv_list <- postproc(fit, stan_data, start_yr = 0, nworkers = 1)
+hiv_list <- cd4backcalc:::postproc(fit, stan_data, start_yr = 0, nworkers = 1)
 }
 }
 \keyword{internal}

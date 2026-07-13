@@ -17,3 +17,7 @@ A ggplot2 object.
 \description{
 Generate a ggplot2 object plotting simulated quantities over time.
 }
+\examples{
+# See ?run_backcalc for a full end-to-end workflow.
+invisible(NULL)
+}

@@ -322,12 +322,12 @@ define_simulation_type <- function(config, sim_type = "constant") {
 #' @param rita Logical indicating whether RITA-specific logic should be applied.
 #' @return Q matrix.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' q_age <- matrix(rep(c(0.2, 0.3, 0.4, 0.5), 52), nrow = 52, byrow = TRUE)
 #' d_probs <- array(0.1, dim = c(10, 52, 4))
-#' Q_mat(t = 10, d_probs, q_age, nlatst = 4, nage = 52, rita = FALSE)
+#' cd4backcalc:::Q_mat(t = 10, d_probs, q_age, nlatst = 4, nage = 52, rita = FALSE)
 #' d_probs <- array(0.1, dim = c(10, 52, 5))
-#' Q_mat(t = 10, d_probs, q_age, nlatst = 7, nage = 52, rita = TRUE)
+#' cd4backcalc:::Q_mat(t = 10, d_probs, q_age, nlatst = 7, nage = 52, rita = TRUE)
 #' }
 #' @keywords internal
 Q_mat <- function(t, d_probs, q_age, nlatst, nage = 52, rita = FALSE) {
@@ -384,12 +384,12 @@ Q_mat <- function(t, d_probs, q_age, nlatst, nage = 52, rita = FALSE) {
 #' @param rita Logical indicating whether RITA-specific logic should be applied.
 #' @return D matrix.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' q_age <- matrix(rep(c(0.2, 0.3, 0.4, 0.5), 52), nrow = 52, byrow = TRUE)
 #' d_probs <- array(0.1, dim = c(10, 52, 4))
-#' D_mat(t = 10, d_probs = d_probs, q_age, nlatst = 4, ndiagst = 5, nage = 52, rita = FALSE)
+#' cd4backcalc:::D_mat(t = 10, d_probs = d_probs, q_age, nlatst = 4, ndiagst = 5, nage = 52, rita = FALSE)
 #' d_probs <- array(0.1, dim = c(10, 52, 5))
-#' D_mat(t = 10, d_probs = d_probs, q_age, nlatst = 7, ndiagst = 6, nage = 52, rita = TRUE)
+#' cd4backcalc:::D_mat(t = 10, d_probs = d_probs, q_age, nlatst = 7, ndiagst = 6, nage = 52, rita = TRUE)
 #' }
 #' @keywords internal
 D_mat <- function(t, d_probs, q_age, nlatst, ndiagst, nage = 52, rita = FALSE) {
@@ -421,20 +421,20 @@ D_mat <- function(t, d_probs, q_age, nlatst, ndiagst, nage = 52, rita = FALSE) {
 #' @param config Configuration list containing simulation parameters.
 #' @return A list containing matrices of latent and diagnosed states over time, as well as detailed quarterly records.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' config <- define_sim_config(nquar = 10)
 #' q_age <- matrix(rep(c(0.0976, 0.115, 0.116, 0.148), 52), nrow = 52, byrow = TRUE)
 #' d_probs <- matrix(rep(0.1, 40), nrow = 10)
 #' Q_l <- lapply(1:10, function(x) {
-#'    Q_mat(x, d_probs, q_age, 4)
+#'    cd4backcalc:::Q_mat(x, d_probs, q_age, 4)
 #' })
 #' D_l <- lapply(1:10, function(x) {
-#'    D_mat(x, d_probs, q_age, 4, 5)
+#'    cd4backcalc:::D_mat(x, d_probs, q_age, 4, 5)
 #' })
 #' lat_init <- array(0, dim = c(52, 4))
 #' lat_init[, 1] <- c(40, 30, 20, 10)
 #' h <- array(matrix(rep(10, 20), nrow = 10), dim = c(52, 10, 4))
-#' epi_mat(Q_l, D_l, h, lat_init, config)
+#' cd4backcalc:::epi_mat(Q_l, D_l, h, lat_init, config)
 #' }
 #' @keywords internal
 epi_mat <- function(Q_l, D_l, h, lat_init, config) {

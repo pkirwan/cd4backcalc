@@ -17,3 +17,7 @@ A ggplot2 object containing diagnostic plots.
 \description{
 Generate diagnostic plots for a fitted back-calculation model.
 }
+\examples{
+# See ?run_backcalc for a full end-to-end workflow.
+invisible(NULL)
+}

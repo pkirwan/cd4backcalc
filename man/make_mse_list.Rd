@@ -4,12 +4,20 @@
 \alias{make_mse_list}
 \title{Make a list of mean squared error (MSE) values for HIV model estimates.}
 \usage{
-make_mse_list(hiv_list, sim_comparison = c("sampled", "generative"))
+make_mse_list(
+  hiv_list,
+  sim_comparison = c("sampled", "generative"),
+  years = NULL
+)
 }
 \arguments{
 \item{hiv_list}{A list of HIV model results.}
 
 \item{sim_comparison}{A string specifying which simulated values to compare against. Options are \code{"sampled"} (the stochastic realisation for the particular seed, the default) or \code{"generative"} (deterministic expected values).}
+
+\item{years}{Optional numeric/integer vector specifying which years to
+include in bias/MSE calculations. If \code{NULL} (default), all available years
+are used.}
 }
 \value{
 A list of bias and MSE values for incidence, migration, proportion of UK-acquired infections that are migrants, and migration probabilities.

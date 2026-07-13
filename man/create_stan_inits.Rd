@@ -16,3 +16,7 @@ A list of initial values for each chain.
 This function extracts the last iteration's parameter values from a fitted Stan model.
 It returns a list of initial values for each chain, which can be used to initialize a new Stan model.
 }
+\examples{
+# See ?run_backcalc for a full end-to-end workflow.
+invisible(NULL)
+}

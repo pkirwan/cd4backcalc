@@ -228,6 +228,9 @@ make_mse_list <- function(
 #'   include in bias/MSE calculations. If `NULL` (default), all available years
 #'   are used.
 #' @return A ggplot object of the MSE box plot.
+#' @examples
+#' # See ?run_backcalc for a full end-to-end workflow.
+#' invisible(NULL)
 #' @export
 mse_plot <- function(
   hiv_lists,
@@ -323,6 +326,9 @@ mse_plot <- function(
 #'   include in bias/MSE calculations. If `NULL` (default), all available years
 #'   are used.
 #' @return A ggplot object of the bias box plot.
+#' @examples
+#' # See ?run_backcalc for a full end-to-end workflow.
+#' invisible(NULL)
 #' @export
 bias_plot <- function(
   hiv_lists,

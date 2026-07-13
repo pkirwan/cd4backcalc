@@ -17,3 +17,7 @@ A data frame of model estimates for plotting.
 \description{
 Get estimates from HIV model results for plotting.
 }
+\examples{
+# See ?run_backcalc for a full end-to-end workflow.
+invisible(NULL)
+}

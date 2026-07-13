@@ -134,10 +134,10 @@ run_backcalc <- function(
 #' @return A CmdStanFit object (without checkpointing) or a
 #'   \code{cd4backcalc_combined_fit} object (with checkpointing).
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' sim_diags <- simulate_diagnoses(sim_seed = 123)
 #' stan_data <- model_type_prep(sim_diags)
-#' fit <- fit_stan_model(
+#' fit <- cd4backcalc:::fit_stan_model(
 #'  stan_data, iter_warmup = 10, iter_sampling = 10, chains = 1, refresh = 0, messages = FALSE
 #' )
 #' }
@@ -156,7 +156,9 @@ fit_stan_model <- function(
   iter_per_chunk = NULL,
   init = NULL
 ) {
+  old_mc_cores <- getOption("mc.cores")
   options(mc.cores = parallelly::availableCores())
+  on.exit(options(mc.cores = old_mc_cores), add = TRUE)
 
   # Helper: safely extract total time from a CmdStanFit even when some
   # chains failed (fit$time() can error with mismatched row counts).

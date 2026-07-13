@@ -36,6 +36,9 @@
 #'
 #' @return A list containing calibrated initial prevalence values, an updated
 #'   `stan_data` list ready for refitting, and optional draw-level arrays.
+#' @examples
+#' # See ?run_backcalc for a full end-to-end workflow.
+#' invisible(NULL)
 #' @export
 calibrate_init_prev <- function(
   object,

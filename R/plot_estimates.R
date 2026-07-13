@@ -5,6 +5,9 @@
 #' @param sim_diags A list containing the simulated diagnosis data objects sim_data and stan_data.
 #' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "undiag_migration", "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "transfers_detected", "ratio_abroad_uk", and "detect_prob".
 #' @return A ggplot2 object.
+#' @examples
+#' # See ?run_backcalc for a full end-to-end workflow.
+#' invisible(NULL)
 #' @export
 plot_simulations <- function(
   sim_diags,
@@ -104,6 +107,9 @@ plot_simulations <- function(
 #' @param credible_intervals A logical indicating whether to plot 95% credible intervals (default is TRUE).
 #' @param sim_comparison A string specifying which simulated values to compare against when `hiv_list` contains simulated data. Options are `"sampled"` (the stochastic realisation for the particular seed, the default) or `"generative"` (deterministic expected values).
 #' @return A ggplot2 object.
+#' @examples
+#' # See ?run_backcalc for a full end-to-end workflow.
+#' invisible(NULL)
 #' @export
 plot_estimates <- function(
   hiv_list,
@@ -395,6 +401,9 @@ plot_estimates <- function(
 #' @param hiv_list A list returned from the `run_backcalc` function containing model estimates and fit objects.
 #' @param ntraces Number of parameter traces to plot for each diagnostic.
 #' @return A ggplot2 object containing diagnostic plots.
+#' @examples
+#' # See ?run_backcalc for a full end-to-end workflow.
+#' invisible(NULL)
 #' @export
 plot_diagnostics <- function(hiv_list, ntraces = 4) {
   hiv_list <- purrr::compact(hiv_list)

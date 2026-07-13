@@ -5,6 +5,9 @@
 #'
 #' @param fit A fitted Stan model object (e.g., from rstan or cmdstanr).
 #' @return A list of initial values for each chain.
+#' @examples
+#' # See ?run_backcalc for a full end-to-end workflow.
+#' invisible(NULL)
 #' @export
 create_stan_inits <- function(fit) {
   # Try to include warmup draws (needed when iter_sampling = 0).

@@ -19,3 +19,7 @@ A list of model estimates including undiagnosed prevalence, incidence, migration
 \description{
 Extract simulated quantities based on the provided configuration.
 }
+\examples{
+# See ?run_backcalc for a full end-to-end workflow.
+invisible(NULL)
+}

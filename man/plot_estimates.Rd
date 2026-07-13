@@ -41,3 +41,7 @@ A ggplot2 object.
 \description{
 Generate a ggplot2 object plotting estimated quantities over time, optionally compared to the simulated values.
 }
+\examples{
+# See ?run_backcalc for a full end-to-end workflow.
+invisible(NULL)
+}

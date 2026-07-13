@@ -10,7 +10,8 @@ mse_plot(
   offset = 0.1,
   lab = TRUE,
   colours = NULL,
-  sim_comparison = c("sampled", "generative")
+  sim_comparison = c("sampled", "generative"),
+  years = NULL
 )
 }
 \arguments{
@@ -34,10 +35,18 @@ default discrete colour palette is used.}
 against. Options are \code{"sampled"} (the stochastic realisation for the
 particular seed, the default) or \code{"generative"} (deterministic expected
 values).}
+
+\item{years}{Optional numeric/integer vector specifying which years to
+include in bias/MSE calculations. If \code{NULL} (default), all available years
+are used.}
 }
 \value{
 A ggplot object of the MSE box plot.
 }
 \description{
 Box plots of mean squared error (MSE).
+}
+\examples{
+# See ?run_backcalc for a full end-to-end workflow.
+invisible(NULL)
 }

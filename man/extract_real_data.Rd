@@ -17,3 +17,7 @@ A data frame of observed diagnoses for plotting.
 \description{
 Extract real data for plotting
 }
+\examples{
+# See ?run_backcalc for a full end-to-end workflow.
+invisible(NULL)
+}

@@ -67,3 +67,7 @@ For RITA models, the first three latent "recent" states are not separately
 identified from quarter-1 data; by default they are split using the relative
 weights in the currently supplied initial prevalence.
 }
+\examples{
+# See ?run_backcalc for a full end-to-end workflow.
+invisible(NULL)
+}

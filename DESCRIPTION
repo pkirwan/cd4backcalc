@@ -1,14 +1,16 @@
 Package: cd4backcalc
-Title: CD4 Back-Calculation R package
+Title: CD4 Back-Calculation R Package
 Version: 0.1.3
 Authors@R: c(
-    person("Peter", "Kirwan", , "pdk29@cam.ac.uk", role = c("aut", "cre"),
+    person("Peter", "Kirwan", , "pdk29@cam.ac.uk", role = c("aut", "cre", "cph"),
            comment = c(ORCID = "0000-0001-6904-0500")),
     person("Paul", "Birrell", role = "ctb"),
     person("Francesco", "Brizzi", role = "ctb")
   )
 Description: Bayesian, discrete-time, multi-state model used to estimate
-    HIV incidence and undiagnosed HIV prevalence from diagnosis data.
+    Human Immunodeficiency Virus (HIV) incidence and undiagnosed prevalence
+    from diagnosis data. Includes utilities for simulation, model fitting,
+    post-processing, and visualisation of key epidemic quantities.
 License: GPL (>= 3) + file LICENCE
 Depends: 
     R (>= 4.1.0)
