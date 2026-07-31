@@ -1,18 +1,18 @@
 // Age-dependent tensor product model with RITA state
 
 data {
-  int<lower=1> nquar; // number of years 
-  int<lower=1> nage; // number of ages 
-  array[nquar, nage] int<lower=0> HIV_age; // data with new HIV_age diag by year and age
-  array[nquar, nage] int<lower=0> AIDS_age; // data with new AIDS_age diag by year and age
-  array[nquar, nage, 5] int<lower=0> CD4_age; // CD4 data by number of years and ages and diagnosed CD4 states(5)
-  matrix<lower=0, upper=1>[4, nage] q_age; // matrix of progressions for different ages.. fixed
-  matrix<lower=0>[7, nage] init_prev_age; // Initial prevalence by age at inf and latent CD4 states(7)
+  int<lower=1> nquar; // quarters
+  int<lower=1> nage; // single-year age groups
+  array[nquar, nage] int<lower=0> HIV_age;
+  array[nquar, nage] int<lower=0> AIDS_age;
+  array[nquar, nage, 5] int<lower=0> CD4_age;
+  matrix<lower=0, upper=1>[4, nage] q_age; // progression by age at acquisition
+  matrix<lower=0>[7, nage] init_prev_age;
   
   // Splines
   int<lower=1> npars_inf;
-  matrix[nquar * nage, npars_inf] X_inf; // design matrix ... 50 is number of inf params
-  matrix[npars_inf - 1, 2 * npars_inf - 2] S1; // NOT SURE IF BOUNDARY CONSISTENT
+  matrix[nquar * nage, npars_inf] X_inf;
+  matrix[npars_inf - 1, 2 * npars_inf - 2] S1;
   
 }
 transformed data {
@@ -50,11 +50,10 @@ transformed data {
 }
 parameters {
   // Infection parameters
-  vector[npars_inf] beta_inf; //beta are the infection parameters
-  vector<lower=0>[2] sigma_inf; // smoothing parameters
+  vector[npars_inf] beta_inf;
+  vector<lower=0>[2] sigma_inf;
   
-  // Diagnosis probability parameters (random walk)
-  // Non-centred increments for each state
+  // Diagnosis probability parameters (AR(1))
   vector[nquar] delta_raw_1;
   vector[nquar] delta_raw_2;
   vector[nquar] delta_raw_3;
@@ -83,9 +82,9 @@ parameters {
   real logit_frr;
 }
 transformed parameters {
-  // Infection parameters
+  // Infection intensity by quarter and age
   vector[nquar * nage] lambda = X_inf * beta_inf;
-  vector<lower=0>[nquar * nage] h = exp(lambda); //vector of expected log responses
+  vector<lower=0>[nquar * nage] h = exp(lambda);
   
   // Step variances on natural scale (non-centred)
   vector[5] log_vardelta = mu_log_var + sigma_log_var * log_vardelta_raw;
@@ -108,10 +107,7 @@ transformed parameters {
   
   tau = inv(square(sigma_inf));
   
-  // DIAGNOSES
-  // Diagnosis probabilities via random walk (non-centred parameterisation).
-  // Initial value uses a fixed small step scale (0.2) so the starting
-  // uncertainty is not driven by vardelta, which governs evolution.
+  // Diagnosis probabilities via AR(1)
   vector[nquar] delta_1;
   vector[nquar] delta_2;
   vector[nquar] delta_3;
@@ -146,9 +142,7 @@ transformed parameters {
     }
   }
   
-  // Diagnosis probabilities by age group (ag), state (k), and time (t).
-  // Stored as matrix[nquar, 5] so the inner time-loop accesses column k,
-  // which is contiguous in column-major memory (cache-friendly).
+  // Diagnosis probabilities by broad age group, state, and quarter
   for (ag in 1 : nagroup) {
     d[ag,  : , 1] = inv_logit(delta_1 + gamma_age[ag, 1]);
     d[ag,  : , 2] = inv_logit(delta_2 + gamma_age[ag, 2]);
@@ -157,8 +151,6 @@ transformed parameters {
     d[ag,  : , 5] = inv_logit(delta_5 + gamma_age[ag, 5]);
   }
   
-  // NOW NEED TO CREATE THE TRANSITION MATRICES AND CALCULATE EXPECTED DIAGNOSES
-  // Initialise exp_diag to zero
   exp_diag = rep_array(empty_vec, nquar, nage);
   
   for (t0 in 1 : nquar) {
@@ -319,7 +311,6 @@ model {
   alpha_diag_4 ~ normal(-2.0, 0.5);
   alpha_diag_5 ~ normal(-0.5, 0.5);
   
-  // Non-centred RW increments
   delta_raw_1 ~ std_normal();
   delta_raw_2 ~ std_normal();
   delta_raw_3 ~ std_normal();
@@ -348,13 +339,8 @@ model {
   }
   sigma_age ~ normal(0, 0.5);
   
-  // Likelihood of model
+  // Age 1 is omitted because its expected counts are structurally zero
   for (t in 1 : nquar) {
-    // a is in 2 ages, because for age = 1 -> at some t get Po(0)
-    // Individuals age at times 5,9,13...
-    // So if individuals inf at t=5 at age=1
-    // Cannot be dx at t=5 at age age=1 (dx t > 6)
-    // remove age = 1 from likelihood
     HIV_age[t, 2 : nage] ~ poisson(exp_HIV_dx[t, 2 : nage]);
     AIDS_age[t, 2 : nage] ~ poisson(exp_AIDS_dx[t, 2 : nage]);
     for (a in 2 : nage) {

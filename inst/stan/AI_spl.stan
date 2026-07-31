@@ -37,12 +37,12 @@ functions {
   }
 }
 data {
-  int<lower=1> nquar; // number of quarters considered
-  array[nquar] int<lower=0> HIV; // data with new HIV diag by year
-  array[nquar] int<lower=0> AIDS; // data with new AIDS diag by year
-  array[nquar, 4] int<lower=0> CD4; // CD4 data by number of years and CD4 states
-  vector<lower=0, upper=1>[4] q; // Fixed progression probabilities
-  vector<lower=0>[4] init_prev; // Initial prevalence
+  int<lower=1> nquar; // quarters
+  array[nquar] int<lower=0> HIV;
+  array[nquar] int<lower=0> AIDS;
+  array[nquar, 4] int<lower=0> CD4;
+  vector<lower=0, upper=1>[4] q; // progression probabilities
+  vector<lower=0>[4] init_prev;
   
   // Splines
   int<lower=1> npars_inf;
@@ -53,7 +53,7 @@ parameters {
   vector[npars_inf] beta_inf;
   real log_sigma_inf;
   
-  // Diagnosis probability parameters (random walk)
+  // Diagnosis probability parameters (AR(1))
   vector[nquar] delta_raw_1;
   vector[nquar] delta_raw_2;
   vector[nquar] delta_raw_3;
@@ -79,7 +79,7 @@ transformed parameters {
   // Step variances on natural scale (non-centred)
   vector[4] log_vardelta = mu_log_var + sigma_log_var * log_vardelta_raw;
   vector<lower=0>[4] vardelta = exp(log_vardelta);
-  // Diagnosis probabilities via random walk
+  // Diagnosis probabilities via AR(1)
   vector[nquar] delta_1;
   vector[nquar] delta_2;
   vector[nquar] delta_3;
@@ -177,10 +177,8 @@ transformed parameters {
   }
 }
 model {
-  // PRIORS
-  
   // Infection priors
-  beta_inf[1] ~ normal(5, 1.5); // Vaguely informative priors: corresponds to quarter inf in (exp(2),exp(8)) = (8,4390)
+  beta_inf[1] ~ normal(5, 1.5);
   beta_inf[2 : npars_inf] ~ normal(0, sigma_inf);
   log_sigma_inf ~ normal(-1, 1);
   

@@ -16,12 +16,10 @@ postproc_ad <- function(
   nworkers = 1,
   chain_results = FALSE
 ) {
-  ### MODEL SETUP ###
   out <- list()
   ind_list <- list()
   N.Poiss <- 300
 
-  # Useful constants
   config <- stan_data$model_config
   nquar <- stan_data$nquar
   if (stan_data$nquar %% 4 != 0) {
@@ -29,13 +27,11 @@ postproc_ad <- function(
   }
   nage <- stan_data$nage
 
-  # Define prevalent states
   prev_states <- c("all", 1:4)
   if (config$rita) {
     prev_states <- c(prev_states, 5:7)
   }
 
-  # Define diagnosed states
   diag_states <- list(
     `CD4>=500` = 1,
     `CD4 350-499` = 2,
@@ -52,11 +48,10 @@ postproc_ad <- function(
     )
   }
 
-  # Define age bands dynamically based on nage
   # Each age index corresponds to a single year: index 1 = age 15, ..., index nage = age 14+nage
   max_age <- 14L + nage
 
-  # Standard decade bands (matching Stan's 4 age groups)
+  # Standard decade bands matching Stan's four age groups
   std_age_bands <- list(
     `1524` = c(15L, 24L),
     `2534` = c(25L, 34L),
@@ -74,13 +69,11 @@ postproc_ad <- function(
     }
   }
 
-  # Define quartiles
   q_levels <- c("2.5%", "50%", "mean", "97.5%")
 
   ### Fit summaries ###
   fit_mat <- fit$draws(format = "matrix")
 
-  # Flags for the model considered
   ageprobs.flag <- ifelse(
     length(grep("^d\\[", colnames(fit_mat))) == nquar * 4,
     FALSE,
@@ -115,20 +108,22 @@ postproc_ad <- function(
   }
   infs <- beta_draws %*% t(x)
 
-  # For migration models, h = exp(X_inf * beta_inf) parameterises only native
-  # (y=1) UK-acquired infections.  Born-abroad UK-acquired infections enter Stan
+  # For migration models, h = exp(X_inf * beta_inf) parameterises UK-born
+  # (y = 1) UK-acquired infections. Born-abroad UK-acquired infections enter Stan
   # as h[t,a] * p[t] (where p[t] = exp(eta[t]) = ratio_abroad_uk), so total
   # UK acquisitions = h[t,a] * (1 + p[t]).  Create a corrected log-scale
-  # surface for incidence reporting; the original `infs` (native only) is kept
+  # surface for incidence reporting; the original `infs` (UK-born only) is kept
   # unchanged for the Rcpp prevalence back-calculation which handles both groups
-  # separately and expects native-only H.
+  # separately and expects UK-born-only H.
   if (config$migration) {
     p.ind.early <- grep("^p\\[", colnames(fit_mat))
     p.draws.early <- fit_mat[, p.ind.early, drop = FALSE] # [nsim, nquar]
-    # X_inf rows are ordered as rep(1:nquar, times = nage), so column c of infs
-    # corresponds to time t = ((c - 1) %% nquar) + 1.
-    time_idx <- ((seq_len(nquar * nage) - 1L) %% nquar) + 1L
-    infs_for_incidence <- infs + log1p(p.draws.early[, time_idx, drop = FALSE])
+    infs_for_incidence <- .total_uk_acquired_log_incidence(
+      infs,
+      p.draws.early,
+      nquar,
+      nage
+    )
   } else {
     infs_for_incidence <- infs
   }
@@ -139,7 +134,6 @@ postproc_ad <- function(
     tau <- get_quantiles(fit_mat[, tau.ind])
   }
 
-  # Posterior means of parameter of interest
   out$tau <- tau
   alpha.ind <- grep("alpha", colnames(fit_mat))
   sigma2.ind <- grep("^vardelta\\[", colnames(fit_mat))
@@ -159,7 +153,6 @@ postproc_ad <- function(
     out$sigma_log_var <- get_quantiles(fit_mat[, sigma_log_var.ind])
   }
 
-  # Posterior mean for all time and ages
   out$infs.all <- apply(infs_for_incidence, 2, get_quantiles)
 
   # Extract incidence estimates
@@ -215,7 +208,7 @@ postproc_ad <- function(
   # Indices for diagnosis parameters by age band.
   # Migration models use d_nat[ag, t, state] / d_mig[ag, t, state]; non-migration
   # models use d[ag, t, state].  For reporting and the C++ backcalculation we use
-  # the native-group array (d_nat) as representative.
+  # the UK-born array (d_nat) as representative.
   dp <- if (config$migration) "d_nat" else "d"
   ind_list$d1.ind.1524 <- grep(
     sprintf("^%s\\[1,[0-9]+,1\\]$", dp),
@@ -337,9 +330,8 @@ postproc_ad <- function(
       values_to = "value"
     )
 
-  # Migrant-specific diagnosis probabilities (d_mig) — only for migration models
+  # Born-abroad diagnosis probabilities are reported separately
   if (config$migration) {
-    # Build d_mig index list (same structure as ind_list but using d_mig[ag,t,k])
     ind_list_mig <- vector("list", length(ind_list))
     names(ind_list_mig) <- names(ind_list)
     for (age_band in names(age_bands)[-1]) {
@@ -413,10 +405,8 @@ postproc_ad <- function(
   ### GENERATE PREVALENCE AND DIAGNOSIS ARRAYS ###
 
   if (config$migration) {
-    # Expected diagnoses from Stan transformed parameters
-    # Extract columns from fit_mat and reshape into arrays
     ndraws <- nrow(fit_mat)
-    ny <- 2 # UK and abroad
+    ny <- 2 # UK-born and born abroad
 
     hiv_dx_idx <- grep("^exp_HIV_dx\\[", colnames(fit_mat))
     exp_HIV_dx <- array(
@@ -437,7 +427,7 @@ postproc_ad <- function(
       dim = c(ndraws, nquar, nage, ny, ncd4)
     ) # [draw, t, a, y, cd4]
 
-    # HIV/AIDS arrays as (t, age, draw), summed over y
+    # Arrays have dimensions (quarter, age, draw), summed over group
     HIV <- aperm(apply(exp_HIV_dx, c(1, 2, 3), sum), c(2, 3, 1))
     AIDS <- aperm(apply(exp_AIDS_dx, c(1, 2, 3), sum), c(2, 3, 1))
 
@@ -449,18 +439,14 @@ postproc_ad <- function(
       }))
     }
 
-    # Migration-consistent undiagnosed prevalence via C++
-
-    # Posterior migrant age allocation from Stan transformed parameters [draw, t, a].
+    # Posterior arrival-age allocation: (draw, quarter, age)
     abroad_age_prop_idx <- grep("^abroad_age_prop\\[", colnames(fit_mat))
     abroad_age_prop <- array(
       fit_mat[, abroad_age_prop_idx, drop = FALSE],
       dim = c(ndraws, nquar, nage)
     ) # [draw, t, a]
 
-    # Build d-cube indices (agegrp, state, t) from fit_mat colnames, then per draw create (state,t,agegrp).
-    # Migration models expose d_nat[ag,t,k] (y=1, native) and d_mig[ag,t,k] (y=2, migrant).
-    # Both are needed to match the Stan model: native group uses d_nat, migrant group uses d_mig.
+    # Stan stores diagnosis probabilities as (age group, quarter, state)
     d_idx <- array(NA_integer_, dim = c(4, (config$ndiagst - 1), nquar))
     for (ag in 1:4) {
       for (k in 1:(config$ndiagst - 1)) {
@@ -499,7 +485,6 @@ postproc_ad <- function(
       }
     }
 
-    # Omega, p, m indices
     omega.ind <- grep("^omega\\[", colnames(fit_mat))
     p.ind <- grep("^p\\[", colnames(fit_mat))
     m.ind <- grep("^m\\[", colnames(fit_mat))
@@ -516,8 +501,7 @@ postproc_ad <- function(
 
     q_mat <- matrix(stan_data$q_age, nrow = 4, ncol = nage)
 
-    # Separate initial prevalence matrices: y=1 (native) and y=2 (migrant).
-    # Stan uses init_prev_age for y=1 and init_prev_abroad_age for y=2 independently.
+    # Initial prevalence is supplied independently for both groups
     prev_nat_mat <- matrix(
       stan_data$init_prev_age,
       nrow = config$nlatst,
@@ -533,7 +517,7 @@ postproc_ad <- function(
     p_zero <- rep(0.0, nquar)
 
     exp.prev <- lapply(seq_len(nrow(fit_mat)), function(i) {
-      # Native d_cube (d_nat) — used for y=1 group
+      # C++ expects (state, quarter, age group)
       d_cube_nat <- array(NA_real_, dim = c(config$ndiagst - 1, nquar, 4))
       for (ag in 1:4) {
         for (k in 1:(config$ndiagst - 1)) {
@@ -541,7 +525,6 @@ postproc_ad <- function(
         }
       }
 
-      # Migrant d_cube (d_mig) — used for y=2 group
       d_cube_mig <- array(NA_real_, dim = c(config$ndiagst - 1, nquar, 4))
       for (ag in 1:4) {
         for (k in 1:(config$ndiagst - 1)) {
@@ -553,17 +536,16 @@ postproc_ad <- function(
       p_i <- fit_mat[i, p.ind]
       abroad_age_prop_i <- matrix(abroad_age_prop[i, , ], nrow = nquar, ncol = nage)
 
-      # m_mat: 5 x nquar (rows are k=1..5)
+      # Rows of m_mat are the five arrival compartments
       m_mat <- matrix(fit_mat[i, m.ind], nrow = 5, ncol = nquar)
 
       H_i <- exp(infs[i, ])
-      # Pre-scale H by p for the migrant UK-acquired group (y=2), so that
-      # inflow_native in the migrant call equals h[t]*p[t] matching Stan's inflow_mig_uk.
-      # Pass p=0 to avoid double-scaling.
+      # Pre-scale born-abroad UK-acquired incidence by p; passing p = 0 to
+      # the iterator avoids applying the ratio twice.
       H_mig <- H_i * rep(p_i, nage)
 
       if (config$rita) {
-        # Native: d_nat, init_prev_age, no migration
+        # UK-born group
         prev_nat <- prev_iter_fct_migration_rita(
           H = H_i,
           d = d_cube_nat,
@@ -576,7 +558,7 @@ postproc_ad <- function(
           nquar = nquar,
           nage = nage
         )
-        # Migrant: d_mig, init_prev_abroad_age, with migration, H already scaled by p
+        # Born-abroad group
         prev_mig <- prev_iter_fct_migration_rita(
           H = H_mig,
           d = d_cube_mig,
@@ -590,7 +572,7 @@ postproc_ad <- function(
           nage = nage
         )
       } else {
-        # Native: d_nat, init_prev_age, no migration
+        # UK-born group
         prev_nat <- prev_iter_fct_migration(
           H = H_i,
           d = d_cube_nat,
@@ -603,7 +585,7 @@ postproc_ad <- function(
           nquar = nquar,
           nage = nage
         )
-        # Migrant: d_mig, init_prev_abroad_age, with migration, H already scaled by p
+        # Born-abroad group
         prev_mig <- prev_iter_fct_migration(
           H = H_mig,
           d = d_cube_mig,
@@ -622,7 +604,6 @@ postproc_ad <- function(
 
     exp.prev.arr <- simplify2array(exp.prev) # (t, age, state, draw)
 
-    # exp.diags.arr is not used in migration mode
     exp.diags.arr <- NULL
   } else {
     # Choose the correct Cpp functions
@@ -1038,7 +1019,7 @@ postproc_ad <- function(
 
   ### MIGRATION OUTPUTS (AD migration model) ###
   if (config$migration) {
-    # migration (omega[t])
+    # Total migration with HIV
     omega.ind <- grep("^omega\\[", colnames(fit_mat))
 
     omega.draws <- fit_mat[, omega.ind, drop = FALSE]
@@ -1051,9 +1032,6 @@ postproc_ad <- function(
       start_yr = start_yr,
       qt.flag = TRUE
     )
-
-    # out$undiag_migration <- out$undiag_migration_age |>
-    #   dplyr::filter(.data$age_band == "all")
 
     # migration_prob (m[k,t], k=1..5)
     migration_prob_labels <- c(
@@ -1084,7 +1062,7 @@ postproc_ad <- function(
 
     out$migration_prob <- dplyr::bind_rows(migration_prob_df)
 
-    # transfers (omega[t] * m[5,t])
+    # Arrivals previously diagnosed abroad
     m5.ind <- grep("^m\\[5,", colnames(fit_mat))
     m5.draws <- fit_mat[, m5.ind, drop = FALSE]
     transfers.draws <- omega.draws * m5.draws
@@ -1123,10 +1101,7 @@ postproc_ad <- function(
     }) |>
       purrr::list_rbind()
 
-    # out$transfers <- out$transfers_age |>
-    #   dplyr::filter(.data$age_band == "all")
-
-    # ratio_abroad_uk (p[t])
+    # Born-abroad:UK-born ratio of UK-acquired incidence
     p.ind <- grep("^p\\[", colnames(fit_mat))
     p.draws <- fit_mat[, p.ind, drop = FALSE]
 
@@ -1138,7 +1113,7 @@ postproc_ad <- function(
       qt.flag = TRUE
     )
 
-    # detect_prob (detect_prob[t])
+    # Probability a previous diagnosis abroad is identified
     detect.ind <- grep("^detect_prob\\[", colnames(fit_mat))
     detect.draws <- fit_mat[, detect.ind, drop = FALSE]
 

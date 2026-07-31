@@ -1,3 +1,14 @@
+test_that("migration plot titles describe their estimands", {
+  expect_identical(
+    get_plot_title("ratio_abroad_uk"),
+    "born-abroad:UK-born ratio of UK-acquired incidence"
+  )
+  expect_identical(
+    get_plot_title("diag_prob_mig"),
+    "HIV diagnosis probabilities (born abroad), by CD4 strata"
+  )
+})
+
 test_that("simulated plots are generated correctly", {
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, age = TRUE, migration = TRUE, rita = TRUE, age_diag_effect = 0.5, sim_type = "combo_3")

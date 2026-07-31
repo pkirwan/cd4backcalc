@@ -302,7 +302,7 @@ calibrate_init_prev <- function(
   )
 
   if (anyNA(native)) {
-    stop("Could not find quarter-1 native diagnosis probabilities in the fit draws.")
+    stop("Could not find quarter-1 UK-born diagnosis probabilities in the fit draws.")
   }
 
   out <- list(native = native)

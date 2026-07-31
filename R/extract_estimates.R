@@ -97,7 +97,10 @@ get_estimates <- function(hiv_list, quantity) {
 #' @param sim_diags The simulated diagnosis data containing stan_data and sim_data.
 #' @param quantity The quantity to extract.
 #' @param deterministic Logical indicating whether to re-run the simulation deterministically (dist = FALSE) to obtain the expected values (lambda) rather than the stochastic realisation. Useful for bias/MSE calculations across multiple seeds (default is FALSE).
-#' @return A list of model estimates including undiagnosed prevalence, incidence, migration, diagnosis probabilities, diagnoses, migration probabilities, proportion of UK-acquired infections that are migrants, transfers of care, and CD4 strata.
+#' @return A list of model estimates including undiagnosed prevalence,
+#'   incidence, migration, diagnosis probabilities, diagnoses, migration
+#'   probabilities, the born-abroad:UK-born ratio of UK-acquired incidence,
+#'   transfers of care, and CD4 strata.
 #' @examples
 #' # See ?run_backcalc for a full end-to-end workflow.
 #' invisible(NULL)
@@ -246,7 +249,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
   } else if (quantity == "diag_prob") {
     out <- diag_prob
   } else if (quantity == "diag_prob_mig") {
-    # Migrant-specific diagnosis probabilities — mirrors diag_prob but uses d_probs_mig
+    # Born-abroad diagnosis probabilities mirror diag_prob but use d_probs_mig
     mid_age <- ceiling(stan_data$nage / 2)
     if (stan_data$sim_config$rita) {
       out <- tibble::tibble(

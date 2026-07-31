@@ -20,7 +20,9 @@ include in bias/MSE calculations. If \code{NULL} (default), all available years
 are used.}
 }
 \value{
-A list of bias and MSE values for incidence, migration, proportion of UK-acquired infections that are migrants, and migration probabilities.
+A list of bias and MSE values for incidence, migration, the
+born-abroad:UK-born ratio of UK-acquired incidence, and migration
+probabilities.
 }
 \description{
 Make a list of mean squared error (MSE) values for HIV model estimates.

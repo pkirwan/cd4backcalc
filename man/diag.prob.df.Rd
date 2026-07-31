@@ -13,7 +13,8 @@ diag.prob.df(stan_data, fit_mat, start.yr = 1978, group = c("nat", "mig"))
 
 \item{start.yr}{Starting year for the dataframe.}
 
-\item{group}{Character indicating which diagnosis probabilities to extract ("nat" for native, "mig" for migration).}
+\item{group}{Character indicating which diagnosis probabilities to extract
+(\code{"nat"} for UK-born, \code{"mig"} for born abroad).}
 }
 \value{
 Dataframe of diagnosis probabilities estimates.

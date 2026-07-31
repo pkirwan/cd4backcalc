@@ -18,6 +18,24 @@ test_that("migration simulation produces expected HIV data", {
   )
 })
 
+test_that("migration simulation preserves scientific input contracts", {
+  sim_diags <- simulate_diagnoses(
+    nquar = 20,
+    sim_seed = 123,
+    migration = TRUE,
+    dist = FALSE,
+    eta_sd = 0
+  )
+
+  expect_equal(sim_diags$stan_data$eta_sd, 0)
+  expect_equal(
+    exp(sim_diags$stan_data$eta_mean),
+    sim_diags$sim_data$ratio_abroad_uk
+  )
+  expect_equal(rowSums(sim_diags$sim_data$mu), rep(1, 20))
+  expect_equal(rowSums(sim_diags$sim_data$m), sim_diags$sim_data$omega)
+})
+
 test_that("age-specific migration simulation produces expected HIV data", {
   sim_diags <- simulate_diagnoses(sim_seed = 123, age = TRUE, migration = TRUE)
   expect_equal(

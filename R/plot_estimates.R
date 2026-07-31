@@ -450,7 +450,7 @@ plot_diagnostics <- function(hiv_list, ntraces = 4) {
       ))],
       facet_args = list(nrow = 1)
     )
-    # proportion of UK-acquired who are migrants
+    # Born-abroad:UK-born ratio of UK-acquired incidence
     p4 <- bayesplot::mcmc_trace(
       draws,
       pars = colnames(draws)[sort(sample(
@@ -528,7 +528,7 @@ get_plot_title <- function(quantity) {
   } else if (quantity == "transfers_detected") {
     "detected transfers of care"
   } else if (quantity == "ratio_abroad_uk") {
-    "born-abroad:native-born ratio"
+    "born-abroad:UK-born ratio of UK-acquired incidence"
   } else if (quantity == "detect_prob") {
     "detection probability for transfers of care"
   } else if (quantity == "incidence_age") {
@@ -542,9 +542,9 @@ get_plot_title <- function(quantity) {
   } else if (quantity == "diag_prob_age") {
     "HIV diagnosis probabilities, by CD4 strata and age"
   } else if (quantity == "diag_prob_mig") {
-    "HIV diagnosis probabilities (migrants), by CD4 strata"
+    "HIV diagnosis probabilities (born abroad), by CD4 strata"
   } else if (quantity == "diag_prob_mig_age") {
-    "HIV diagnosis probabilities (migrants), by CD4 strata and age"
+    "HIV diagnosis probabilities (born abroad), by CD4 strata and age"
   } else if (quantity == "incidence_trend") {
     "HIV incidence trend by age"
   } else if (quantity == "peak_incidence") {

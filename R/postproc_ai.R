@@ -160,7 +160,7 @@ make_fit_indices <- function(fit_mat, config, nquar) {
   cn <- colnames(fit_mat)
 
   # Migration models expose d_nat[k,t] and d_mig[k,t] instead of d[k,t].
-  # Use d_nat as the representative native-group diagnosis probabilities.
+  # Use d_nat as the representative UK-born diagnosis probabilities.
   dp <- if (isTRUE(config$migration)) "d_nat" else "d"
 
   idx <- list(
@@ -665,7 +665,6 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
     dist_s1 <- t(collapsed_s1) / colSums(collapsed_s1)
 
     for (state in 1) {
-      #prev_list <- array(sapply(1:nquar, function(x) colSums(prev_for_dist[x, 1:3, ])), dim = c(nquar, 1, nquar))
       d_to_i_temp_1 <- diag_to_infec_wrap1(prev_for_dist, 1) *
         dist_s1[, 1]
       d_to_i_temp_2 <- diag_to_infec_wrap1(prev_for_dist, 2) *
@@ -945,7 +944,6 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
       temp_omega * temp_m[, 5]
     )
   }
-  # output$expected.p <- matrix(rpois(length(diagnoses$expected.p),diagnoses$expected.p),4,nquar,nquar)
   # Calculate distributions
   if (config$migration) {
     temp_HIV_dx_uk <- temp_diags_fun(diagnoses_combined_uk)
@@ -1082,7 +1080,6 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
     dist_s1 <- t(collapsed_s1) / colSums(collapsed_s1)
 
     for (state in 1) {
-      #prev_list <- array(sapply(1:nquar, function(x) colSums(diagnoses_combined$prevalence[x, 1:3, ])), dim = c(nquar, 1, nquar))
       d_to_i_temp_1 <- diag_to_infec_wrap1(diagnoses_combined$prevalence, 1) *
         dist_s1[, 1]
       d_to_i_temp_2 <- diag_to_infec_wrap1(diagnoses_combined$prevalence, 2) *
@@ -1449,7 +1446,6 @@ undiag.prev.df <- function(
       undiagnosed.prevalence <- t(undiagnosed.prevalence)
     }
   } else {
-    # start.yr <- 1995
     ## Undiagnosed prevalence is equal to the number of people
     ## that are undiagnosed by the end of the surveillance period
     undiagnosed.prevalence <- sapply(prev_dist["undiagnosed", ], function(x) {
@@ -1498,7 +1494,8 @@ undiag.prev.df <- function(
 #' @param stan_data Data list used in stan model fitting.
 #' @param fit_mat Matrix of posterior samples from stan model.
 #' @param start.yr Starting year for the dataframe.
-#' @param group Character indicating which diagnosis probabilities to extract ("nat" for native, "mig" for migration).
+#' @param group Character indicating which diagnosis probabilities to extract
+#'   (`"nat"` for UK-born, `"mig"` for born abroad).
 #' @return Dataframe of diagnosis probabilities estimates.
 diag.prob.df <- function(stan_data, fit_mat, start.yr = 1978, group = c("nat", "mig")) {
   group <- match.arg(group)
@@ -1704,14 +1701,16 @@ migration.prob.df <- function(stan_data, fit_mat, start.yr = 1978) {
   return(df)
 }
 
-#' Prop UK dataframe
+#' UK-acquired incidence-ratio dataframe
 #'
-#' Calculates proportion UK dataframe from posterior samples.
+#' Calculates the born-abroad:UK-born ratio of UK-acquired incidence from
+#' posterior samples.
 #'
 #' @param stan_data Data list used in stan model fitting.
 #' @param fit_mat Matrix of posterior samples from stan model.
 #' @param start.yr Starting year for the dataframe.
-#' @return Dataframe of proportion UK estimates.
+#' @return Data frame of born-abroad:UK-born UK-acquired incidence-ratio
+#'   estimates.
 ratio_abroad_uk.df <- function(stan_data, fit_mat, start.yr = 1978) {
   nyr <- stan_data$nquar / 4
 

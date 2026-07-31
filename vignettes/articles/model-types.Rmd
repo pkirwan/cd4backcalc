@@ -31,7 +31,7 @@ knitr::kable(grid, align = "lcc")
 
 The `rita`, `migration`, and `age` flags are passed to both `simulate_diagnoses()` and `run_backcalc()`. When fitting to real data these flags are passed to `run_backcalc()` only.
 
-For the age-independent CD4-only model, `run_backcalc()` also supports alternative smoothing families via `inf_model` and `diag_model` (`1` = spline, `2` = random walk, and for incidence only `3` = GP). Models with migration, RITA, or age structure currently use the spline configuration (`inf_model = 1`, `diag_model = 1`).
+For the age-independent CD4-only model, `run_backcalc()` also supports alternative smoothing families via `inf_model` and `diag_model`. For incidence, `inf_model` selects a spline (`1`), random walk (`2`), or Gaussian process (`3`); for diagnosis probabilities, `diag_model` selects a spline (`1`) or AR(1) process (`2`). Models with migration, RITA, or age structure currently use the spline incidence configuration (`inf_model = 1`) and their model-specific diagnosis process.
 
 ## CD4-only model
 
@@ -72,7 +72,7 @@ Alternative smoothing choices for the incidence and diagnosis models are availab
 fit_cd4_rw <- run_backcalc(
   sim_cd4,
   inf_model = 2, # 1 = spline, 2 = random walk, 3 = GP (incidence only)
-  diag_model = 2 # 1 = spline, 2 = random walk
+  diag_model = 2 # 1 = spline, 2 = AR(1)
 )
 ```
 
@@ -213,7 +213,7 @@ For reproducible simulation studies, pre-defined simulation types combine multip
 
 ```{r sim-types, eval=FALSE}
 # combo_3: varying acquisition + step-change migration + varying diagnosis +
-#          increasing proportion UK + varying migration probabilities +
+#          increasing UK-acquired incidence ratio + varying migration probabilities +
 #          non-uniform age distribution
 sim_c3 <- simulate_diagnoses(sim_type = "combo_3", migration = TRUE)
 

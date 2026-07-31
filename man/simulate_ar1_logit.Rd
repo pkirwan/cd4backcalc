@@ -21,7 +21,7 @@ Numeric vector of length \code{nquar} on the logit scale.
 }
 \description{
 Produces a time series with the same correlation structure as the Stan AR(1)
-random-walk prior used for diagnosis probabilities. AR(1) residuals are added
+process used for diagnosis probabilities. AR(1) residuals are added
 on top of a deterministic trend and then mean-centred so that the stochastic
 trajectory does not drift systematically from the deterministic trend. This
 ensures that \code{dist = TRUE} and \code{dist = FALSE} simulations produce

@@ -4,22 +4,17 @@ data {
   int<lower=1> nquar; // number of quarters
   int<lower=1> nage; // number of ages
   
-  // Observations by quarter (t), age (a), and group (y)
-  // y = 1: native, y = 2: migrant
+  // Observations by quarter, age, and country-of-birth group
+  // y = 1: UK-born, y = 2: born abroad
   array[nquar, nage, 2] int<lower=0> HIV_age; // new HIV diagnoses
   array[nquar, nage, 2] int<lower=0> AIDS_age; // new AIDS diagnoses
   array[nquar, nage, 2, 4] int<lower=0> CD4_age; // CD4 categories among HIV diagnoses
   
-  // Observed prior diagnoses from abroad: quarterly totals and their
-  // breakdown into the 4 diagnosis age groups (1-10, 11-20, 21-30, 31+).
-  // These are constructed from the raw single-year ABROAD_age matrix in R
-  // (model_type_prep / simulate_diagnoses) so the Stan model receives the
-  // sufficient data it actually models rather than noisy single-year counts.
+  // Previous diagnoses abroad, as quarterly totals and four age groups
   array[nquar] int<lower=0> ABROAD;           // quarterly total detected abroad diagnoses
   array[nquar, 4] int<lower=0> ABROAD_group;  // grouped by diagnosis age group
   
-  // Progression probabilities by age at entry (age at infection for natives/UK-acquired,
-  // age at arrival for abroad-acquired migrants)
+  // Progression by age at acquisition or arrival
   matrix<lower=0, upper=1>[4, nage] q_age;
   
   // Initial prevalence at t = 1 by age and latent CD4 state (1..4)
@@ -31,8 +26,7 @@ data {
   matrix[nquar * nage, npars_inf] X_inf;
   matrix[npars_inf - 1, 2 * npars_inf - 2] S1;
   
-  // Time-varying diagnosis random walk (plus age-group offsets)
-  // (npars_diag and X_diag removed; diagnosis now uses random walk)
+  // Diagnosis process
   
   // Migration design matrices
   int<lower=1> npars_mig;
@@ -40,10 +34,10 @@ data {
   int<lower=1> npars_mp;
   matrix[nquar, npars_mig] X_mig;
   matrix[nquar, npars_cob] X_cob;
-  // Basis for the undiagnosed-mix softmax and the detection-probability spline.
+  // Basis for the undiagnosed-mix softmax
   matrix[nquar, npars_mp] X_mp;
   
-  // Prior information for evidence synthesis (log proportion UK-acquired)
+  // External evidence for the log born-abroad:UK-born UK-acquired ratio
   vector[nquar] eta_mean;
   real<lower=0> eta_sd;
   
@@ -54,25 +48,9 @@ data {
   vector[n_detect_obs] detect_logit_obs;
   real<lower=0> detect_obs_sd;
   
-  // External auxiliary observations informing the TREND of log migration volume.
-  // Support a single non-age-specific rolling-annual series plus an optional
-  // age-stratified set of four rolling-annual series on the same age groups as
-  // ABROAD_group. gamma_obs is always supplied. gamma_obs_group uses -1 as
-  // the sentinel for "age breakdown not available yet". At each quarter t, if
-  // all 4 grouped values are greater than -1 the grouped likelihood is used;
-  // otherwise the scalar gamma_obs[t] likelihood is used.
-  // In the grouped case, the expected log series is
-  //   gamma_agg + log(abroad_age_group_prop[ag]) + gamma_obs_offset.
-  // The single free offset gamma_obs_offset absorbs the unknown overall level
-  // difference between total migration and HIV-positive migration, so the
-  // external series informs the total trend gamma = log(omega), and in the
-  // grouped case also the static age composition abroad_age_group_prop,
-  // without fixing the absolute level of omega. Provide dense log-scale rolling
-  // annual values for either the single series or all 4 age groups. For
-  // quarters 1:3, the model uses three latent pre-study quarterly migration
-  // volumes to complete the rolling annual window. Do NOT feed in the posterior
-  // of another model fit to these same counts: that double-uses the data. Set
-  // gamma_obs_sd = 0 to disable.
+  // Independent rolling-annual migration index on the log scale. Complete
+  // gamma_obs_group rows use grouped data; negative rows use gamma_obs.
+  // gamma_obs_sd = 0 disables this likelihood.
   vector[nquar] gamma_obs;
   matrix[nquar, 4] gamma_obs_group;
   real<lower=0> gamma_obs_sd;
@@ -134,21 +112,14 @@ parameters {
   // Migration process
   vector[npars_mig] beta_mig;
   real log_sigma_mig;
-  // Level offset between the external migration index (e.g. ONS total migration
-  // counts) and log HIV-positive migration volume gamma = log(omega). The
-  // external series informs only the SHAPE/trend of gamma; this free offset
-  // absorbs the (large, unknown) scale difference so the level of omega stays
-  // identified by the HIV/AIDS/CD4/ABROAD likelihood. When the gamma_obs hook is
-  // disabled it is simply sampled from its prior (harmless).
+  // Offset leaves the level of omega unidentified by the external index
   real gamma_obs_offset;
-  // Three pre-study quarterly migration log-volumes used only to complete the
-  // first three rolling-annual external migration observations. They do not
-  // enter the HIV/AIDS/CD4/ABROAD likelihood.
+  // Pre-study quarters complete the first rolling-annual observations
   vector[3] gamma_pre;
   // Shared age composition for abroad-acquired migrant inflow, estimated on the
   // same 4 age groups used by the diagnosis model.
   simplex[4] abroad_age_group_prop;
-  // Diagnosis probability parameters (random walk)
+  // Diagnosis probability parameters (AR(1))
   vector[nquar] delta_raw_1;
   vector[nquar] delta_raw_2;
   vector[nquar] delta_raw_3;
@@ -162,18 +133,16 @@ parameters {
   real alpha_diag_4;
   array[4] sum_to_zero_vector[4] gamma_age_raw;
   real<lower=0> sigma_age; // shared shrinkage for age effects
-  vector[4] alpha_diag_mig; // migrant-specific diagnosis intercept offset per state
+  vector[4] alpha_diag_mig; // born-abroad diagnosis offset by state
   
-  // Proportion UK-acquired among migrants
+  // Born-abroad:UK-born ratio of UK-acquired incidence
   vector[npars_cob] beta_cob;
   real<lower=0> sigma_cob;
   real alpha_cob;
   real<lower=-1, upper=1> rho_eta;
   
-  // Hybrid transfer-share parameterization: m[5,t] follows a linear logit
-  // trend (intercept + slope), reflecting that the diagnosed fraction of
-  // arriving HIV-positive migrants changes on decade scales, not quarterly.
-  // The undiagnosed CD4 mix m[1:4,t] retains a time-varying softmax on X_mp.
+  // Previously diagnosed share m[5, t] has a linear logit trend; the
+  // undiagnosed CD4 composition m[1:4, t] uses a softmax spline.
   vector[4] alpha_mp;
   real beta_mp_5;
   vector[npars_mp] beta_mp_1_raw;
@@ -183,13 +152,8 @@ parameters {
   real<lower=0> sigma_mp_2;
   real<lower=0> sigma_mp_3;
   
-  // Misclassification of abroad diagnoses.
-  // detect_prob follows a linear logit trend (intercept + slope) rather than a
-  // spline: ABROAD only constrains omega * m5 * detect_prob, so a flexible
-  // detect_prob on the shared X_mp basis competes with omega and m[1:4] and
-  // leaves the product non-identifiable. A low-dimensional trend converts
-  // ABROAD into a tight constraint on omega * m5 (and hence the misclassified
-  // inflow), letting the migrant diagnosis flow identify omega * (1 - m5).
+  // Low-dimensional detection trend limits confounding in
+  // omega * m[5, t] * detect_prob[t].
   real alpha_detect;
   real beta_detect_slope;
   
@@ -232,7 +196,7 @@ transformed parameters {
     }
   }
   
-  // Age distribution used for allocating migrant flows by age. The group-level
+  // Age distribution used for allocating born-abroad flows by age. The group-level
   // simplex abroad_age_group_prop is expanded uniformly within each decade band
   // by dividing by age_group_size, ensuring the per-age values sum to 1.
   matrix<lower=0, upper=1>[nquar, nage] abroad_age_prop;
@@ -250,7 +214,7 @@ transformed parameters {
   // Step variances on natural scale (non-centred)
   vector[4] log_vardelta = mu_log_var + sigma_log_var * log_vardelta_raw;
   vector<lower=0>[4] vardelta = exp(log_vardelta);
-  // Diagnosis probabilities via random walk
+  // Diagnosis probabilities via AR(1)
   vector[nquar] delta_1;
   vector[nquar] delta_2;
   vector[nquar] delta_3;
@@ -295,7 +259,7 @@ transformed parameters {
   // Diagnosis probabilities by age group (ag), state (k), and time (t).
   // Stored as matrix[nquar, 4] so the inner time-loop accesses column k,
   // which is contiguous in column-major memory (cache-friendly).
-  // d_nat: natives; d_mig: migrants (adds alpha_diag_mig offset per state).
+  // d_nat: UK-born; d_mig: born abroad (adds a state-specific offset).
   array[4] matrix<lower=0, upper=1>[nquar, 4] d_nat;
   array[4] matrix<lower=0, upper=1>[nquar, 4] d_mig;
   for (ag in 1 : 4) {
@@ -317,12 +281,12 @@ transformed parameters {
                                   + alpha_diag_mig[4]);
   }
   
-  // Proportion UK-acquired among migrants
+  // Born-abroad:UK-born ratio of UK-acquired incidence
   vector[nquar] eta = alpha_cob + 0.5 * (X_cob * beta_cob);
   vector<lower=0>[nquar] p;
   
   // Non-centred reconstruction of the softmax components for the undiagnosed
-  // migrant CD4 mix (states 1:4, reference = state 4).
+  // born-abroad CD4 mix (states 1:4, reference = state 4).
   vector[npars_mp] beta_mp_1;
   vector[npars_mp] beta_mp_2;
   vector[npars_mp] beta_mp_3;
@@ -400,11 +364,11 @@ transformed parameters {
   // Main forward calculation: for each entry time (t0) and entry age (a0),
   // propagate diagnosis and progression forward with ageing in diagnosis probabilities.
   for (t0 in 1 : nquar) {
-    // time-varying UK-acquired proportion
+    // Time-varying born-abroad:UK-born UK-acquired incidence ratio
     p[t0] = exp(eta[t0]);
     
     for (a0 in 1 : nage) {
-      // Native (y=1) and Migrant (y=2)
+      // UK-born (y = 1) and born abroad (y = 2)
       for (y in 1 : 2) {
         vector[4] lat;
         vector[4] lat_next;
@@ -572,11 +536,6 @@ model {
   beta_inf[2 : npars_inf] ~ multi_normal_prec(zero_vec, K1_prec);
   
   // Migration priors
-  // log_sigma_mig ~ normal(-0.5, 0.5): sigma_mig mode ~0.6, range [0.22, 1.65].
-  // The previous normal(-2, 0.5) gave sigma_mig ~0.14, which is too tight for
-  // increasing/step_change omega patterns where log(omega) shifts by ~1 unit
-  // over the study; spline coefficients needed 7+ SD from prior — essentially
-  // impossible, causing omega to be estimated with spurious precision.
   beta_mig[1] ~ normal(4, 1);
   beta_mig[2 : npars_mig] ~ normal(0, sigma_mig);
   log_sigma_mig ~ normal(-0.5, 0.5);
@@ -584,9 +543,7 @@ model {
   gamma_pre[2] ~ normal(gamma_pre[3], sigma_mig);
   gamma_pre[1] ~ normal(gamma_pre[2], sigma_mig);
 
-  // ABROAD is modelled as a Poisson total plus a conditional multinomial age
-  // composition, which avoids injecting quarter-level small-count noise into the
-  // migrant inflow allocator.
+  // Conditional age composition of previous diagnoses abroad
   abroad_age_group_prop ~ dirichlet(rep_vector(2.0, 4));
   for (t in 1 : nquar) {
     ABROAD_group[t] ~ multinomial(abroad_age_group_prop);
@@ -621,24 +578,17 @@ model {
     gamma_age_raw[k] ~ std_normal();
   }
   sigma_age ~ normal(0, 0.5);
-  // States 1–3: normal(0, 1) allows up to ~2 logit-unit migrant offset.
-  // State 4 (CD4 < 200): tighter normal(0, 0.25) — late-stage diagnosis is
-  // largely symptom-driven, so native/migrant rates should be similar.
-  // This prevents alpha_diag_mig[4] absorbing age-effect confounding.
+  // Tighter born-abroad offset for symptom-driven CD4 < 200 diagnosis
   alpha_diag_mig[1 : 3] ~ normal(0, 1);
   alpha_diag_mig[4] ~ normal(0, 0.25);
   
-  // Proportion UK-acquired priors
+  // UK-acquired incidence-ratio priors
   alpha_cob ~ normal(0, 1.5);
   beta_cob[1] ~ std_normal();
   beta_cob[2 : npars_cob] ~ normal(0, sigma_cob);
   sigma_cob ~ gamma(2, 32);
   
-  // Approximate melding for proportion UK-acquired - AR(1).
-  // Guard: only active when eta_sd > 0 (i.e. independent external evidence is
-  // available). Set eta_sd = 0 to let the likelihood alone identify eta — this
-  // is the correct choice when the RITA-positive COB proportions used to derive
-  // eta_mean are already in the diagnosis likelihood.
+  // Approximate melding with independent evidence; eta_sd = 0 disables it
   if (eta_sd > 0) {
     eta_mean[1] ~ normal(eta[1], eta_sd);
     eta_mean[2 : nquar] ~ normal(
@@ -651,21 +601,10 @@ model {
   rho_eta ~ normal(0, 0.5);
   
   // Detection probability priors
-  // detect_prob is not separately identified from ABROAD alone: the ABROAD
-  // likelihood constrains omega * m[5] * detect_prob jointly. Restricting
-  // detect_prob to a linear logit trend (intercept + slope) makes ABROAD a
-  // tight constraint on omega * m5, which in turn pins the misclassified inflow
-  // omega * m5 * (1 - detect_prob) and frees the migrant diagnosis flow to
-  // identify omega * (1 - m5). The slope prior allows a ~13pp drift over the
-  // full study period at 2 SD without forcing a trend; an external
-  // data-linkage detection rate (detect_logit_obs) can still anchor the level.
   alpha_detect ~ normal(1.1, 0.5);
   beta_detect_slope ~ normal(0, 1);
   
-  // Transfer share priors: vague intercept so m5 can sit well away from 25%
-  // when data support it; unit-scale slope allows a ~13pp drift over the full
-  // study period at 2 SD without forcing a trend. The undiagnosed CD4 mix
-  // keeps a time-varying softmax.
+  // Previously diagnosed share and undiagnosed CD4-composition priors
   alpha_mp[1] ~ normal(logit(0.25), 2);
   alpha_mp[2 : 4] ~ std_normal();
   beta_mp_5 ~ normal(0, 1);
@@ -684,14 +623,7 @@ model {
     }
   }
   
-  // Auxiliary likelihood for the TREND of log migration volume from an EXTERNAL
-  // migration index (e.g. ONS total immigration) by the same 4 age groups used
-  // in ABROAD_group. A single gamma_obs_offset absorbs the overall level
-  // difference so the grouped external series constrains the total migration
-  // trend gamma = log(omega) and the static migrant age composition
-  // abroad_age_group_prop, while the level of omega remains identified by the
-  // HIV/AIDS/CD4/ABROAD counts below. Legitimate only when the index is
-  // independent of those counts. Set gamma_obs_sd = 0 to disable.
+  // Independent migration index informs trend, not level
   gamma_obs_offset ~ normal(0, 10);
   if (gamma_obs_sd > 0) {
     for (t in 1 : nquar) {

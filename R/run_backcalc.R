@@ -7,7 +7,7 @@
 #' @param rita Logical indicating whether to include RITA data in the model.
 #' @param age Logical indicating whether to include age-specific data in the model.
 #' @param inf_model Infection model type (1 = spline, 2 = random walk, 3 = GP).
-#' @param diag_model Diagnosis model type (1 = spline, 2 = random walk).
+#' @param diag_model Diagnosis model type (1 = spline, 2 = AR(1)).
 #' @param model_seed Seed for model fitting (will be set randomly if NULL).
 #' @param iter_warmup Number of warmup iterations for Stan sampling.
 #' @param iter_sampling Number of sampling iterations for Stan sampling.
@@ -387,7 +387,7 @@ fit_stan_model <- function(
 #' @param rita Logical indicating whether to include RITA data in the model.
 #' @param age Logical indicating whether to include age-specific data in the model.
 #' @param inf_model Infection model type (1 = spline, 2 = random walk, 3 = GP).
-#' @param diag_model Diagnosis model type (1 = spline, 2 = random walk).
+#' @param diag_model Diagnosis model type (1 = spline, 2 = AR(1)).
 #' @param model_seed Seed for model fitting.
 #' @return A list containing configuration settings for model fitting.
 stan_model_config <- function(
@@ -644,7 +644,7 @@ load_stan_model <- function(config) {
 #' @param rita Logical indicating whether to include RITA data in the model.
 #' @param age Logical indicating whether to include age-specific data in the model.
 #' @param inf_model Infection model type (1 = spline, 2 = random walk, 3 = GP).
-#' @param diag_model Diagnosis model type (1 = spline, 2 = random walk).
+#' @param diag_model Diagnosis model type (1 = spline, 2 = AR(1)).
 #' @param model_seed Seed for model fitting.
 #' @param basis Basis type for the spline (default is "ts" for thin plate regression spline).
 #' @param knots Number of knots for the spline (default is 10).

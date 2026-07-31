@@ -22,7 +22,7 @@ stan_model_config(
 
 \item{inf_model}{Infection model type (1 = spline, 2 = random walk, 3 = GP).}
 
-\item{diag_model}{Diagnosis model type (1 = spline, 2 = random walk).}
+\item{diag_model}{Diagnosis model type (1 = spline, 2 = AR(1)).}
 
 \item{model_seed}{Seed for model fitting.}
 }

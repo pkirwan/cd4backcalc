@@ -4,6 +4,8 @@
 #' @param type The variable type to calculate bias for.
 #' @param deterministic Logical indicating whether to compare against
 #'   deterministic generative values.
+#' @param years Optional numeric vector specifying which years to include. If
+#'   `NULL`, all available years after year 0 are used.
 #' @return A data frame of bias values.
 get_bias <- function(
   hiv_list,
@@ -129,7 +131,9 @@ add_bias_outputs <- function(
 #' @param years Optional numeric/integer vector specifying which years to
 #'   include in bias/MSE calculations. If `NULL` (default), all available years
 #'   are used.
-#' @return A list of bias and MSE values for incidence, migration, proportion of UK-acquired infections that are migrants, and migration probabilities.
+#' @return A list of bias and MSE values for incidence, migration, the
+#'   born-abroad:UK-born ratio of UK-acquired incidence, and migration
+#'   probabilities.
 #' @keywords internal
 make_mse_list <- function(
   hiv_list,

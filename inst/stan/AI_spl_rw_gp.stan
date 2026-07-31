@@ -1,12 +1,10 @@
-// Age-independent model with spline, random walk or GP for infection
-// and spline or random walk for diagnosis probabilities
+// Age-independent model with spline, random walk, or GP incidence
+// and spline or AR(1) diagnosis probabilities
 
 functions {
-  // Function to create transition matrices
   matrix tmat_fct(int t, vector q, matrix d) {
     matrix[9, 9] Lambda = rep_matrix(0, 9, 9);
     
-    // Setting diagonal entries to one
     for (i in 5 : 9) {
       Lambda[i, i] = 1;
     }
@@ -37,16 +35,16 @@ functions {
   }
 }
 data {
-  int<lower=1> nquar; // number of quarters considered
-  array[nquar] int<lower=0> HIV; // data with new HIV diag by year
-  array[nquar] int<lower=0> AIDS; // data with new AIDS diag by year
-  array[nquar, 4] int<lower=0> CD4; // CD4 data by number of years and CD4 states
-  vector<lower=0, upper=1>[4] q; // Fixed progression probabilities
-  vector<lower=0>[4] init_prev; // Initial prevalence
+  int<lower=1> nquar; // quarters
+  array[nquar] int<lower=0> HIV;
+  array[nquar] int<lower=0> AIDS;
+  array[nquar, 4] int<lower=0> CD4;
+  vector<lower=0, upper=1>[4] q; // progression probabilities
+  vector<lower=0>[4] init_prev;
   
   // Model type indicators
   int<lower=1, upper=3> inf_model; // 1 = spline, 2 = random walk, 3 = GP
-  int<lower=1, upper=2> diag_model; // 1 = spline, 2 = random walk
+  int<lower=1, upper=2> diag_model; // 1 = spline, 2 = AR(1)
   
   // Splines
   int<lower=1> npars_inf;
@@ -83,12 +81,12 @@ parameters {
   real<lower=0> sigma_diag_2;
   real<lower=0> sigma_diag_3;
   real<lower=0> sigma_diag_4;
-  real alpha_diag_1; // Initial value for delta1
+  real alpha_diag_1;
   real alpha_diag_2;
   real alpha_diag_3;
   real alpha_diag_4;
   
-  // Random walk model
+  // AR(1) model
   vector[nquar] delta_raw_1;
   vector[nquar] delta_raw_2;
   vector[nquar] delta_raw_3;
@@ -150,7 +148,7 @@ transformed parameters {
     L = cholesky_decompose(Sigma);
   }
   
-  // Initializing delta based on diagnosis model
+  // Diagnosis process
   if (diag_model == 1) {
     // Spline model for diagnoses
     delta_1 = alpha_diag_1 + (X_diag * beta_diag_1);
@@ -158,7 +156,7 @@ transformed parameters {
     delta_3 = alpha_diag_3 + (X_diag * beta_diag_3);
     delta_4 = alpha_diag_4 + (X_diag * beta_diag_4);
   } else if (diag_model == 2) {
-    // AR(1) random walk for diagnoses with mean reversion toward alpha_diag_k.
+    // Mean-reverting AR(1) diagnosis process
     // t = 1: initial condition drawn from stationary distribution
     //   (variance = step_variance / (1 - rho^2)).
     // t > 1: mean reversion toward alpha_diag_k prevents endpoint drift.
@@ -194,7 +192,6 @@ transformed parameters {
     cum_diags[t, 1] += h[t];
   }
   
-  // Calculate incidences
   // First time period
   incidence_state_5[1] = cum_diags[1, 5];
   incidence_state_6[1] = cum_diags[1, 6];
@@ -231,11 +228,9 @@ transformed parameters {
   }
 }
 model {
-  // PRIORS
-  
   // Infection priors
   if (inf_model == 1) {
-    beta_inf[1] ~ normal(5, 1.5); // Vaguely informative priors: corresponds to quarter inf in (exp(2),exp(8)) = (8,4390)
+    beta_inf[1] ~ normal(5, 1.5);
     beta_inf[2 : npars_inf] ~ normal(0, sigma_inf);
     log_sigma_inf ~ normal(-2, 0.5);
     
@@ -284,7 +279,7 @@ model {
     sigma_diag_3 ~ gamma(4, 32);
     sigma_diag_4 ~ gamma(4, 32);
     
-    // weak priors for inactive RW diag params
+    // Weak priors for inactive AR(1) diagnosis parameters
     delta_raw_1 ~ normal(0, 1);
     delta_raw_2 ~ normal(0, 1);
     delta_raw_3 ~ normal(0, 1);
@@ -308,7 +303,7 @@ model {
     alpha_diag_3 ~ normal(-2.0, 0.5);
     alpha_diag_4 ~ normal(-0.5, 0.5);
     
-    // weak priors for inactive spline diag params
+    // Weak priors for inactive spline diagnosis parameters
     beta_diag_1 ~ normal(0, 2);
     beta_diag_2 ~ normal(0, 2);
     beta_diag_3 ~ normal(0, 2);

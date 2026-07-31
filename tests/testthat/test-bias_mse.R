@@ -16,7 +16,6 @@ test_that("mse_list and plots are generated correctly", {
   })
   # Test extraction and plotting functions
   mse_list <- make_mse_list(hiv_list)
-  # expect_true(mse_list$incidence_bias[1, 8] == -1146)
   p1 <- mse_plot(list(hiv_list), quantity = "incidence")
   expect_s3_class(p1, "ggplot")
   p2 <- bias_plot(list(hiv_list), quantity = "incidence")
@@ -73,6 +72,12 @@ test_that("make_mse_list uses posterior means and fit-specific truths", {
   expect_equal(mse_list$incidence_bias$bias, c(2, 2))
   expect_equal(mse_list$incidence_mse$mse, c(4, 4))
   expect_equal(mse_list$incidence_mse$n, c(2L, 2L))
+
+  filtered_mse <- make_mse_list(list(fit_1, fit_2), years = 0.5)
+  expect_equal(filtered_mse$incidence_bias$year, 0.5)
+  expect_equal(filtered_mse$incidence_bias$bias, 2)
+  expect_equal(filtered_mse$incidence_mse$mse, c(4, 4))
+  expect_equal(filtered_mse$incidence_mse$n, c(1L, 1L))
 })
 
 test_that("mse_list and plots are generated correctly for dual fits", {
@@ -106,7 +111,6 @@ test_that("mse_list and plots are generated correctly for dual fits", {
   })
   # Test extraction and plotting functions
   mse_list <- make_mse_list(hiv_list)
-  # expect_true(mse_list$incidence_bias[1, 8] == -1146)
   p1 <- mse_plot(list("Fit 1" = hiv_list, "Fit 2" = hiv_list_2), quantity = "incidence")
   expect_s3_class(p1, "ggplot")
   p2 <- bias_plot(list("Fit 1" = hiv_list, "Fit 2" = hiv_list_2), quantity = "incidence")
@@ -156,9 +160,7 @@ test_that("mse_list and plots work for lists", {
     })
   }
   mse_list <- make_mse_list(hiv_list)
-  # don't check specific value on Mac and Linux CI
-  # expect_true(mse_list$incidence_bias[1, 8] == -1108)
-  
+
   # Test extraction and plotting functions
   p1 <- mse_plot(list(hiv_list), quantity = "incidence")
   expect_s3_class(p1, "ggplot")

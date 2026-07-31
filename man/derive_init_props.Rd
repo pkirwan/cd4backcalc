@@ -26,8 +26,8 @@ states at t = 1.  Required when \code{abroad = TRUE}.  For RITA, the first
 three elements should be 0 (migrants enter long-standing states only).
 Will be normalised internally to sum to 1.}
 
-\item{abroad}{Logical.  \code{FALSE} (default): solve for the native group
-with all inflow entering state 1.  \code{TRUE}: solve for the migrant stock
+\item{abroad}{Logical. \code{FALSE} (default): solve for the UK-born group
+with all inflow entering state 1. \code{TRUE}: solve for people born abroad
 with inflow distributed via \code{mu_lat_t1}.}
 
 \item{rita}{Logical.  Use the RITA compartment structure (7 latent states).}
@@ -45,8 +45,8 @@ is assumed to be near equilibrium before the simulation window.
 }
 \details{
 The function mirrors the compartment logic in \code{\link{Q_mat}}: for the
-native group (\code{abroad = FALSE}) all inflow enters state 1; for the
-migrant stock (\code{abroad = TRUE}) inflow is distributed across latent
+UK-born group (\code{abroad = FALSE}) all inflow enters state 1; for people
+born abroad (\code{abroad = TRUE}) inflow is distributed across latent
 states proportionally to \code{mu_lat_t1}.
 }
 \keyword{internal}

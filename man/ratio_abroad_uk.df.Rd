@@ -2,7 +2,7 @@
 % Please edit documentation in R/postproc_ai.R
 \name{ratio_abroad_uk.df}
 \alias{ratio_abroad_uk.df}
-\title{Prop UK dataframe}
+\title{UK-acquired incidence-ratio dataframe}
 \usage{
 ratio_abroad_uk.df(stan_data, fit_mat, start.yr = 1978)
 }
@@ -14,8 +14,10 @@ ratio_abroad_uk.df(stan_data, fit_mat, start.yr = 1978)
 \item{start.yr}{Starting year for the dataframe.}
 }
 \value{
-Dataframe of proportion UK estimates.
+Data frame of born-abroad:UK-born UK-acquired incidence-ratio
+estimates.
 }
 \description{
-Calculates proportion UK dataframe from posterior samples.
+Calculates the born-abroad:UK-born ratio of UK-acquired incidence from
+posterior samples.
 }

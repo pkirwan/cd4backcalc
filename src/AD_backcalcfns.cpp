@@ -184,7 +184,7 @@ arma::cube gof_iter_fct(const arma::vec &H, const arma::cube &d, const arma::mat
         diag_p(4) = tmp(3) * (1 - d(3, 0, ag0)) * q(3, a0);
       }
       else
-      { // Probably dont need this
+      {
         diag_p = empty_vec;
         lat_p = empty_vec1;
       }
@@ -194,7 +194,7 @@ arma::cube gof_iter_fct(const arma::vec &H, const arma::cube &d, const arma::mat
       lat_arr[t0][a0][t0][2] = lat_p(2);
       lat_arr[t0][a0][t0][3] = lat_p(3);
 
-      diag_arr[t0][a0][t0] = diag_p; // use row_vec instead?
+      diag_arr[t0][a0][t0] = diag_p;
 
       for (int t = (t0 + 1); t < nquar; ++t)
       {
@@ -303,7 +303,7 @@ arma::cube gof_iter_fct_rita(const arma::vec &H, const arma::cube &d, const arma
         diag_p(5) = tmp(6) * (1 - d(4, 0, ag0)) * q(3, a0);
       }
       else
-      { // Probably dont need this
+      {
         diag_p = empty_vec;
         lat_p = empty_vec1;
       }
@@ -316,7 +316,7 @@ arma::cube gof_iter_fct_rita(const arma::vec &H, const arma::cube &d, const arma
       lat_arr[t0][a0][t0][5] = lat_p(5);
       lat_arr[t0][a0][t0][6] = lat_p(6);
 
-      diag_arr[t0][a0][t0] = diag_p; // use row_vec instead?
+      diag_arr[t0][a0][t0] = diag_p;
 
       for (int t = (t0 + 1); t < nquar; ++t)
       {
@@ -424,7 +424,7 @@ arma::cube prev_iter_fct(const arma::vec &H, const arma::cube &d, const arma::ma
         diag_p(4) = tmp(3) * (1 - d(3, 0, ag0)) * q(3, a0);
       }
       else
-      { // Probably dont need this
+      {
         diag_p = empty_vec;
         lat_p = empty_vec1;
       }
@@ -434,7 +434,7 @@ arma::cube prev_iter_fct(const arma::vec &H, const arma::cube &d, const arma::ma
       lat_arr[t0][a0][t0][2] = lat_p(2);
       lat_arr[t0][a0][t0][3] = lat_p(3);
 
-      diag_arr[t0][a0][t0] = diag_p; // use row_vec instead?
+      diag_arr[t0][a0][t0] = diag_p;
 
       for (int t = (t0 + 1); t < nquar; ++t)
       {
@@ -541,7 +541,7 @@ arma::cube prev_iter_fct_rita(const arma::vec &H, const arma::cube &d, const arm
         diag_p(5) = tmp(6) * (1 - d(4, 0, ag0)) * q(3, a0);
       }
       else
-      { // Probably dont need this
+      {
         diag_p = empty_vec;
         lat_p = empty_vec1;
       }
@@ -554,7 +554,7 @@ arma::cube prev_iter_fct_rita(const arma::vec &H, const arma::cube &d, const arm
       lat_arr[t0][a0][t0][5] = lat_p(5);
       lat_arr[t0][a0][t0][6] = lat_p(6);
 
-      diag_arr[t0][a0][t0] = diag_p; // use row_vec instead?
+      diag_arr[t0][a0][t0] = diag_p;
 
       for (int t = (t0 + 1); t < nquar; ++t)
       {
@@ -611,9 +611,9 @@ arma::cube prev_iter_fct_migration(
     const arma::vec &H,               // length nquar*nage (age-blocked: t varies fastest)
     const arma::cube &d,              // dims: 4 (state) x nquar (time) x 4 (agegrp)
     const arma::mat &q,               // 4 x nage
-    const arma::mat &prev_total,      // 4 x nage (init_prev_age + init_prev_abroad_age)
+    const arma::mat &prev_total,      // 4 x nage initial prevalence for this population
     const arma::vec &omega,           // length nquar
-    const arma::vec &p,               // length nquar (UK-acquired prop among migrants)
+    const arma::vec &p,               // born-abroad:UK-born UK-acquired incidence ratio
     const arma::mat &m,               // 5 x nquar (migration probs; rows 1..4 are abroad CD4 states)
     const arma::mat &abroad_age_prop, // nquar x nage (rows sum to 1; fallback uniform handled in R)
     int nquar,
@@ -663,7 +663,7 @@ arma::cube prev_iter_fct_migration(
       arma::vec lat_p(4, arma::fill::zeros);
       int ag0 = age_to_agroup(a0);
 
-      // Add (combined) initial prevalence only at t0==0 (quarter 1)
+      // Add initial prevalence only at t0 == 0 (quarter 1)
       if (t0 == 0)
       {
         arma::vec tmp(4);
@@ -685,7 +685,7 @@ arma::cube prev_iter_fct_migration(
       double inflow_ab3 = omega(t0) * abroad_age_prop(t0, a0) * m(2, t0);
       double inflow_ab4 = omega(t0) * abroad_age_prop(t0, a0) * m(3, t0);
 
-      // Combined (native + migrant) undiagnosed latent state at t0
+      // Combine UK-acquired and abroad-acquired undiagnosed inflows at t0
       lat_arr[t0][a0][t0](0) = inflow_native + inflow_mig_uk + inflow_ab1 + lat_p(0);
       lat_arr[t0][a0][t0](1) = inflow_ab2 + lat_p(1);
       lat_arr[t0][a0][t0](2) = inflow_ab3 + lat_p(2);
@@ -729,9 +729,9 @@ arma::cube prev_iter_fct_migration_rita(
     const arma::vec &H,               // length nquar*nage (age-blocked: t varies fastest)
     const arma::cube &d,              // dims: 5 (diag state) x nquar (time) x 4 (agegrp)
     const arma::mat &q,               // 4 x nage (progression by age at entry)
-    const arma::mat &prev_total,      // 7 x nage (init_prev_age + init_prev_abroad_age)
+    const arma::mat &prev_total,      // 7 x nage initial prevalence for this population
     const arma::vec &omega,           // length nquar
-    const arma::vec &p,               // length nquar (UK-acquired prop among migrants)
+    const arma::vec &p,               // born-abroad:UK-born UK-acquired incidence ratio
     const arma::mat &m,               // 5 x nquar (migration probs; rows 1..4 are abroad CD4 states; row 5 transfers not used here)
     const arma::mat &abroad_age_prop, // nquar x nage (rows sum to 1; fallback uniform handled in R)
     int nquar,
@@ -788,7 +788,7 @@ arma::cube prev_iter_fct_migration_rita(
         double nq3 = 1.0 - q3;
         double nq4 = 1.0 - q4;
 
-        // Initial undiagnosed prevalence in 7 states (combined native + abroad)
+        // Initial undiagnosed prevalence in seven states
         double v1 = prev_total(0, a0);
         double v2 = prev_total(1, a0);
         double v3 = prev_total(2, a0);
@@ -822,7 +822,7 @@ arma::cube prev_iter_fct_migration_rita(
 
       arma::vec lat0 = lat_p;
 
-      // Combined prevalence (native + migrant) undiagnosed at entry quarter
+      // Combine UK-acquired and abroad-acquired undiagnosed inflows
       lat0(0) += inflow_native + inflow_mig_uk;
       lat0(3) += inflow_ab4;
       lat0(4) += inflow_ab5;

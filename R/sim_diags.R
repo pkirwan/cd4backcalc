@@ -6,7 +6,8 @@
 #' @param h_pattern Pattern type for infections ("constant", "increasing", "varying", "varying_2").
 #' @param o_pattern Pattern type for omega ("constant", "increasing", "step_change_1", "step_change_2", "none").
 #' @param d_pattern Pattern type for diagnosis probabilities ("constant", "varying").
-#' @param p_pattern Pattern type for proportion UK ("constant", "increasing").
+#' @param p_pattern Pattern for the born-abroad:UK-born ratio of UK-acquired
+#'   incidence ("constant", "increasing").
 #' @param m_pattern Pattern type for mu ("constant", "differing", "varying").
 #' @param r_pattern Pattern type for RITA data ("constant", "increasing", "none").
 #' @param a_pattern Pattern type for age-based data ("constant", "wedge", "varying_wedge").
@@ -25,11 +26,15 @@
 #' @param cd4_completeness CD4 completeness.
 #' @param rita_completeness RITA completeness.
 #' @param rita_completeness_by_state Optional numeric vector of length 5
-#'   for RITA simulations giving state-specific completeness for
-#'   \\code{CD4 = c(RITA+, CD4>500, 500-350, 350-200, <200)}.
+#'   giving state-specific completeness for RITA simulations. Elements
+#'   correspond to RITA positive, CD4 500 or above, CD4 350--499,
+#'   CD4 200--349, and CD4 below 200.
 #'   Use lower values in lower CD4 states to simulate informative missingness.
 #' @param age_diag_effect Numeric scalar controlling the strength of age variation in diagnosis probabilities. Applied as a logit-additive offset scaled linearly across ages.
-#' @param mig_diag_offset Numeric vector of per-state logit-scale offsets applied to diagnosis probabilities for the migrant group (y=2). Length must equal the number of diagnosis states (4 for non-RITA, 5 for RITA). NULL (default) applies no offset.
+#' @param mig_diag_offset Numeric vector of per-state logit-scale offsets applied
+#'   to diagnosis probabilities for people born abroad (`y = 2`). Length must
+#'   equal the number of diagnosis states (4 for non-RITA, 5 for RITA). `NULL`
+#'   (default) applies no offset.
 #' @param frr False recency rate for RITA misclassification.
 #' @param detect_obs_times Integer vector of quarter indices (1-based) at which external detection-probability observations are generated.
 #' @param gamma_obs_grouped Logical scalar or logical vector of length
@@ -194,15 +199,15 @@ define_sim_config <- function(
 #' - "o_increasing": Migration (omega) increases over time.
 #' - "o_step_change": Migration (omega) has step changes over time.
 #' - "d_varying": Diagnosis probabilities vary over time.
-#' - "p_increasing": Proportion UK increases over time.
+#' - "p_increasing": The born-abroad:UK-born UK-acquired incidence ratio increases over time.
 #' - "m_differing": Migration probabilities (mu) differ by diagnosed state.
 #' - "m_varying": Migration probabilities (mu) vary over time.
 #' - "combo_1": Combination of varying infections, step change migration, and varying diagnosis probabilities.
-#' - "combo_2": Combination of varying infections, step change migration, varying diagnosis probabilities, and increasing proportion UK.
-#' - "combo_3": Combination of early-peaking infections, increasing migration, varying diagnosis probabilities, increasing proportion UK, varying migration probabilities, and age effects.
+#' - "combo_2": Combination of varying infections, step change migration, varying diagnosis probabilities, and an increasing UK-acquired incidence ratio.
+#' - "combo_3": Combination of early-peaking infections, increasing migration, varying diagnosis probabilities, an increasing UK-acquired incidence ratio, varying migration probabilities, and age effects.
 #' - "combo_4": Late-peaking infections (varying_2) with a late upward step change in migration (step_change_2),
 #'   representing a surge in arrivals from high-prevalence regions. Shares varying diagnosis probabilities,
-#'   increasing proportion UK, varying migration probabilities, and age effects with combo_3.
+#'   an increasing UK-acquired incidence ratio, varying migration probabilities, and age effects with combo_3.
 #'
 #' @param config Configuration list to modify.
 #' @param sim_type Type of simulation to define patterns for.
@@ -470,43 +475,6 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
     }
   }
 
-  # lat <- matrix(0, nrow = nquar, ncol = nlatst)
-  # diags <- matrix(0, nrow = nquar, ncol = ndiagst)
-
-  # # First iteration using matrix multiplication
-  # lat[1, ] <- t(Q_l[[1]]) %*% lat_init + h[1, ]
-  # diags[1, ] <- t(D_l[[1]]) %*% lat_init
-
-  # # Main loop with vectorized operations
-  # for (t in 2:nquar) {
-  #   lat[t, ] <- (t(Q_l[[t]]) %*% lat[t - 1, ]) + h[t, ]
-  #   diags[t, ] <- t(D_l[[t]]) %*% lat[t - 1, ]
-  # }
-
-  # # method to record when infections enter the latent state
-  # lat_quar <- list()
-  # diags_quar <- list()
-
-  # lat_quar[[1]] <- matrix(0, nrow = nquar, ncol = nlatst)
-  # diags_quar[[1]] <- matrix(0, nrow = nquar, ncol = ndiagst)
-  # lat_quar[[1]][1, ] <- (t(Q_l[[1]]) %*% lat_init) + h[1, ]
-  # diags_quar[[1]][1, ] <- t(D_l[[1]]) %*% lat_init
-
-  # for (u in 1:nquar) {
-  #   if (u > 1) {
-  #     lat_quar[[u]] <- matrix(0, nrow = nquar, ncol = nlatst)
-  #     diags_quar[[u]] <- matrix(0, nrow = nquar, ncol = ndiagst)
-  #     lat_quar[[u]][u, ] <- h[u, ]
-  #   }
-
-  #   if (u < nquar) {
-  #     for (t in (u + 1):nquar) {
-  #       lat_quar[[u]][t, ] <- t(Q_l[[t]]) %*% lat_quar[[u]][t - 1, ]
-  #       diags_quar[[u]][t, ] <- t(D_l[[t]]) %*% lat_quar[[u]][t - 1, ]
-  #     }
-  #   }
-  # }
-
   out <- list(
     lat = apply(lat_age, c(2, 3), sum), # Sum over ages
     diags = apply(diags_age, c(2, 3), sum),
@@ -523,7 +491,8 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #' @param h_pattern Pattern type for infections ("constant", "increasing", "varying", "varying_2").
 #' @param o_pattern Pattern type for omega ("constant", "increasing", "step_change", "step_change_late", "none").
 #' @param d_pattern Pattern type for diagnosis probabilities ("constant", "varying").
-#' @param p_pattern Pattern type for proportion UK ("constant", "increasing").
+#' @param p_pattern Pattern for the born-abroad:UK-born ratio of UK-acquired
+#'   incidence ("constant", "increasing").
 #' @param m_pattern Pattern type for mu ("constant", "differing", "varying").
 #' @param r_pattern Pattern type for RITA data ("constant", "increasing", "none").
 #' @param a_pattern Pattern type for age-based data ("constant", "wedge", "varying_wedge").
@@ -542,14 +511,25 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #' @param cd4_completeness CD4 completeness.
 #' @param rita_completeness RITA completeness.
 #' @param rita_completeness_by_state Optional numeric vector of length 5
-#'   for RITA simulations giving state-specific completeness for
-#'   \\code{CD4 = c(RITA+, CD4>500, 500-350, 350-200, <200)}.
+#'   giving state-specific completeness for RITA simulations. Elements
+#'   correspond to RITA positive, CD4 500 or above, CD4 350--499,
+#'   CD4 200--349, and CD4 below 200.
 #'   Use lower values in lower CD4 states to simulate informative missingness.
 #' @param age_diag_effect Numeric scalar controlling the strength of age variation in diagnosis probabilities. Applied as a logit-additive offset scaled linearly across ages.
-#' @param mig_diag_offset Numeric vector of per-state logit-scale offsets applied to diagnosis probabilities for the migrant group (y=2). Length must equal the number of diagnosis states (4 for non-RITA, 5 for RITA). NULL (default) applies no offset.
+#' @param mig_diag_offset Numeric vector of per-state logit-scale offsets applied
+#'   to diagnosis probabilities for people born abroad (`y = 2`). Length must
+#'   equal the number of diagnosis states (4 for non-RITA, 5 for RITA). `NULL`
+#'   (default) applies no offset.
 #' @param frr False recency rate for RITA misclassification.
-#' @param eta_sd Standard deviation of the approximate melding prior for the log ratio of abroad-acquired to UK-acquired infections. Passed directly to Stan as data. Smaller values anchor the model more tightly to the external \code{ratio_abroad_uk} evidence. Default is 0.10, which matches the simulation noise on the log scale.
-#' @param detect_obs_sd Standard deviation of detection probability.
+#' @param eta_sd Standard deviation of the approximate melding model for the
+#'   log ratio of UK-acquired incidence among people born abroad to UK-acquired
+#'   incidence among UK-born people. Smaller values anchor the model more
+#'   tightly to the external \code{ratio_abroad_uk} evidence. Set to 0 when
+#'   that evidence is not independent of outcomes in the likelihood. Default
+#'   is 0.4.
+#' @param detect_obs_sd Standard deviation, on the logit scale, of independent
+#'   external evidence about the probability that a previous diagnosis abroad
+#'   is detected. Set to 0 to disable this auxiliary likelihood.
 #' @param detect_obs_times Integer vector of quarter indices (1-based) at which external
 #'   detection-probability observations are generated. Defaults to \code{NULL}, which uses
 #'   every 20 quarters (approx. every 5 years). Supply a custom vector, e.g. \code{c(4, 10, 30)},
@@ -560,8 +540,12 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #'   The scalar \code{gamma_obs} series is always simulated; quarters where
 #'   \code{gamma_obs_grouped} is \code{FALSE} have \code{-1} rows in
 #'   \code{gamma_obs_group}.
-#' @param gamma_obs_sd Standard deviation of the external migration-index trend likelihood (0 disables).
-#' @param gamma_obs_scale Ratio of total external migration to HIV+ migration volume.
+#' @param gamma_obs_sd Standard deviation, on the log scale, of an independent
+#'   rolling-annual migration index used by age-dependent migration models.
+#'   This evidence informs temporal trend, not absolute migration level. Set
+#'   to 0 to disable this auxiliary likelihood.
+#' @param gamma_obs_scale Ratio of total external migration to HIV-positive
+#'   migration volume used to construct the external migration index.
 #' @return List containing simulated epidemic data.
 #' @examples
 #' simulate_diagnoses()
@@ -663,8 +647,7 @@ simulate_diagnoses <- function(
     sim_config$dist
   )
 
-  # detection probabilities for those migrating already diagnosed
-  # In Stan: detect_prob[t] = inv_logit(alpha_detect + beta_detect_slope * t_std)
+  # Detection probability for previous diagnoses abroad
   if (sim_config$dist) {
     detect_prob <- invlogit(stats::rnorm(
       sim_config$nquar,
@@ -707,7 +690,7 @@ simulate_diagnoses <- function(
 
   # Build migrant diagnosis probabilities by applying per-state logit offsets.
   # Mirrors alpha_diag_mig in the Stan migration models: migrants (y=2) may
-  # have a systematically different baseline diagnosis rate than natives (y=1)
+  # have a systematically different baseline diagnosis rate than UK-born people
   # while sharing the same time trend.
   mig_offset <- sim_config$mig_diag_offset
   nstates_diag <- dim(d_probs)[3]
@@ -758,7 +741,7 @@ simulate_diagnoses <- function(
     sum(m[1, 1:(sim_config$nlatst)]) * sim_config$init_props_abroad
   )
 
-  # Generate Q and D matrices for native group (y=1)
+  # Generate Q and D matrices for the UK-born group (y = 1)
   Q_l <- lapply(1:sim_config$nquar, function(x) {
     Q_mat(
       x,
@@ -781,7 +764,7 @@ simulate_diagnoses <- function(
     )
   })
 
-  # Generate Q and D matrices for migrant group (y=2)
+  # Generate Q and D matrices for the born-abroad group (y = 2)
   Q_l_mig <- lapply(1:sim_config$nquar, function(x) {
     Q_mat(
       x,
@@ -870,8 +853,8 @@ simulate_diagnoses <- function(
 
   # Split compartment 5 (total diagnosed migrants) into detected (ABROAD) and
   # misclassified, matching the Stan model's misclassification decomposition:
-  #   ABROAD[t]          = omega[t] * m[5,t] * detect_prob[t]
-  #   misclassified[t,a] = omega[t] * m[5,t] * (1 - detect_prob[t]) * age_prop[t,a]
+  # detected counts use the detection probability; remaining counts are
+  # allocated using the arrival-age distribution.
   total_diag_age <- round_matrix_preserve(
     m_age[,, sim_config$nlatst + 1],
     colwise = TRUE
@@ -1057,10 +1040,8 @@ simulate_diagnoses <- function(
     hiv_dx_age[,, 2] <- hiv_dx_age[,, 2] + born_abroad_age[,, 5]
   }
 
-  # Add misclassified abroad diagnoses directly to migrant HIV totals.
-  # In the Stan model these bypass CD4 progression entirely and appear as
-
-  # immediate HIV diagnoses (not through diagnosis probabilities).
+  # Misclassified previous diagnoses abroad enter born-abroad HIV totals
+  # immediately, without CD4 progression or diagnosis probabilities.
   hiv_dx[, 2] <- hiv_dx[, 2] + misclassified
   hiv_dx_age[,, 2] <- hiv_dx_age[,, 2] + misclassified_age
 
@@ -1073,7 +1054,7 @@ simulate_diagnoses <- function(
     aids_dx_age <- aperm(aids_dx_age, c(2, 1, 3))
     cd4_dx_age <- aperm(cd4_dx_age, c(2, 1, 3, 4))
   } else {
-    # sum over migration status
+    # Sum over country-of-birth groups
     hiv_dx <- rowSums(hiv_dx)
     aids_dx <- rowSums(aids_dx)
     cd4_dx <- apply(

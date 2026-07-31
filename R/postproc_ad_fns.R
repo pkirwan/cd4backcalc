@@ -44,6 +44,28 @@ get_quantiles <- function(x) {
   invisible(TRUE)
 }
 
+.total_uk_acquired_log_incidence <- function(
+  log_incidence_uk,
+  ratio_abroad_uk,
+  nquar,
+  nage
+) {
+  .validate_infs_dims(log_incidence_uk, nquar, nage)
+  if (!is.matrix(ratio_abroad_uk) ||
+      nrow(ratio_abroad_uk) != nrow(log_incidence_uk) ||
+      ncol(ratio_abroad_uk) != nquar) {
+    stop("ratio_abroad_uk must be a draws x nquar matrix.")
+  }
+  if (any(!is.finite(ratio_abroad_uk)) || any(ratio_abroad_uk < 0)) {
+    stop("ratio_abroad_uk must contain finite non-negative values.")
+  }
+
+  quarter_index <- rep(seq_len(nquar), times = nage)
+  log_incidence_uk + log1p(
+    ratio_abroad_uk[, quarter_index, drop = FALSE]
+  )
+}
+
 .age_to_idx <- function(age.st, age.end, nage, offset = 14) {
   if (length(age.st) != 1 || length(age.end) != 1) {
     stop("age.st and age.end must be scalars.")
@@ -389,7 +411,7 @@ prev.fct <- function(
     suppressWarnings(state_int <- as.integer(state))
     if (!is.na(state_int)) state <- state_int
   }
-  
+
   if (!state %in% c("all", 1:7)) {
     stop("State can only be 'all' or 1:7")
   }

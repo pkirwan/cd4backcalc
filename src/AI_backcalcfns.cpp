@@ -165,7 +165,6 @@ List forward_calculate(const arma::vec &CD4_prev, const arma::vec &h, const arma
     exp_p.slice(t) = normalize_mat(HIV_d).t();
   }
 
-  // Now I need to return all quantities of interest
   return List::create(
       _["prevalence"] = out,
       _["HIV.diagnoses"] = HIV_diags,
@@ -200,7 +199,6 @@ List forward_calculate_m(const arma::vec &CD4_prev, const arma::mat &om, const a
     exp_p.slice(t) = normalize_mat(HIV_d).t();
   }
 
-  // Now I need to return all quantities of interest
   return List::create(
       _["prevalence"] = out,
       _["HIV.diagnoses"] = HIV_diags,
@@ -402,7 +400,6 @@ arma::mat prev_t_rita(int t, const arma::vec &CD4_prev, const arma::vec &h, cons
     prev.row(i) = prev.row(i - 1) * trans_mats.slice(i);
   }
 
-  // Rcpp::Rcout << prev << std::endl;
 
   return prev;
 }
@@ -468,7 +465,6 @@ List forward_calculate_rita(const arma::vec &CD4_prev, const arma::vec &h, const
     // Obtaining diagnoses
     arma::mat X = out.slice(t);
     arma::mat X1 = X(arma::span::all, arma::span(ncd4_st, nst - 1));
-    // Rcpp::Rcout << X << std::endl;
     arma::mat diags = arma::join_cols(empty_vec, arma::diff(X1));
     arma::mat HIV_d = diags.cols(1, 5);
     HIV_diags.row(t) = arma::sum(HIV_d, 1).t();
@@ -476,7 +472,6 @@ List forward_calculate_rita(const arma::vec &CD4_prev, const arma::vec &h, const
     exp_p.slice(t) = normalize_mat(HIV_d).t();
   }
 
-  // Now I need to return all quantities of interest
   return List::create(
       _["prevalence"] = out,
       _["HIV.diagnoses"] = HIV_diags,

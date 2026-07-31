@@ -57,12 +57,12 @@ functions {
   }
 }
 data {
-  int<lower=1> nquar; // number of quarters
-  array[nquar] int<lower=0> HIV; //Number of HIV diagnoses
-  array[nquar] int<lower=0> AIDS; // AIDS diag data
-  array[nquar, 5] int<lower=0> CD4; // diagnosis data by states
-  vector<lower=0, upper=1>[4] q; // Fixed progression probabilities
-  vector<lower=0>[7] init_prev; // Initial prevalence
+  int<lower=1> nquar; // quarters
+  array[nquar] int<lower=0> HIV;
+  array[nquar] int<lower=0> AIDS;
+  array[nquar, 5] int<lower=0> CD4;
+  vector<lower=0, upper=1>[4] q; // progression probabilities
+  vector<lower=0>[7] init_prev;
   
   // Splines
   int<lower=1> npars_inf;
@@ -76,7 +76,7 @@ parameters {
   // False recency rate
   real logit_frr;
   
-  // Diagnosis probability parameters (random walk)
+  // Diagnosis probability parameters (AR(1))
   vector[nquar] delta_raw_1;
   vector[nquar] delta_raw_2;
   vector[nquar] delta_raw_3;
@@ -107,7 +107,7 @@ transformed parameters {
   // Step variances on natural scale (non-centred)
   vector[5] log_vardelta = mu_log_var + sigma_log_var * log_vardelta_raw;
   vector<lower=0>[5] vardelta = exp(log_vardelta);
-  // Diagnosis probabilities via random walk
+  // Diagnosis probabilities via AR(1)
   vector[nquar] delta_1;
   vector[nquar] delta_2;
   vector[nquar] delta_3;
@@ -215,9 +215,7 @@ transformed parameters {
   }
 }
 model {
-  // PRIORS
-  
-  // Infection priors.
+  // Infection priors
   // Note: unlike the AD model which penalises curvature via a precision matrix,
   // this model shrinks coefficient magnitude (ridge). A tight log_sigma_inf
   // suppresses peaks even when the data support them. normal(-1, 1) loosens

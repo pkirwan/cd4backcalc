@@ -8,5 +8,5 @@
 NULL
 
 #' @useDynLib cd4backcalc, .registration = TRUE
-#' @keywords internal 
+#' @keywords internal
 "_PACKAGE"

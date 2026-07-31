@@ -57,14 +57,15 @@ functions {
   }
 }
 data {
-  int<lower=1> nquar; // number of quarters considered
-  array[nquar, 2] int<lower=0> HIV; // new HIV diagnoses by quarter and native/migrant
-  array[nquar, 2] int<lower=0> AIDS; // new AIDS diagnoses by quarter and native/migrant
-  array[nquar, 2, 5] int<lower=0> CD4; // CD4 distribution at HIV diagnosis (5 states)
-  array[nquar] int<lower=0> ABROAD; // prior diagnoses from abroad (detected)
-  vector<lower=0, upper=1>[4] q; // fixed progression probabilities
-  vector<lower=0>[7] init_prev; // initial prevalence (latent states)
-  vector<lower=0>[7] init_prev_abroad; // initial prevalence (latent states) for migrant group
+  int<lower=1> nquar; // quarters
+  // y = 1: UK-born, y = 2: born abroad
+  array[nquar, 2] int<lower=0> HIV;
+  array[nquar, 2] int<lower=0> AIDS;
+  array[nquar, 2, 5] int<lower=0> CD4;
+  array[nquar] int<lower=0> ABROAD; // previous diagnoses abroad
+  vector<lower=0, upper=1>[4] q; // progression probabilities
+  vector<lower=0>[7] init_prev;
+  vector<lower=0>[7] init_prev_abroad;
   
   // Splines
   int<lower=1> npars_inf;
@@ -76,7 +77,7 @@ data {
   matrix[nquar, npars_cob] X_cob;
   matrix[nquar, npars_mp] X_mp;
   
-  // Prior information for evidence synthesis
+  // External evidence for the log born-abroad:UK-born UK-acquired ratio
   vector[nquar] eta_mean;
   real<lower=0> eta_sd;
   
@@ -102,7 +103,7 @@ parameters {
   // False recency rate
   real logit_frr;
   
-  // Diagnosis probability parameters (random walk)
+  // Diagnosis probability parameters (AR(1))
   vector[nquar] delta_raw_1;
   vector[nquar] delta_raw_2;
   vector[nquar] delta_raw_3;
@@ -116,9 +117,9 @@ parameters {
   real alpha_diag_3;
   real alpha_diag_4;
   real alpha_diag_5;
-  vector[5] alpha_diag_mig; // migrant-specific diagnosis intercept offset per state
+  vector[5] alpha_diag_mig; // born-abroad diagnosis offset by state
   
-  // Proportion UK-acquired parameters
+  // Born-abroad:UK-born ratio of UK-acquired incidence
   vector[npars_cob] beta_cob;
   real<lower=0> sigma_cob;
   real alpha_cob;
@@ -161,7 +162,7 @@ transformed parameters {
   // Step variances on natural scale (non-centred)
   vector[5] log_vardelta = mu_log_var + sigma_log_var * log_vardelta_raw;
   vector<lower=0>[5] vardelta = exp(log_vardelta);
-  // Diagnosis probabilities via AR(1) random walk (non-centred parameterisation).
+  // Diagnosis probabilities via AR(1) (non-centred parameterisation)
   // t = 1: initial condition drawn from stationary distribution
   //   (variance = step_variance / (1 - rho^2)).
   // t > 1: mean reversion toward alpha_diag_k prevents endpoint drift.
@@ -198,7 +199,7 @@ transformed parameters {
                                delta_5[t] + alpha_diag_mig[5]]');
   }
   
-  // Proportion UK-acquired (log-scale)
+  // Born-abroad:UK-born ratio of UK-acquired incidence
   vector[nquar] eta = alpha_cob + 0.5 * (X_cob * beta_cob);
   vector<lower=0>[nquar] p;
   
@@ -274,7 +275,7 @@ transformed parameters {
   cum_diags[1, 1,  : ] = Lambda1_nat' * append_row(init_prev, rep_vector(0, 6));
   cum_diags[1, 1, 1] += h[1];
   
-  // Initial migrant group
+  // Initial born-abroad group
   p[1] = exp(eta[1]);
   cum_diags[1, 2,  : ] = Lambda1_mig' * append_row(init_prev_abroad, rep_vector(0, 6));
   cum_diags[1, 2, 1] += h[1] * p[1];
@@ -285,11 +286,11 @@ transformed parameters {
     matrix[13, 13] Lambda_t_nat = tmat_fct(t, q, d_nat);
     matrix[13, 13] Lambda_t_mig = tmat_fct(t, q, d_mig);
     
-    // Native group
+    // UK-born group
     cum_diags[t, 1,  : ] = Lambda_t_nat' * cum_diags[t - 1, 1,  : ];
     cum_diags[t, 1, 1] += h[t];
     
-    // Migrant group
+    // Born-abroad group
     p[t] = exp(eta[t]);
     cum_diags[t, 2,  : ] = Lambda_t_mig' * cum_diags[t - 1, 2,  : ];
     cum_diags[t, 2, 1] += h[t] * p[t];
@@ -329,7 +330,7 @@ transformed parameters {
   
   // Including CD4 / RITA counts, adjusted for false recency rate
   for (t in 1 : nquar) {
-    // Native population (y=1)
+    // UK-born population (y = 1)
     if (exp_HIV_dx[t, 1] > 0) {
       real p1 = incidence_state_9[t, 1] / exp_HIV_dx[t, 1];
       exp_p[t, 1, 1] = p1 + frr * (1 - p1);
@@ -339,8 +340,8 @@ transformed parameters {
       exp_p[t, 1, 5] = (1 - frr) * incidence_state_13[t, 1] / exp_HIV_dx[t, 1];
     }
     
-    // Migrant population (y=2): include misclassified arrivals in exp_p.
-    // Misclassified migrants arrive in non-RITA latent states (diagnosed states 2-5),
+    // Born-abroad population (y = 2): include misclassified arrivals in exp_p.
+    // Misclassified arrivals enter non-RITA latent states (diagnosed states 2-5),
     // proportional to m[1:4,t]. FRR applied afterwards as usual.
     {
       vector[5] raw_p = [incidence_state_9[t, 2], incidence_state_10[t, 2],
@@ -417,17 +418,13 @@ model {
   
   alpha_diag_mig ~ normal(0, 1);
   
-  // Proportion UK-acquired priors
+  // UK-acquired incidence-ratio priors
   alpha_cob ~ normal(0, 1.5);
   beta_cob[1] ~ std_normal();
   beta_cob[2 : npars_cob] ~ normal(0, sigma_cob);
   sigma_cob ~ gamma(2, 32);
   
-  // Approximate melding for proportion UK-acquired - AR(1).
-  // Guard: only active when eta_sd > 0 (i.e. independent external evidence is
-  // available). Set eta_sd = 0 to let the likelihood alone identify eta — this
-  // is the correct choice when the RITA-positive COB proportions used to derive
-  // eta_mean are already in the diagnosis likelihood.
+  // Approximate melding with independent evidence; eta_sd = 0 disables it
   if (eta_sd > 0) {
     eta_mean[1] ~ normal(eta[1], eta_sd);
     eta_mean[2 : nquar] ~ normal(
@@ -439,13 +436,7 @@ model {
   }
   rho_eta ~ normal(0, 0.5);
   
-  // Detection probability priors
-  // detect_prob is not separately identified from ABROAD alone: the ABROAD
-  // likelihood constrains omega * m[5] * detect_prob jointly. To identify
-  // detect_prob independently, external data on either (a) total HIV+ migration
-  // flow or (b) a data-linkage-derived detection rate is required. Without it,
-  // a wider prior is more honest; tightening the prior merely hides the
-  // non-identifiability rather than resolving it.
+  // ABROAD alone identifies only omega * m[5] * detect_prob
   alpha_detect ~ normal(1.1, 0.5);
   beta_detect[1] ~ normal(0, 0.5);
   beta_detect[2 : npars_mp] ~ normal(0, sigma_detect);

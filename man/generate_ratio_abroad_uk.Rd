@@ -2,20 +2,21 @@
 % Please edit documentation in R/sim_diags_fns.R
 \name{generate_ratio_abroad_uk}
 \alias{generate_ratio_abroad_uk}
-\title{Generate proportion UK patterns}
+\title{Generate UK-acquired incidence-ratio patterns}
 \usage{
 generate_ratio_abroad_uk(nquar, pattern, dist = TRUE)
 }
 \arguments{
 \item{nquar}{Number of time quarters.}
 
-\item{pattern}{Pattern type for proportion UK ("constant", "increasing").}
+\item{pattern}{Pattern for the born-abroad:UK-born ratio of UK-acquired
+incidence ("constant", "increasing").}
 
 \item{dist}{Logical indicating whether to add normal variation.}
 }
 \value{
-Vector of proportion UK values over time.
+Vector of born-abroad:UK-born UK-acquired incidence ratios.
 }
 \description{
-Generate proportion UK patterns
+Generate UK-acquired incidence-ratio patterns
 }

@@ -14,7 +14,10 @@ extract_simulated_quantity(sim_diags, quantity, deterministic = FALSE)
 \item{deterministic}{Logical indicating whether to re-run the simulation deterministically (dist = FALSE) to obtain the expected values (lambda) rather than the stochastic realisation. Useful for bias/MSE calculations across multiple seeds (default is FALSE).}
 }
 \value{
-A list of model estimates including undiagnosed prevalence, incidence, migration, diagnosis probabilities, diagnoses, migration probabilities, proportion of UK-acquired infections that are migrants, transfers of care, and CD4 strata.
+A list of model estimates including undiagnosed prevalence,
+incidence, migration, diagnosis probabilities, diagnoses, migration
+probabilities, the born-abroad:UK-born ratio of UK-acquired incidence,
+transfers of care, and CD4 strata.
 }
 \description{
 Extract simulated quantities based on the provided configuration.

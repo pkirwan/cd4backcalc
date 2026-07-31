@@ -157,12 +157,13 @@ generate_mu <- function(nquar, nlatst, pattern, dist = FALSE) {
   return(mu)
 }
 
-#' Generate proportion UK patterns
+#' Generate UK-acquired incidence-ratio patterns
 #'
 #' @param nquar Number of time quarters.
-#' @param pattern Pattern type for proportion UK ("constant", "increasing").
+#' @param pattern Pattern for the born-abroad:UK-born ratio of UK-acquired
+#'   incidence ("constant", "increasing").
 #' @param dist Logical indicating whether to add normal variation.
-#' @return Vector of proportion UK values over time.
+#' @return Vector of born-abroad:UK-born UK-acquired incidence ratios.
 generate_ratio_abroad_uk <- function(nquar, pattern, dist = TRUE) {
   # check pattern
   stopifnot(pattern %in% c("constant", "increasing"))
@@ -177,7 +178,7 @@ generate_ratio_abroad_uk <- function(nquar, pattern, dist = TRUE) {
         sigma
       )
     }
-    # Transform back to proportion scale
+    # Transform back to the ratio scale
     ratio_abroad_uk <- exp(log_ratio_abroad_uk)
   } else if (pattern == "constant") {
     ratio_abroad_uk <- rep(0.2, nquar)
@@ -212,7 +213,7 @@ generate_migration <- function(nquar, nlatst, omega, mu, dist = TRUE) {
 #' Simulate AR(1) trajectory on the logit scale
 #'
 #' Produces a time series with the same correlation structure as the Stan AR(1)
-#' random-walk prior used for diagnosis probabilities. AR(1) residuals are added
+#' process used for diagnosis probabilities. AR(1) residuals are added
 #' on top of a deterministic trend and then mean-centred so that the stochastic
 #' trajectory does not drift systematically from the deterministic trend. This
 #' ensures that \code{dist = TRUE} and \code{dist = FALSE} simulations produce
@@ -507,8 +508,8 @@ apply_frr <- function(cd4_arr, frr, dist = TRUE) {
 #' is assumed to be near equilibrium before the simulation window.
 #'
 #' The function mirrors the compartment logic in \code{\link{Q_mat}}: for the
-#' native group (\code{abroad = FALSE}) all inflow enters state 1; for the
-#' migrant stock (\code{abroad = TRUE}) inflow is distributed across latent
+#' UK-born group (\code{abroad = FALSE}) all inflow enters state 1; for people
+#' born abroad (\code{abroad = TRUE}) inflow is distributed across latent
 #' states proportionally to \code{mu_lat_t1}.
 #'
 #' @param d_probs_t1 Numeric vector of diagnosis probabilities at t = 1.
@@ -521,8 +522,8 @@ apply_frr <- function(cd4_arr, frr, dist = TRUE) {
 #'   states at t = 1.  Required when \code{abroad = TRUE}.  For RITA, the first
 #'   three elements should be 0 (migrants enter long-standing states only).
 #'   Will be normalised internally to sum to 1.
-#' @param abroad Logical.  \code{FALSE} (default): solve for the native group
-#'   with all inflow entering state 1.  \code{TRUE}: solve for the migrant stock
+#' @param abroad Logical. \code{FALSE} (default): solve for the UK-born group
+#'   with all inflow entering state 1. \code{TRUE}: solve for people born abroad
 #'   with inflow distributed via \code{mu_lat_t1}.
 #' @param rita Logical.  Use the RITA compartment structure (7 latent states).
 #' @return Numeric vector of length \code{nlatst} (4 for CD4-only, 7 for RITA).

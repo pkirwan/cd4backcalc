@@ -13,6 +13,9 @@ get_bias(hiv_list, type, deterministic = FALSE, years = NULL)
 
 \item{deterministic}{Logical indicating whether to compare against
 deterministic generative values.}
+
+\item{years}{Optional numeric vector specifying which years to include. If
+\code{NULL}, all available years after year 0 are used.}
 }
 \value{
 A data frame of bias values.

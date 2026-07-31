@@ -9,7 +9,7 @@ test_that("cd4-only back-calculation produces a stanfit object", {
       stan_data,
       model_seed = 123,
       inf_model = 1, # 1 spline, 2 random walk, 3 gp
-      diag_model = 1, # 1 spline, 2 random walk
+      diag_model = 1, # 1 spline, 2 AR(1)
       iter_warmup = 5,
       iter_sampling = 5,
       chains = 1,
@@ -67,7 +67,7 @@ test_that("back-calculation can cope with missing data", {
       stan_data,
       model_seed = 123,
       inf_model = 1, # 1 spline, 2 random walk, 3 gp
-      diag_model = 1, # 1 spline, 2 random walk
+      diag_model = 1, # 1 spline, 2 AR(1)
       iter_warmup = 5,
       iter_sampling = 5,
       chains = 1,
@@ -87,7 +87,7 @@ test_that("back-calculation can cope with missing data", {
       stan_data,
       model_seed = 123,
       inf_model = 1, # 1 spline, 2 random walk, 3 gp
-      diag_model = 1, # 1 spline, 2 random walk
+      diag_model = 1, # 1 spline, 2 AR(1)
       iter_warmup = 5,
       iter_sampling = 5,
       chains = 1,

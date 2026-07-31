@@ -43,7 +43,8 @@ define_sim_config(
 
 \item{d_pattern}{Pattern type for diagnosis probabilities ("constant", "varying").}
 
-\item{p_pattern}{Pattern type for proportion UK ("constant", "increasing").}
+\item{p_pattern}{Pattern for the born-abroad:UK-born ratio of UK-acquired
+incidence ("constant", "increasing").}
 
 \item{m_pattern}{Pattern type for mu ("constant", "differing", "varying").}
 
@@ -80,13 +81,17 @@ define_sim_config(
 \item{rita_completeness}{RITA completeness.}
 
 \item{rita_completeness_by_state}{Optional numeric vector of length 5
-for RITA simulations giving state-specific completeness for
-\\code{CD4 = c(RITA+, CD4>500, 500-350, 350-200, <200)}.
+giving state-specific completeness for RITA simulations. Elements
+correspond to RITA positive, CD4 500 or above, CD4 350--499,
+CD4 200--349, and CD4 below 200.
 Use lower values in lower CD4 states to simulate informative missingness.}
 
 \item{age_diag_effect}{Numeric scalar controlling the strength of age variation in diagnosis probabilities. Applied as a logit-additive offset scaled linearly across ages.}
 
-\item{mig_diag_offset}{Numeric vector of per-state logit-scale offsets applied to diagnosis probabilities for the migrant group (y=2). Length must equal the number of diagnosis states (4 for non-RITA, 5 for RITA). NULL (default) applies no offset.}
+\item{mig_diag_offset}{Numeric vector of per-state logit-scale offsets applied
+to diagnosis probabilities for people born abroad (\code{y = 2}). Length must
+equal the number of diagnosis states (4 for non-RITA, 5 for RITA). \code{NULL}
+(default) applies no offset.}
 
 \item{frr}{False recency rate for RITA misclassification.}
 
