@@ -2,6 +2,16 @@ make_fake_fit <- function(draw_matrix) {
   list(draws = function(format = "matrix") draw_matrix)
 }
 
+test_that("calibrated initial prevalence values have positive Stan support", {
+  values <- matrix(c(0, -1, NA, 1e-10, 2, Inf), nrow = 2)
+  sanitized <- cd4backcalc:::.sanitize_init_values(values, floor = 1e-8)
+
+  expect_equal(dim(sanitized), dim(values))
+  expect_true(all(is.finite(sanitized)))
+  expect_true(all(sanitized >= 1e-8))
+  expect_equal(sanitized[which(values == 2)], 2)
+})
+
 test_that("calibrate_init_prev recovers age-independent CD4-only baseline", {
   draw_matrix <- matrix(
     c(0.2, 0.3, 0.4, 0.5),
@@ -151,6 +161,10 @@ test_that("calibrate_init_prev recovers age-dependent migration CD4-only baselin
 
   out <- calibrate_init_prev(make_fake_fit(draw_matrix), stan_data, smooth_age = FALSE)
 
-  expect_equal(out$init_prev_age, native_init, tolerance = 1e-10)
-  expect_equal(out$init_prev_abroad_age, migrant_init, tolerance = 1e-10)
+  expect_equal(out$init_prev_age, pmax(native_init, 1e-8), tolerance = 1e-10)
+  expect_equal(
+    out$init_prev_abroad_age,
+    pmax(migrant_init, 1e-8),
+    tolerance = 1e-10
+  )
 })
