@@ -1,6 +1,18 @@
 # Changelog
 
-## v0.1.3
+# Changes in v0.1.4
+
+### Improvements
+
+- Updates to migration models to improve fit against real-world data.
+- `years` option added to `bias_plot()` and `mse_plot()` functions to restrict to a subset of the data.
+- Added News section to the pkgdown website and various improvements to comments and documentation.
+
+### Bug fixes
+
+- Correct `init_prev_calibration()` to prevent zeros in the calibration of initial prevalence.
+
+# Changes in v0.1.3
 
 ### Improvements
 
@@ -12,7 +24,7 @@
 
 - Fix legacy scaling factor in derive_init_props which was applying an arbitrary multiplier to initial probabilities.
 
-## v0.1.2
+# Changes in v0.1.2
 
 ### Improvements
 
@@ -21,7 +33,7 @@
 - Allow an external overall migration time-series with rolling-annual counts to be included to anchor the migration data (via gamma_obs_sd and gamma_obs_scale arguments).
 - Print the name of the checkpoint directory when checkpointing is enabled.
 
-## v0.1.1
+# Changes in v0.1.1
 
 ### Improvements
 
@@ -32,7 +44,7 @@
 
 - Fixed the calculation of AIDS counts in simulated age-specific data with migration.
 
-## v0.1.0
+# Changes in v0.1.0
 
 ### Improvements
 
@@ -40,7 +52,7 @@
 - Added quantity = "transfers_detected" option for plot_estimates() to allow comparison against detected transfers of care, rather than all transfers of care. When comparing to observed data, the posterior predictive distribution is shown (as for HIV/AIDS diagnoses).
 - Allow multiple fits to be compared in bias and MSE plots, with age-specific calculations supported using quantity = "incidence_age".
 
-## v0.0.8
+# Changes in v0.0.8
 
 ### Improvements
 
@@ -54,7 +66,7 @@
 - Fixed a trace plot display issue in plot_diagnostics()
 - Fixed the calculation of age-specific incidence in post-processing which was previously excluding born-abroad, UK-acquired.
 
-## v0.0.7
+# Changes in v0.0.7
 
 ### Improvements
 
@@ -62,7 +74,7 @@
 - Updated diagnosis probability age-effects in age-dependent Stan models to use zero-sum constraints and shared shrinkage to aid identifiability.
 - Vignettes updated to provide more comprehensive details about model fitting and the quantities available.
 
-## v0.0.6
+# Changes in v0.0.6
 
 ### Improvements
 
@@ -78,7 +90,7 @@
 - Added posterior quantiles for undiagnosed migration by age band to the post-processing output.
 - For the migration models, age-independent post-processing now uses the latent prevalence directly from the model (as in the age-dependent model). This resolved an issue with inflated undiagnosed prevalence due to misclassified migration arrivals.
 
-## v0.0.5
+# Changes in v0.0.5
 
 ### Improvements
 
@@ -99,7 +111,7 @@
 - Improved the simulation of misclassified transfers from abroad in the simulate_diagnoses() function to better align with the Stan model assumptions.
 - Reduced simulated quarterly diagnosis probabilities to more realistic values which are in line with the model priors.
 
-## v0.0.4
+# Changes in v0.0.4
 
 ### Improvements
 
@@ -114,7 +126,7 @@
 - Plotting functions no longer error when list elements are NULL.
 - Corrected age-group redistribution logic in simulate_diagnoses() function.
 
-## v0.0.3
+# Changes in v0.0.3
 
 ### Major changes
 
@@ -138,7 +150,7 @@
 - Removed reliance on specific package versions where possible to improve backwards compatibility to R 4.1.0.
 - Install instructions now recommend pak::pak() following the deprication of devtools::install_github().
 
-## v0.0.2
+# Changes in v0.0.2
 
 ### Breaking changes
 
@@ -155,7 +167,7 @@
 - Added: cmdstanr (>= 0.9.0), sourced from the Stan R packages repository (https://stan-dev.r-universe.dev).
 - Removed: rstan and rstantools.
 
-## v0.0.1
+# Changes in v0.0.1
 
 ### Initial release
 

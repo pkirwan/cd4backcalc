@@ -1125,6 +1125,18 @@ postproc_ad <- function(
       qt.flag = TRUE
     )
 
+    # Share of the external all-cause migration index that is HIV positive,
+    # i.e. exp(-offset) where the offset links gamma_obs to gamma_agg.
+    offset.ind <- grep("^gamma_obs_offset_t\\[", colnames(fit_mat))
+    if (length(offset.ind) == nquar && stan_data$gamma_obs_sd > 0) {
+      out$migrant_hiv_prevalence <- make_tibble(
+        apply(exp(-fit_mat[, offset.ind, drop = FALSE]), 2, get_quantiles),
+        nt = nquar,
+        start_yr = start_yr,
+        qt.flag = TRUE
+      )
+    }
+
     # transfers detected / misclassified
     transfers_detected.draws <- transfers.draws * detect.draws
     transfers_misclassified.draws <- transfers.draws * (1 - detect.draws)

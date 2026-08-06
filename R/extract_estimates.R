@@ -606,7 +606,9 @@ extract_real_data <- function(hiv_list, quantity) {
             age_band = "all"
           )
       )
-  } else if (quantity %in% c("transfers", "transfers_detected")) {
+  } else if (quantity == "transfers_detected") {
+    # ABROAD counts only transfers whose previous diagnosis was identified, so
+    # they are comparable with transfers_detected, not with total transfers.
     out <- tibble::tibble(
       value = stan_data$ABROAD,
       year = seq(0, plot_years, by = 0.25),

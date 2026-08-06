@@ -97,7 +97,7 @@ parameters {
   real log_sigma_inf;
   
   // Migration parameters
-  vector[npars_mig] beta_mig;
+  vector[npars_mig] beta_mig_raw;
   real log_sigma_mig;
   
   // False recency rate
@@ -120,10 +120,13 @@ parameters {
   vector[5] alpha_diag_mig; // born-abroad diagnosis offset by state
   
   // Born-abroad:UK-born ratio of UK-acquired incidence
-  vector[npars_cob] beta_cob;
+  vector[npars_cob] beta_cob_raw;
   real<lower=0> sigma_cob;
   real alpha_cob;
-  real<lower=-1, upper=1> rho_eta;
+  // Serial correlation of the external eta estimator's error. Capped below 1:
+  // at rho_eta = 1 the melding degenerates to a random walk and carries no
+  // information about the level of eta.
+  real<lower=0, upper=0.9> rho_eta;
   
   // Probability of migration into each compartment (4 latent CD4 states + abroad-diagnosed)
   vector[npars_mp] beta_mp_1_raw;
@@ -154,8 +157,11 @@ transformed parameters {
   vector[nquar] lambda = X_inf * beta_inf;
   vector<lower=0>[nquar] h = exp(lambda);
   
-  // Migration process
+  // Migration process (non-centred spline)
   real<lower=0> sigma_mig = exp(log_sigma_mig);
+  vector[npars_mig] beta_mig;
+  beta_mig[1] = beta_mig_raw[1];
+  beta_mig[2 : npars_mig] = beta_mig_raw[2 : npars_mig] * sigma_mig;
   vector[nquar] gamma = X_mig * beta_mig;
   vector<lower=0>[nquar] omega = exp(gamma);
   
@@ -199,7 +205,10 @@ transformed parameters {
                                delta_5[t] + alpha_diag_mig[5]]');
   }
   
-  // Born-abroad:UK-born ratio of UK-acquired incidence
+  // Born-abroad:UK-born ratio of UK-acquired incidence (non-centred spline)
+  vector[npars_cob] beta_cob;
+  beta_cob[1] = beta_cob_raw[1];
+  beta_cob[2 : npars_cob] = beta_cob_raw[2 : npars_cob] * sigma_cob;
   vector[nquar] eta = alpha_cob + 0.5 * (X_cob * beta_cob);
   vector<lower=0>[nquar] p;
   
@@ -381,8 +390,8 @@ model {
   log_sigma_inf ~ normal(-1, 1);
   
   // Migration priors
-  beta_mig[1] ~ normal(4, 1);
-  beta_mig[2 : npars_mig] ~ normal(0, sigma_mig);
+  beta_mig_raw[1] ~ normal(4, 1);
+  beta_mig_raw[2 : npars_mig] ~ std_normal();
   log_sigma_mig ~ normal(-0.5, 0.5);
   
   // Diagnosis probability priors — centred on midpoints of observed empirical ranges.
@@ -420,13 +429,15 @@ model {
   
   // UK-acquired incidence-ratio priors
   alpha_cob ~ normal(0, 1.5);
-  beta_cob[1] ~ std_normal();
-  beta_cob[2 : npars_cob] ~ normal(0, sigma_cob);
+  beta_cob_raw ~ std_normal();
   sigma_cob ~ gamma(2, 32);
   
-  // Approximate melding with independent evidence; eta_sd = 0 disables it
+  // Approximate melding with independent evidence; eta_sd = 0 disables it.
+  // The AR(1) term constrains the SHAPE of eta; the level is anchored on the
+  // series mean rather than on quarter 1, since eta_mean is a smoothed series
+  // whose average level is far better determined than either endpoint.
   if (eta_sd > 0) {
-    eta_mean[1] ~ normal(eta[1], eta_sd);
+    mean(eta_mean - eta) ~ normal(0, eta_sd);
     eta_mean[2 : nquar] ~ normal(
                                  eta[2 : nquar]
                                  + rho_eta
@@ -434,7 +445,6 @@ model {
                                       - eta[1 : (nquar - 1)]),
                                  eta_sd * sqrt(1 - rho_eta ^ 2));
   }
-  rho_eta ~ normal(0, 0.5);
   
   // ABROAD alone identifies only omega * m[5] * detect_prob
   alpha_detect ~ normal(1.1, 0.5);

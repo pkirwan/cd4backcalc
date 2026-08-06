@@ -3,6 +3,9 @@ url: https://pkirwan.github.io/cd4backcalc/
 template:
   bootstrap: 5
 
+news:
+  - one_page: true
+
 authors:
   Peter Kirwan:
     href: https://www.pkirwan.com

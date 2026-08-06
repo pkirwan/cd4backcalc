@@ -480,6 +480,19 @@ confirm_stan_data <- function(stan_data) {
       "Each row of gamma_obs_group must be either all -1 or have all 4 age-group values" =
         all(gamma_group_available %in% c(0L, 4L))
     )
+    stopifnot(
+      "n_detect_steps must match the length of detect_step_quarter" =
+        identical(
+          as.integer(stan_data$n_detect_steps),
+          length(stan_data$detect_step_quarter)
+        )
+    )
+    stopifnot(
+      "gamma_obs_drift_sd must be a single non-negative number" =
+        length(stan_data$gamma_obs_drift_sd) == 1L &&
+          is.finite(stan_data$gamma_obs_drift_sd) &&
+          stan_data$gamma_obs_drift_sd >= 0
+    )
   } else if (stan_data$model_config$age) {
     stopifnot(
       "Incorrect dimensions in stan_data, HIV_age should be (nquar, nage)" = all(
@@ -728,6 +741,26 @@ model_type_prep <- function(
     # n_detect_obs is derived, not stored, so always computed fresh here.
     stan_data$n_detect_obs <- length(stan_data$detect_obs_index)
 
+    # Quarters at which ascertainment of a previous diagnosis abroad changes
+    # level (e.g. a surveillance reporting change). Supplied per surveillance
+    # system; none by default.
+    if (is.null(stan_data$detect_step_quarter)) {
+      stan_data$detect_step_quarter <- integer(0)
+    }
+    stan_data$detect_step_quarter <- sort(unique(as.integer(
+      stan_data$detect_step_quarter
+    )))
+    if (
+      length(stan_data$detect_step_quarter) > 0 &&
+        any(
+          stan_data$detect_step_quarter < 2 |
+            stan_data$detect_step_quarter > stan_data$nquar
+        )
+    ) {
+      stop("detect_step_quarter entries must lie between 2 and nquar.")
+    }
+    stan_data$n_detect_steps <- length(stan_data$detect_step_quarter)
+
     # For age + migration models, pre-aggregate the single-year ABROAD_age into
     # the 4 diagnosis age groups used by the Stan multinomial likelihood.  This
     # is the sufficient statistic the model actually fits; the raw ABROAD_age is
@@ -818,6 +851,21 @@ model_type_prep <- function(
       stop("gamma_obs must be provided for every quarter when gamma_obs_sd > 0.")
     }
     stan_data$gamma_obs_grouped <- NULL
+
+    # Per-quarter random-walk sd on the log ratio of HIV-positive migration to
+    # the external all-cause index. Set comparable to gamma_obs_sd so the index
+    # still constrains short-run shape; the long-run change in that ratio is
+    # carried by the model's own gamma_obs_slope.
+    if (is.null(stan_data$gamma_obs_drift_sd)) {
+      stan_data$gamma_obs_drift_sd <- 0.02
+    }
+    if (
+      length(stan_data$gamma_obs_drift_sd) != 1L ||
+        !is.finite(stan_data$gamma_obs_drift_sd) ||
+        stan_data$gamma_obs_drift_sd < 0
+    ) {
+      stop("gamma_obs_drift_sd must be a single non-negative number.")
+    }
   }
 
   # Create stan_data$model_config

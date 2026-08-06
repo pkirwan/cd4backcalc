@@ -334,7 +334,6 @@ plot_estimates <- function(
   } else if (quantity %in% c(
     "diagnoses",
     "diagnoses_age",
-    "transfers",
     "transfers_detected"
   )) {
     # add observed diagnoses if real data
