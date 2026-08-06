@@ -21,3 +21,10 @@ extract_real_data(hiv_list, quantity)
 ## Value
 
 A data frame of observed diagnoses for plotting.
+
+## Examples
+
+``` r
+# See ?run_backcalc for a full end-to-end workflow.
+invisible(NULL)
+```

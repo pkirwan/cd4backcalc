@@ -1,6 +1,6 @@
-# Generate proportion UK patterns
+# Generate UK-acquired incidence-ratio patterns
 
-Generate proportion UK patterns
+Generate UK-acquired incidence-ratio patterns
 
 ## Usage
 
@@ -16,7 +16,8 @@ generate_ratio_abroad_uk(nquar, pattern, dist = TRUE)
 
 - pattern:
 
-  Pattern type for proportion UK ("constant", "increasing").
+  Pattern for the born-abroad:UK-born ratio of UK-acquired incidence
+  ("constant", "increasing").
 
 - dist:
 
@@ -24,4 +25,4 @@ generate_ratio_abroad_uk(nquar, pattern, dist = TRUE)
 
 ## Value
 
-Vector of proportion UK values over time.
+Vector of born-abroad:UK-born UK-acquired incidence ratios.

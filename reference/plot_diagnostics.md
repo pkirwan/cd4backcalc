@@ -22,3 +22,10 @@ plot_diagnostics(hiv_list, ntraces = 4)
 ## Value
 
 A ggplot2 object containing diagnostic plots.
+
+## Examples
+
+``` r
+# See ?run_backcalc for a full end-to-end workflow.
+invisible(NULL)
+```

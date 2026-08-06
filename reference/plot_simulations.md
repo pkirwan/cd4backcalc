@@ -25,3 +25,10 @@ plot_simulations(sim_diags, quantity)
 ## Value
 
 A ggplot2 object.
+
+## Examples
+
+``` r
+# See ?run_backcalc for a full end-to-end workflow.
+invisible(NULL)
+```

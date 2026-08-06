@@ -38,10 +38,11 @@ List of posterior predictive quantities.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+# \donttest{
 sim_diags <- simulate_diagnoses(sim_seed = 123)
 stan_data <- model_type_prep(sim_diags, model_seed = 123)
-fit <- fit_stan_model(
+#> Error in model_type_prep(sim_diags, model_seed = 123): could not find function "model_type_prep"
+fit <- cd4backcalc:::fit_stan_model(
    stan_data,
    iter_warmup = 10,
    iter_sampling = 10,
@@ -49,6 +50,8 @@ fit <- fit_stan_model(
    refresh = 0,
    messages = FALSE
 )
-hiv_list <- postproc(fit, stan_data, start_yr = 0, nworkers = 1)
-} # }
+#> Error: object 'stan_data' not found
+hiv_list <- cd4backcalc:::postproc(fit, stan_data, start_yr = 0, nworkers = 1)
+#> Error: object 'stan_data' not found
+# }
 ```

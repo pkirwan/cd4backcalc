@@ -11,7 +11,8 @@ bias_plot(
   offset = 0.1,
   lab = TRUE,
   colours = NULL,
-  sim_comparison = c("sampled", "generative")
+  sim_comparison = c("sampled", "generative"),
+  years = NULL
 )
 ```
 
@@ -49,6 +50,19 @@ bias_plot(
   are `"sampled"` (the stochastic realisation for the particular seed,
   the default) or `"generative"` (deterministic expected values).
 
+- years:
+
+  Optional numeric/integer vector specifying which years to include in
+  bias/MSE calculations. If `NULL` (default), all available years are
+  used.
+
 ## Value
 
 A ggplot object of the bias box plot.
+
+## Examples
+
+``` r
+# See ?run_backcalc for a full end-to-end workflow.
+invisible(NULL)
+```

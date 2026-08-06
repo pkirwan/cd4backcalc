@@ -29,5 +29,12 @@ extract_simulated_quantity(sim_diags, quantity, deterministic = FALSE)
 
 A list of model estimates including undiagnosed prevalence, incidence,
 migration, diagnosis probabilities, diagnoses, migration probabilities,
-proportion of UK-acquired infections that are migrants, transfers of
+the born-abroad:UK-born ratio of UK-acquired incidence, transfers of
 care, and CD4 strata.
+
+## Examples
+
+``` r
+# See ?run_backcalc for a full end-to-end workflow.
+invisible(NULL)
+```

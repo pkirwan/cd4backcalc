@@ -21,3 +21,10 @@ get_estimates(hiv_list, quantity)
 ## Value
 
 A data frame of model estimates for plotting.
+
+## Examples
+
+``` r
+# See ?run_backcalc for a full end-to-end workflow.
+invisible(NULL)
+```

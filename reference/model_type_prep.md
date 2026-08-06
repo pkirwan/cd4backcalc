@@ -44,7 +44,7 @@ model_type_prep(
 
 - diag_model:
 
-  Diagnosis model type (1 = spline, 2 = random walk).
+  Diagnosis model type (1 = spline, 2 = AR(1)).
 
 - model_seed:
 

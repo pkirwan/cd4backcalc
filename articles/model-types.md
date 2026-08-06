@@ -32,9 +32,12 @@ only.
 For the age-independent CD4-only model,
 [`run_backcalc()`](https://pkirwan.github.io/cd4backcalc/reference/run_backcalc.md)
 also supports alternative smoothing families via `inf_model` and
-`diag_model` (`1` = spline, `2` = random walk, and for incidence only
-`3` = GP). Models with migration, RITA, or age structure currently use
-the spline configuration (`inf_model = 1`, `diag_model = 1`).
+`diag_model`. For incidence, `inf_model` selects a spline (`1`), random
+walk (`2`), or Gaussian process (`3`); for diagnosis probabilities,
+`diag_model` selects a spline (`1`) or AR(1) process (`2`). Models with
+migration, RITA, or age structure currently use the spline incidence
+configuration (`inf_model = 1`) and their model-specific diagnosis
+process.
 
 ## CD4-only model
 
@@ -80,7 +83,7 @@ available for the age-independent CD4-only model, supplied via
 fit_cd4_rw <- run_backcalc(
   sim_cd4,
   inf_model = 2, # 1 = spline, 2 = random walk, 3 = GP (incidence only)
-  diag_model = 2 # 1 = spline, 2 = random walk
+  diag_model = 2 # 1 = spline, 2 = AR(1)
 )
 ```
 
@@ -251,7 +254,7 @@ combine multiple parameter patterns. These are specified via the
 ``` r
 
 # combo_3: varying acquisition + step-change migration + varying diagnosis +
-#          increasing proportion UK + varying migration probabilities +
+#          increasing UK-acquired incidence ratio + varying migration probabilities +
 #          non-uniform age distribution
 sim_c3 <- simulate_diagnoses(sim_type = "combo_3", migration = TRUE)
 

@@ -42,9 +42,9 @@ derive_init_props(
 
 - abroad:
 
-  Logical. `FALSE` (default): solve for the native group with all inflow
-  entering state 1. `TRUE`: solve for the migrant stock with inflow
-  distributed via `mu_lat_t1`.
+  Logical. `FALSE` (default): solve for the UK-born group with all
+  inflow entering state 1. `TRUE`: solve for people born abroad with
+  inflow distributed via `mu_lat_t1`.
 
 - rita:
 
@@ -58,6 +58,6 @@ Numeric vector of length `nlatst` (4 for CD4-only, 7 for RITA).
 
 The function mirrors the compartment logic in
 [`Q_mat`](https://pkirwan.github.io/cd4backcalc/reference/Q_mat.md): for
-the native group (`abroad = FALSE`) all inflow enters state 1; for the
-migrant stock (`abroad = TRUE`) inflow is distributed across latent
+the UK-born group (`abroad = FALSE`) all inflow enters state 1; for
+people born abroad (`abroad = TRUE`) inflow is distributed across latent
 states proportionally to `mu_lat_t1`.

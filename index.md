@@ -1,23 +1,22 @@
 # cd4backcalc ![](reference/figures/hex_sticker.png)
 
-The cd4backcalc package provides a user-friendly way to perform
-Bayesian, discrete-time, multi-state modelling to estimate HIV incidence
-and undiagnosed HIV prevalence from diagnosis data.
+The cd4backcalc package implements Bayesian, discrete-time, multi-state
+models to estimate HIV incidence and undiagnosed HIV prevalence from
+diagnosis data.
 
 ## Description
 
-CD4 back-calculation is a discrete-time, multi-state Markov model used
-to represent HIV progression through different states until a diagnosis.
-The undiagnosed (latent) states in the model represent decreasing CD4
-strata, and may include recent HIV acquisition (defined using RITA
-evidence), migration status, and age group. An illustration of the
-latent and diagnosed states in a CD4-staged back-calculation model is
-shown below.
+CD4 back-calculation uses a discrete-time, multi-state Markov model to
+represent HIV progression until diagnosis. The undiagnosed (latent)
+states represent decreasing CD4 strata and, when RITA evidence is used,
+recent HIV acquisition. Model variants can additionally stratify the
+population by age and country of birth. An illustration of the latent
+and diagnosed states in a CD4-staged back-calculation model is shown
+below.
 
-Models are fitted within a Bayesian framework (using cmdstanr), with
-suitable prior distributions, to estimate HIV incidence and prevalence
-of undiagnosed HIV over time, as well as the probabilities of diagnosis
-in each CD4 state.
+Models are fitted within a Bayesian framework using cmdstanr to estimate
+HIV incidence, undiagnosed HIV prevalence, and diagnosis probabilities
+by CD4 state over time.
 
 ![Figure: CD4-staged back-calculation model. The model compartments
 represent undiagnosed HIV (round boxes) and diagnosed HIV or AIDS
@@ -126,6 +125,10 @@ hiv_list <- run_backcalc(
     age = FALSE
 )
 ```
+
+Migration models can incorporate external evidence for the born-abroad
+to UK-born UK-acquired incidence ratio (`eta_sd`), detection probability
+(`detect_obs_sd`), and migration trend (`gamma_obs_sd`).
 
 If
 [`plot_diagnostics()`](https://pkirwan.github.io/cd4backcalc/reference/plot_diagnostics.md)

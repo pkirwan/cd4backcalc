@@ -19,3 +19,10 @@ create_stan_inits(fit)
 ## Value
 
 A list of initial values for each chain.
+
+## Examples
+
+``` r
+# See ?run_backcalc for a full end-to-end workflow.
+invisible(NULL)
+```

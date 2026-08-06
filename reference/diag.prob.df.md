@@ -24,8 +24,8 @@ diag.prob.df(stan_data, fit_mat, start.yr = 1978, group = c("nat", "mig"))
 
 - group:
 
-  Character indicating which diagnosis probabilities to extract ("nat"
-  for native, "mig" for migration).
+  Character indicating which diagnosis probabilities to extract (`"nat"`
+  for UK-born, `"mig"` for born abroad).
 
 ## Value
 

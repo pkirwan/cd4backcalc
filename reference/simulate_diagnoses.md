@@ -58,7 +58,8 @@ simulate_diagnoses(
 
 - p_pattern:
 
-  Pattern type for proportion UK ("constant", "increasing").
+  Pattern for the born-abroad:UK-born ratio of UK-acquired incidence
+  ("constant", "increasing").
 
 - m_pattern:
 
@@ -132,10 +133,10 @@ simulate_diagnoses(
 
 - rita_completeness_by_state:
 
-  Optional numeric vector of length 5 for RITA simulations giving
-  state-specific completeness for \codeCD4 = c(RITA+, CD4\>500, 500-350,
-  350-200, \<200). Use lower values in lower CD4 states to simulate
-  informative missingness.
+  Optional numeric vector of length 5 giving state-specific completeness
+  for RITA simulations. Elements correspond to RITA positive, CD4 500 or
+  above, CD4 350–499, CD4 200–349, and CD4 below 200. Use lower values
+  in lower CD4 states to simulate informative missingness.
 
 - age_diag_effect:
 
@@ -146,8 +147,8 @@ simulate_diagnoses(
 - mig_diag_offset:
 
   Numeric vector of per-state logit-scale offsets applied to diagnosis
-  probabilities for the migrant group (y=2). Length must equal the
-  number of diagnosis states (4 for non-RITA, 5 for RITA). NULL
+  probabilities for people born abroad (`y = 2`). Length must equal the
+  number of diagnosis states (4 for non-RITA, 5 for RITA). `NULL`
   (default) applies no offset.
 
 - frr:
@@ -156,15 +157,18 @@ simulate_diagnoses(
 
 - eta_sd:
 
-  Standard deviation of the approximate melding prior for the log ratio
-  of abroad-acquired to UK-acquired infections. Passed directly to Stan
-  as data. Smaller values anchor the model more tightly to the external
-  `ratio_abroad_uk` evidence. Default is 0.10, which matches the
-  simulation noise on the log scale.
+  Standard deviation of the approximate melding model for the log ratio
+  of UK-acquired incidence among people born abroad to UK-acquired
+  incidence among UK-born people. Smaller values anchor the model more
+  tightly to the external `ratio_abroad_uk` evidence. Set to 0 when that
+  evidence is not independent of outcomes in the likelihood. Default is
+  0.4.
 
 - detect_obs_sd:
 
-  Standard deviation of detection probability.
+  Standard deviation, on the logit scale, of independent external
+  evidence about the probability that a previous diagnosis abroad is
+  detected. Set to 0 to disable this auxiliary likelihood.
 
 - detect_obs_times:
 
@@ -184,12 +188,15 @@ simulate_diagnoses(
 
 - gamma_obs_sd:
 
-  Standard deviation of the external migration-index trend likelihood (0
-  disables).
+  Standard deviation, on the log scale, of an independent rolling-annual
+  migration index used by age-dependent migration models. This evidence
+  informs temporal trend, not absolute migration level. Set to 0 to
+  disable this auxiliary likelihood.
 
 - gamma_obs_scale:
 
-  Ratio of total external migration to HIV+ migration volume.
+  Ratio of total external migration to HIV-positive migration volume
+  used to construct the external migration index.
 
 ## Value
 

@@ -58,7 +58,8 @@ define_sim_config(
 
 - p_pattern:
 
-  Pattern type for proportion UK ("constant", "increasing").
+  Pattern for the born-abroad:UK-born ratio of UK-acquired incidence
+  ("constant", "increasing").
 
 - m_pattern:
 
@@ -132,10 +133,10 @@ define_sim_config(
 
 - rita_completeness_by_state:
 
-  Optional numeric vector of length 5 for RITA simulations giving
-  state-specific completeness for \codeCD4 = c(RITA+, CD4\>500, 500-350,
-  350-200, \<200). Use lower values in lower CD4 states to simulate
-  informative missingness.
+  Optional numeric vector of length 5 giving state-specific completeness
+  for RITA simulations. Elements correspond to RITA positive, CD4 500 or
+  above, CD4 350–499, CD4 200–349, and CD4 below 200. Use lower values
+  in lower CD4 states to simulate informative missingness.
 
 - age_diag_effect:
 
@@ -146,8 +147,8 @@ define_sim_config(
 - mig_diag_offset:
 
   Numeric vector of per-state logit-scale offsets applied to diagnosis
-  probabilities for the migrant group (y=2). Length must equal the
-  number of diagnosis states (4 for non-RITA, 5 for RITA). NULL
+  probabilities for people born abroad (`y = 2`). Length must equal the
+  number of diagnosis states (4 for non-RITA, 5 for RITA). `NULL`
   (default) applies no offset.
 
 - frr:

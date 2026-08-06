@@ -41,7 +41,8 @@ List of available simulation types:
 
 - "d_varying": Diagnosis probabilities vary over time.
 
-- "p_increasing": Proportion UK increases over time.
+- "p_increasing": The born-abroad:UK-born UK-acquired incidence ratio
+  increases over time.
 
 - "m_differing": Migration probabilities (mu) differ by diagnosed state.
 
@@ -51,14 +52,15 @@ List of available simulation types:
   and varying diagnosis probabilities.
 
 - "combo_2": Combination of varying infections, step change migration,
-  varying diagnosis probabilities, and increasing proportion UK.
+  varying diagnosis probabilities, and an increasing UK-acquired
+  incidence ratio.
 
 - "combo_3": Combination of early-peaking infections, increasing
-  migration, varying diagnosis probabilities, increasing proportion UK,
-  varying migration probabilities, and age effects.
+  migration, varying diagnosis probabilities, an increasing UK-acquired
+  incidence ratio, varying migration probabilities, and age effects.
 
 - "combo_4": Late-peaking infections (varying_2) with a late upward step
   change in migration (step_change_2), representing a surge in arrivals
   from high-prevalence regions. Shares varying diagnosis probabilities,
-  increasing proportion UK, varying migration probabilities, and age
-  effects with combo_3.
+  an increasing UK-acquired incidence ratio, varying migration
+  probabilities, and age effects with combo_3.

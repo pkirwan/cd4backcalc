@@ -1,13 +1,13 @@
 # Simulate AR(1) trajectory on the logit scale
 
 Produces a time series with the same correlation structure as the Stan
-AR(1) random-walk prior used for diagnosis probabilities. AR(1)
-residuals are added on top of a deterministic trend and then
-mean-centred so that the stochastic trajectory does not drift
-systematically from the deterministic trend. This ensures that
-`dist = TRUE` and `dist = FALSE` simulations produce comparable epidemic
-trajectories (e.g. undiagnosed prevalence), while still exhibiting
-realistic smooth quarter-to-quarter variation.
+AR(1) process used for diagnosis probabilities. AR(1) residuals are
+added on top of a deterministic trend and then mean-centred so that the
+stochastic trajectory does not drift systematically from the
+deterministic trend. This ensures that `dist = TRUE` and `dist = FALSE`
+simulations produce comparable epidemic trajectories (e.g. undiagnosed
+prevalence), while still exhibiting realistic smooth quarter-to-quarter
+variation.
 
 ## Usage
 

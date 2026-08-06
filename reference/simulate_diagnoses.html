@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -23,6 +23,7 @@
     <li><a class="dropdown-item" href="../articles/analysing-results.html">Analysing results</a></li>
     <li><a class="dropdown-item" href="../articles/checkpointing.html">Checkpointing and long runs</a></li>
   </ul></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/pkirwan/cd4backcalc/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -35,7 +36,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Simulate HIV Epidemic Data</h1>
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.3/R/sim_diags.R" class="external-link"><code>R/sim_diags.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.4/R/sim_diags.R" class="external-link"><code>R/sim_diags.R</code></a></small>
       <div class="d-none name"><code>simulate_diagnoses.Rd</code></div>
     </div>
 
@@ -97,7 +98,8 @@
 
 
 <dt id="arg-p-pattern">p_pattern<a class="anchor" aria-label="anchor" href="#arg-p-pattern"></a></dt>
-<dd><p>Pattern type for proportion UK ("constant", "increasing").</p></dd>
+<dd><p>Pattern for the born-abroad:UK-born ratio of UK-acquired
+incidence ("constant", "increasing").</p></dd>
 
 
 <dt id="arg-m-pattern">m_pattern<a class="anchor" aria-label="anchor" href="#arg-m-pattern"></a></dt>
@@ -170,8 +172,9 @@
 
 <dt id="arg-rita-completeness-by-state">rita_completeness_by_state<a class="anchor" aria-label="anchor" href="#arg-rita-completeness-by-state"></a></dt>
 <dd><p>Optional numeric vector of length 5
-for RITA simulations giving state-specific completeness for
-\codeCD4 = c(RITA+, CD4&gt;500, 500-350, 350-200, &lt;200).
+giving state-specific completeness for RITA simulations. Elements
+correspond to RITA positive, CD4 500 or above, CD4 350–499,
+CD4 200–349, and CD4 below 200.
 Use lower values in lower CD4 states to simulate informative missingness.</p></dd>
 
 
@@ -180,7 +183,10 @@ Use lower values in lower CD4 states to simulate informative missingness.</p></d
 
 
 <dt id="arg-mig-diag-offset">mig_diag_offset<a class="anchor" aria-label="anchor" href="#arg-mig-diag-offset"></a></dt>
-<dd><p>Numeric vector of per-state logit-scale offsets applied to diagnosis probabilities for the migrant group (y=2). Length must equal the number of diagnosis states (4 for non-RITA, 5 for RITA). NULL (default) applies no offset.</p></dd>
+<dd><p>Numeric vector of per-state logit-scale offsets applied
+to diagnosis probabilities for people born abroad (<code>y = 2</code>). Length must
+equal the number of diagnosis states (4 for non-RITA, 5 for RITA). <code>NULL</code>
+(default) applies no offset.</p></dd>
 
 
 <dt id="arg-frr">frr<a class="anchor" aria-label="anchor" href="#arg-frr"></a></dt>
@@ -188,11 +194,18 @@ Use lower values in lower CD4 states to simulate informative missingness.</p></d
 
 
 <dt id="arg-eta-sd">eta_sd<a class="anchor" aria-label="anchor" href="#arg-eta-sd"></a></dt>
-<dd><p>Standard deviation of the approximate melding prior for the log ratio of abroad-acquired to UK-acquired infections. Passed directly to Stan as data. Smaller values anchor the model more tightly to the external <code>ratio_abroad_uk</code> evidence. Default is 0.10, which matches the simulation noise on the log scale.</p></dd>
+<dd><p>Standard deviation of the approximate melding model for the
+log ratio of UK-acquired incidence among people born abroad to UK-acquired
+incidence among UK-born people. Smaller values anchor the model more
+tightly to the external <code>ratio_abroad_uk</code> evidence. Set to 0 when
+that evidence is not independent of outcomes in the likelihood. Default
+is 0.4.</p></dd>
 
 
 <dt id="arg-detect-obs-sd">detect_obs_sd<a class="anchor" aria-label="anchor" href="#arg-detect-obs-sd"></a></dt>
-<dd><p>Standard deviation of detection probability.</p></dd>
+<dd><p>Standard deviation, on the logit scale, of independent
+external evidence about the probability that a previous diagnosis abroad
+is detected. Set to 0 to disable this auxiliary likelihood.</p></dd>
 
 
 <dt id="arg-detect-obs-times">detect_obs_times<a class="anchor" aria-label="anchor" href="#arg-detect-obs-times"></a></dt>
@@ -212,11 +225,15 @@ The scalar <code>gamma_obs</code> series is always simulated; quarters where
 
 
 <dt id="arg-gamma-obs-sd">gamma_obs_sd<a class="anchor" aria-label="anchor" href="#arg-gamma-obs-sd"></a></dt>
-<dd><p>Standard deviation of the external migration-index trend likelihood (0 disables).</p></dd>
+<dd><p>Standard deviation, on the log scale, of an independent
+rolling-annual migration index used by age-dependent migration models.
+This evidence informs temporal trend, not absolute migration level. Set
+to 0 to disable this auxiliary likelihood.</p></dd>
 
 
 <dt id="arg-gamma-obs-scale">gamma_obs_scale<a class="anchor" aria-label="anchor" href="#arg-gamma-obs-scale"></a></dt>
-<dd><p>Ratio of total external migration to HIV+ migration volume.</p></dd>
+<dd><p>Ratio of total external migration to HIV-positive
+migration volume used to construct the external migration index.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -37486,7 +37503,7 @@ The scalar <code>gamma_obs</code> series is always simulated; quarters where
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

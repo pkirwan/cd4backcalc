@@ -11,7 +11,7 @@ for infections, migration, diagnosis probabilities, and other parameters."></hea
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -27,6 +27,7 @@ for infections, migration, diagnosis probabilities, and other parameters."></hea
     <li><a class="dropdown-item" href="../articles/analysing-results.html">Analysing results</a></li>
     <li><a class="dropdown-item" href="../articles/checkpointing.html">Checkpointing and long runs</a></li>
   </ul></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/pkirwan/cd4backcalc/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -39,7 +40,7 @@ for infections, migration, diagnosis probabilities, and other parameters."></hea
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Define simulation type</h1>
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.3/R/sim_diags.R" class="external-link"><code>R/sim_diags.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.4/R/sim_diags.R" class="external-link"><code>R/sim_diags.R</code></a></small>
       <div class="d-none name"><code>define_simulation_type.Rd</code></div>
     </div>
 
@@ -78,15 +79,15 @@ for infections, migration, diagnosis probabilities, and other parameters.</p>
 <li><p>"o_increasing": Migration (omega) increases over time.</p></li>
 <li><p>"o_step_change": Migration (omega) has step changes over time.</p></li>
 <li><p>"d_varying": Diagnosis probabilities vary over time.</p></li>
-<li><p>"p_increasing": Proportion UK increases over time.</p></li>
+<li><p>"p_increasing": The born-abroad:UK-born UK-acquired incidence ratio increases over time.</p></li>
 <li><p>"m_differing": Migration probabilities (mu) differ by diagnosed state.</p></li>
 <li><p>"m_varying": Migration probabilities (mu) vary over time.</p></li>
 <li><p>"combo_1": Combination of varying infections, step change migration, and varying diagnosis probabilities.</p></li>
-<li><p>"combo_2": Combination of varying infections, step change migration, varying diagnosis probabilities, and increasing proportion UK.</p></li>
-<li><p>"combo_3": Combination of early-peaking infections, increasing migration, varying diagnosis probabilities, increasing proportion UK, varying migration probabilities, and age effects.</p></li>
+<li><p>"combo_2": Combination of varying infections, step change migration, varying diagnosis probabilities, and an increasing UK-acquired incidence ratio.</p></li>
+<li><p>"combo_3": Combination of early-peaking infections, increasing migration, varying diagnosis probabilities, an increasing UK-acquired incidence ratio, varying migration probabilities, and age effects.</p></li>
 <li><p>"combo_4": Late-peaking infections (varying_2) with a late upward step change in migration (step_change_2),
 representing a surge in arrivals from high-prevalence regions. Shares varying diagnosis probabilities,
-increasing proportion UK, varying migration probabilities, and age effects with combo_3.</p></li>
+an increasing UK-acquired incidence ratio, varying migration probabilities, and age effects with combo_3.</p></li>
 </ul></div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -98,7 +99,7 @@ increasing proportion UK, varying migration probabilities, and age effects with 
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

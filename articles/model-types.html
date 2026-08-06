@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,6 +39,7 @@
     <li><a class="dropdown-item" href="../articles/checkpointing.html">Checkpointing and long runs</a></li>
   </ul>
 </li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -61,7 +62,7 @@
       <h1>Model types</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.3/vignettes/articles/model-types.Rmd" class="external-link"><code>vignettes/articles/model-types.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.4/vignettes/articles/model-types.Rmd" class="external-link"><code>vignettes/articles/model-types.Rmd</code></a></small>
       <div class="d-none name"><code>model-types.Rmd</code></div>
     </div>
 
@@ -118,10 +119,14 @@ flags are passed to both <code><a href="../reference/simulate_diagnoses.html">si
 passed to <code><a href="../reference/run_backcalc.html">run_backcalc()</a></code> only.</p>
 <p>For the age-independent CD4-only model, <code><a href="../reference/run_backcalc.html">run_backcalc()</a></code>
 also supports alternative smoothing families via <code>inf_model</code>
-and <code>diag_model</code> (<code>1</code> = spline, <code>2</code> =
-random walk, and for incidence only <code>3</code> = GP). Models with
-migration, RITA, or age structure currently use the spline configuration
-(<code>inf_model = 1</code>, <code>diag_model = 1</code>).</p>
+and <code>diag_model</code>. For incidence, <code>inf_model</code>
+selects a spline (<code>1</code>), random walk (<code>2</code>), or
+Gaussian process (<code>3</code>); for diagnosis probabilities,
+<code>diag_model</code> selects a spline (<code>1</code>) or AR(1)
+process (<code>2</code>). Models with migration, RITA, or age structure
+currently use the spline incidence configuration
+(<code>inf_model = 1</code>) and their model-specific diagnosis
+process.</p>
 </div>
 <div class="section level2">
 <h2 id="cd4-only-model">CD4-only model<a class="anchor" aria-label="anchor" href="#cd4-only-model"></a>
@@ -165,7 +170,7 @@ are available for the age-independent CD4-only model, supplied via
 <code class="sourceCode R"><span><span class="va">fit_cd4_rw</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span></span>
 <span>  <span class="va">sim_cd4</span>,</span>
 <span>  inf_model <span class="op">=</span> <span class="fl">2</span>, <span class="co"># 1 = spline, 2 = random walk, 3 = GP (incidence only)</span></span>
-<span>  diag_model <span class="op">=</span> <span class="fl">2</span> <span class="co"># 1 = spline, 2 = random walk</span></span>
+<span>  diag_model <span class="op">=</span> <span class="fl">2</span> <span class="co"># 1 = spline, 2 = AR(1)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -318,7 +323,7 @@ combine multiple parameter patterns. These are specified via the
 <code>sim_type</code> argument:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># combo_3: varying acquisition + step-change migration + varying diagnosis +</span></span>
-<span><span class="co">#          increasing proportion UK + varying migration probabilities +</span></span>
+<span><span class="co">#          increasing UK-acquired incidence ratio + varying migration probabilities +</span></span>
 <span><span class="co">#          non-uniform age distribution</span></span>
 <span><span class="va">sim_c3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>sim_type <span class="op">=</span> <span class="st">"combo_3"</span>, migration <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
@@ -363,7 +368,7 @@ model. (in press).</li>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

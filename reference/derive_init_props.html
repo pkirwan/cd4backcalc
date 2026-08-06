@@ -17,7 +17,7 @@ is assumed to be near equilibrium before the simulation window."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,6 +33,7 @@ is assumed to be near equilibrium before the simulation window."></head><body>
     <li><a class="dropdown-item" href="../articles/analysing-results.html">Analysing results</a></li>
     <li><a class="dropdown-item" href="../articles/checkpointing.html">Checkpointing and long runs</a></li>
   </ul></li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/pkirwan/cd4backcalc/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -45,7 +46,7 @@ is assumed to be near equilibrium before the simulation window."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Derive equilibrium initial state proportions</h1>
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.3/R/sim_diags_fns.R" class="external-link"><code>R/sim_diags_fns.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.4/R/sim_diags_fns.R" class="external-link"><code>R/sim_diags_fns.R</code></a></small>
       <div class="d-none name"><code>derive_init_props.Rd</code></div>
     </div>
 
@@ -93,8 +94,8 @@ Will be normalised internally to sum to 1.</p></dd>
 
 
 <dt id="arg-abroad">abroad<a class="anchor" aria-label="anchor" href="#arg-abroad"></a></dt>
-<dd><p>Logical.  <code>FALSE</code> (default): solve for the native group
-with all inflow entering state 1.  <code>TRUE</code>: solve for the migrant stock
+<dd><p>Logical. <code>FALSE</code> (default): solve for the UK-born group
+with all inflow entering state 1. <code>TRUE</code>: solve for people born abroad
 with inflow distributed via <code>mu_lat_t1</code>.</p></dd>
 
 
@@ -109,8 +110,8 @@ with inflow distributed via <code>mu_lat_t1</code>.</p></dd>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The function mirrors the compartment logic in <code><a href="Q_mat.html">Q_mat</a></code>: for the
-native group (<code>abroad = FALSE</code>) all inflow enters state 1; for the
-migrant stock (<code>abroad = TRUE</code>) inflow is distributed across latent
+UK-born group (<code>abroad = FALSE</code>) all inflow enters state 1; for people
+born abroad (<code>abroad = TRUE</code>) inflow is distributed across latent
 states proportionally to <code>mu_lat_t1</code>.</p>
     </div>
 
@@ -123,7 +124,7 @@ states proportionally to <code>mu_lat_t1</code>.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

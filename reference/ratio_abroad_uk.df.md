@@ -1,6 +1,7 @@
-# Prop UK dataframe
+# UK-acquired incidence-ratio dataframe
 
-Calculates proportion UK dataframe from posterior samples.
+Calculates the born-abroad:UK-born ratio of UK-acquired incidence from
+posterior samples.
 
 ## Usage
 
@@ -24,4 +25,4 @@ ratio_abroad_uk.df(stan_data, fit_mat, start.yr = 1978)
 
 ## Value
 
-Dataframe of proportion UK estimates.
+Data frame of born-abroad:UK-born UK-acquired incidence-ratio estimates.

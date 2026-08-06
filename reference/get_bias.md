@@ -5,7 +5,7 @@ Get bias between HIV model estimates and simulation results.
 ## Usage
 
 ``` r
-get_bias(hiv_list, type, deterministic = FALSE)
+get_bias(hiv_list, type, deterministic = FALSE, years = NULL)
 ```
 
 ## Arguments
@@ -22,6 +22,11 @@ get_bias(hiv_list, type, deterministic = FALSE)
 
   Logical indicating whether to compare against deterministic generative
   values.
+
+- years:
+
+  Optional numeric vector specifying which years to include. If `NULL`,
+  all available years after year 0 are used.
 
 ## Value
 

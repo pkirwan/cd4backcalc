@@ -70,8 +70,8 @@ calibrate_init_prev(
 - init_floor:
 
   Small positive floor applied to calibrated initial prevalence values
-  to avoid non-finite or tiny positive values that can cause Stan
-  initialisation failures; exact structural zeros are preserved.
+  to avoid non-finite, zero, or tiny values that can cause Stan
+  initialisation failures.
 
 - return_draws:
 
@@ -91,3 +91,10 @@ fitted diagnosis model. For RITA models, the first three latent "recent"
 states are not separately identified from quarter-1 data; by default
 they are split using the relative weights in the currently supplied
 initial prevalence.
+
+## Examples
+
+``` r
+# See ?run_backcalc for a full end-to-end workflow.
+invisible(NULL)
+```

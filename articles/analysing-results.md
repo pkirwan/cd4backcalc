@@ -34,7 +34,7 @@ depend on the model type:
 | `"undiag_migration"` | Estimated undiagnosed migration |
 | `"diag_prob_mig"` | Estimated diagnosis probabilities for migrants by CD4 stratum |
 | `"migration_prob"` | Estimated migration probabilities |
-| `"ratio_abroad_uk"` | Proportion of infections acquired in the UK |
+| `"ratio_abroad_uk"` | Ratio of UK-acquired incidence among people born abroad to that among UK-born people |
 | `"transfers"` | Estimated transfers of care |
 | `"transfers_detected"` | Estimated detected transfers of care |
 | `"detect_prob"` | Estimated detection probabilities |
