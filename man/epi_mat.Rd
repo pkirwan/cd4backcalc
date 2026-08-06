@@ -25,14 +25,14 @@ Simulates the epidemic over a specified number of time quarters using the provid
 }
 \examples{
 \donttest{
-config <- define_sim_config(nquar = 10)
+config <- cd4backcalc:::define_sim_config(nquar = 10)
 q_age <- matrix(rep(c(0.0976, 0.115, 0.116, 0.148), 52), nrow = 52, byrow = TRUE)
 d_probs <- matrix(rep(0.1, 40), nrow = 10)
 Q_l <- lapply(1:10, function(x) {
-   cd4backcalc:::Q_mat(x, d_probs, q_age, 4)
+   cd4backcalc:::Q_mat(x, d_probs, q_age, nlatst = 4)
 })
 D_l <- lapply(1:10, function(x) {
-   cd4backcalc:::D_mat(x, d_probs, q_age, 4, 5)
+   cd4backcalc:::D_mat(x, d_probs, q_age, nlatst = 4, ndiagst = 5)
 })
 lat_init <- array(0, dim = c(52, 4))
 lat_init[, 1] <- c(40, 30, 20, 10)
