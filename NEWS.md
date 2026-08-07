@@ -5,6 +5,10 @@
 ### Improvements
 
 - Updates to migration models to improve fit against real-world data.
+- Additional parameters for `define_sim_config()` to control:
+  - change in born-abroad arrival age composition over time (`abroad_age_trend`);
+  - ascertainment step change in `detect_prob` (`detect_step_quarter` and `detect_step_size`) and;
+  - drift in the HIV-positive share of the external migration (`gamma_obs_scale_trend`).
 - `years` option added to `bias_plot()` and `mse_plot()` functions to restrict to a subset of the data.
 - Added News section to the pkgdown website and various improvements to comments and documentation.
 
