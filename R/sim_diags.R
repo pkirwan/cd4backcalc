@@ -89,7 +89,7 @@ define_sim_config <- function(
   abroad_age_trend = 0, # logit-scale drift in born-abroad arrival age composition
   detect_step_quarter = NULL, # quarter of an ascertainment step in detect_prob
   detect_step_size = 0, # logit-scale size of that step
-  gamma_obs_scale_trend = 0 # logit-scale drift in gamma_obs_scale
+  gamma_obs_scale_trend = 0 # log-scale drift in gamma_obs_scale
 ) {
   if (rita) {
     nlatst <- 7
@@ -633,7 +633,7 @@ simulate_diagnoses <- function(
   abroad_age_trend = 0, # logit-scale drift in born-abroad arrival age composition
   detect_step_quarter = NULL, # quarter of an ascertainment step in detect_prob
   detect_step_size = 0, # logit-scale size of that step
-  gamma_obs_scale_trend = 0 # logit-scale drift in gamma_obs_scale
+  gamma_obs_scale_trend = 0 # log-scale drift in gamma_obs_scale
 ) {
   sim_config <- define_sim_config(
     h_pattern,
