@@ -3,7 +3,7 @@
 #' Generate a ggplot2 object plotting simulated quantities over time.
 #'
 #' @param sim_diags A list containing the simulated diagnosis data objects sim_data and stan_data.
-#' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "undiag_migration", "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "transfers_detected", "ratio_abroad_uk", and "detect_prob".
+#' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "undiag_migration", "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "transfers_detected", "ratio_abroad_uk", "detect_prob", and "migrant_hiv_prevalence".
 #' @return A ggplot2 object.
 #' @examples
 #' # See ?run_backcalc for a full end-to-end workflow.
@@ -98,7 +98,7 @@ plot_simulations <- function(
 #' Generate a ggplot2 object plotting estimated quantities over time, optionally compared to the simulated values.
 #'
 #' @param hiv_list A list returned from the `postproc` function containing model estimates.
-#' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "undiag_migration", "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "transfers_detected", "ratio_abroad_uk", and "detect_prob".
+#' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "undiag_migration", "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "transfers_detected", "ratio_abroad_uk", "detect_prob", and "migrant_hiv_prevalence".
 #' @param start_year An integer specifying the starting year for the x-axis (default is 0).
 #' @param chain_results A logical indicating whether to plot chain-by-chain estimates (default is FALSE).
 #' @param hiv_list_2 An optional second list of model estimates for comparison (default is NULL).
@@ -530,6 +530,8 @@ get_plot_title <- function(quantity) {
     "born-abroad:UK-born ratio of UK-acquired incidence"
   } else if (quantity == "detect_prob") {
     "detection probability for transfers of care"
+  } else if (quantity == "migrant_hiv_prevalence") {
+    "HIV-positive share of the external migration index"
   } else if (quantity == "incidence_age") {
     "HIV incidence by age"
   } else if (quantity == "undiag_prev_age") {
@@ -616,7 +618,8 @@ do_facetting <- function(p1, quantity) {
     quantity %in%
       c(
         "diag_prob", "diag_prob_mig", "diag_prob_age", "diag_prob_mig_age",
-        "ratio_abroad_uk", "detect_prob", "migration_prob", "migration_prob_age"
+        "ratio_abroad_uk", "detect_prob", "migration_prob", "migration_prob_age",
+        "migrant_hiv_prevalence"
       )
   ) {
     p1 <- p1 +

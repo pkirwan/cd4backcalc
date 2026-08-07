@@ -17,7 +17,8 @@ extract_simulated_quantity(sim_diags, quantity, deterministic = FALSE)
 A list of model estimates including undiagnosed prevalence,
 incidence, migration, diagnosis probabilities, diagnoses, migration
 probabilities, the born-abroad:UK-born ratio of UK-acquired incidence,
-transfers of care, and CD4 strata.
+transfers of care, CD4 strata, and the HIV-positive share of the
+external migration index (migrant_hiv_prevalence).
 }
 \description{
 Extract simulated quantities based on the provided configuration.

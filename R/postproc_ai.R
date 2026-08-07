@@ -12,7 +12,7 @@
 #' @examples
 #' \donttest{
 #' sim_diags <- simulate_diagnoses(sim_seed = 123)
-#' stan_data <- model_type_prep(sim_diags, model_seed = 123)
+#' stan_data <- cd4backcalc:::model_type_prep(sim_diags, model_seed = 123)
 #' fit <- cd4backcalc:::fit_stan_model(
 #'    stan_data,
 #'    iter_warmup = 10,

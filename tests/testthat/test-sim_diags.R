@@ -95,7 +95,11 @@ test_that("age-specific migration simulation with gamma produces expected extern
     age = TRUE,
     migration = TRUE,
     sim_type = "combo_3",
-    gamma_obs_sd = 0.1
+    gamma_obs_sd = 0.1,
+    gamma_obs_scale_trend = 0.1,
+    abroad_age_trend = 0.1,
+    detect_step_quarter = 30,
+    detect_step_size = 0.1
   )
   expect_equal(
     sim_diags$stan_data$gamma_obs_sd,

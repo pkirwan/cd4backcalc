@@ -43,6 +43,17 @@
 #'   The scalar \code{gamma_obs} series is always simulated; quarters where
 #'   \code{gamma_obs_grouped} is \code{FALSE} have \code{-1} rows in
 #'   \code{gamma_obs_group}.
+#' @param abroad_age_trend Total logit-scale change (start to end) in the
+#'   15-24/25-34 age-group shares of born-abroad arrivals relative to the 45+
+#'   reference group; 0 = time-constant age composition.
+#' @param detect_step_quarter Quarter index (1-based) of an ascertainment
+#'   step in detect_prob (e.g. a surveillance reporting change). \code{NULL}
+#'   (default) means no step.
+#' @param detect_step_size Logit-scale jump in detect_prob applied from
+#'   \code{detect_step_quarter} onward.
+#' @param gamma_obs_scale_trend Total log-scale change (start to end) in the
+#'   HIV-positive share of the external migration index (gamma_obs_scale);
+#'   0 = constant share.
 #' @return Configuration list.
 #' @keywords internal
 define_sim_config <- function(
@@ -74,7 +85,11 @@ define_sim_config <- function(
   detect_obs_times = NULL, # quarter indices for detect_prob observations
   gamma_obs_grouped = FALSE, # whether external migration data are age-stratified
   gamma_obs_sd = 0, # sd of the external migration-index trend likelihood (0 disables)
-  gamma_obs_scale = 500 # ratio of total external migration to HIV+ migration volume
+  gamma_obs_scale = 500, # ratio of total external migration to HIV+ migration volume
+  abroad_age_trend = 0, # logit-scale drift in born-abroad arrival age composition
+  detect_step_quarter = NULL, # quarter of an ascertainment step in detect_prob
+  detect_step_size = 0, # logit-scale size of that step
+  gamma_obs_scale_trend = 0 # logit-scale drift in gamma_obs_scale
 ) {
   if (rita) {
     nlatst <- 7
@@ -128,6 +143,18 @@ define_sim_config <- function(
     )
   }
 
+  if (!is.null(detect_step_quarter)) {
+    if (
+      length(detect_step_quarter) != 1 ||
+        is.na(detect_step_quarter) ||
+        detect_step_quarter != as.integer(detect_step_quarter) ||
+        detect_step_quarter < 2 ||
+        detect_step_quarter > nquar
+    ) {
+      stop("detect_step_quarter must be NULL or a single integer in 2:nquar.")
+    }
+  }
+
   # Standard configuration parameters
   config <- list(
     h_pattern = h_pattern,
@@ -168,7 +195,15 @@ define_sim_config <- function(
       as.logical(gamma_obs_grouped)
     },
     gamma_obs_sd = gamma_obs_sd,
-    gamma_obs_scale = gamma_obs_scale
+    gamma_obs_scale = gamma_obs_scale,
+    abroad_age_trend = abroad_age_trend,
+    detect_step_quarter = if (is.null(detect_step_quarter)) {
+      NULL
+    } else {
+      as.integer(detect_step_quarter)
+    },
+    detect_step_size = detect_step_size,
+    gamma_obs_scale_trend = gamma_obs_scale_trend
   )
 
   if (!is.null(sim_type)) {
@@ -392,9 +427,11 @@ Q_mat <- function(t, d_probs, q_age, nlatst, nage = 52, rita = FALSE) {
 #' \donttest{
 #' q_age <- matrix(rep(c(0.2, 0.3, 0.4, 0.5), 52), nrow = 52, byrow = TRUE)
 #' d_probs <- array(0.1, dim = c(10, 52, 4))
-#' cd4backcalc:::D_mat(t = 10, d_probs = d_probs, q_age, nlatst = 4, ndiagst = 5, nage = 52, rita = FALSE)
+#' cd4backcalc:::D_mat(t = 10, d_probs = d_probs, q_age,
+#'  nlatst = 4, ndiagst = 5, nage = 52, rita = FALSE)
 #' d_probs <- array(0.1, dim = c(10, 52, 5))
-#' cd4backcalc:::D_mat(t = 10, d_probs = d_probs, q_age, nlatst = 7, ndiagst = 6, nage = 52, rita = TRUE)
+#' cd4backcalc:::D_mat(t = 10, d_probs = d_probs, q_age,
+#'  nlatst = 7, ndiagst = 6, nage = 52, rita = TRUE)
 #' }
 #' @keywords internal
 D_mat <- function(t, d_probs, q_age, nlatst, ndiagst, nage = 52, rita = FALSE) {
@@ -429,7 +466,7 @@ D_mat <- function(t, d_probs, q_age, nlatst, ndiagst, nage = 52, rita = FALSE) {
 #' \donttest{
 #' config <- cd4backcalc:::define_sim_config(nquar = 10)
 #' q_age <- matrix(rep(c(0.0976, 0.115, 0.116, 0.148), 52), nrow = 52, byrow = TRUE)
-#' d_probs <- matrix(rep(0.1, 40), nrow = 10)
+#' d_probs <- array(0.1, dim = c(10, 52, 4))
 #' Q_l <- lapply(1:10, function(x) {
 #'    cd4backcalc:::Q_mat(x, d_probs, q_age, nlatst = 4)
 #' })
@@ -546,6 +583,17 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #'   to 0 to disable this auxiliary likelihood.
 #' @param gamma_obs_scale Ratio of total external migration to HIV-positive
 #'   migration volume used to construct the external migration index.
+#' @param abroad_age_trend Total logit-scale change (start to end) in the
+#'   15-24/25-34 age-group shares of born-abroad arrivals relative to the 45+
+#'   reference group; 0 = time-constant age composition.
+#' @param detect_step_quarter Quarter index (1-based) of an ascertainment
+#'   step in detect_prob (e.g. a surveillance reporting change). \code{NULL}
+#'   (default) means no step.
+#' @param detect_step_size Logit-scale jump in detect_prob applied from
+#'   \code{detect_step_quarter} onward.
+#' @param gamma_obs_scale_trend Total log-scale change (start to end) in the
+#'   HIV-positive share of the external migration index (gamma_obs_scale);
+#'   0 = constant share.
 #' @return List containing simulated epidemic data.
 #' @examples
 #' simulate_diagnoses()
@@ -581,7 +629,11 @@ simulate_diagnoses <- function(
   detect_obs_times = NULL,
   gamma_obs_grouped = FALSE,
   gamma_obs_sd = 0, # sd of the external migration-index trend likelihood (0 disables)
-  gamma_obs_scale = 500 # ratio of total external migration to HIV+ migration volume
+  gamma_obs_scale = 500, # ratio of total external migration to HIV+ migration volume
+  abroad_age_trend = 0, # logit-scale drift in born-abroad arrival age composition
+  detect_step_quarter = NULL, # quarter of an ascertainment step in detect_prob
+  detect_step_size = 0, # logit-scale size of that step
+  gamma_obs_scale_trend = 0 # logit-scale drift in gamma_obs_scale
 ) {
   sim_config <- define_sim_config(
     h_pattern,
@@ -612,7 +664,11 @@ simulate_diagnoses <- function(
     detect_obs_times,
     gamma_obs_grouped,
     gamma_obs_sd,
-    gamma_obs_scale
+    gamma_obs_scale,
+    abroad_age_trend,
+    detect_step_quarter,
+    detect_step_size,
+    gamma_obs_scale_trend
   )
   set.seed(sim_config$sim_seed)
 
@@ -647,15 +703,19 @@ simulate_diagnoses <- function(
     sim_config$dist
   )
 
-  # Detection probability for previous diagnoses abroad
-  if (sim_config$dist) {
-    detect_prob <- invlogit(stats::rnorm(
-      sim_config$nquar,
-      logit(seq(0.7, 0.8, length.out = sim_config$nquar)),
-      0.1
-    ))
+  # Detection probability for previous diagnoses abroad, with an optional
+  # ascertainment step (detect_step_quarter/detect_step_size), e.g. a
+  # surveillance reporting change.
+  detect_logit_trend <- logit(seq(0.7, 0.8, length.out = sim_config$nquar))
+  if (!is.null(sim_config$detect_step_quarter)) {
+    step_idx <- sim_config$detect_step_quarter:sim_config$nquar
+    detect_logit_trend[step_idx] <- detect_logit_trend[step_idx] +
+      sim_config$detect_step_size
+  }
+  detect_prob <- if (sim_config$dist) {
+    invlogit(stats::rnorm(sim_config$nquar, detect_logit_trend, 0.1))
   } else {
-    detect_prob <- seq(0.7, 0.8, length.out = sim_config$nquar)
+    invlogit(detect_logit_trend)
   }
 
   if (sim_config$rita) {
@@ -829,6 +889,7 @@ simulate_diagnoses <- function(
   ))
 
   # Distribute abroad initial prevalence across ages
+  age_group_lookup_r <- pmin(4L, 1L + (seq_len(sim_config$nage) - 1L) %/% 10L)
   agedist_abroad <- generate_age_dist(
     sim_config$nquar,
     sim_config$nage,
@@ -836,6 +897,15 @@ simulate_diagnoses <- function(
     20,
     40
   )
+  # Optional linear trend shifts share from the 15-24/25-34 groups 
+  # to 35-44/45+ over time
+  if (sim_config$abroad_age_trend != 0) {
+    t_std <- (seq_len(sim_config$nquar) - 0.5 * (sim_config$nquar + 1)) /
+      sim_config$nquar
+    group_trend <- outer(t_std, c(-1, -1, 1, 1) * sim_config$abroad_age_trend)
+    agedist_abroad <- agedist_abroad * exp(group_trend[, age_group_lookup_r])
+    agedist_abroad <- agedist_abroad / rowSums(agedist_abroad)
+  }
   m_age <- array(
     0,
     dim = c(sim_config$nage, sim_config$nquar, (sim_config$nlatst + 1))
@@ -1102,16 +1172,16 @@ simulate_diagnoses <- function(
     numeric(0)
   }
 
-  age_group_lookup_r <- pmin(4L, 1L + (seq_len(sim_config$nage) - 1L) %/% 10L)
+  # Time-varying share of the external index that is HIV-positive migration
+  t_std_gamma <- (seq_len(sim_config$nquar) - 0.5 * (sim_config$nquar + 1)) /
+    sim_config$nquar
+  gamma_obs_scale_t <- sim_config$gamma_obs_scale *
+    exp(sim_config$gamma_obs_scale_trend * t_std_gamma)
+  sim_data$migrant_hiv_prevalence <- 1 / gamma_obs_scale_t
 
   # External migration-index auxiliary data (e.g. ONS total immigration trend)
   # by the same 4 age groups used by ABROAD_group. gamma_obs_sd = 0 disables the
-  # auxiliary likelihood in Stan. The index shares the underlying migrant age-group
-  # rolling-annual volumes but sits on a much larger scale
-  # (gamma_obs_scale x HIV+ migration volume); in Stan a single free offset absorbs
-  # that level difference so only the shared trend and static age composition inform
-  # the fit. We build the mean from the deterministic (smooth) migration trend so
-  # the index reflects the population-level pattern rather than realised Poisson noise.
+  # auxiliary likelihood in Stan
   gamma_obs <- rep(0, sim_config$nquar)
   gamma_obs_group <- matrix(-1, nrow = sim_config$nquar, ncol = 4L)
   if (gamma_obs_sd > 0) {
@@ -1139,7 +1209,7 @@ simulate_diagnoses <- function(
 
     gamma_obs <- stats::rnorm(
       seq_len(sim_config$nquar),
-      log(pmax(1, round(sim_config$gamma_obs_scale * rolling_vol, -3))),
+      log(pmax(1, round(gamma_obs_scale_t * rolling_vol, -3))),
       gamma_obs_sd
     )
 
@@ -1174,7 +1244,10 @@ simulate_diagnoses <- function(
       gamma_obs_group_full <- matrix(
         stats::rnorm(
           sim_config$nquar * 4L,
-          as.vector(log(pmax(1, round(sim_config$gamma_obs_scale * rolling_vol_group, -3)))),
+          as.vector(log(pmax(
+            1,
+            round(gamma_obs_scale_t * rolling_vol_group, -3)
+          ))),
           gamma_obs_sd
         ),
         nrow = sim_config$nquar,
@@ -1224,6 +1297,11 @@ simulate_diagnoses <- function(
     "detect_obs_index" = detect_obs_index,
     "detect_logit_obs" = detect_logit_obs,
     "detect_obs_sd" = detect_obs_sd,
+    "detect_step_quarter" = if (is.null(sim_config$detect_step_quarter)) {
+      integer(0)
+    } else {
+      as.integer(sim_config$detect_step_quarter)
+    },
     "gamma_obs" = gamma_obs,
     "gamma_obs_group" = gamma_obs_group,
     "gamma_obs_sd" = gamma_obs_sd,
@@ -1268,7 +1346,9 @@ simulate_diagnoses <- function(
         dims <- dim(x)
         nstates <- dims[length(dims)]
         if (nstates != length(state_probs)) {
-          stop("RITA completeness vector length must match CD4 state dimension.")
+          stop(
+            "RITA completeness vector length must match CD4 state dimension."
+          )
         }
 
         n_per_state <- prod(dims[-length(dims)])

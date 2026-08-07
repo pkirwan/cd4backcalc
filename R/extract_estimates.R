@@ -100,7 +100,8 @@ get_estimates <- function(hiv_list, quantity) {
 #' @return A list of model estimates including undiagnosed prevalence,
 #'   incidence, migration, diagnosis probabilities, diagnoses, migration
 #'   probabilities, the born-abroad:UK-born ratio of UK-acquired incidence,
-#'   transfers of care, and CD4 strata.
+#'   transfers of care, CD4 strata, and the HIV-positive share of the
+#'   external migration index (migrant_hiv_prevalence).
 #' @examples
 #' # See ?run_backcalc for a full end-to-end workflow.
 #' invisible(NULL)
@@ -131,7 +132,14 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
       rita_completeness = 1,
       age_diag_effect = sim_config$age_diag_effect,
       mig_diag_offset = sim_config$mig_diag_offset,
-      frr = sim_config$frr
+      frr = sim_config$frr,
+      gamma_obs_grouped = sim_config$gamma_obs_grouped,
+      gamma_obs_sd = sim_config$gamma_obs_sd,
+      gamma_obs_scale = sim_config$gamma_obs_scale,
+      abroad_age_trend = sim_config$abroad_age_trend,
+      detect_step_quarter = sim_config$detect_step_quarter,
+      detect_step_size = sim_config$detect_step_size,
+      gamma_obs_scale_trend = sim_config$gamma_obs_scale_trend
     )
   }
   stan_data <- sim_diags$stan_data
@@ -543,6 +551,12 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
   } else if (quantity == "detect_prob") {
     out <- tibble::tibble(
       value = sim_data$detect_prob,
+      year = seq(0, plot_years, by = 0.25),
+      group = "Generative values"
+    )
+  } else if (quantity == "migrant_hiv_prevalence") {
+    out <- tibble::tibble(
+      value = sim_data$migrant_hiv_prevalence,
       year = seq(0, plot_years, by = 0.25),
       group = "Generative values"
     )

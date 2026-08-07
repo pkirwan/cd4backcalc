@@ -287,16 +287,10 @@ transformed parameters {
   }
 }
 model {
-  // Infection surface priors.
-  // beta_inf[1] is the log-scale intercept (constant column of X_inf after
-  // jagam diagonalization). Observed incidence ~100-300/quarter for younger
-  // ages => log-mean ~ log(150) ~ 5.0. normal(5.0, 1.5) covers [7, 3000]
-  // at ±2 SD, well-matched to the empirical range.
-  // sigma_inf is a smoothing scale, not a data scale: normal(0, 5) leaves half
-  // its mass at tau < 0.09, i.e. effectively no penalty, which frees the
-  // (t = 1, oldest age) corner of the tensor product to absorb the missing
-  // pre-study prevalence pool as a decaying spike in quarter-1 incidence.
-  sigma_inf ~ normal(0, 1);
+  // Infection surface priors
+  // beta_inf[1] is the log-scale intercept; normal(5.0, 1.5) covers [7, 3000]
+  // infections/quarter at +-2 SD, matching observed incidence scale.
+  sigma_inf ~ std_normal();
   beta_inf[1] ~ normal(5.0, 1.5);
   
   matrix[np1, np1] K1_prec = S1a * tau[1] + S1b * tau[2];

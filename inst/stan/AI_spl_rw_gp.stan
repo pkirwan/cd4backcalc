@@ -280,17 +280,17 @@ model {
     sigma_diag_4 ~ gamma(4, 32);
     
     // Weak priors for inactive AR(1) diagnosis parameters
-    delta_raw_1 ~ normal(0, 1);
-    delta_raw_2 ~ normal(0, 1);
-    delta_raw_3 ~ normal(0, 1);
-    delta_raw_4 ~ normal(0, 1);
+    delta_raw_1 ~ std_normal();
+    delta_raw_2 ~ std_normal();
+    delta_raw_3 ~ std_normal();
+    delta_raw_4 ~ std_normal();
     vardelta ~ gamma(2, 2);
     rho_diag ~ beta(1, 1);
   } else if (diag_model == 2) {
-    delta_raw_1 ~ normal(0, 1);
-    delta_raw_2 ~ normal(0, 1);
-    delta_raw_3 ~ normal(0, 1);
-    delta_raw_4 ~ normal(0, 1);
+    delta_raw_1 ~ std_normal();
+    delta_raw_2 ~ std_normal();
+    delta_raw_3 ~ std_normal();
+    delta_raw_4 ~ std_normal();
     vardelta ~ gamma(1, 32);
     // AR(1) coefficient: prior with mode ~ 0.86 (high persistence) but not a
     // pure random walk. beta(7, 2) has mode = 6/7 ~ 0.857 and mean = 7/9 ~ 0.78,

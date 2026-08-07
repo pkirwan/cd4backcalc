@@ -11,23 +11,55 @@ test_that("migration plot titles describe their estimands", {
 
 test_that("simulated plots are generated correctly", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, age = TRUE, migration = TRUE, rita = TRUE, age_diag_effect = 0.5, sim_type = "combo_3")
+  stan_data <- simulate_diagnoses(
+    nquar = 40,
+    sim_seed = 123,
+    age = TRUE,
+    migration = TRUE,
+    age_diag_effect = 0.5,
+    sim_type = "combo_3",
+    gamma_obs_sd = 0.1,
+    gamma_obs_scale_trend = 0.1,
+    abroad_age_trend = 0.5,
+    detect_step_quarter = 30,
+    detect_step_size = 0.1
+  )
   # Generate plots of key quantities
   p1 <- plot_simulations(stan_data, "incidence")
   p2 <- plot_simulations(stan_data, "undiag_prev")
   p3 <- plot_simulations(stan_data, "diag_prob_age")
   p4 <- plot_simulations(stan_data, "diagnoses")
-  p5 <- plot_simulations(stan_data, "undiag_migration")
+  p5 <- plot_simulations(stan_data, "undiag_migration_age")
+  p6 <- plot_simulations(stan_data, "migration_prob")
+  p7 <- plot_simulations(stan_data, "transfers")
+  p8 <- plot_simulations(stan_data, "transfers_detected")
+  p9 <- plot_simulations(stan_data, "ratio_abroad_uk")
+  p10 <- plot_simulations(stan_data, "detect_prob")
+  p11 <- plot_simulations(stan_data, "migrant_hiv_prevalence")
   expect_s3_class(p1, "ggplot")
   expect_s3_class(p2, "ggplot")
   expect_s3_class(p3, "ggplot")
   expect_s3_class(p4, "ggplot")
   expect_s3_class(p5, "ggplot")
+  expect_s3_class(p6, "ggplot")
+  expect_s3_class(p7, "ggplot")
+  expect_s3_class(p8, "ggplot")
+  expect_s3_class(p9, "ggplot")
+  expect_s3_class(p10, "ggplot")
+  expect_s3_class(p11, "ggplot")
 })
 
 test_that("simulated plots are generated correctly", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, migration = TRUE, sim_type = "combo_4", eta_sd = 0.3, detect_obs_sd = 0.3, detect_obs_times = seq(1, 40, by = 20))
+  stan_data <- simulate_diagnoses(
+    nquar = 40,
+    sim_seed = 123,
+    migration = TRUE,
+    sim_type = "combo_4",
+    eta_sd = 0.3,
+    detect_obs_sd = 0.3,
+    detect_obs_times = seq(1, 40, by = 20)
+  )
   # Generate plots of key quantities
   p1 <- plot_simulations(stan_data, "incidence")
   p2 <- plot_simulations(stan_data, "undiag_prev")
@@ -43,8 +75,11 @@ test_that("simulated plots are generated correctly", {
       data = data.frame(
         year = (stan_data$stan_data$detect_obs_index - 1) / 4,
         value = invlogit(stan_data$stan_data$detect_logit_obs),
-        group = "detect_prob_obs"),
-      color = "red", size = 2)
+        group = "detect_prob_obs"
+      ),
+      color = "red",
+      size = 2
+    )
   p11 <- plot_simulations(stan_data, "diag_prob_mig")
   expect_s3_class(p1, "ggplot")
   expect_s3_class(p2, "ggplot")
@@ -84,7 +119,13 @@ test_that("simulated plots are generated correctly for migration_prob", {
 
 test_that("simulated age plots are generated correctly", {
   # Simulate diagnoses
-  stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, age = TRUE, migration = TRUE, sim_type = "combo_3")
+  stan_data <- simulate_diagnoses(
+    nquar = 40,
+    sim_seed = 123,
+    age = TRUE,
+    migration = TRUE,
+    sim_type = "combo_3"
+  )
   # Generate plots of key quantities
   p1 <- plot_simulations(stan_data, "incidence_age")
   p2 <- plot_simulations(stan_data, "undiag_prev_age")
@@ -158,10 +199,34 @@ test_that("dual plots are generated correctly", {
   p0 <- plot_diagnostics(hiv_list)
   expect_s3_class(p0, "ggplot")
   # Generate plots of key quantities
-  p1 <- plot_estimates(hiv_list, "incidence", hiv_list_2 = hiv_list_2, model_1_name = "Model A", model_2_name = "Model B")
-  p2 <- plot_estimates(hiv_list, "undiag_prev", hiv_list_2 = hiv_list_2, model_1_name = "Model A", model_2_name = "Model B")
-  p3 <- plot_estimates(hiv_list, "diag_prob", hiv_list_2 = hiv_list_2, model_1_name = "Model A", model_2_name = "Model B")
-  p4 <- plot_estimates(hiv_list, "diagnoses", hiv_list_2 = hiv_list_2, model_1_name = "Model A", model_2_name = "Model B")
+  p1 <- plot_estimates(
+    hiv_list,
+    "incidence",
+    hiv_list_2 = hiv_list_2,
+    model_1_name = "Model A",
+    model_2_name = "Model B"
+  )
+  p2 <- plot_estimates(
+    hiv_list,
+    "undiag_prev",
+    hiv_list_2 = hiv_list_2,
+    model_1_name = "Model A",
+    model_2_name = "Model B"
+  )
+  p3 <- plot_estimates(
+    hiv_list,
+    "diag_prob",
+    hiv_list_2 = hiv_list_2,
+    model_1_name = "Model A",
+    model_2_name = "Model B"
+  )
+  p4 <- plot_estimates(
+    hiv_list,
+    "diagnoses",
+    hiv_list_2 = hiv_list_2,
+    model_1_name = "Model A",
+    model_2_name = "Model B"
+  )
   expect_s3_class(p1, "ggplot")
   expect_s3_class(p2, "ggplot")
   expect_s3_class(p3, "ggplot")
@@ -446,8 +511,10 @@ test_that("start_year and overlay of real values works", {
   p2 <- plot_estimates(hiv_list, "diagnoses_age", start_year = 2000)
   p3 <- plot_estimates(hiv_list, "transfers", start_year = 2000)
   p4 <- plot_estimates(hiv_list, "transfers_detected", start_year = 2000)
+  p5 <- plot_estimates(hiv_list, "migrant_hiv_prevalence", start_year = 2000)
   expect_s3_class(p1, "ggplot")
   expect_s3_class(p2, "ggplot")
   expect_s3_class(p3, "ggplot")
   expect_s3_class(p4, "ggplot")
+  expect_s3_class(p5, "ggplot")
 })

@@ -33,7 +33,11 @@ define_sim_config(
   detect_obs_times = NULL,
   gamma_obs_grouped = FALSE,
   gamma_obs_sd = 0,
-  gamma_obs_scale = 500
+  gamma_obs_scale = 500,
+  abroad_age_trend = 0,
+  detect_step_quarter = NULL,
+  detect_step_size = 0,
+  gamma_obs_scale_trend = 0
 )
 }
 \arguments{
@@ -103,6 +107,21 @@ migration observations on the same 4 age groups as \code{ABROAD_group}.
 The scalar \code{gamma_obs} series is always simulated; quarters where
 \code{gamma_obs_grouped} is \code{FALSE} have \code{-1} rows in
 \code{gamma_obs_group}.}
+
+\item{abroad_age_trend}{Total logit-scale change (start to end) in the
+15-24/25-34 age-group shares of born-abroad arrivals relative to the 45+
+reference group; 0 = time-constant age composition.}
+
+\item{detect_step_quarter}{Quarter index (1-based) of an ascertainment
+step in detect_prob (e.g. a surveillance reporting change). \code{NULL}
+(default) means no step.}
+
+\item{detect_step_size}{Logit-scale jump in detect_prob applied from
+\code{detect_step_quarter} onward.}
+
+\item{gamma_obs_scale_trend}{Total log-scale change (start to end) in the
+HIV-positive share of the external migration index (gamma_obs_scale);
+0 = constant share.}
 }
 \value{
 Configuration list.

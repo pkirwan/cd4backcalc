@@ -433,9 +433,6 @@ model {
   sigma_cob ~ gamma(2, 32);
   
   // Approximate melding with independent evidence; eta_sd = 0 disables it.
-  // The AR(1) term constrains the SHAPE of eta; the level is anchored on the
-  // series mean rather than on quarter 1, since eta_mean is a smoothed series
-  // whose average level is far better determined than either endpoint.
   if (eta_sd > 0) {
     mean(eta_mean - eta) ~ normal(0, eta_sd);
     eta_mean[2 : nquar] ~ normal(

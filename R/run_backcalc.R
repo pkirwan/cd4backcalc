@@ -136,7 +136,7 @@ run_backcalc <- function(
 #' @examples
 #' \donttest{
 #' sim_diags <- simulate_diagnoses(sim_seed = 123)
-#' stan_data <- model_type_prep(sim_diags)
+#' stan_data <- cd4backcalc:::model_type_prep(sim_diags)
 #' fit <- cd4backcalc:::fit_stan_model(
 #'  stan_data, iter_warmup = 10, iter_sampling = 10, chains = 1, refresh = 0, messages = FALSE
 #' )

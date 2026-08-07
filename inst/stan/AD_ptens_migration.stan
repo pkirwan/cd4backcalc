@@ -42,32 +42,24 @@ data {
   real<lower=0> eta_sd;
   
   // External data-linkage estimates of detection probability (on logit scale).
-  // Observations can be sparse, e.g. occasional linkage studies.
+  // Observations can be sparse, e.g. occasional linkage studies
   int<lower=0> n_detect_obs;
   array[n_detect_obs] int<lower=1, upper=nquar> detect_obs_index;
   vector[n_detect_obs] detect_logit_obs;
   real<lower=0> detect_obs_sd;
   
   // Quarters at which ascertainment of a previous diagnosis abroad steps up or
-  // down, e.g. a surveillance reporting change. Supplied as data because the
-  // timing differs between surveillance systems. Each step is identified by the
-  // reallocation it implies: raising detect_prob moves cases into ABROAD and
-  // simultaneously out of misclassified_dx, hence out of born-abroad HIV_age,
-  // leaving the combined born-abroad total unchanged.
+  // down, e.g. a surveillance reporting change
   int<lower=0> n_detect_steps;
   array[n_detect_steps] int<lower=2, upper=nquar> detect_step_quarter;
   
   // Independent rolling-annual migration index on the log scale. Complete
   // gamma_obs_group rows use grouped data; negative rows use gamma_obs.
-  // gamma_obs_sd = 0 disables this likelihood.
+  // gamma_obs_sd = 0 disables this likelihood
   vector[nquar] gamma_obs;
   matrix[nquar, 4] gamma_obs_group;
   real<lower=0> gamma_obs_sd;
-  // Quarter-to-quarter drift allowed in log(HIV-positive migration) relative to
-  // the external all-cause migration index, i.e. how fast the HIV prevalence of
-  // the migrant inflow may change. Keep this comparable to gamma_obs_sd so the
-  // index still pins short-run shape; the long-run change is carried by
-  // gamma_obs_slope instead. 0 leaves only the constant and the slope.
+  // Quarter-to-quarter drift allowed in log(HIV-positive migration)
   real<lower=0> gamma_obs_drift_sd;
 }
 transformed data {
@@ -75,7 +67,7 @@ transformed data {
   vector[4] empty_vec1 = rep_vector(0, 4);
   vector[npars_inf - 1] zero_vec = rep_vector(0, npars_inf - 1);
   
-  int nagroup = 4; // number of age groups
+  int nagroup = 4;
   int np1 = npars_inf - 1;
   
   // Pre-split penalty matrices (symmetrized to avoid fp noise)
@@ -108,9 +100,7 @@ transformed data {
     }
   }
   
-  // Number of single-year ages within each diagnosis age group, derived from
-  // the age_group_lookup built above. Used to expand the group-level simplex
-  // uniformly to single ages when building abroad_age_prop.
+  // Number of single-year ages within each diagnosis age group
   array[4] int<lower=0> age_group_size;
   for (ag in 1 : 4) {
     age_group_size[ag] = 0;
@@ -136,15 +126,13 @@ parameters {
   // Migration process
   vector[npars_mig] beta_mig_raw;
   real log_sigma_mig;
-  // Offset leaves the level of omega unidentified by the external index. The
-  // slope carries the long-run change in migrant HIV prevalence and the
-  // random-walk increments absorb residual medium-run curvature, so the index
-  // constrains short-run shape rather than 13-year growth.
+  // Offset leaves the level of omega unidentified by the external index
   real gamma_obs_offset;
   real gamma_obs_slope;
   vector[nquar - 1] gamma_obs_drift_raw;
   // Pre-study quarters complete the first rolling-annual observations
   vector[3] gamma_pre;
+
   // Age composition of the born-abroad inflow on the 4 diagnosis age groups,
   // as a softmax with a linear time trend (reference group = 45+).
   vector[3] alpha_abroad_age;
@@ -169,10 +157,6 @@ parameters {
   vector[npars_cob] beta_cob_raw;
   real<lower=0> sigma_cob;
   real alpha_cob;
-  // Serial correlation of the external eta estimator's error. Capped below 1:
-  // at rho_eta = 1 the melding degenerates to a random walk and carries no
-  // information about the level of eta, which lets the count likelihood move
-  // the born-abroad:UK-born incidence ratio arbitrarily far from the evidence.
   real<lower=0, upper=0.9> rho_eta;
   
   // Previously diagnosed share m[5, t] has a linear logit trend; the
@@ -186,8 +170,7 @@ parameters {
   real<lower=0> sigma_mp_2;
   real<lower=0> sigma_mp_3;
   
-  // Low-dimensional detection trend limits confounding in
-  // omega * m[5, t] * detect_prob[t].
+  // Misclassification of abroad diagnoses
   real alpha_detect;
   real beta_detect_slope;
   vector[n_detect_steps] delta_detect;
@@ -407,8 +390,6 @@ transformed parameters {
   
   // Expected diagnoses by (t, a, y) and latent state (1..4) plus AIDS (5)
   array[nquar, nage, 2] row_vector<lower=0>[5] exp_diag;
-  
-  // Expected observations
   array[nquar, nage, 2] real<lower=0> exp_HIV_dx;
   array[nquar, nage, 2] real<lower=0> exp_AIDS_dx;
   array[nquar, nage, 2] simplex[4] exp_p;
@@ -590,14 +571,10 @@ transformed parameters {
   }
 }
 model {
-  // Priors for infection surface
+  // Infection surface priors
   // beta_inf[1] is the log-scale intercept; normal(5.0, 1.5) covers [7, 3000]
-  // infections/quarter at ±2 SD, matching observed incidence scale.
-  // sigma_inf is a smoothing scale, not a data scale: normal(0, 5) leaves half
-  // its mass at tau < 0.09, i.e. effectively no penalty, which frees the
-  // (t = 1, oldest age) corner of the tensor product to absorb the missing
-  // pre-study prevalence pool as a decaying spike in quarter-1 incidence.
-  sigma_inf ~ normal(0, 1);
+  // infections/quarter at +-2 SD, matching observed incidence scale.
+  sigma_inf ~ std_normal();
   beta_inf[1] ~ normal(5.0, 1.5);
   
   matrix[np1, np1] K1_prec = S1a * tau[1] + S1b * tau[2];
@@ -613,7 +590,7 @@ model {
 
   // Age composition of previous diagnoses abroad, with a linear time trend
   alpha_abroad_age ~ normal(0, 1.5);
-  beta_abroad_age ~ normal(0, 1);
+  beta_abroad_age ~ std_normal();
   for (t in 1 : nquar) {
     ABROAD_group[t] ~ multinomial(to_vector(abroad_age_group_prop[t,  : ]));
   }
@@ -647,8 +624,9 @@ model {
     gamma_age_raw[k] ~ std_normal();
   }
   sigma_age ~ normal(0, 0.5);
+
   // Tighter born-abroad offset for symptom-driven CD4 < 200 diagnosis
-  alpha_diag_mig[1 : 3] ~ normal(0, 1);
+  alpha_diag_mig[1 : 3] ~ std_normal();
   alpha_diag_mig[4] ~ normal(0, 0.25);
   
   // UK-acquired incidence-ratio priors
@@ -656,10 +634,7 @@ model {
   beta_cob_raw ~ std_normal();
   sigma_cob ~ gamma(2, 32);
   
-  // Approximate melding with independent evidence; eta_sd = 0 disables it.
-  // The AR(1) term constrains the SHAPE of eta; the level is anchored on the
-  // series mean rather than on quarter 1, since eta_mean is a smoothed series
-  // whose average level is far better determined than either endpoint.
+  // Approximate melding with independent evidence; eta_sd = 0 disables it
   if (eta_sd > 0) {
     mean(eta_mean - eta) ~ normal(0, eta_sd);
     eta_mean[2 : nquar] ~ normal(
@@ -672,13 +647,13 @@ model {
   
   // Detection probability priors
   alpha_detect ~ normal(1.1, 0.5);
-  beta_detect_slope ~ normal(0, 1);
-  delta_detect ~ normal(0, 1);
-  
-  // Previously diagnosed share and undiagnosed CD4-composition priors
+  beta_detect_slope ~ std_normal();
+  delta_detect ~ std_normal();
+    
+  // Migration distribution priors
   alpha_mp[1] ~ normal(logit(0.25), 2);
   alpha_mp[2 : 4] ~ std_normal();
-  beta_mp_5 ~ normal(0, 1);
+  beta_mp_5 ~ std_normal();
   beta_mp_1_raw ~ std_normal();
   beta_mp_2_raw ~ std_normal();
   beta_mp_3_raw ~ std_normal();
@@ -696,7 +671,7 @@ model {
   
   // Independent migration index informs shape, not level or long-run growth
   gamma_obs_offset ~ normal(0, 10);
-  gamma_obs_slope ~ normal(0, 1);
+  gamma_obs_slope ~ std_normal();
   gamma_obs_drift_raw ~ std_normal();
   if (gamma_obs_sd > 0) {
     for (t in 1 : nquar) {

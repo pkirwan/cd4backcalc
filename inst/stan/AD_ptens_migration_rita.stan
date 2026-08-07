@@ -48,11 +48,7 @@ data {
   real<lower=0> detect_obs_sd;
   
   // Quarters at which ascertainment of a previous diagnosis abroad steps up or
-  // down, e.g. a surveillance reporting change. Supplied as data because the
-  // timing differs between surveillance systems. Each step is identified by the
-  // reallocation it implies: raising detect_prob moves cases into ABROAD and
-  // simultaneously out of misclassified_dx, hence out of born-abroad HIV_age,
-  // leaving the combined born-abroad total unchanged.
+  // down, e.g. a surveillance reporting change
   int<lower=0> n_detect_steps;
   array[n_detect_steps] int<lower=2, upper=nquar> detect_step_quarter;
   
@@ -62,11 +58,7 @@ data {
   vector[nquar] gamma_obs;
   matrix[nquar, 4] gamma_obs_group;
   real<lower=0> gamma_obs_sd;
-  // Quarter-to-quarter drift allowed in log(HIV-positive migration) relative to
-  // the external all-cause migration index, i.e. how fast the HIV prevalence of
-  // the migrant inflow may change. Keep this comparable to gamma_obs_sd so the
-  // index still pins short-run shape; the long-run change is carried by
-  // gamma_obs_slope instead. 0 leaves only the constant and the slope.
+  // Quarter-to-quarter drift allowed in log(HIV-positive migration)
   real<lower=0> gamma_obs_drift_sd;
 }
 transformed data {
@@ -84,6 +76,7 @@ transformed data {
                             + S1[1 : np1, npars_inf : (2 * npars_inf - 2)]');
   
   // Age-group mapping, centred time trend, and fast quarter->year index
+  // (birthdays at t = 1, 5, 9, ...)
   array[nage] int age_group_lookup;
   array[nquar] int year_index;
   vector[nquar] t_std;
@@ -106,7 +99,7 @@ transformed data {
     }
   }
   
-  // Number of single-year ages within each diagnosis age group.
+  // Number of single-year ages within each diagnosis age group
   array[4] int<lower=0> age_group_size;
   for (ag in 1 : 4) {
     age_group_size[ag] = 0;
@@ -132,10 +125,7 @@ parameters {
   // Migration process
   vector[npars_mig] beta_mig_raw;
   real log_sigma_mig;
-  // Offset leaves the level of omega unidentified by the external index. The
-  // slope carries the long-run change in migrant HIV prevalence and the
-  // random-walk increments absorb residual medium-run curvature, so the index
-  // constrains short-run shape rather than 13-year growth.
+  // Offset leaves the level of omega unidentified by the external index
   real gamma_obs_offset;
   real gamma_obs_slope;
   vector[nquar - 1] gamma_obs_drift_raw;
@@ -168,27 +158,21 @@ parameters {
   vector[npars_cob] beta_cob_raw;
   real<lower=0> sigma_cob;
   real alpha_cob;
-  // Serial correlation of the external eta estimator's error. Capped below 1:
-  // at rho_eta = 1 the melding degenerates to a random walk and carries no
-  // information about the level of eta, which lets the count likelihood move
-  // the born-abroad:UK-born incidence ratio arbitrarily far from the evidence.
   real<lower=0, upper=0.9> rho_eta;
   
   // Probability of migration into each compartment (1..5)
+  vector[4] alpha_mp;
+  real beta_mp_5;
   vector[npars_mp] beta_mp_1_raw;
   vector[npars_mp] beta_mp_2_raw;
   vector[npars_mp] beta_mp_3_raw;
-  vector[npars_mp] beta_mp_5_raw;
   real<lower=0> sigma_mp_1;
   real<lower=0> sigma_mp_2;
   real<lower=0> sigma_mp_3;
-  real<lower=0> sigma_mp_5;
-  vector[4] alpha_mp;
   
   // Misclassification of abroad diagnoses
   real alpha_detect;
-  vector[npars_mp] beta_detect;
-  real<lower=0> sigma_detect;
+  real beta_detect_slope;
   vector[n_detect_steps] delta_detect;
   
   // AR(1) coefficient shared across diagnosis-probability walks.
@@ -343,31 +327,33 @@ transformed parameters {
   vector[npars_mp] beta_mp_1;
   vector[npars_mp] beta_mp_2;
   vector[npars_mp] beta_mp_3;
-  vector[npars_mp] beta_mp_5;
   beta_mp_1[1] = beta_mp_1_raw[1];
   beta_mp_2[1] = beta_mp_2_raw[1];
   beta_mp_3[1] = beta_mp_3_raw[1];
-  beta_mp_5[1] = beta_mp_5_raw[1];
   beta_mp_1[2 : npars_mp] = beta_mp_1_raw[2 : npars_mp] * sigma_mp_1;
   beta_mp_2[2 : npars_mp] = beta_mp_2_raw[2 : npars_mp] * sigma_mp_2;
   beta_mp_3[2 : npars_mp] = beta_mp_3_raw[2 : npars_mp] * sigma_mp_3;
-  beta_mp_5[2 : npars_mp] = beta_mp_5_raw[2 : npars_mp] * sigma_mp_5;
   
   // Migration probabilities into compartments (softmax, reference = compartment 4)
   vector[nquar] theta_1 = alpha_mp[2] + X_mp * beta_mp_1;
   vector[nquar] theta_2 = alpha_mp[3] + X_mp * beta_mp_2;
   vector[nquar] theta_3 = alpha_mp[4] + X_mp * beta_mp_3;
-  vector[nquar] theta_5 = alpha_mp[1] + X_mp * beta_mp_5;
+  
+  // Transfer share: linear trend on logit scale. Source-country testing
+  // coverage evolves on decade scales so a slow drift is all that is
+  // identifiable from the ABROAD signal.
+  vector[nquar] theta_5 = alpha_mp[1] + beta_mp_5 * t_std;
+  vector<lower=0, upper=1>[nquar] m5 = inv_logit(theta_5);
   matrix<lower=0>[5, nquar] m;
   
   for (t in 1 : nquar) {
-    vector[5] logits;
-    logits[1] = theta_1[t];
-    logits[2] = theta_2[t];
-    logits[3] = theta_3[t];
-    logits[4] = 0;  // reference category
-    logits[5] = theta_5[t];
-    m[ : , t] = softmax(logits);
+    vector[4] logits_u;
+    logits_u[1] = theta_1[t];
+    logits_u[2] = theta_2[t];
+    logits_u[3] = theta_3[t];
+    logits_u[4] = 0;  // reference category
+    m[1 : 4, t] = (1 - m5[t]) * softmax(logits_u);
+    m[5, t] = m5[t];
   }
   
   // Precompute omega_m[k, t] = omega[t] * m[k, t] (5 compartments x nquar).
@@ -379,7 +365,7 @@ transformed parameters {
   
   // Misclassification model for abroad diagnoses, with level shifts at any
   // supplied ascertainment change-points
-  vector[nquar] detect_logit = alpha_detect + 0.5 * (X_mp * beta_detect)
+  vector[nquar] detect_logit = alpha_detect + beta_detect_slope * t_std
                                + detect_step_design * delta_detect;
   vector<lower=0, upper=1>[nquar] detect_prob;
   vector<lower=0>[nquar] true_abroad_dx;
@@ -401,6 +387,7 @@ transformed parameters {
   array[nquar, nage, 2] real<lower=0> exp_AIDS_dx;
   array[nquar, nage, 2] simplex[5] exp_p;
   
+  // Initialize expected diagnoses
   exp_diag = rep_array(empty_vec, nquar, nage, 2);
   for (t in 1 : nquar) {
     for (a in 1 : nage) {
@@ -614,11 +601,9 @@ transformed parameters {
 }
 model {
   // Infection surface priors
-  // sigma_inf is a smoothing scale, not a data scale: normal(0, 5) leaves half
-  // its mass at tau < 0.09, i.e. effectively no penalty, which frees the
-  // (t = 1, oldest age) corner of the tensor product to absorb the missing
-  // pre-study prevalence pool as a decaying spike in quarter-1 incidence.
-  sigma_inf ~ normal(0, 1);
+  // beta_inf[1] is the log-scale intercept; normal(5.0, 1.5) covers [7, 3000]
+  // infections/quarter at +-2 SD, matching observed incidence scale.
+  sigma_inf ~ std_normal();
   beta_inf[1] ~ normal(5.0, 1.5);
   
   matrix[np1, np1] K1_prec = S1a * tau[1] + S1b * tau[2];
@@ -634,7 +619,7 @@ model {
   
   // Age composition of previous diagnoses abroad, with a linear time trend
   alpha_abroad_age ~ normal(0, 1.5);
-  beta_abroad_age ~ normal(0, 1);
+  beta_abroad_age ~ std_normal();
   for (t in 1 : nquar) {
     ABROAD_group[t] ~ multinomial(to_vector(abroad_age_group_prop[t,  : ]));
   }
@@ -675,7 +660,7 @@ model {
   }
   sigma_age ~ normal(0, 0.5);
   // Tighter born-abroad offset for symptom-driven CD4 < 200 diagnosis
-  alpha_diag_mig[1 : 4] ~ normal(0, 1);
+  alpha_diag_mig[1 : 4] ~ std_normal();
   alpha_diag_mig[5] ~ normal(0, 0.25);
   
   // UK-acquired incidence-ratio priors
@@ -683,10 +668,7 @@ model {
   beta_cob_raw ~ std_normal();
   sigma_cob ~ gamma(2, 32);
   
-  // Approximate melding with independent evidence; eta_sd = 0 disables it.
-  // The AR(1) term constrains the SHAPE of eta; the level is anchored on the
-  // series mean rather than on quarter 1, since eta_mean is a smoothed series
-  // whose average level is far better determined than either endpoint.
+  // Approximate melding with independent evidence; eta_sd = 0 disables it
   if (eta_sd > 0) {
     mean(eta_mean - eta) ~ normal(0, eta_sd);
     eta_mean[2 : nquar] ~ normal(
@@ -699,24 +681,19 @@ model {
   
   // Detection probability is not separately identified from ABROAD alone
   alpha_detect ~ normal(1.1, 0.5);
-  beta_detect[1] ~ normal(0, 0.5);
-  beta_detect[2 : npars_mp] ~ normal(0, sigma_detect);
-  sigma_detect ~ gamma(2, 8);
-  delta_detect ~ normal(0, 1);
+  beta_detect_slope ~ std_normal();
+  delta_detect ~ std_normal();
   
   // Migration distribution priors
-  alpha_mp[1] ~ normal(0, 1.5);
+  alpha_mp[1] ~ normal(logit(0.25), 2);
   alpha_mp[2 : 4] ~ std_normal();
-  
+  beta_mp_5 ~ std_normal();
   beta_mp_1_raw ~ std_normal();
   beta_mp_2_raw ~ std_normal();
-  beta_mp_3_raw ~ std_normal();
-  beta_mp_5_raw ~ std_normal();
-  
+  beta_mp_3_raw ~ std_normal();  
   sigma_mp_1 ~ gamma(2, 8);
   sigma_mp_2 ~ gamma(2, 8);
   sigma_mp_3 ~ gamma(2, 8);
-  sigma_mp_5 ~ gamma(2, 8);
   
   // Auxiliary likelihood for detect_prob from data-linkage study.
   // Only included when detect_obs_sd > 0 and a linkage study is observed.
@@ -728,7 +705,7 @@ model {
   
   // Independent migration index informs shape, not level or long-run growth
   gamma_obs_offset ~ normal(0, 10);
-  gamma_obs_slope ~ normal(0, 1);
+  gamma_obs_slope ~ std_normal();
   gamma_obs_drift_raw ~ std_normal();
   if (gamma_obs_sd > 0) {
     for (t in 1 : nquar) {

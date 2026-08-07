@@ -97,9 +97,6 @@ parameters {
   vector[npars_cob] beta_cob_raw;
   real<lower=0> sigma_cob; // spline smoothing parameter
   real alpha_cob;
-  // Serial correlation of the external eta estimator's error. Capped below 1:
-  // at rho_eta = 1 the melding degenerates to a random walk and carries no
-  // information about the level of eta.
   real<lower=0, upper=0.9> rho_eta;
   
   // Probability of migration into each compartment
@@ -364,7 +361,7 @@ model {
   // placing almost no mass below 0.5 and ruling out the RW1 boundary at 1.
   rho_diag ~ beta(7, 2);
   
-  alpha_diag_mig ~ normal(0, 1);
+  alpha_diag_mig ~ std_normal();
   
   // UK-acquired incidence-ratio priors
   alpha_cob ~ normal(0, 1.5);
@@ -372,9 +369,6 @@ model {
   sigma_cob ~ gamma(2, 32);
   
   // Approximate melding with independent evidence; eta_sd = 0 disables it.
-  // The AR(1) term constrains the SHAPE of eta; the level is anchored on the
-  // series mean rather than on quarter 1, since eta_mean is a smoothed series
-  // whose average level is far better determined than either endpoint.
   if (eta_sd > 0) {
     mean(eta_mean - eta) ~ normal(0, eta_sd);
     eta_mean[2 : nquar] ~ normal(
