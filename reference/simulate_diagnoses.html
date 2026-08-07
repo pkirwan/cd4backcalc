@@ -77,7 +77,11 @@
 <span>  detect_obs_times <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  gamma_obs_grouped <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  gamma_obs_sd <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>  gamma_obs_scale <span class="op">=</span> <span class="fl">500</span></span>
+<span>  gamma_obs_scale <span class="op">=</span> <span class="fl">500</span>,</span>
+<span>  abroad_age_trend <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  detect_step_quarter <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  detect_step_size <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  gamma_obs_scale_trend <span class="op">=</span> <span class="fl">0</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -234,6 +238,29 @@ to 0 to disable this auxiliary likelihood.</p></dd>
 <dt id="arg-gamma-obs-scale">gamma_obs_scale<a class="anchor" aria-label="anchor" href="#arg-gamma-obs-scale"></a></dt>
 <dd><p>Ratio of total external migration to HIV-positive
 migration volume used to construct the external migration index.</p></dd>
+
+
+<dt id="arg-abroad-age-trend">abroad_age_trend<a class="anchor" aria-label="anchor" href="#arg-abroad-age-trend"></a></dt>
+<dd><p>Total logit-scale change (start to end) in the
+15-24/25-34 age-group shares of born-abroad arrivals relative to the 45+
+reference group; 0 = time-constant age composition.</p></dd>
+
+
+<dt id="arg-detect-step-quarter">detect_step_quarter<a class="anchor" aria-label="anchor" href="#arg-detect-step-quarter"></a></dt>
+<dd><p>Quarter index (1-based) of an ascertainment
+step in detect_prob (e.g. a surveillance reporting change). <code>NULL</code>
+(default) means no step.</p></dd>
+
+
+<dt id="arg-detect-step-size">detect_step_size<a class="anchor" aria-label="anchor" href="#arg-detect-step-size"></a></dt>
+<dd><p>Logit-scale jump in detect_prob applied from
+<code>detect_step_quarter</code> onward.</p></dd>
+
+
+<dt id="arg-gamma-obs-scale-trend">gamma_obs_scale_trend<a class="anchor" aria-label="anchor" href="#arg-gamma-obs-scale-trend"></a></dt>
+<dd><p>Total log-scale change (start to end) in the
+HIV-positive share of the external migration index (gamma_obs_scale);
+0 = constant share.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -4901,6 +4928,9 @@ migration volume used to construct the external migration index.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $stan_data$detect_obs_sd</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $stan_data$detect_step_quarter</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> integer(0)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $stan_data$gamma_obs</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   [1] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  [38] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</span>
@@ -5187,6 +5217,18 @@ migration volume used to construct the external migration index.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $stan_data$sim_config$gamma_obs_scale</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 500</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $stan_data$sim_config$abroad_age_trend</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $stan_data$sim_config$detect_step_quarter</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> NULL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $stan_data$sim_config$detect_step_size</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $stan_data$sim_config$gamma_obs_scale_trend</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> $stan_data$sim_config$init_props</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 6.9102591 4.0488185 2.1490119 0.5398133</span>
@@ -37490,6 +37532,18 @@ migration volume used to construct the external migration index.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [50,]      0      0      0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [51,]      0      0      0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [52,]      0      0      0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $sim_data$migrant_hiv_prevalence</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   [1] 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [13] 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [25] 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [37] 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [49] 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [61] 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [73] 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [85] 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [97] 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [109] 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 </code></pre></div>

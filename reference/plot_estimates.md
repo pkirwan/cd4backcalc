@@ -31,7 +31,7 @@ plot_estimates(
   A string specifying the quantity to plot. Options are "incidence",
   "undiag_prev", "undiag_migration", "all_migration", "diag_prob",
   "diagnoses", "migration_prob", "transfers", "transfers_detected",
-  "ratio_abroad_uk", and "detect_prob".
+  "ratio_abroad_uk", "detect_prob", and "migrant_hiv_prevalence".
 
 - start_year:
 

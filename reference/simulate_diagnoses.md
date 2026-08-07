@@ -36,7 +36,11 @@ simulate_diagnoses(
   detect_obs_times = NULL,
   gamma_obs_grouped = FALSE,
   gamma_obs_sd = 0,
-  gamma_obs_scale = 500
+  gamma_obs_scale = 500,
+  abroad_age_trend = 0,
+  detect_step_quarter = NULL,
+  detect_step_size = 0,
+  gamma_obs_scale_trend = 0
 )
 ```
 
@@ -197,6 +201,27 @@ simulate_diagnoses(
 
   Ratio of total external migration to HIV-positive migration volume
   used to construct the external migration index.
+
+- abroad_age_trend:
+
+  Total logit-scale change (start to end) in the 15-24/25-34 age-group
+  shares of born-abroad arrivals relative to the 45+ reference group; 0
+  = time-constant age composition.
+
+- detect_step_quarter:
+
+  Quarter index (1-based) of an ascertainment step in detect_prob (e.g.
+  a surveillance reporting change). `NULL` (default) means no step.
+
+- detect_step_size:
+
+  Logit-scale jump in detect_prob applied from `detect_step_quarter`
+  onward.
+
+- gamma_obs_scale_trend:
+
+  Total log-scale change (start to end) in the HIV-positive share of the
+  external migration index (gamma_obs_scale); 0 = constant share.
 
 ## Value
 
@@ -4863,6 +4888,9 @@ simulate_diagnoses()
 #> $stan_data$detect_obs_sd
 #> [1] 0
 #> 
+#> $stan_data$detect_step_quarter
+#> integer(0)
+#> 
 #> $stan_data$gamma_obs
 #>   [1] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 #>  [38] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
@@ -5149,6 +5177,18 @@ simulate_diagnoses()
 #> 
 #> $stan_data$sim_config$gamma_obs_scale
 #> [1] 500
+#> 
+#> $stan_data$sim_config$abroad_age_trend
+#> [1] 0
+#> 
+#> $stan_data$sim_config$detect_step_quarter
+#> NULL
+#> 
+#> $stan_data$sim_config$detect_step_size
+#> [1] 0
+#> 
+#> $stan_data$sim_config$gamma_obs_scale_trend
+#> [1] 0
 #> 
 #> $stan_data$sim_config$init_props
 #> [1] 6.9102591 4.0488185 2.1490119 0.5398133
@@ -37452,6 +37492,18 @@ simulate_diagnoses()
 #> [50,]      0      0      0
 #> [51,]      0      0      0
 #> [52,]      0      0      0
+#> 
+#> $sim_data$migrant_hiv_prevalence
+#>   [1] 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002
+#>  [13] 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002
+#>  [25] 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002
+#>  [37] 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002
+#>  [49] 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002
+#>  [61] 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002
+#>  [73] 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002
+#>  [85] 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002
+#>  [97] 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002
+#> [109] 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002 0.002
 #> 
 #> 
 ```

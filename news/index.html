@@ -44,6 +44,11 @@
 <div class="section level4">
 <h4 id="improvements-0-1-4">Improvements<a class="anchor" aria-label="anchor" href="#improvements-0-1-4"></a></h4>
 <ul><li>Updates to migration models to improve fit against real-world data.</li>
+<li>Additional parameters for <code><a href="../reference/define_sim_config.html">define_sim_config()</a></code> to control:
+<ul><li>change in born-abroad arrival age composition over time (<code>abroad_age_trend</code>);</li>
+<li>ascertainment step change in <code>detect_prob</code> (<code>detect_step_quarter</code> and <code>detect_step_size</code>) and;</li>
+<li>drift in the HIV-positive share of the external migration (<code>gamma_obs_scale_trend</code>).</li>
+</ul></li>
 <li>
 <code>years</code> option added to <code><a href="../reference/bias_plot.html">bias_plot()</a></code> and <code><a href="../reference/mse_plot.html">mse_plot()</a></code> functions to restrict to a subset of the data.</li>
 <li>Added News section to the pkgdown website and various improvements to comments and documentation.</li>

@@ -85,8 +85,7 @@ and passes the relevant data and arguments.</p>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># \donttest{</span></span></span>
 <span class="r-in"><span><span class="va">sim_diags</span> <span class="op">&lt;-</span> <span class="fu"><a href="simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>sim_seed <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">stan_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="model_type_prep.html">model_type_prep</a></span><span class="op">(</span><span class="va">sim_diags</span>, model_seed <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in model_type_prep(sim_diags, model_seed = 123):</span> could not find function "model_type_prep"</span>
+<span class="r-in"><span><span class="va">stan_data</span> <span class="op">&lt;-</span> <span class="fu">cd4backcalc</span><span class="fu">:::</span><span class="fu"><a href="model_type_prep.html">model_type_prep</a></span><span class="op">(</span><span class="va">sim_diags</span>, model_seed <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">cd4backcalc</span><span class="fu">:::</span><span class="fu"><a href="fit_stan_model.html">fit_stan_model</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>   <span class="va">stan_data</span>,</span></span>
 <span class="r-in"><span>   iter_warmup <span class="op">=</span> <span class="fl">10</span>,</span></span>
@@ -95,9 +94,11 @@ and passes the relevant data and arguments.</p>
 <span class="r-in"><span>   refresh <span class="op">=</span> <span class="fl">0</span>,</span></span>
 <span class="r-in"><span>   messages <span class="op">=</span> <span class="cn">FALSE</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'stan_data' not found</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> CmdStan model cache dir: /tmp/Rtmp4bB2Ib/cd4backcalc-cmdstan</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> R tempdir(): /tmp/Rtmp4bB2Ib</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> CmdStan path has not been set yet. See ?set_cmdstan_path.</span>
 <span class="r-in"><span><span class="va">hiv_list</span> <span class="op">&lt;-</span> <span class="fu">cd4backcalc</span><span class="fu">:::</span><span class="fu">postproc</span><span class="op">(</span><span class="va">fit</span>, <span class="va">stan_data</span>, start_yr <span class="op">=</span> <span class="fl">0</span>, nworkers <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'stan_data' not found</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'fit' not found</span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

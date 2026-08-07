@@ -5,6 +5,15 @@
 #### Improvements
 
 - Updates to migration models to improve fit against real-world data.
+- Additional parameters for
+  [`define_sim_config()`](https://pkirwan.github.io/cd4backcalc/reference/define_sim_config.md)
+  to control:
+  - change in born-abroad arrival age composition over time
+    (`abroad_age_trend`);
+  - ascertainment step change in `detect_prob` (`detect_step_quarter`
+    and `detect_step_size`) and;
+  - drift in the HIV-positive share of the external migration
+    (`gamma_obs_scale_trend`).
 - `years` option added to
   [`bias_plot()`](https://pkirwan.github.io/cd4backcalc/reference/bias_plot.md)
   and

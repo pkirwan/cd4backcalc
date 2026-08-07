@@ -36,7 +36,11 @@ define_sim_config(
   detect_obs_times = NULL,
   gamma_obs_grouped = FALSE,
   gamma_obs_sd = 0,
-  gamma_obs_scale = 500
+  gamma_obs_scale = 500,
+  abroad_age_trend = 0,
+  detect_step_quarter = NULL,
+  detect_step_size = 0,
+  gamma_obs_scale_trend = 0
 )
 ```
 
@@ -167,6 +171,27 @@ define_sim_config(
   same 4 age groups as `ABROAD_group`. The scalar `gamma_obs` series is
   always simulated; quarters where `gamma_obs_grouped` is `FALSE` have
   `-1` rows in `gamma_obs_group`.
+
+- abroad_age_trend:
+
+  Total logit-scale change (start to end) in the 15-24/25-34 age-group
+  shares of born-abroad arrivals relative to the 45+ reference group; 0
+  = time-constant age composition.
+
+- detect_step_quarter:
+
+  Quarter index (1-based) of an ascertainment step in detect_prob (e.g.
+  a surveillance reporting change). `NULL` (default) means no step.
+
+- detect_step_size:
+
+  Logit-scale jump in detect_prob applied from `detect_step_quarter`
+  onward.
+
+- gamma_obs_scale_trend:
+
+  Total log-scale change (start to end) in the HIV-positive share of the
+  external migration index (gamma_obs_scale); 0 = constant share.
 
 ## Value
 

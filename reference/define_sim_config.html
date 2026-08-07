@@ -78,7 +78,11 @@ The number of latent and diagnosis states will be inferred from the simulation s
 <span>  detect_obs_times <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  gamma_obs_grouped <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  gamma_obs_sd <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>  gamma_obs_scale <span class="op">=</span> <span class="fl">500</span></span>
+<span>  gamma_obs_scale <span class="op">=</span> <span class="fl">500</span>,</span>
+<span>  abroad_age_trend <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  detect_step_quarter <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  detect_step_size <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  gamma_obs_scale_trend <span class="op">=</span> <span class="fl">0</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -205,6 +209,29 @@ migration observations on the same 4 age groups as <code>ABROAD_group</code>.
 The scalar <code>gamma_obs</code> series is always simulated; quarters where
 <code>gamma_obs_grouped</code> is <code>FALSE</code> have <code>-1</code> rows in
 <code>gamma_obs_group</code>.</p></dd>
+
+
+<dt id="arg-abroad-age-trend">abroad_age_trend<a class="anchor" aria-label="anchor" href="#arg-abroad-age-trend"></a></dt>
+<dd><p>Total logit-scale change (start to end) in the
+15-24/25-34 age-group shares of born-abroad arrivals relative to the 45+
+reference group; 0 = time-constant age composition.</p></dd>
+
+
+<dt id="arg-detect-step-quarter">detect_step_quarter<a class="anchor" aria-label="anchor" href="#arg-detect-step-quarter"></a></dt>
+<dd><p>Quarter index (1-based) of an ascertainment
+step in detect_prob (e.g. a surveillance reporting change). <code>NULL</code>
+(default) means no step.</p></dd>
+
+
+<dt id="arg-detect-step-size">detect_step_size<a class="anchor" aria-label="anchor" href="#arg-detect-step-size"></a></dt>
+<dd><p>Logit-scale jump in detect_prob applied from
+<code>detect_step_quarter</code> onward.</p></dd>
+
+
+<dt id="arg-gamma-obs-scale-trend">gamma_obs_scale_trend<a class="anchor" aria-label="anchor" href="#arg-gamma-obs-scale-trend"></a></dt>
+<dd><p>Total log-scale change (start to end) in the
+HIV-positive share of the external migration index (gamma_obs_scale);
+0 = constant share.</p></dd>
 
 </dl></div>
     <div class="section level2">

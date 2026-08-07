@@ -90,11 +90,12 @@ A CmdStanFit object (without checkpointing) or a
 ``` r
 # \donttest{
 sim_diags <- simulate_diagnoses(sim_seed = 123)
-stan_data <- model_type_prep(sim_diags)
-#> Error in model_type_prep(sim_diags): could not find function "model_type_prep"
+stan_data <- cd4backcalc:::model_type_prep(sim_diags)
 fit <- cd4backcalc:::fit_stan_model(
  stan_data, iter_warmup = 10, iter_sampling = 10, chains = 1, refresh = 0, messages = FALSE
 )
-#> Error: object 'stan_data' not found
+#> CmdStan model cache dir: /tmp/Rtmp4bB2Ib/cd4backcalc-cmdstan
+#> R tempdir(): /tmp/Rtmp4bB2Ib
+#> Error: CmdStan path has not been set yet. See ?set_cmdstan_path.
 # }
 ```
