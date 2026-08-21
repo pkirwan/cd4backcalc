@@ -976,7 +976,11 @@ model_type_prep <- function(
     stan_data$X_cob <- jagam_out_cob$jags.data$X
     stan_data$npars_cob <- ncol(stan_data$X_cob)
 
-    stan_data$X_mp <- jagam_out_mp$jags.data$X
+    stan_data$X_mp <- if (stan_data$model_config$age) {
+      jagam_out_mp$jags.data$X[, -1, drop = FALSE]
+    } else {
+      jagam_out_mp$jags.data$X
+    }
     stan_data$npars_mp <- ncol(stan_data$X_mp)
   }
 

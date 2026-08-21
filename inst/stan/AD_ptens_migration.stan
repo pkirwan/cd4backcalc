@@ -72,6 +72,9 @@ transformed data {
   
   int nagroup = 4;
   int np1 = npars_inf - 1;
+  // Baseline prior proportions: four CD4 states followed by transfers.
+  vector[4] alpha_mp_prior_mean = [logit(0.30), log(0.20 / 0.10),
+                                    log(0.20 / 0.10), log(0.20 / 0.10)]';
   
   // Pre-split penalty matrices (symmetrized to avoid fp noise)
   matrix[np1, np1] S1a = 0.5 * (S1[1 : np1, 1 : np1] + S1[1 : np1, 1 : np1]');
@@ -338,12 +341,9 @@ transformed parameters {
   vector[npars_mp] beta_mp_1;
   vector[npars_mp] beta_mp_2;
   vector[npars_mp] beta_mp_3;
-  beta_mp_1[1] = beta_mp_1_raw[1];
-  beta_mp_2[1] = beta_mp_2_raw[1];
-  beta_mp_3[1] = beta_mp_3_raw[1];
-  beta_mp_1[2 : npars_mp] = beta_mp_1_raw[2 : npars_mp] * sigma_mp_1;
-  beta_mp_2[2 : npars_mp] = beta_mp_2_raw[2 : npars_mp] * sigma_mp_2;
-  beta_mp_3[2 : npars_mp] = beta_mp_3_raw[2 : npars_mp] * sigma_mp_3;
+  beta_mp_1 = beta_mp_1_raw * sigma_mp_1;
+  beta_mp_2 = beta_mp_2_raw * sigma_mp_2;
+  beta_mp_3 = beta_mp_3_raw * sigma_mp_3;
   
   vector[nquar] theta_1 = alpha_mp[2] + X_mp * beta_mp_1;
   vector[nquar] theta_2 = alpha_mp[3] + X_mp * beta_mp_2;
@@ -654,15 +654,14 @@ model {
   delta_detect ~ std_normal();
     
   // Migration distribution priors
-  alpha_mp[1] ~ normal(logit(0.25), 2);
-  alpha_mp[2 : 4] ~ std_normal();
+  alpha_mp ~ normal(alpha_mp_prior_mean, 0.5);
   beta_mp_5 ~ std_normal();
   beta_mp_1_raw ~ std_normal();
   beta_mp_2_raw ~ std_normal();
   beta_mp_3_raw ~ std_normal();
-  sigma_mp_1 ~ gamma(2, 8);
-  sigma_mp_2 ~ gamma(2, 8);
-  sigma_mp_3 ~ gamma(2, 8);
+  sigma_mp_1 ~ normal(0, 0.2);
+  sigma_mp_2 ~ normal(0, 0.2);
+  sigma_mp_3 ~ normal(0, 0.2);
   
   // Auxiliary likelihood for detect_prob from data-linkage study.
   // Only included when detect_obs_sd > 0 and a linkage study is observed.
