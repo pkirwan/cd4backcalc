@@ -493,6 +493,12 @@ confirm_stan_data <- function(stan_data) {
           is.finite(stan_data$gamma_obs_drift_sd) &&
           stan_data$gamma_obs_drift_sd >= 0
     )
+    stopifnot(
+      "gamma_obs_slope_sd must be a single non-negative number" =
+        length(stan_data$gamma_obs_slope_sd) == 1L &&
+          is.finite(stan_data$gamma_obs_slope_sd) &&
+          stan_data$gamma_obs_slope_sd >= 0
+    )
   } else if (stan_data$model_config$age) {
     stopifnot(
       "Incorrect dimensions in stan_data, HIV_age should be (nquar, nage)" = all(
@@ -865,6 +871,22 @@ model_type_prep <- function(
         stan_data$gamma_obs_drift_sd < 0
     ) {
       stop("gamma_obs_drift_sd must be a single non-negative number.")
+    }
+
+    # Prior sd on the linear trend of the offset between gamma_obs and
+    # log(omega); default 1 preserves the old std_normal() prior. Tighten
+    # (e.g. towards 0) when the external index and HIV+ migration share are
+    # expected to move together, so the offset cannot silently absorb a
+    # trend that belongs to omega.
+    if (is.null(stan_data$gamma_obs_slope_sd)) {
+      stan_data$gamma_obs_slope_sd <- 1
+    }
+    if (
+      length(stan_data$gamma_obs_slope_sd) != 1L ||
+        !is.finite(stan_data$gamma_obs_slope_sd) ||
+        stan_data$gamma_obs_slope_sd < 0
+    ) {
+      stop("gamma_obs_slope_sd must be a single non-negative number.")
     }
   }
 

@@ -61,6 +61,9 @@ data {
   real<lower=0> gamma_obs_sd;
   // Quarter-to-quarter drift allowed in log(HIV-positive migration)
   real<lower=0> gamma_obs_drift_sd;
+  // Prior sd for the linear trend in log(HIV-positive migration); tighten
+  // toward 0 when the expected drift over the study period is small
+  real<lower=0> gamma_obs_slope_sd;
 }
 transformed data {
   row_vector[5] empty_vec = rep_row_vector(0, 5);
@@ -671,7 +674,7 @@ model {
   
   // Independent migration index informs shape, not level or long-run growth
   gamma_obs_offset ~ normal(0, 10);
-  gamma_obs_slope ~ std_normal();
+  gamma_obs_slope ~ normal(0, gamma_obs_slope_sd);
   gamma_obs_drift_raw ~ std_normal();
   if (gamma_obs_sd > 0) {
     for (t in 1 : nquar) {
