@@ -4,6 +4,8 @@
 #'
 #' @param stan_data A list of data formatted for Stan.
 #' @param migration Logical indicating whether to include migration in the model.
+#' @param reduced_migration Logical indicating whether to use the reduced
+#'   age-dependent migration model.
 #' @param rita Logical indicating whether to include RITA data in the model.
 #' @param age Logical indicating whether to include age-specific data in the model.
 #' @param inf_model Infection model type (1 = spline, 2 = random walk, 3 = GP).
@@ -56,7 +58,8 @@ run_backcalc <- function(
   return_fit = TRUE,
   checkpoint_dir = NULL,
   iter_per_chunk = NULL,
-  init = NULL
+  init = NULL,
+  reduced_migration = FALSE
 ) {
   # Check if sim_diags object has been provided
   if ("stan_data" %in% names(stan_data)) {
@@ -70,6 +73,7 @@ run_backcalc <- function(
   stan_data <- model_type_prep(
     stan_data = stan_data,
     migration = migration,
+    reduced_migration = reduced_migration,
     rita = rita,
     age = age,
     inf_model = inf_model,
@@ -396,8 +400,12 @@ stan_model_config <- function(
   age = FALSE,
   inf_model = 1,
   diag_model = 1,
-  model_seed = NULL
+  model_seed = NULL,
+  reduced_migration = FALSE
 ) {
+  if (reduced_migration && (!migration || !age || rita)) {
+    stop("reduced_migration requires migration = TRUE, age = TRUE, and rita = FALSE.")
+  }
   if ((inf_model != 1 || diag_model != 1) && (migration || rita || age)) {
     stop(
       "The migration, rita, or age-specific models only support spline model configurations. Please use inf_model = 1 and diag_model = 1."
@@ -410,6 +418,7 @@ stan_model_config <- function(
     inf_model = inf_model,
     diag_model = diag_model,
     migration = migration,
+    reduced_migration = reduced_migration,
     rita = rita,
     age = age,
     model_seed = model_seed,
@@ -605,6 +614,8 @@ load_stan_model <- function(config) {
   name <- if (config$age) {
     if (config$migration && config$rita) {
       "AD_ptens_migration_rita"
+    } else if (config$migration && isTRUE(config$reduced_migration)) {
+      "AD_ptens_migration_reduced"
     } else if (config$migration) {
       "AD_ptens_migration"
     } else if (config$rita) {
@@ -680,7 +691,8 @@ model_type_prep <- function(
   model_seed = NULL,
   basis = "ts",
   knots = 10,
-  penalty = 2
+  penalty = 2,
+  reduced_migration = FALSE
 ) {
   # Check if sim_diags object has been provided
   if ("stan_data" %in% names(stan_data)) {
@@ -892,12 +904,13 @@ model_type_prep <- function(
 
   # Create stan_data$model_config
   stan_data$model_config <- stan_model_config(
-    migration,
-    rita,
-    age,
-    inf_model,
-    diag_model,
-    model_seed
+    migration = migration,
+    rita = rita,
+    age = age,
+    inf_model = inf_model,
+    diag_model = diag_model,
+    model_seed = model_seed,
+    reduced_migration = reduced_migration
   )
 
   # Generate fake data for jagam to create the spline basis
@@ -967,7 +980,9 @@ model_type_prep <- function(
     # Migration model splines
     jagam_out_mig <- create_spline(knots)
     jagam_out_cob <- create_spline(knots - 4)
-    jagam_out_mp <- create_spline(knots - 4)
+    if (!reduced_migration) {
+      jagam_out_mp <- create_spline(knots - 4)
+    }
 
     # Augment stan_data with design matrix and prior info
     stan_data$X_mig <- jagam_out_mig$jags.data$X
@@ -976,12 +991,17 @@ model_type_prep <- function(
     stan_data$X_cob <- jagam_out_cob$jags.data$X
     stan_data$npars_cob <- ncol(stan_data$X_cob)
 
-    stan_data$X_mp <- if (stan_data$model_config$age) {
-      jagam_out_mp$jags.data$X[, -1, drop = FALSE]
+    if (!reduced_migration) {
+      stan_data$X_mp <- if (stan_data$model_config$age) {
+        jagam_out_mp$jags.data$X[, -1, drop = FALSE]
+      } else {
+        jagam_out_mp$jags.data$X
+      }
+      stan_data$npars_mp <- ncol(stan_data$X_mp)
     } else {
-      jagam_out_mp$jags.data$X
+      stan_data$X_mp <- NULL
+      stan_data$npars_mp <- NULL
     }
-    stan_data$npars_mp <- ncol(stan_data$X_mp)
   }
 
   # Add model types to stan_data

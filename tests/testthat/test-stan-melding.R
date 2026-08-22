@@ -1,6 +1,7 @@
 test_that("migration models disable melding when eta_sd is zero", {
   model_names <- c(
     "AD_ptens_migration.stan",
+    "AD_ptens_migration_reduced.stan",
     "AD_ptens_migration_rita.stan",
     "AI_spl_migration.stan",
     "AI_spl_migration_rita.stan"
