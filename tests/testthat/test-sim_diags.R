@@ -36,6 +36,44 @@ test_that("migration simulation preserves scientific input contracts", {
   expect_equal(rowSums(sim_diags$sim_data$m), sim_diags$sim_data$omega)
 })
 
+test_that("reduced migration pattern varies transfers with fixed CD4 composition", {
+  sim_diags <- simulate_diagnoses(
+    nquar = 20,
+    sim_seed = 123,
+    migration = TRUE,
+    m_pattern = "reduced",
+    dist = FALSE
+  )
+
+  mu <- sim_diags$sim_data$mu
+  conditional_cd4 <- mu[, 1:4, drop = FALSE] / rowSums(mu[, 1:4, drop = FALSE])
+  expect_equal(
+    unname(conditional_cd4),
+    matrix(c(2, 2, 2, 1) / 7, 20, 4, byrow = TRUE)
+  )
+  expect_equal(mu[, 5], seq(0.2, 0.4, length.out = 20))
+})
+
+test_that("transfer detection preserves totals and age allocation", {
+  sim_diags <- simulate_diagnoses(
+    nquar = 40,
+    nage = 52,
+    sim_seed = 123,
+    age = TRUE,
+    migration = TRUE,
+    m_pattern = "reduced"
+  )
+
+  expect_equal(
+    sim_diags$stan_data$ABROAD + sim_diags$sim_data$misclassified,
+    sim_diags$sim_data$m[, 5]
+  )
+  expect_equal(
+    sim_diags$stan_data$ABROAD,
+    rowSums(sim_diags$stan_data$ABROAD_age)
+  )
+})
+
 test_that("age-specific migration simulation produces expected HIV data", {
   sim_diags <- simulate_diagnoses(sim_seed = 123, age = TRUE, migration = TRUE)
   expect_equal(

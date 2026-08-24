@@ -11,7 +11,8 @@ generate_mu(nquar, nlatst, pattern, dist = FALSE)
 
 \item{nlatst}{Number of latent states.}
 
-\item{pattern}{Pattern type for mu ("constant", "differing", "varying").}
+\item{pattern}{Pattern type for mu ("constant", "differing", "varying",
+or "reduced").}
 
 \item{dist}{Logical indicating whether to add logit-scale noise.}
 }

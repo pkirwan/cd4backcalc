@@ -105,14 +105,22 @@ generate_omega <- function(nquar, pattern, target_mig = 12000, dist = TRUE) {
 #'
 #' @param nquar Number of time quarters.
 #' @param nlatst Number of latent states.
-#' @param pattern Pattern type for mu ("constant", "differing", "varying").
+#' @param pattern Pattern type for mu ("constant", "differing", "varying",
+#'   or "reduced").
 #' @param dist Logical indicating whether to add logit-scale noise.
 #' @return Matrix of mu values over time.
 generate_mu <- function(nquar, nlatst, pattern, dist = FALSE) {
   # check pattern
-  stopifnot(pattern %in% c("constant", "differing", "varying"))
+  stopifnot(pattern %in% c("constant", "differing", "varying", "reduced"))
   if (pattern == "constant") {
     mu <- matrix(0.2, nrow = nquar, ncol = nlatst + 1)
+  } else if (pattern == "reduced") {
+    transfer_prob <- seq(0.2, 0.4, length.out = nquar)
+    undiag_cd4_prop <- c(2, 2, 2, 1) / 7
+    mu <- cbind(
+      outer(1 - transfer_prob, undiag_cd4_prop),
+      transfer_prob
+    )
   } else {
     mu <- if (pattern == "differing") {
       matrix(
@@ -136,7 +144,7 @@ generate_mu <- function(nquar, nlatst, pattern, dist = FALSE) {
     }
   }
 
-  if (dist) {
+  if (dist && pattern != "reduced") {
     sigma <- 0.1
     # Add noise on logit scale with compartment nlatst as reference,
     # matching Stan's softmax parameterization

@@ -10,7 +10,8 @@ stan_model_config(
   age = FALSE,
   inf_model = 1,
   diag_model = 1,
-  model_seed = NULL
+  model_seed = NULL,
+  reduced_migration = FALSE
 )
 }
 \arguments{

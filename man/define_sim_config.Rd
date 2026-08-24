@@ -50,7 +50,8 @@ define_sim_config(
 \item{p_pattern}{Pattern for the born-abroad:UK-born ratio of UK-acquired
 incidence ("constant", "increasing").}
 
-\item{m_pattern}{Pattern type for mu ("constant", "differing", "varying").}
+\item{m_pattern}{Pattern type for mu ("constant", "differing", "varying",
+or "reduced").}
 
 \item{r_pattern}{Pattern type for RITA data ("constant", "increasing", "none").}
 

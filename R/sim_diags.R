@@ -8,7 +8,8 @@
 #' @param d_pattern Pattern type for diagnosis probabilities ("constant", "varying").
 #' @param p_pattern Pattern for the born-abroad:UK-born ratio of UK-acquired
 #'   incidence ("constant", "increasing").
-#' @param m_pattern Pattern type for mu ("constant", "differing", "varying").
+#' @param m_pattern Pattern type for mu ("constant", "differing", "varying",
+#'   or "reduced").
 #' @param r_pattern Pattern type for RITA data ("constant", "increasing", "none").
 #' @param a_pattern Pattern type for age-based data ("constant", "wedge", "varying_wedge").
 #' @param sim_type If provided, a preset type of simulation to define patterns for.
@@ -530,7 +531,8 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #' @param d_pattern Pattern type for diagnosis probabilities ("constant", "varying").
 #' @param p_pattern Pattern for the born-abroad:UK-born ratio of UK-acquired
 #'   incidence ("constant", "increasing").
-#' @param m_pattern Pattern type for mu ("constant", "differing", "varying").
+#' @param m_pattern Pattern type for mu ("constant", "differing", "varying",
+#'   or "reduced").
 #' @param r_pattern Pattern type for RITA data ("constant", "increasing", "none").
 #' @param a_pattern Pattern type for age-based data ("constant", "wedge", "varying_wedge").
 #' @param sim_type If provided, a preset type of simulation to define patterns for.
@@ -925,28 +927,33 @@ simulate_diagnoses <- function(
   # misclassified, matching the Stan model's misclassification decomposition:
   # detected counts use the detection probability; remaining counts are
   # allocated using the arrival-age distribution.
-  total_diag_age <- round_matrix_preserve(
-    m_age[,, sim_config$nlatst + 1],
-    colwise = TRUE
-  ) # [nage, nquar], integer, column sums preserved
-
   if (sim_config$dist) {
-    ABROAD_age_mat <- matrix(
-      stats::rbinom(
-        sim_config$nage * sim_config$nquar,
-        as.integer(total_diag_age),
-        rep(detect_prob, each = sim_config$nage)
-      ),
-      nrow = sim_config$nage,
-      ncol = sim_config$nquar
-    )
+    total_diag <- as.integer(m[, sim_config$nlatst + 1])
+    detected_total <- stats::rbinom(sim_config$nquar, total_diag, detect_prob)
+    ABROAD_age_mat <- matrix(0L, sim_config$nage, sim_config$nquar)
+    misclassified_age <- matrix(0L, sim_config$nage, sim_config$nquar)
+    for (t in seq_len(sim_config$nquar)) {
+      ABROAD_age_mat[, t] <- stats::rmultinom(
+        1,
+        detected_total[t],
+        agedist_abroad[t, ]
+      )
+      misclassified_age[, t] <- stats::rmultinom(
+        1,
+        total_diag[t] - detected_total[t],
+        agedist_abroad[t, ]
+      )
+    }
   } else {
-    ABROAD_age_mat <- round_matrix_preserve(
-      sweep(total_diag_age, 2, detect_prob, "*"),
-      colwise = TRUE
-    )
+    total_diag <- m[, sim_config$nlatst + 1]
+    detected_total <- round(total_diag * detect_prob)
+    ABROAD_age_mat <- vapply(seq_len(sim_config$nquar), function(t) {
+      round_preserve(detected_total[t] * agedist_abroad[t, ])
+    }, numeric(sim_config$nage))
+    misclassified_age <- vapply(seq_len(sim_config$nquar), function(t) {
+      round_preserve((total_diag[t] - detected_total[t]) * agedist_abroad[t, ])
+    }, numeric(sim_config$nage))
   }
-  misclassified_age <- total_diag_age - ABROAD_age_mat # [nage, nquar]
   misclassified <- colSums(misclassified_age)
 
   # Run epidemic simulations
