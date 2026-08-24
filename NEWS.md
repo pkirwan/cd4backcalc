@@ -1,5 +1,16 @@
 # Changelog
 
+# Changes in v0.1.5
+
+### Improvements
+
+- This version of the package implements a simplified age-dependent migration Stan model, to overcome unidentifiability issues with the more complex models.
+- Migration pattern `m_pattern="reduced"` is available with a simplified migration pattern, which may be adopted for future releases.
+
+### Bug fixes
+
+- Addressed a rounding issue in the construction of ABROAD_age_mat in simulated data.
+
 # Changes in v0.1.4
 
 ### Improvements
