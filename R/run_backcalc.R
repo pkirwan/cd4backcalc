@@ -393,6 +393,7 @@ fit_stan_model <- function(
 #' @param inf_model Infection model type (1 = spline, 2 = random walk, 3 = GP).
 #' @param diag_model Diagnosis model type (1 = spline, 2 = AR(1)).
 #' @param model_seed Seed for model fitting.
+#' @param reduced_migration Logical indicating whether to use the reduced age-dependent migration model.
 #' @return A list containing configuration settings for model fitting.
 stan_model_config <- function(
   migration = FALSE,
