@@ -509,6 +509,21 @@ confirm_stan_data <- function(stan_data) {
           is.finite(stan_data$gamma_obs_slope_sd) &&
           stan_data$gamma_obs_slope_sd >= 0
     )
+    if (isTRUE(stan_data$model_config$reduced_migration)) {
+      stopifnot(
+        "nyear must equal nquar / 4" =
+          stan_data$nyear == stan_data$nquar %/% 4L,
+        "recent_arrival_cd4 must have dimensions (nquar / 4, 4, 4)" = all(
+          dim(stan_data$recent_arrival_cd4) ==
+            c(stan_data$nyear, 4L, 4L)
+        ),
+        "recent_arrival_cd4 must contain non-negative integer counts" =
+          all(is.finite(stan_data$recent_arrival_cd4)) &&
+          all(stan_data$recent_arrival_cd4 >= 0) &&
+          all(stan_data$recent_arrival_cd4 ==
+                as.integer(stan_data$recent_arrival_cd4))
+      )
+    }
   } else if (stan_data$model_config$age) {
     stopifnot(
       "Incorrect dimensions in stan_data, HIV_age should be (nquar, nage)" = all(
@@ -900,6 +915,21 @@ model_type_prep <- function(
         stan_data$gamma_obs_slope_sd < 0
     ) {
       stop("gamma_obs_slope_sd must be a single non-negative number.")
+    }
+
+    if (reduced_migration) {
+      if (stan_data$nquar %% 4L != 0L) {
+        stop("nquar must be divisible by 4 for recent-arrival CD4 data.")
+      }
+      if (is.null(stan_data$nyear)) {
+        stan_data$nyear <- stan_data$nquar %/% 4L
+      }
+      if (is.null(stan_data$recent_arrival_cd4)) {
+        stan_data$recent_arrival_cd4 <- array(
+          0L,
+          dim = c(stan_data$nyear, 4L, 4L)
+        )
+      }
     }
   }
 

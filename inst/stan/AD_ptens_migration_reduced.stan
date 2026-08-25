@@ -13,6 +13,10 @@ data {
   // Previous diagnoses abroad, as quarterly totals and four age groups
   array[nquar] int<lower=0> ABROAD;           // quarterly total detected abroad diagnoses
   array[nquar, 4] int<lower=0> ABROAD_group;  // grouped by diagnosis age group
+
+  // Annual CD4 counts among diagnoses within two recorded arrival years
+  int<lower=1> nyear;
+  array[nyear, 4, 4] int<lower=0> recent_arrival_cd4;
   
   // Progression by age at acquisition or arrival
   matrix<lower=0, upper=1>[4, nage] q_age;
@@ -82,6 +86,9 @@ transformed data {
   for (t in 1 : nquar) {
     year_index[t] = (t - 1) %/% 4;
     t_std[t] = (t - 0.5 * (nquar + 1)) / nquar;
+  }
+  if (nyear != nquar %/% 4) {
+    reject("nyear must equal nquar / 4");
   }
   
   // age 1-10 -> 1, 11-20 -> 2, 21-30 -> 3, 31+ -> 4
@@ -360,6 +367,10 @@ transformed parameters {
   array[nquar, nage, 2] real<lower=0> exp_HIV_dx;
   array[nquar, nage, 2] real<lower=0> exp_AIDS_dx;
   array[nquar, nage, 2] simplex[4] exp_p;
+  array[nyear, 4] vector<lower=0>[4]
+    exp_recent_arrival_cd4 = rep_array(empty_vec1,
+                                      nyear, 4);
+  array[nyear, 4] simplex[4] recent_arrival_cd4_p;
   
   // Initialize expected diagnoses
   exp_diag = rep_array(empty_vec, nquar, nage, 2);
@@ -497,6 +508,51 @@ transformed parameters {
           }
         }
       }
+    }
+  }
+
+  // Diagnoses from infections present on arrival, limited to the diagnosis
+  // calendar year and the preceding arrival year.
+  for (t0 in 1 : nquar) {
+    int arrival_year = year_index[t0] + 1;
+    int last_t = min(nquar, 4 * (arrival_year + 1));
+    if (t0 < last_t) {
+      for (a0 in 1 : nage) {
+        vector[4] lat = omega_m[1 : 4, t0] * abroad_age_prop[t0, a0];
+        real q1 = q_age[1, a0];
+        real q2 = q_age[2, a0];
+        real q3 = q_age[3, a0];
+        real q4 = q_age[4, a0];
+        for (t in (t0 + 1) : last_t) {
+          int diagnosis_year = year_index[t] + 1;
+          int a = min(a0 + year_diff[t0, t], nage);
+          int ag = age_group_lookup[a];
+          vector[4] diagnosis;
+          vector[4] not_diagnosed;
+          vector[4] lat_next;
+          diagnosis[1] = lat[1] * d_mig[ag, t, 1];
+          diagnosis[2] = lat[2] * d_mig[ag, t, 2];
+          diagnosis[3] = lat[3] * d_mig[ag, t, 3];
+          diagnosis[4] = lat[4] * d_mig[ag, t, 4];
+          not_diagnosed = lat - diagnosis;
+          exp_recent_arrival_cd4[diagnosis_year, ag] += diagnosis;
+          lat_next[1] = not_diagnosed[1] * (1 - q1);
+          lat_next[2] = not_diagnosed[1] * q1
+                        + not_diagnosed[2] * (1 - q2);
+          lat_next[3] = not_diagnosed[2] * q2
+                        + not_diagnosed[3] * (1 - q3);
+          lat_next[4] = not_diagnosed[3] * q3
+                        + not_diagnosed[4] * (1 - q4);
+          lat = lat_next;
+        }
+      }
+    }
+  }
+  for (year in 1 : nyear) {
+    for (ag in 1 : 4) {
+      vector[4] raw_p = exp_recent_arrival_cd4[year, ag]
+                        + rep_vector(1e-12, 4);
+      recent_arrival_cd4_p[year, ag] = raw_p / sum(raw_p);
     }
   }
   
@@ -661,11 +717,26 @@ model {
   }
   
   ABROAD ~ poisson(exp_ABROAD_dx);
+  for (year in 1 : nyear) {
+    for (ag in 1 : 4) {
+      recent_arrival_cd4[year, ag]
+        ~ multinomial(recent_arrival_cd4_p[year, ag]);
+    }
+  }
 }
 generated quantities {
   // Log-likelihood contributions for model comparison
   array[nquar, nage, 2] real log_lik;
   vector[nquar] log_lik_abroad;
+  array[nyear, 4] real log_lik_recent_arrival_cd4;
+
+  for (year in 1 : nyear) {
+    for (ag in 1 : 4) {
+      log_lik_recent_arrival_cd4[year, ag]
+        = multinomial_lpmf(recent_arrival_cd4[year, ag]
+                           | recent_arrival_cd4_p[year, ag]);
+    }
+  }
   
   for (t in 1 : nquar) {
     log_lik_abroad[t] = poisson_lpmf(ABROAD[t] | exp_ABROAD_dx[t])

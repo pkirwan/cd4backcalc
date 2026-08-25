@@ -74,6 +74,40 @@ test_that("transfer detection preserves totals and age allocation", {
   )
 })
 
+test_that("recent-arrival CD4 data are annual age-by-state counts", {
+  sim_diags <- simulate_diagnoses(
+    nquar = 40,
+    nage = 52,
+    sim_seed = 123,
+    age = TRUE,
+    migration = TRUE,
+    m_pattern = "reduced",
+    recent_arrival_cd4_completeness = 0.2
+  )
+
+  expect_equal(sim_diags$stan_data$nyear, 10L)
+  expect_equal(dim(sim_diags$stan_data$recent_arrival_cd4), c(10L, 4L, 4L))
+  expect_true(sum(sim_diags$stan_data$recent_arrival_cd4) > 0)
+  expect_true(all(sim_diags$stan_data$recent_arrival_cd4 >= 0))
+})
+
+test_that("reduced model preparation defaults missing recent-arrival data", {
+  sim_diags <- simulate_diagnoses(
+    nquar = 20,
+    sim_seed = 123,
+    age = TRUE,
+    migration = TRUE,
+    m_pattern = "reduced"
+  )
+  sim_diags$stan_data$nyear <- NULL
+  sim_diags$stan_data$recent_arrival_cd4 <- NULL
+
+  stan_data <- model_type_prep(sim_diags, reduced_migration = TRUE)
+
+  expect_equal(stan_data$nyear, 5L)
+  expect_equal(stan_data$recent_arrival_cd4, array(0L, c(5L, 4L, 4L)))
+})
+
 test_that("age-specific migration simulation produces expected HIV data", {
   sim_diags <- simulate_diagnoses(sim_seed = 123, age = TRUE, migration = TRUE)
   expect_equal(

@@ -55,6 +55,8 @@
 #' @param gamma_obs_scale_trend Total log-scale change (start to end) in the
 #'   HIV-positive share of the external migration index (gamma_obs_scale);
 #'   0 = constant share.
+#' @param recent_arrival_cd4_completeness Proportion of eligible diagnoses with
+#'   observed recent-arrival CD4 data. Set to 0 to disable.
 #' @return Configuration list.
 #' @keywords internal
 define_sim_config <- function(
@@ -90,7 +92,8 @@ define_sim_config <- function(
   abroad_age_trend = 0, # logit-scale drift in born-abroad arrival age composition
   detect_step_quarter = NULL, # quarter of an ascertainment step in detect_prob
   detect_step_size = 0, # logit-scale size of that step
-  gamma_obs_scale_trend = 0 # log-scale drift in gamma_obs_scale
+  gamma_obs_scale_trend = 0, # log-scale drift in gamma_obs_scale
+  recent_arrival_cd4_completeness = 0
 ) {
   if (rita) {
     nlatst <- 7
@@ -156,6 +159,15 @@ define_sim_config <- function(
     }
   }
 
+  if (
+    length(recent_arrival_cd4_completeness) != 1L ||
+      !is.finite(recent_arrival_cd4_completeness) ||
+      recent_arrival_cd4_completeness < 0 ||
+      recent_arrival_cd4_completeness > 1
+  ) {
+    stop("recent_arrival_cd4_completeness must be a number between 0 and 1.")
+  }
+
   # Standard configuration parameters
   config <- list(
     h_pattern = h_pattern,
@@ -204,7 +216,8 @@ define_sim_config <- function(
       as.integer(detect_step_quarter)
     },
     detect_step_size = detect_step_size,
-    gamma_obs_scale_trend = gamma_obs_scale_trend
+    gamma_obs_scale_trend = gamma_obs_scale_trend,
+    recent_arrival_cd4_completeness = recent_arrival_cd4_completeness
   )
 
   if (!is.null(sim_type)) {
@@ -596,6 +609,8 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #' @param gamma_obs_scale_trend Total log-scale change (start to end) in the
 #'   HIV-positive share of the external migration index (gamma_obs_scale);
 #'   0 = constant share.
+#' @param recent_arrival_cd4_completeness Proportion of eligible diagnoses with
+#'   observed recent-arrival CD4 data. Set to 0 to disable.
 #' @return List containing simulated epidemic data.
 #' @examples
 #' simulate_diagnoses()
@@ -635,7 +650,8 @@ simulate_diagnoses <- function(
   abroad_age_trend = 0, # logit-scale drift in born-abroad arrival age composition
   detect_step_quarter = NULL, # quarter of an ascertainment step in detect_prob
   detect_step_size = 0, # logit-scale size of that step
-  gamma_obs_scale_trend = 0 # log-scale drift in gamma_obs_scale
+  gamma_obs_scale_trend = 0, # log-scale drift in gamma_obs_scale
+  recent_arrival_cd4_completeness = 0
 ) {
   sim_config <- define_sim_config(
     h_pattern,
@@ -670,7 +686,8 @@ simulate_diagnoses <- function(
     abroad_age_trend,
     detect_step_quarter,
     detect_step_size,
-    gamma_obs_scale_trend
+    gamma_obs_scale_trend,
+    recent_arrival_cd4_completeness
   )
   set.seed(sim_config$sim_seed)
 
@@ -979,6 +996,27 @@ simulate_diagnoses <- function(
     sim_config
   )
 
+  recent_arrival_cd4 <- if (
+    sim_config$rita || sim_config$m_pattern != "reduced"
+  ) {
+    empty_recent_arrival_cd4 <- array(
+      0,
+      dim = c(sim_config$nquar %/% 4L, 4L, 4L)
+    )
+    list(
+      observed = array(0L, dim = dim(empty_recent_arrival_cd4)),
+      expected = empty_recent_arrival_cd4
+    )
+  } else {
+    generate_recent_arrival_cd4(
+      m_age = m_age[,, 1:4, drop = FALSE],
+      d_probs_mig = d_probs_mig,
+      q_age = sim_config$q_age,
+      completeness = sim_config$recent_arrival_cd4_completeness,
+      dist = sim_config$dist
+    )
+  }
+
   sim_data <- list(
     "epi_uk" = epi_uk,
     "epi_uk_abroad" = epi_uk_abroad,
@@ -998,7 +1036,8 @@ simulate_diagnoses <- function(
     "lat_init_abroad" = lat_init_abroad,
     "detect_prob" = detect_prob,
     "misclassified" = misclassified,
-    "misclassified_age" = misclassified_age
+    "misclassified_age" = misclassified_age,
+    "recent_arrival_cd4_expected" = recent_arrival_cd4$expected
   )
 
   # Perform validation checks before rounding
@@ -1314,6 +1353,10 @@ simulate_diagnoses <- function(
     "gamma_obs_sd" = gamma_obs_sd,
     "sim_config" = sim_config
   )
+  if (sim_config$m_pattern == "reduced") {
+    stan_data$nyear <- sim_config$nquar %/% 4L
+    stan_data$recent_arrival_cd4 <- recent_arrival_cd4$observed
+  }
 
   # Perform validation checks
   validate_stan_data(stan_data, sim_data, sim_config)

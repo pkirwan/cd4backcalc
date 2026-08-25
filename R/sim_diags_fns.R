@@ -59,6 +59,86 @@ generate_infections <- function(
   return(h)
 }
 
+#' Generate recent-arrival CD4 counts
+#'
+#' Generates annual age-group by CD4 counts among diagnoses of infections
+#' present on arrival, restricted to arrival in the diagnosis year or the
+#' preceding calendar year.
+#' @param m_age Migrant arrivals by age, quarter, and latent state.
+#' @param d_probs_mig Migrant diagnosis probabilities by quarter, age, and state.
+#' @param q_age Progression probabilities by age and state.
+#' @param completeness Proportion of eligible diagnoses observed.
+#' @param dist Logical indicating whether to add stochastic variation.
+#' @return A list containing observed and expected annual count arrays.
+#' @keywords internal
+generate_recent_arrival_cd4 <- function(
+  m_age,
+  d_probs_mig,
+  q_age,
+  completeness,
+  dist
+) {
+  nage <- dim(m_age)[1]
+  nquar <- dim(m_age)[2]
+  nyear <- nquar %/% 4L
+  age_group_lookup <- pmin(4L, 1L + (seq_len(nage) - 1L) %/% 10L)
+  expected <- array(0, dim = c(nyear, 4L, 4L))
+
+  for (t0 in seq_len(nquar)) {
+    arrival_year <- (t0 - 1L) %/% 4L + 1L
+    last_t <- min(nquar, 4L * (arrival_year + 1L))
+    if (t0 < last_t) {
+      for (a0 in seq_len(nage)) {
+        latent <- m_age[a0, t0, 1:4]
+        progression <- q_age[a0, ]
+        for (t in (t0 + 1L):last_t) {
+          diagnosis_year <- (t - 1L) %/% 4L + 1L
+          age <- min(a0 + diagnosis_year - arrival_year, nage)
+          age_group <- age_group_lookup[age]
+          diagnosis <- latent * d_probs_mig[t, age, ]
+          expected[diagnosis_year, age_group, ] <-
+            expected[diagnosis_year, age_group, ] + diagnosis
+
+          not_diagnosed <- latent * (1 - d_probs_mig[t, age, ])
+          latent <- c(
+            not_diagnosed[1] * (1 - progression[1]),
+            not_diagnosed[1] * progression[1] +
+              not_diagnosed[2] * (1 - progression[2]),
+            not_diagnosed[2] * progression[2] +
+              not_diagnosed[3] * (1 - progression[3]),
+            not_diagnosed[3] * progression[3] +
+              not_diagnosed[4] * (1 - progression[4])
+          )
+        }
+      }
+    }
+  }
+
+  observed <- array(0L, dim = dim(expected))
+  if (completeness > 0) {
+    for (year in seq_len(nyear)) {
+      for (age_group in 1:4) {
+        expected_cell <- expected[year, age_group, ]
+        expected_total <- sum(expected_cell)
+        if (expected_total > 0) {
+          observed_total <- if (dist) {
+            stats::rbinom(1, round(expected_total), completeness)
+          } else {
+            round(expected_total * completeness)
+          }
+          observed[year, age_group, ] <- if (dist) {
+            as.vector(stats::rmultinom(1, observed_total, expected_cell))
+          } else {
+            round_preserve(observed_total * expected_cell / expected_total)
+          }
+        }
+      }
+    }
+  }
+
+  list(observed = observed, expected = expected)
+}
+
 #' Generate migration patterns
 #'
 #' @param nquar Number of time quarters.
