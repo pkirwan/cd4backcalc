@@ -4,8 +4,9 @@
 
 ### Improvements
 
-- This version of the package implements a simplified age-dependent migration Stan model, to overcome unidentifiability issues with the more complex models.
-- Migration pattern `m_pattern="reduced"` is available with a simplified migration pattern, which may be adopted for future releases.
+- This version of the package implements a simplified age-dependent migration Stan model, to overcome identifiability issues with the more complex models.
+- New simulation option `recent_arrival_cd4_completeness` controls the number of recent arrivals with CD4 data available for fitting the reduced model.
+- New simulation option `m_pattern="reduced"` chooses the simplified migration pattern, which may be adopted for future releases.
 
 ### Bug fixes
 

@@ -154,8 +154,12 @@ parameters {
   real alpha_diag_2;
   real alpha_diag_3;
   real alpha_diag_4;
-  array[4] sum_to_zero_vector[4] gamma_age_raw;
-  real<lower=0> sigma_age; // shared shrinkage for age effects
+  // Age effect on diagnosis probability: a profile shared across CD4 states,
+  // plus small state-specific deviations
+  sum_to_zero_vector[4] gamma_age_shared_raw;
+  real<lower=0> sigma_age_shared;
+  array[4] sum_to_zero_vector[4] gamma_age_dev_raw;
+  real<lower=0> sigma_age_dev;
   real alpha_diag_mig; // shared born-abroad diagnosis offset
   
   // Born-abroad:UK-born ratio of UK-acquired incidence
@@ -293,16 +297,18 @@ transformed parameters {
                  + sqrt(vardelta[4]) * delta_raw_4[t];
   }
   
-  // State-specific zero-sum age effects: each CD4 state has its own
-  // age-group profile, reflecting real-data evidence that the age disparity
-  // in diagnosis probability differs across CD4 strata.
+  // Age effect on diagnosis probability, decomposed as shared[ag] +
+  // deviation[ag,k] (partial pooling across CD4 states)
   // The sqrt(4 / 3) factor corrects the constrained-vector variance so each
-  // age effect has marginal SD sigma_age rather than sigma_age * sqrt(3 / 4).
+  // component has marginal SD equal to its sigma rather than sigma * sqrt(3/4).
   matrix[4, 4] gamma_age;
-  real age_effect_scale = sigma_age * sqrt(4.0 / 3.0);
+  real age_effect_scale_shared = sigma_age_shared * sqrt(4.0 / 3.0);
+  real age_effect_scale_dev = sigma_age_dev * sqrt(4.0 / 3.0);
+  vector[4] gamma_age_shared = age_effect_scale_shared * gamma_age_shared_raw;
   for (k in 1 : 4) {
     for (ag in 1 : 4) {
-      gamma_age[ag, k] = age_effect_scale * gamma_age_raw[k][ag];
+      gamma_age[ag, k] = gamma_age_shared[ag]
+                         + age_effect_scale_dev * gamma_age_dev_raw[k][ag];
     }
   }
   
@@ -362,27 +368,16 @@ transformed parameters {
                                * abroad_age_prop[t,  : ];
   }
   
-  // Expected diagnoses by (t, a, y) and latent state (1..4) plus AIDS (5)
-  array[nquar, nage, 2] row_vector<lower=0>[5] exp_diag;
+  // Expected diagnoses by (t, a, y) and latent state (1..4) plus AIDS (5).
+  // exp_diag itself is local below (not saved as a draw)
   array[nquar, nage, 2] real<lower=0> exp_HIV_dx;
   array[nquar, nage, 2] real<lower=0> exp_AIDS_dx;
   array[nquar, nage, 2] simplex[4] exp_p;
-  array[nyear, 4] vector<lower=0>[4]
-    exp_recent_arrival_cd4 = rep_array(empty_vec1,
-                                      nyear, 4);
   array[nyear, 4] simplex[4] recent_arrival_cd4_p;
   
-  // Initialize expected diagnoses
-  exp_diag = rep_array(empty_vec, nquar, nage, 2);
-  for (t in 1 : nquar) {
-    for (a in 1 : nage) {
-      for (y in 1 : 2) {
-        exp_HIV_dx[t, a, y] = 0;
-        exp_AIDS_dx[t, a, y] = 0;
-        exp_p[t, a, y] = rep_vector(0.25, 4);
-      }
-    }
-  }
+  {
+  array[nquar, nage, 2] row_vector[5] exp_diag
+    = rep_array(empty_vec, nquar, nage, 2);
   
   // Main forward calculation: for each entry time (t0) and entry age (a0),
   // propagate diagnosis and progression forward with ageing in diagnosis probabilities.
@@ -511,8 +506,47 @@ transformed parameters {
     }
   }
 
+  // Expected HIV and AIDS diagnoses and CD4 proportions
+  for (t in 1 : nquar) {
+    for (a in 1 : nage) {
+      for (y in 1 : 2) {
+        real hiv_dx = sum(exp_diag[t, a, y, 1 : 4]);
+        real aids_dx = exp_diag[t, a, y, 5];
+        
+        // Add misclassified abroad diagnoses to migrant HIV totals only
+        if (y == 2) {
+          hiv_dx += misclassified_dx[t, a];
+        }
+        
+        exp_HIV_dx[t, a, y] = hiv_dx;
+        exp_AIDS_dx[t, a, y] = aids_dx;
+        
+        // CD4 composition: include misclassified arrivals for migrants,
+        // proportional to m[1:4] (their latent-state distribution at arrival).
+        // Without this, the multinomial likelihood for each of nquar*nage migrant
+        // cells independently pushes detect_prob->99% to eliminate the mismatch.
+        {
+          vector[4] raw_p = to_vector(exp_diag[t, a, y, 1 : 4]) + 1e-12;
+          if (y == 2 && misclassified_dx[t, a] > 1e-10) {
+            real total_lat = sum(m[1 : 4, t]);
+            vector[4] m_lat = (total_lat > 1e-10) ? m[1 : 4, t] / total_lat
+                              : rep_vector(0.25, 4);
+            raw_p += misclassified_dx[t, a] * m_lat;
+          }
+          real total_p = sum(raw_p);
+          exp_p[t, a, y] = (total_p > 1e-10) ? raw_p / total_p
+                           : rep_vector(0.25, 4);
+        }
+      }
+    }
+  }
+  }
+  
   // Diagnoses from infections present on arrival, limited to the diagnosis
-  // calendar year and the preceding arrival year.
+  // calendar year and the preceding arrival year
+  {
+  array[nyear, 4] vector[4] exp_recent_arrival_cd4
+    = rep_array(empty_vec1, nyear, 4);
   for (t0 in 1 : nquar) {
     int arrival_year = year_index[t0] + 1;
     int last_t = min(nquar, 4 * (arrival_year + 1));
@@ -555,40 +589,6 @@ transformed parameters {
       recent_arrival_cd4_p[year, ag] = raw_p / sum(raw_p);
     }
   }
-  
-  // Expected HIV and AIDS diagnoses and CD4 proportions
-  for (t in 1 : nquar) {
-    for (a in 1 : nage) {
-      for (y in 1 : 2) {
-        real hiv_dx = sum(exp_diag[t, a, y, 1 : 4]);
-        real aids_dx = exp_diag[t, a, y, 5];
-        
-        // Add misclassified abroad diagnoses to migrant HIV totals only
-        if (y == 2) {
-          hiv_dx += misclassified_dx[t, a];
-        }
-        
-        exp_HIV_dx[t, a, y] = hiv_dx;
-        exp_AIDS_dx[t, a, y] = aids_dx;
-        
-        // CD4 composition: include misclassified arrivals for migrants,
-        // proportional to m[1:4] (their latent-state distribution at arrival).
-        // Without this, the multinomial likelihood for each of nquar*nage migrant
-        // cells independently pushes detect_prob->99% to eliminate the mismatch.
-        {
-          vector[4] raw_p = to_vector(exp_diag[t, a, y, 1 : 4]) + 1e-12;
-          if (y == 2 && misclassified_dx[t, a] > 1e-10) {
-            real total_lat = sum(m[1 : 4, t]);
-            vector[4] m_lat = (total_lat > 1e-10) ? m[1 : 4, t] / total_lat
-                              : rep_vector(0.25, 4);
-            raw_p += misclassified_dx[t, a] * m_lat;
-          }
-          real total_p = sum(raw_p);
-          exp_p[t, a, y] = (total_p > 1e-10) ? raw_p / total_p
-                           : rep_vector(0.25, 4);
-        }
-      }
-    }
   }
 }
 model {
@@ -641,10 +641,14 @@ model {
   // placing almost no mass below 0.5 and ruling out the RW1 boundary at 1.
   rho_diag ~ beta(7, 2);
   
+  gamma_age_shared_raw ~ std_normal();
+  sigma_age_shared ~ normal(0, 0.5);
   for (k in 1 : 4) {
-    gamma_age_raw[k] ~ std_normal();
+    gamma_age_dev_raw[k] ~ std_normal();
   }
-  sigma_age ~ normal(0, 0.5);
+  // Tighter than sigma_age_shared: state-specific age deviations are expected
+  // to be smaller than the shared age effect
+  sigma_age_dev ~ normal(0, 0.2);
 
   alpha_diag_mig ~ normal(0, 0.5);
   
