@@ -521,7 +521,11 @@ confirm_stan_data <- function(stan_data) {
           all(is.finite(stan_data$recent_arrival_cd4)) &&
           all(stan_data$recent_arrival_cd4 >= 0) &&
           all(stan_data$recent_arrival_cd4 ==
-                as.integer(stan_data$recent_arrival_cd4))
+                as.integer(stan_data$recent_arrival_cd4)),
+        "abroad_group_weight must be a single non-negative number" =
+          length(stan_data$abroad_group_weight) == 1L &&
+          is.finite(stan_data$abroad_group_weight) &&
+          stan_data$abroad_group_weight >= 0
       )
     }
   } else if (stan_data$model_config$age) {
@@ -929,6 +933,14 @@ model_type_prep <- function(
           0L,
           dim = c(stan_data$nyear, 4L, 4L)
         )
+      }
+      # Puts ABROAD_group's direct age signal on comparable footing with the
+      # much larger migrant HIV_age/CD4_age likelihood sharing the same
+      # age-composition parameter, rather than requiring a manually-chosen
+      # weight.
+      if (is.null(stan_data$abroad_group_weight)) {
+        stan_data$abroad_group_weight <-
+          sum(stan_data$HIV_age[, , 2]) / sum(stan_data$ABROAD_group)
       }
     }
   }

@@ -14,6 +14,14 @@ data {
   array[nquar] int<lower=0> ABROAD;           // quarterly total detected abroad diagnoses
   array[nquar, 4] int<lower=0> ABROAD_group;  // grouped by diagnosis age group
 
+  // Replication weight on the ABROAD_group multinomial likelihood, relative to
+  // its (legitimate but currently distorting) influence via the much larger
+  // migrant HIV_age/CD4_age likelihood on the same age-composition parameter.
+  // Defaults to sum(HIV_age[,,2]) / sum(ABROAD_group) in model_type_prep(),
+  // putting ABROAD_group's direct, clean age signal on comparable footing
+  // with the competing pathway's total count. 1 = no reweighting.
+  real<lower=0> abroad_group_weight;
+
   // Annual CD4 counts among diagnoses within two recorded arrival years
   int<lower=1> nyear;
   array[nyear, 4, 4] int<lower=0> recent_arrival_cd4;
@@ -613,7 +621,9 @@ model {
   alpha_abroad_age ~ normal(0, 1.5);
   beta_abroad_age ~ std_normal();
   for (t in 1 : nquar) {
-    ABROAD_group[t] ~ multinomial(to_vector(abroad_age_group_prop[t,  : ]));
+    target += abroad_group_weight
+              * multinomial_lpmf(ABROAD_group[t]
+                                 | to_vector(abroad_age_group_prop[t,  : ]));
   }
   
   // Diagnosis priors — centred on midpoints of observed empirical ranges.
@@ -744,9 +754,10 @@ generated quantities {
   
   for (t in 1 : nquar) {
     log_lik_abroad[t] = poisson_lpmf(ABROAD[t] | exp_ABROAD_dx[t])
-                        + multinomial_lpmf(ABROAD_group[t]
-                                           | to_vector(
-                                              abroad_age_group_prop[t,  : ]));
+                        + abroad_group_weight
+                          * multinomial_lpmf(ABROAD_group[t]
+                                             | to_vector(
+                                                abroad_age_group_prop[t,  : ]));
     
     for (y in 1 : 2) {
       for (a in 1 : nage) {
