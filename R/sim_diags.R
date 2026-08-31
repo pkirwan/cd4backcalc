@@ -322,11 +322,9 @@ define_simulation_type <- function(config, sim_type = "constant") {
       config$age_diag_effect <- 0.5
     }
     if (config$migration) {
-      if (config$rita) {
-        config$mig_diag_offset <- c(-0.5, -0.5, -0.25, -0.2, -0.1)
-      } else {
-        config$mig_diag_offset <- c(-0.5, -0.25, -0.2, -0.1)
-      }
+      # State-invariant offset: the model's alpha_diag_mig is a single scalar
+      # shared across CD4 states, so the truth must be too.
+      config$mig_diag_offset <- rep(-0.25, if (config$rita) 5 else 4)
     }
   } else if (sim_type == "combo_4") {
     config$h_pattern <- "varying_2"
@@ -339,11 +337,9 @@ define_simulation_type <- function(config, sim_type = "constant") {
       config$age_diag_effect <- 0.5
     }
     if (config$migration) {
-      if (config$rita) {
-        config$mig_diag_offset <- c(-0.5, -0.5, -0.25, -0.2, -0.1)
-      } else {
-        config$mig_diag_offset <- c(-0.5, -0.25, -0.2, -0.1)
-      }
+      # State-invariant offset: the model's alpha_diag_mig is a single scalar
+      # shared across CD4 states, so the truth must be too.
+      config$mig_diag_offset <- rep(-0.25, if (config$rita) 5 else 4)
     }
   }
 
