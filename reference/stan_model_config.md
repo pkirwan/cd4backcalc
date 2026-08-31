@@ -12,7 +12,8 @@ stan_model_config(
   age = FALSE,
   inf_model = 1,
   diag_model = 1,
-  model_seed = NULL
+  model_seed = NULL,
+  reduced_migration = FALSE
 )
 ```
 
@@ -41,6 +42,11 @@ stan_model_config(
 - model_seed:
 
   Seed for model fitting.
+
+- reduced_migration:
+
+  Logical indicating whether to use the reduced age-dependent migration
+  model.
 
 ## Value
 

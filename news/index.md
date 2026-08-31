@@ -1,5 +1,23 @@
 # Changelog
 
+## Changes in v0.1.5
+
+#### Improvements
+
+- This version of the package implements a simplified age-dependent
+  migration Stan model, to overcome identifiability issues with the more
+  complex models.
+- New simulation option `recent_arrival_cd4_completeness` controls the
+  number of recent arrivals with CD4 data available for fitting the
+  reduced model.
+- New simulation option `m_pattern="reduced"` chooses the simplified
+  migration pattern, which may be adopted for future releases.
+
+#### Bug fixes
+
+- Addressed a rounding issue in the construction of ABROAD_age_mat in
+  simulated data.
+
 ## Changes in v0.1.4
 
 #### Improvements

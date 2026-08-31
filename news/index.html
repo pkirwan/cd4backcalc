@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,9 +36,22 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.4/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.5/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.5" id="changes-in-v015">Changes in v0.1.5<a class="anchor" aria-label="anchor" href="#changes-in-v015"></a></h2>
+<div class="section level4">
+<h4 id="improvements-0-1-5">Improvements<a class="anchor" aria-label="anchor" href="#improvements-0-1-5"></a></h4>
+<ul><li>This version of the package implements a simplified age-dependent migration Stan model, to overcome identifiability issues with the more complex models.</li>
+<li>New simulation option <code>recent_arrival_cd4_completeness</code> controls the number of recent arrivals with CD4 data available for fitting the reduced model.</li>
+<li>New simulation option <code>m_pattern="reduced"</code> chooses the simplified migration pattern, which may be adopted for future releases.</li>
+</ul></div>
+<div class="section level4">
+<h4 id="bug-fixes-0-1-5">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-0-1-5"></a></h4>
+<ul><li>Addressed a rounding issue in the construction of ABROAD_age_mat in simulated data.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.4" id="changes-in-v014">Changes in v0.1.4<a class="anchor" aria-label="anchor" href="#changes-in-v014"></a></h2>
 <div class="section level4">

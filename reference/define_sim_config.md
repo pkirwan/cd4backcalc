@@ -40,7 +40,8 @@ define_sim_config(
   abroad_age_trend = 0,
   detect_step_quarter = NULL,
   detect_step_size = 0,
-  gamma_obs_scale_trend = 0
+  gamma_obs_scale_trend = 0,
+  recent_arrival_cd4_completeness = 0
 )
 ```
 
@@ -67,7 +68,8 @@ define_sim_config(
 
 - m_pattern:
 
-  Pattern type for mu ("constant", "differing", "varying").
+  Pattern type for mu ("constant", "differing", "varying", or
+  "reduced").
 
 - r_pattern:
 
@@ -192,6 +194,11 @@ define_sim_config(
 
   Total log-scale change (start to end) in the HIV-positive share of the
   external migration index (gamma_obs_scale); 0 = constant share.
+
+- recent_arrival_cd4_completeness:
+
+  Proportion of eligible diagnoses with observed recent-arrival CD4
+  data. Set to 0 to disable.
 
 ## Value
 

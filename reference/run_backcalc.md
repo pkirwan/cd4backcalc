@@ -27,7 +27,8 @@ run_backcalc(
   return_fit = TRUE,
   checkpoint_dir = NULL,
   iter_per_chunk = NULL,
-  init = NULL
+  init = NULL,
+  reduced_migration = FALSE
 )
 ```
 
@@ -121,6 +122,11 @@ run_backcalc(
   when starting a new run; resumed checkpointed fits use the saved
   checkpoint state.
 
+- reduced_migration:
+
+  Logical indicating whether to use the reduced age-dependent migration
+  model.
+
 ## Value
 
 List of posterior predictive quantities and (optionally) the stanfit
@@ -133,7 +139,7 @@ sim_diags <- simulate_diagnoses(sim_seed = 123)
 hiv_list <- run_backcalc(
  sim_diags, iter_warmup = 10, iter_sampling = 10, chains = 1, messages = FALSE, nworkers = 1
 )
-#> CmdStan model cache dir: /tmp/Rtmp4bB2Ib/cd4backcalc-cmdstan
-#> R tempdir(): /tmp/Rtmp4bB2Ib
+#> CmdStan model cache dir: /tmp/RtmpRvjJzb/cd4backcalc-cmdstan
+#> R tempdir(): /tmp/RtmpRvjJzb
 #> Error: CmdStan path has not been set yet. See ?set_cmdstan_path.
 ```

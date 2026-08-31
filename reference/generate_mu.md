@@ -20,7 +20,8 @@ generate_mu(nquar, nlatst, pattern, dist = FALSE)
 
 - pattern:
 
-  Pattern type for mu ("constant", "differing", "varying").
+  Pattern type for mu ("constant", "differing", "varying", or
+  "reduced").
 
 - dist:
 
