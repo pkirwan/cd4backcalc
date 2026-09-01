@@ -83,7 +83,7 @@ The number of latent and diagnosis states will be inferred from the simulation s
 <span>  detect_step_quarter <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  detect_step_size <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  gamma_obs_scale_trend <span class="op">=</span> <span class="fl">0</span>,</span>
-<span>  recent_arrival_cd4_completeness <span class="op">=</span> <span class="fl">0</span></span>
+<span>  recent_arrival_completeness <span class="op">=</span> <span class="fl">0</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -236,9 +236,12 @@ HIV-positive share of the external migration index (gamma_obs_scale);
 0 = constant share.</p></dd>
 
 
-<dt id="arg-recent-arrival-cd-completeness">recent_arrival_cd4_completeness<a class="anchor" aria-label="anchor" href="#arg-recent-arrival-cd-completeness"></a></dt>
+<dt id="arg-recent-arrival-completeness">recent_arrival_completeness<a class="anchor" aria-label="anchor" href="#arg-recent-arrival-completeness"></a></dt>
 <dd><p>Proportion of eligible diagnoses with
-observed recent-arrival CD4 data. Set to 0 to disable.</p></dd>
+avidity testing done and a recorded year of arrival. Combined
+multiplicatively with <code>cd4_completeness</code> (a recorded CD4 value is
+also required) to give the overall completeness of the recent-arrival
+CD4 auxiliary data. Set to 0 to disable.</p></dd>
 
 </dl></div>
     <div class="section level2">

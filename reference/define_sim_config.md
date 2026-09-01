@@ -41,7 +41,7 @@ define_sim_config(
   detect_step_quarter = NULL,
   detect_step_size = 0,
   gamma_obs_scale_trend = 0,
-  recent_arrival_cd4_completeness = 0
+  recent_arrival_completeness = 0
 )
 ```
 
@@ -195,10 +195,13 @@ define_sim_config(
   Total log-scale change (start to end) in the HIV-positive share of the
   external migration index (gamma_obs_scale); 0 = constant share.
 
-- recent_arrival_cd4_completeness:
+- recent_arrival_completeness:
 
-  Proportion of eligible diagnoses with observed recent-arrival CD4
-  data. Set to 0 to disable.
+  Proportion of eligible diagnoses with avidity testing done and a
+  recorded year of arrival. Combined multiplicatively with
+  `cd4_completeness` (a recorded CD4 value is also required) to give the
+  overall completeness of the recent-arrival CD4 auxiliary data. Set to
+  0 to disable.
 
 ## Value
 
