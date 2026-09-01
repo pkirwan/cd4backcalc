@@ -102,7 +102,7 @@ test_that("reduced model preparation defaults missing recent-arrival data", {
   sim_diags$stan_data$nyear <- NULL
   sim_diags$stan_data$recent_arrival_cd4 <- NULL
 
-  stan_data <- model_type_prep(sim_diags, reduced_migration = TRUE)
+  stan_data <- model_type_prep(sim_diags)
 
   expect_equal(stan_data$nyear, 5L)
   expect_equal(stan_data$recent_arrival_cd4, array(0L, c(5L, 4L, 4L)))

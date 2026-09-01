@@ -1,4 +1,7 @@
-// Age-dependent tensor product model including migration and RITA state
+// Age-dependent tensor product model with migration flows and RITA state.
+// Same data contract and migration parameterisation as AD_ptens_migration.stan,
+// plus the 7-state recent/non-recent structure and false recency rate from
+// AD_ptens_rita.stan.
 
 data {
   int<lower=1> nquar; // number of quarters
@@ -6,62 +9,67 @@ data {
   
   // Observations by quarter, age, and country-of-birth group
   // y = 1: UK-born, y = 2: born abroad
-  array[nquar, nage, 2] int<lower=0> HIV_age;
-  array[nquar, nage, 2] int<lower=0> AIDS_age;
-  array[nquar, nage, 2, 5] int<lower=0> CD4_age;
+  array[nquar, nage, 2] int<lower=0> HIV_age; // new HIV diagnoses
+  array[nquar, nage, 2] int<lower=0> AIDS_age; // new AIDS diagnoses
+  array[nquar, nage, 2, 5] int<lower=0> CD4_age; // recent + CD4 categories among HIV diagnoses
   
   // Previous diagnoses abroad, as quarterly totals and four age groups
   array[nquar] int<lower=0> ABROAD;           // quarterly total detected abroad diagnoses
   array[nquar, 4] int<lower=0> ABROAD_group;  // grouped by diagnosis age group
+
+  // Replication weight on ABROAD_group's multinomial likelihood, offsetting its
+  // otherwise small influence vs. the much larger migrant HIV_age/CD4_age
+  // likelihood on the same age-composition parameter. Default (set in
+  // model_type_prep()): sum(HIV_age[,,2]) / sum(ABROAD_group). 1 = no reweighting.
+  real<lower=0> abroad_group_weight;
+
+  // Annual CD4 counts among diagnoses within two recorded arrival years
+  int<lower=1> nyear;
+  array[nyear, 4, 4] int<lower=0> recent_arrival_cd4;
   
-  // Progression probabilities by age at entry
+  // Progression by age at acquisition or arrival
   matrix<lower=0, upper=1>[4, nage] q_age;
   
   // Initial prevalence at t = 1 by age and latent RITA state (1..7)
   matrix<lower=0>[7, nage] init_prev_age;
   matrix<lower=0>[7, nage] init_prev_abroad_age;
   
-  // Infection spline (tensor product)
+  // Infection spline (tensor product, as in AD_ptens)
   int<lower=1> npars_inf;
   matrix[nquar * nage, npars_inf] X_inf;
   matrix[npars_inf - 1, 2 * npars_inf - 2] S1;
   
   // Diagnosis process
   
-  // Migration splines
+  // Migration design matrices
   int<lower=1> npars_mig;
   int<lower=1> npars_cob;
-  int<lower=1> npars_mp;
   matrix[nquar, npars_mig] X_mig;
   matrix[nquar, npars_cob] X_cob;
-  matrix[nquar, npars_mp] X_mp;
   
   // External evidence for the log born-abroad:UK-born UK-acquired ratio
   vector[nquar] eta_mean;
   real<lower=0> eta_sd;
   
-  // External data-linkage estimates of detection probability (on logit scale).
-  // Observations can be sparse, e.g. occasional linkage studies.
+  // External data-linkage estimates of detection probability (logit scale, can be sparse)
   int<lower=0> n_detect_obs;
   array[n_detect_obs] int<lower=1, upper=nquar> detect_obs_index;
   vector[n_detect_obs] detect_logit_obs;
   real<lower=0> detect_obs_sd;
   
-  // Quarters at which ascertainment of a previous diagnosis abroad steps up or
-  // down, e.g. a surveillance reporting change
+  // Quarters where abroad-diagnosis ascertainment steps up/down (e.g. reporting change)
   int<lower=0> n_detect_steps;
   array[n_detect_steps] int<lower=2, upper=nquar> detect_step_quarter;
   
-  // Independent rolling-annual migration index on the log scale. Complete
-  // gamma_obs_group rows use grouped data; negative rows use gamma_obs.
-  // gamma_obs_sd = 0 disables this likelihood.
+  // Independent rolling-annual migration index (log scale). Complete
+  // gamma_obs_group rows use grouped data, else gamma_obs; sd=0 disables this likelihood
   vector[nquar] gamma_obs;
   matrix[nquar, 4] gamma_obs_group;
   real<lower=0> gamma_obs_sd;
   // Quarter-to-quarter drift allowed in log(HIV-positive migration)
   real<lower=0> gamma_obs_drift_sd;
-  // Prior sd for the linear trend in log(HIV-positive migration); tighten
-  // toward 0 when the expected drift over the study period is small
+  // Prior sd for the linear trend in log(HIV-positive migration); tighten toward
+  // 0 if little drift is expected over the study period
   real<lower=0> gamma_obs_slope_sd;
 }
 transformed data {
@@ -69,12 +77,7 @@ transformed data {
   vector[7] empty_vec1 = rep_vector(0, 7);
   vector[npars_inf - 1] zero_vec = rep_vector(0, npars_inf - 1);
   
-  int nagroup = 4;
   int np1 = npars_inf - 1;
-  // Baseline prior proportions: four CD4 states followed by transfers.
-  vector[4] alpha_mp_prior_mean = [logit(0.30), log(0.20 / 0.10),
-                                    log(0.20 / 0.10), log(0.20 / 0.10)]';
-  
   // Pre-split penalty matrices (symmetrized to avoid fp noise)
   matrix[np1, np1] S1a = 0.5 * (S1[1 : np1, 1 : np1] + S1[1 : np1, 1 : np1]');
   matrix[np1, np1] S1b = 0.5
@@ -89,6 +92,9 @@ transformed data {
   for (t in 1 : nquar) {
     year_index[t] = (t - 1) %/% 4;
     t_std[t] = (t - 0.5 * (nquar + 1)) / nquar;
+  }
+  if (nyear != nquar %/% 4) {
+    reject("nyear must equal nquar / 4");
   }
   
   // age 1-10 -> 1, 11-20 -> 2, 21-30 -> 3, 31+ -> 4
@@ -128,21 +134,21 @@ parameters {
   vector[npars_inf] beta_inf;
   vector<lower=0>[2] sigma_inf;
   
-  // Migration process
-  vector[npars_mig] beta_mig_raw;
-  real log_sigma_mig;
+  // Separate undiagnosed and previously diagnosed migration flows
+  vector[npars_mig] beta_undiag_mig_raw;
+  vector[npars_mig] beta_transfer_raw;
+  real log_sigma_undiag_mig;
+  real log_sigma_transfer;
   // Offset leaves the level of omega unidentified by the external index
   real gamma_obs_offset;
   real gamma_obs_slope;
   vector[nquar - 1] gamma_obs_drift_raw;
-  // Pre-study quarters complete the first rolling-annual observations
-  vector[3] gamma_pre;
-  
+
   // Age composition of the born-abroad inflow on the 4 diagnosis age groups,
   // as a softmax with a linear time trend (reference group = 45+).
   vector[3] alpha_abroad_age;
   vector[3] beta_abroad_age;
-  // Diagnosis probability parameters (AR(1))
+  // Diagnosis probability parameters (AR(1)): 1 recent + 4 non-recent CD4 states
   vector[nquar] delta_raw_1;
   vector[nquar] delta_raw_2;
   vector[nquar] delta_raw_3;
@@ -156,9 +162,13 @@ parameters {
   real alpha_diag_3;
   real alpha_diag_4;
   real alpha_diag_5;
-  array[5] sum_to_zero_vector[4] gamma_age_raw;
-  real<lower=0> sigma_age; // shared shrinkage for age effects
-  vector[5] alpha_diag_mig; // born-abroad diagnosis offset by state
+  // Age effect on diagnosis probability: a profile shared across the 5
+  // diagnosis states, plus small state-specific deviations
+  sum_to_zero_vector[4] gamma_age_shared_raw;
+  real<lower=0> sigma_age_shared;
+  array[5] sum_to_zero_vector[4] gamma_age_dev_raw;
+  real<lower=0> sigma_age_dev;
+  real alpha_diag_mig; // shared born-abroad diagnosis offset
   
   // Born-abroad:UK-born ratio of UK-acquired incidence
   vector[npars_cob] beta_cob_raw;
@@ -166,23 +176,15 @@ parameters {
   real alpha_cob;
   real<lower=0, upper=0.9> rho_eta;
   
-  // Probability of migration into each compartment (1..5)
-  vector[4] alpha_mp;
-  real beta_mp_5;
-  vector[npars_mp] beta_mp_1_raw;
-  vector[npars_mp] beta_mp_2_raw;
-  vector[npars_mp] beta_mp_3_raw;
-  real<lower=0> sigma_mp_1;
-  real<lower=0> sigma_mp_2;
-  real<lower=0> sigma_mp_3;
+  // Time-constant CD4 composition among undiagnosed arrivals
+  simplex[4] undiag_cd4_prop;
   
   // Misclassification of abroad diagnoses
   real alpha_detect;
   real beta_detect_slope;
   vector[n_detect_steps] delta_detect;
   
-  // AR(1) coefficient shared across diagnosis-probability walks.
-  // Constrained to (0, 1) so the process is mean-reverting but persistent.
+  // AR(1) coefficient shared across diagnosis-probability walks; (0,1) is mean-reverting
   real<lower=0, upper=1> rho_diag;
   
   // False recency rate
@@ -193,26 +195,35 @@ transformed parameters {
   vector[nquar * nage] lambda = X_inf * beta_inf;
   vector<lower=0>[nquar * nage] h = exp(lambda);
   
-  // False recency rate
-  real<lower=0, upper=1> frr = inv_logit(logit_frr);
-  
   // Tensor product prior precision
   vector<lower=0>[2] tau = inv(square(sigma_inf));
   
-  // Migration process (non-centred spline)
-  real<lower=0> sigma_mig = exp(log_sigma_mig);
-  vector[npars_mig] beta_mig;
-  beta_mig[1] = beta_mig_raw[1];
-  beta_mig[2 : npars_mig] = beta_mig_raw[2 : npars_mig] * sigma_mig;
-  vector[nquar] gamma = X_mig * beta_mig;
-  vector<lower=0>[nquar] omega = exp(gamma);
-  vector<lower=0>[3] omega_pre = exp(gamma_pre);
+  // False recency rate
+  real<lower=0, upper=1> frr = inv_logit(logit_frr);
   
-  // Rolling 4-quarter (annual) aggregation of omega on the log scale, matching
-  // the quarterly rolling-annual external migration index. gamma_agg[t] is the
-  // log of the migration volume over the four quarters ending at t. For t=1:3,
-  // the window is completed with omega_pre, representing the three quarters
-  // immediately before the surveillance window.
+  // Separate non-centred splines for undiagnosed arrivals vs transfers;
+  // omega and m are retained as derived compatibility outputs.
+  real<lower=0> sigma_undiag_mig = exp(log_sigma_undiag_mig);
+  real<lower=0> sigma_transfer = exp(log_sigma_transfer);
+  vector[npars_mig] beta_undiag_mig;
+  vector[npars_mig] beta_transfer;
+  beta_undiag_mig[1] = beta_undiag_mig_raw[1];
+  beta_transfer[1] = beta_transfer_raw[1];
+  beta_undiag_mig[2 : npars_mig]
+    = beta_undiag_mig_raw[2 : npars_mig] * sigma_undiag_mig;
+  beta_transfer[2 : npars_mig]
+    = beta_transfer_raw[2 : npars_mig] * sigma_transfer;
+  vector[nquar] gamma_undiag_mig = X_mig * beta_undiag_mig;
+  vector[nquar] gamma_transfer = X_mig * beta_transfer;
+  vector<lower=0>[nquar] undiag_migration = exp(gamma_undiag_mig);
+  vector<lower=0>[nquar] transfers = exp(gamma_transfer);
+  vector<lower=0>[nquar] omega = undiag_migration + transfers;
+  vector[nquar] gamma = log(omega);
+  vector<lower=0>[3] omega_pre = rep_vector(omega[1], 3);
+  
+  // Rolling 4-quarter aggregation of omega (log scale), matching the quarterly
+  // rolling-annual external migration index. For t=1:3, the window is completed
+  // with omega_pre (the three quarters preceding the surveillance window).
   vector[nquar] gamma_agg;
   {
     real running = sum(omega_pre);
@@ -230,7 +241,7 @@ transformed parameters {
   }
   
   // Offset between the external all-cause migration index and log(omega), i.e.
-  // the log HIV prevalence of the inflow: level, long-run trend, and drift.
+  // the log HIV prevalence of the inflow: level, trend, and drift.
   vector[nquar] gamma_obs_offset_t;
   {
     real drift = 0;
@@ -243,9 +254,9 @@ transformed parameters {
     }
   }
   
-  // Age distribution used for allocating born-abroad flows by age. The
-  // group-level composition is expanded uniformly within each decade band by
-  // dividing by age_group_size, ensuring the per-age values sum to 1.
+  // Age distribution for allocating born-abroad flows by age; group-level
+  // composition is expanded uniformly within each decade band (divide by
+  // age_group_size) so per-age values sum to 1.
   matrix<lower=0, upper=1>[nquar, 4] abroad_age_group_prop;
   matrix<lower=0, upper=1>[nquar, nage] abroad_age_prop;
   matrix[nquar, 4] gamma_agg_group;
@@ -274,38 +285,47 @@ transformed parameters {
   vector[nquar] delta_3;
   vector[nquar] delta_4;
   vector[nquar] delta_5;
-  // AR(1) non-centred parameterisation.
-  // t = 1: initial condition drawn from stationary distribution
-  //   (variance = step_variance / (1 - rho^2)).
-  // t > 1: mean reversion toward alpha_diag_k prevents endpoint drift.
+  // AR(1), non-centred: t=1 draws from stationary dist, t>1 mean-reverts to alpha_diag_k
   real inv_stationary = inv_sqrt(1 - square(rho_diag));
-  delta_1[1] = alpha_diag_1 + sqrt(vardelta[1]) * inv_stationary * delta_raw_1[1];
-  delta_2[1] = alpha_diag_2 + sqrt(vardelta[2]) * inv_stationary * delta_raw_2[1];
-  delta_3[1] = alpha_diag_3 + sqrt(vardelta[3]) * inv_stationary * delta_raw_3[1];
-  delta_4[1] = alpha_diag_4 + sqrt(vardelta[4]) * inv_stationary * delta_raw_4[1];
-  delta_5[1] = alpha_diag_5 + sqrt(vardelta[5]) * inv_stationary * delta_raw_5[1];
+  delta_1[1] = alpha_diag_1
+               + sqrt(vardelta[1]) * inv_stationary * delta_raw_1[1];
+  delta_2[1] = alpha_diag_2
+               + sqrt(vardelta[2]) * inv_stationary * delta_raw_2[1];
+  delta_3[1] = alpha_diag_3
+               + sqrt(vardelta[3]) * inv_stationary * delta_raw_3[1];
+  delta_4[1] = alpha_diag_4
+               + sqrt(vardelta[4]) * inv_stationary * delta_raw_4[1];
+  delta_5[1] = alpha_diag_5
+               + sqrt(vardelta[5]) * inv_stationary * delta_raw_5[1];
   for (t in 2 : nquar) {
-    delta_1[t] = alpha_diag_1 + rho_diag * (delta_1[t - 1] - alpha_diag_1) + sqrt(vardelta[1]) * delta_raw_1[t];
-    delta_2[t] = alpha_diag_2 + rho_diag * (delta_2[t - 1] - alpha_diag_2) + sqrt(vardelta[2]) * delta_raw_2[t];
-    delta_3[t] = alpha_diag_3 + rho_diag * (delta_3[t - 1] - alpha_diag_3) + sqrt(vardelta[3]) * delta_raw_3[t];
-    delta_4[t] = alpha_diag_4 + rho_diag * (delta_4[t - 1] - alpha_diag_4) + sqrt(vardelta[4]) * delta_raw_4[t];
-    delta_5[t] = alpha_diag_5 + rho_diag * (delta_5[t - 1] - alpha_diag_5) + sqrt(vardelta[5]) * delta_raw_5[t];
+    delta_1[t] = alpha_diag_1 + rho_diag * (delta_1[t - 1] - alpha_diag_1)
+                 + sqrt(vardelta[1]) * delta_raw_1[t];
+    delta_2[t] = alpha_diag_2 + rho_diag * (delta_2[t - 1] - alpha_diag_2)
+                 + sqrt(vardelta[2]) * delta_raw_2[t];
+    delta_3[t] = alpha_diag_3 + rho_diag * (delta_3[t - 1] - alpha_diag_3)
+                 + sqrt(vardelta[3]) * delta_raw_3[t];
+    delta_4[t] = alpha_diag_4 + rho_diag * (delta_4[t - 1] - alpha_diag_4)
+                 + sqrt(vardelta[4]) * delta_raw_4[t];
+    delta_5[t] = alpha_diag_5 + rho_diag * (delta_5[t - 1] - alpha_diag_5)
+                 + sqrt(vardelta[5]) * delta_raw_5[t];
   }
   
-  // Built-in zero-sum age effects by diagnosis state.
-  // The sqrt(4 / 3) factor corrects the constrained-vector variance so each
-  // age effect has marginal SD sigma_age rather than sigma_age * sqrt(3 / 4).
+  // Age effect on diagnosis probability = shared[ag] + deviation[ag,k]
+  // (partial pooling across the 5 diagnosis states). sqrt(4/3) corrects
+  // sum-to-zero variance so each component's marginal SD equals its sigma.
   matrix[4, 5] gamma_age;
-  real age_effect_scale = sigma_age * sqrt(4.0 / 3.0);
+  real age_effect_scale_shared = sigma_age_shared * sqrt(4.0 / 3.0);
+  real age_effect_scale_dev = sigma_age_dev * sqrt(4.0 / 3.0);
+  vector[4] gamma_age_shared = age_effect_scale_shared * gamma_age_shared_raw;
   for (k in 1 : 5) {
     for (ag in 1 : 4) {
-      gamma_age[ag, k] = age_effect_scale * gamma_age_raw[k][ag];
+      gamma_age[ag, k] = gamma_age_shared[ag]
+                         + age_effect_scale_dev * gamma_age_dev_raw[k][ag];
     }
   }
   
-  // Diagnosis probabilities by age group (ag), state (k), and time (t).
-  // Stored as matrix[nquar, 5] so the inner time-loop accesses column k,
-  // which is contiguous in column-major memory (cache-friendly).
+  // Diagnosis probabilities by age group, state, and time; stored as
+  // matrix[nquar, 5] so column k is contiguous (cache-friendly).
   // d_nat: UK-born; d_mig: born abroad (adds a state-specific offset).
   array[4] matrix<lower=0, upper=1>[nquar, 5] d_nat;
   array[4] matrix<lower=0, upper=1>[nquar, 5] d_mig;
@@ -315,11 +335,21 @@ transformed parameters {
     d_nat[ag,  : , 3] = inv_logit(delta_3 + gamma_age[ag, 3]);
     d_nat[ag,  : , 4] = inv_logit(delta_4 + gamma_age[ag, 4]);
     d_nat[ag,  : , 5] = inv_logit(delta_5 + gamma_age[ag, 5]);
-    d_mig[ag,  : , 1] = inv_logit(delta_1 + gamma_age[ag, 1] + alpha_diag_mig[1]);
-    d_mig[ag,  : , 2] = inv_logit(delta_2 + gamma_age[ag, 2] + alpha_diag_mig[2]);
-    d_mig[ag,  : , 3] = inv_logit(delta_3 + gamma_age[ag, 3] + alpha_diag_mig[3]);
-    d_mig[ag,  : , 4] = inv_logit(delta_4 + gamma_age[ag, 4] + alpha_diag_mig[4]);
-    d_mig[ag,  : , 5] = inv_logit(delta_5 + gamma_age[ag, 5] + alpha_diag_mig[5]);
+    d_mig[ag,  : , 1] = inv_logit(
+                                  delta_1 + gamma_age[ag, 1]
+                                  + alpha_diag_mig);
+    d_mig[ag,  : , 2] = inv_logit(
+                                  delta_2 + gamma_age[ag, 2]
+                                  + alpha_diag_mig);
+    d_mig[ag,  : , 3] = inv_logit(
+                                  delta_3 + gamma_age[ag, 3]
+                                  + alpha_diag_mig);
+    d_mig[ag,  : , 4] = inv_logit(
+                                  delta_4 + gamma_age[ag, 4]
+                                  + alpha_diag_mig);
+    d_mig[ag,  : , 5] = inv_logit(
+                                  delta_5 + gamma_age[ag, 5]
+                                  + alpha_diag_mig);
   }
   
   // Born-abroad:UK-born ratio of UK-acquired incidence (non-centred spline)
@@ -329,90 +359,55 @@ transformed parameters {
   vector[nquar] eta = alpha_cob + 0.5 * (X_cob * beta_cob);
   vector<lower=0>[nquar] p;
   
-  // Non-centred reconstruction of migration compartment splines
-  vector[npars_mp] beta_mp_1;
-  vector[npars_mp] beta_mp_2;
-  vector[npars_mp] beta_mp_3;
-  beta_mp_1 = beta_mp_1_raw * sigma_mp_1;
-  beta_mp_2 = beta_mp_2_raw * sigma_mp_2;
-  beta_mp_3 = beta_mp_3_raw * sigma_mp_3;
-  
-  // Migration probabilities into compartments (softmax, reference = compartment 4)
-  vector[nquar] theta_1 = alpha_mp[2] + X_mp * beta_mp_1;
-  vector[nquar] theta_2 = alpha_mp[3] + X_mp * beta_mp_2;
-  vector[nquar] theta_3 = alpha_mp[4] + X_mp * beta_mp_3;
-  
-  // Transfer share: linear trend on logit scale. Source-country testing
-  // coverage evolves on decade scales so a slow drift is all that is
-  // identifiable from the ABROAD signal.
-  vector[nquar] theta_5 = alpha_mp[1] + beta_mp_5 * t_std;
-  vector<lower=0, upper=1>[nquar] m5 = inv_logit(theta_5);
+  // Derived compatibility outputs for existing post-processing.
   matrix<lower=0>[5, nquar] m;
-  
-  for (t in 1 : nquar) {
-    vector[4] logits_u;
-    logits_u[1] = theta_1[t];
-    logits_u[2] = theta_2[t];
-    logits_u[3] = theta_3[t];
-    logits_u[4] = 0;  // reference category
-    m[1 : 4, t] = (1 - m5[t]) * softmax(logits_u);
-    m[5, t] = m5[t];
-  }
-  
-  // Precompute omega_m[k, t] = omega[t] * m[k, t] (5 compartments x nquar).
-  // Avoids recomputing omega[t0]*m[k,t0] for every a0.
   matrix[5, nquar] omega_m;
   for (t in 1 : nquar) {
-    omega_m[ : , t] = m[ : , t] * omega[t];
+    omega_m[1 : 4, t] = undiag_cd4_prop * undiag_migration[t];
+    omega_m[5, t] = transfers[t];
+    m[ : , t] = omega_m[ : , t] / omega[t];
   }
   
-  // Misclassification model for abroad diagnoses, with level shifts at any
-  // supplied ascertainment change-points
+  // Misclassification model for abroad diagnoses: logit trend in time, plus
+  // level shifts at any supplied ascertainment change-points.
   vector[nquar] detect_logit = alpha_detect + beta_detect_slope * t_std
                                + detect_step_design * delta_detect;
   vector<lower=0, upper=1>[nquar] detect_prob;
-  vector<lower=0>[nquar] true_abroad_dx;
   vector<lower=0>[nquar] exp_ABROAD_dx;
   matrix<lower=0>[nquar, nage] misclassified_dx = rep_matrix(0, nquar, nage);
   
   for (t in 1 : nquar) {
     detect_prob[t] = inv_logit(detect_logit[t]);
-    true_abroad_dx[t] = omega_m[5, t]; // precomputed omega[t] * m[5, t]
-    exp_ABROAD_dx[t] = true_abroad_dx[t] * detect_prob[t];
-    // Vectorised row assignment replaces inner a loop
-    misclassified_dx[t,  : ] = true_abroad_dx[t] * (1 - detect_prob[t])
+    exp_ABROAD_dx[t] = transfers[t] * detect_prob[t];
+    misclassified_dx[t,  : ] = transfers[t] * (1 - detect_prob[t])
                                * abroad_age_prop[t,  : ];
   }
   
-  // Expected diagnoses by (t, a, y) and diagnosed state (1..5 HIV, 6 AIDS)
-  array[nquar, nage, 2] row_vector<lower=0>[6] exp_diag;
+  // Expected diagnoses by (t, a, y) and diagnosed state: 1 recent HIV,
+  // 2-5 non-recent HIV by CD4 stage, 6 AIDS.
   array[nquar, nage, 2] real<lower=0> exp_HIV_dx;
   array[nquar, nage, 2] real<lower=0> exp_AIDS_dx;
   array[nquar, nage, 2] simplex[5] exp_p;
+  array[nyear, 4] simplex[4] recent_arrival_cd4_p;
   
-  // Initialize expected diagnoses
-  exp_diag = rep_array(empty_vec, nquar, nage, 2);
-  for (t in 1 : nquar) {
-    for (a in 1 : nage) {
-      for (y in 1 : 2) {
-        exp_HIV_dx[t, a, y] = 0;
-        exp_AIDS_dx[t, a, y] = 0;
-        exp_p[t, a, y] = rep_vector(0.2, 5);
-      }
-    }
-  }
+  {
+  array[nquar, nage, 2] row_vector[6] exp_diag
+    = rep_array(empty_vec, nquar, nage, 2);
   
-  // Forward calculation
+  // For each entry time (t0) and age (a0), propagate diagnosis and
+  // progression forward, with ageing in diagnosis probabilities.
   for (t0 in 1 : nquar) {
+    // Time-varying born-abroad:UK-born UK-acquired incidence ratio
     p[t0] = exp(eta[t0]);
     
     for (a0 in 1 : nage) {
+      // UK-born (y = 1) and born abroad (y = 2)
       for (y in 1 : 2) {
         vector[7] lat;
         vector[7] lat_next;
         vector[7] lat_p = empty_vec1;
         
-        // Progression rates (depend only on age at infection a0, not current time)
+        // Progression depends on age at entry a0
         real q1 = q_age[1, a0];
         real q2 = q_age[2, a0];
         real q3 = q_age[3, a0];
@@ -422,7 +417,6 @@ transformed parameters {
         real nq3 = 1 - q3;
         real nq4 = 1 - q4;
         
-        // Prevalent infections at t0 == 1
         if (t0 == 1) {
           int ag0 = age_group_lookup[a0];
           
@@ -463,7 +457,8 @@ transformed parameters {
             v7 = init_prev_abroad_age[7, a0];
           }
           
-          // diagnoses from prevalent infections at quarter 1
+          // diagnoses from prevalent infections at quarter 1 (RITA: states
+          // 1-3 share d1)
           exp_diag[t0, a0, y, 1] += (v1 + v2 + v3) * d1;
           exp_diag[t0, a0, y, 2] += v4 * d2;
           exp_diag[t0, a0, y, 3] += v5 * d3;
@@ -484,16 +479,18 @@ transformed parameters {
         
         // Inflows at entry time t0 and age a0
         real inflow_native = h[(a0 - 1) * nquar + t0];
+        
+        // For migrants: UK-acquired inflow uses same age/time infection surface, scaled by p[t0]
         real inflow_mig_uk = inflow_native * p[t0];
         
-        // Migrants acquired abroad enter states 4..7 only (no recent states 1..3).
-        // omega_m[k,t0] = omega[t0]*m[k,t0] precomputed; multiply by age proportion.
+        // Abroad-acquired inflow arrives directly in the non-recent CD4
+        // states 4..7 (no recent states 1..3).
         real af = abroad_age_prop[t0, a0];
-        vector[7] inflow_mig_ab = rep_vector(0, 7);
-        inflow_mig_ab[4] = omega_m[1, t0] * af;
-        inflow_mig_ab[5] = omega_m[2, t0] * af;
-        inflow_mig_ab[6] = omega_m[3, t0] * af;
-        inflow_mig_ab[7] = omega_m[4, t0] * af;
+        vector[4] inflow_mig_ab;
+        inflow_mig_ab[1] = omega_m[1, t0] * af;
+        inflow_mig_ab[2] = omega_m[2, t0] * af;
+        inflow_mig_ab[3] = omega_m[3, t0] * af;
+        inflow_mig_ab[4] = omega_m[4, t0] * af;
         
         if (y == 1) {
           lat[1] = inflow_native + lat_p[1];
@@ -507,10 +504,10 @@ transformed parameters {
           lat[1] = inflow_mig_uk + lat_p[1];
           lat[2] = lat_p[2];
           lat[3] = lat_p[3];
-          lat[4] = inflow_mig_ab[4] + lat_p[4];
-          lat[5] = inflow_mig_ab[5] + lat_p[5];
-          lat[6] = inflow_mig_ab[6] + lat_p[6];
-          lat[7] = inflow_mig_ab[7] + lat_p[7];
+          lat[4] = inflow_mig_ab[1] + lat_p[4];
+          lat[5] = inflow_mig_ab[2] + lat_p[5];
+          lat[6] = inflow_mig_ab[3] + lat_p[6];
+          lat[7] = inflow_mig_ab[4] + lat_p[7];
         }
         
         if (t0 < nquar) {
@@ -548,14 +545,15 @@ transformed parameters {
             lat_next[6] = (nd1 * q2) * lat[3] + (nd3 * q2) * lat[5]
                           + (nd4 * nq3) * lat[6];
             lat_next[7] = (nd4 * q3) * lat[6] + (nd5 * nq4) * lat[7];
+            
             lat = lat_next;
           }
         }
       }
     }
   }
-  
-  // Expected HIV and AIDS diagnoses and CD4 proportions
+
+  // Expected HIV and AIDS diagnoses and CD4/RITA proportions
   for (t in 1 : nquar) {
     for (a in 1 : nage) {
       for (y in 1 : 2) {
@@ -570,69 +568,116 @@ transformed parameters {
         exp_HIV_dx[t, a, y] = hiv_dx;
         exp_AIDS_dx[t, a, y] = aids_dx;
         
-        // CD4 composition: include misclassified arrivals for migrants.
-        // Misclassified migrants arrive in non-RITA latent states 4-7,
-        // corresponding to diagnosed states 2-5. Their distribution at arrival
-        // is proportional to m[1:4,t]. FRR is applied afterwards as usual.
+        // CD4/RITA composition: include misclassified arrivals for migrants,
+        // added to the non-recent categories (2-5) before the FRR adjustment;
+        // otherwise each migrant cell's likelihood independently pushes
+        // detect_prob -> 99% to eliminate the mismatch.
         {
           vector[5] raw_p = to_vector(exp_diag[t, a, y, 1 : 5]) + 1e-12;
           if (y == 2 && misclassified_dx[t, a] > 1e-10) {
             real total_lat = sum(m[1 : 4, t]);
-            vector[4] m_lat = (total_lat > 1e-10)
-                              ? m[1 : 4, t] / total_lat
+            vector[4] m_lat = (total_lat > 1e-10) ? m[1 : 4, t] / total_lat
                               : rep_vector(0.25, 4);
-            raw_p[2] += misclassified_dx[t, a] * m_lat[1];
-            raw_p[3] += misclassified_dx[t, a] * m_lat[2];
-            raw_p[4] += misclassified_dx[t, a] * m_lat[3];
-            raw_p[5] += misclassified_dx[t, a] * m_lat[4];
+            raw_p[2 : 5] += misclassified_dx[t, a] * m_lat;
           }
-          real total_p_sum = sum(raw_p);
-          if (total_p_sum > 1e-10) {
-            vector[5] p1 = raw_p / total_p_sum;
-            exp_p[t, a, y, 1] = p1[1] + frr * (1 - p1[1]);
-            exp_p[t, a, y, 2] = (1 - frr) * p1[2];
-            exp_p[t, a, y, 3] = (1 - frr) * p1[3];
-            exp_p[t, a, y, 4] = (1 - frr) * p1[4];
-            exp_p[t, a, y, 5] = (1 - frr) * p1[5];
-          } else {
-            exp_p[t, a, y] = rep_vector(0.2, 5);
-          }
+          real total_p = sum(raw_p);
+          vector[5] p1 = (total_p > 1e-10) ? raw_p / total_p
+                         : rep_vector(0.2, 5);
+          exp_p[t, a, y, 1] = p1[1] + frr * (1 - p1[1]);
+          exp_p[t, a, y, 2] = (1 - frr) * p1[2];
+          exp_p[t, a, y, 3] = (1 - frr) * p1[3];
+          exp_p[t, a, y, 4] = (1 - frr) * p1[4];
+          exp_p[t, a, y, 5] = (1 - frr) * p1[5];
         }
       }
     }
   }
+  }
+  
+  // Diagnoses from infections present on arrival, limited to the diagnosis
+  // calendar year and the preceding arrival year. Arrivals enter the
+  // non-recent CD4 states directly, so this uses d_mig[.,.,2:5] rather than
+  // the recent-diagnosis category.
+  {
+  array[nyear, 4] vector[4] exp_recent_arrival_cd4
+    = rep_array(rep_vector(0, 4), nyear, 4);
+  for (t0 in 1 : nquar) {
+    int arrival_year = year_index[t0] + 1;
+    int last_t = min(nquar, 4 * (arrival_year + 1));
+    if (t0 < last_t) {
+      for (a0 in 1 : nage) {
+        vector[4] lat = omega_m[1 : 4, t0] * abroad_age_prop[t0, a0];
+        real q1 = q_age[1, a0];
+        real q2 = q_age[2, a0];
+        real q3 = q_age[3, a0];
+        real q4 = q_age[4, a0];
+        for (t in (t0 + 1) : last_t) {
+          int diagnosis_year = year_index[t] + 1;
+          int a = min(a0 + year_diff[t0, t], nage);
+          int ag = age_group_lookup[a];
+          vector[4] diagnosis;
+          vector[4] not_diagnosed;
+          vector[4] lat_next;
+          diagnosis[1] = lat[1] * d_mig[ag, t, 2];
+          diagnosis[2] = lat[2] * d_mig[ag, t, 3];
+          diagnosis[3] = lat[3] * d_mig[ag, t, 4];
+          diagnosis[4] = lat[4] * d_mig[ag, t, 5];
+          not_diagnosed = lat - diagnosis;
+          exp_recent_arrival_cd4[diagnosis_year, ag] += diagnosis;
+          lat_next[1] = not_diagnosed[1] * (1 - q1);
+          lat_next[2] = not_diagnosed[1] * q1
+                        + not_diagnosed[2] * (1 - q2);
+          lat_next[3] = not_diagnosed[2] * q2
+                        + not_diagnosed[3] * (1 - q3);
+          lat_next[4] = not_diagnosed[3] * q3
+                        + not_diagnosed[4] * (1 - q4);
+          lat = lat_next;
+        }
+      }
+    }
+  }
+  for (year in 1 : nyear) {
+    for (ag in 1 : 4) {
+      vector[4] raw_p = exp_recent_arrival_cd4[year, ag]
+                        + rep_vector(1e-12, 4);
+      recent_arrival_cd4_p[year, ag] = raw_p / sum(raw_p);
+    }
+  }
+  }
 }
 model {
   // Infection surface priors
-  // beta_inf[1] is the log-scale intercept; normal(5.0, 1.5) covers [7, 3000]
-  // infections/quarter at +-2 SD, matching observed incidence scale.
+  // beta_inf[1]: log-scale intercept; normal(5.0, 1.5) covers [7, 3000]
+  // infections/quarter at ±2 SD, matching observed incidence scale.
   sigma_inf ~ std_normal();
   beta_inf[1] ~ normal(5.0, 1.5);
   
   matrix[np1, np1] K1_prec = S1a * tau[1] + S1b * tau[2];
   beta_inf[2 : npars_inf] ~ multi_normal_prec(zero_vec, K1_prec);
   
-  // Migration priors
-  beta_mig_raw[1] ~ normal(4, 1);
-  beta_mig_raw[2 : npars_mig] ~ std_normal();
-  log_sigma_mig ~ normal(-0.5, 0.5);
-  gamma_pre[3] ~ normal(gamma[1], sigma_mig);
-  gamma_pre[2] ~ normal(gamma_pre[3], sigma_mig);
-  gamma_pre[1] ~ normal(gamma_pre[2], sigma_mig);
-  
+  // Separate flow priors
+  beta_undiag_mig_raw[1] ~ normal(4 + log(0.70), 1);
+  beta_transfer_raw[1] ~ normal(4 + log(0.30), 1);
+  beta_undiag_mig_raw[2 : npars_mig] ~ std_normal();
+  beta_transfer_raw[2 : npars_mig] ~ std_normal();
+  log_sigma_undiag_mig ~ normal(-0.5, 0.5);
+  log_sigma_transfer ~ normal(-0.5, 0.5);
+
   // Age composition of previous diagnoses abroad, with a linear time trend
   alpha_abroad_age ~ normal(0, 1.5);
   beta_abroad_age ~ std_normal();
   for (t in 1 : nquar) {
-    ABROAD_group[t] ~ multinomial(to_vector(abroad_age_group_prop[t,  : ]));
+    target += abroad_group_weight
+              * multinomial_lpmf(ABROAD_group[t]
+                                 | to_vector(abroad_age_group_prop[t,  : ]));
   }
   
-  // Diagnosis priors — centred on midpoints of observed empirical ranges.
-  // State 1 (recently acquired / RITA+): 5–30%   → logit midpoint ~ -1.75
-  // State 2 (CD4 ≥ 500):                2.5–10%  → logit midpoint ~ -2.90
-  // State 3 (CD4 350–500):              2.5–11%  → logit midpoint ~ -2.75
-  // State 4 (CD4 200–349):              5–25%    → logit midpoint ~ -2.00
-  // State 5 (CD4 < 200):                20–60%   → logit midpoint ~ -0.50
+  // Diagnosis priors centred on empirical range midpoints:
+  // State 1 (recent/RITA+):   5–30%  → logit ~ -1.75
+  // State 2 (CD4 ≥ 500):     2.5–10%  → logit ~ -2.90
+  // State 3 (CD4 350–500):   2.5–11%  → logit ~ -2.75
+  // State 4 (CD4 200–349):   5–25%    → logit ~ -2.00
+  // State 5 (CD4 < 200):     20–60%   → logit ~ -0.50
   alpha_diag_1 ~ normal(-1.75, 0.5);
   alpha_diag_2 ~ normal(-2.9, 0.5);
   alpha_diag_3 ~ normal(-2.75, 0.5);
@@ -643,28 +688,26 @@ model {
   delta_raw_3 ~ std_normal();
   delta_raw_4 ~ std_normal();
   delta_raw_5 ~ std_normal();
-  // mu_log_var: centres exp(-4.0) ~ 0.018 => step SD ~0.13 logit/quarter,
-  // stationary SD ~0.26 logit. SD=0.5 avoids the heavy upper tail of normal(-3.5,1)
-  // which allowed unrealistically large swings in diagnosis probability.
+  // Step SD ~0.13 logit/quarter (stationary ~0.26); avoids heavy-tailed swings
   mu_log_var ~ normal(-4.0, 0.5);
   sigma_log_var ~ normal(0, 0.5);
   log_vardelta_raw ~ std_normal();
   
-  // AR(1) coefficient: prior with mode ~ 0.86 (high persistence) but not a
-  // pure random walk. beta(7, 2) has mode = 6/7 ~ 0.857 and mean = 7/9 ~ 0.78,
-  // placing almost no mass below 0.5 and ruling out the RW1 boundary at 1.
+  // Mode ~0.86: persistent but rules out the random-walk boundary at rho=1
   rho_diag ~ beta(7, 2);
   
   // False recency rate prior centred on logit(0.019)
   logit_frr ~ normal(-3.94, 0.32);
   
+  gamma_age_shared_raw ~ std_normal();
+  sigma_age_shared ~ normal(0, 0.5);
   for (k in 1 : 5) {
-    gamma_age_raw[k] ~ std_normal();
+    gamma_age_dev_raw[k] ~ std_normal();
   }
-  sigma_age ~ normal(0, 0.5);
-  // Tighter born-abroad offset for symptom-driven CD4 < 200 diagnosis
-  alpha_diag_mig[1 : 4] ~ std_normal();
-  alpha_diag_mig[5] ~ normal(0, 0.25);
+  // Tighter than sigma_age_shared: state-specific deviations expected to be small
+  sigma_age_dev ~ normal(0, 0.2);
+
+  alpha_diag_mig ~ normal(0, 0.5);
   
   // UK-acquired incidence-ratio priors
   alpha_cob ~ normal(0, 1.5);
@@ -682,23 +725,15 @@ model {
                                  eta_sd * sqrt(1 - rho_eta ^ 2));
   }
   
-  // Detection probability is not separately identified from ABROAD alone
+  // Detection probability priors
   alpha_detect ~ normal(1.1, 0.5);
   beta_detect_slope ~ std_normal();
   delta_detect ~ std_normal();
+    
+  // Mean proportions (2/7, 2/7, 2/7, 1/7), with moderate concentration.
+  undiag_cd4_prop ~ dirichlet([4, 4, 4, 2]');
   
-  // Migration distribution priors
-  alpha_mp ~ normal(alpha_mp_prior_mean, 0.5);
-  beta_mp_5 ~ std_normal();
-  beta_mp_1_raw ~ std_normal();
-  beta_mp_2_raw ~ std_normal();
-  beta_mp_3_raw ~ std_normal();  
-  sigma_mp_1 ~ normal(0, 0.2);
-  sigma_mp_2 ~ normal(0, 0.2);
-  sigma_mp_3 ~ normal(0, 0.2);
-  
-  // Auxiliary likelihood for detect_prob from data-linkage study.
-  // Only included when detect_obs_sd > 0 and a linkage study is observed.
+  // Auxiliary likelihood for detect_prob from a data-linkage study, when observed
   if (detect_obs_sd > 0 && n_detect_obs > 0) {
     for (i in 1 : n_detect_obs) {
       detect_logit_obs[i] ~ normal(detect_logit[detect_obs_index[i]], detect_obs_sd);
@@ -729,7 +764,8 @@ model {
     }
   }
   
-  // Likelihood (omit age == 1)
+  // Likelihood
+  // As in AD_ptens, omit age == 1 from the likelihood (often structurally zero)
   for (t in 1 : nquar) {
     for (y in 1 : 2) {
       HIV_age[t, 2 : nage, y] ~ poisson(exp_HIV_dx[t, 2 : nage, y]);
@@ -741,17 +777,37 @@ model {
   }
   
   ABROAD ~ poisson(exp_ABROAD_dx);
+  for (year in 1 : nyear) {
+    for (ag in 1 : 4) {
+      recent_arrival_cd4[year, ag]
+        ~ multinomial(recent_arrival_cd4_p[year, ag]);
+    }
+  }
 }
 generated quantities {
+  // Log-likelihood contributions for model comparison
   array[nquar, nage, 2] real log_lik;
   vector[nquar] log_lik_abroad;
+  array[nyear, 4] real log_lik_recent_arrival_cd4;
+
+  for (year in 1 : nyear) {
+    for (ag in 1 : 4) {
+      log_lik_recent_arrival_cd4[year, ag]
+        = multinomial_lpmf(recent_arrival_cd4[year, ag]
+                           | recent_arrival_cd4_p[year, ag]);
+    }
+  }
+  
   for (t in 1 : nquar) {
     log_lik_abroad[t] = poisson_lpmf(ABROAD[t] | exp_ABROAD_dx[t])
-                        + multinomial_lpmf(ABROAD_group[t]
-                                           | to_vector(
-                                              abroad_age_group_prop[t,  : ]));
+                        + abroad_group_weight
+                          * multinomial_lpmf(ABROAD_group[t]
+                                             | to_vector(
+                                                abroad_age_group_prop[t,  : ]));
+    
     for (y in 1 : 2) {
       for (a in 1 : nage) {
+        // keep a==1 defined, even though it is omitted from sampling likelihood
         log_lik[t, a, y] = poisson_lpmf(HIV_age[t, a, y] |
                                         exp_HIV_dx[t, a, y])
                            + poisson_lpmf(AIDS_age[t, a, y] |

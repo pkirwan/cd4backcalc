@@ -4,8 +4,6 @@
 #'
 #' @param stan_data A list of data formatted for Stan.
 #' @param migration Logical indicating whether to include migration in the model.
-#' @param reduced_migration Logical indicating whether to use the reduced
-#'   age-dependent migration model.
 #' @param rita Logical indicating whether to include RITA data in the model.
 #' @param age Logical indicating whether to include age-specific data in the model.
 #' @param inf_model Infection model type (1 = spline, 2 = random walk, 3 = GP).
@@ -58,8 +56,7 @@ run_backcalc <- function(
   return_fit = TRUE,
   checkpoint_dir = NULL,
   iter_per_chunk = NULL,
-  init = NULL,
-  reduced_migration = FALSE
+  init = NULL
 ) {
   # Check if sim_diags object has been provided
   if ("stan_data" %in% names(stan_data)) {
@@ -73,7 +70,6 @@ run_backcalc <- function(
   stan_data <- model_type_prep(
     stan_data = stan_data,
     migration = migration,
-    reduced_migration = reduced_migration,
     rita = rita,
     age = age,
     inf_model = inf_model,
@@ -393,7 +389,6 @@ fit_stan_model <- function(
 #' @param inf_model Infection model type (1 = spline, 2 = random walk, 3 = GP).
 #' @param diag_model Diagnosis model type (1 = spline, 2 = AR(1)).
 #' @param model_seed Seed for model fitting.
-#' @param reduced_migration Logical indicating whether to use the reduced age-dependent migration model.
 #' @return A list containing configuration settings for model fitting.
 stan_model_config <- function(
   migration = FALSE,
@@ -401,12 +396,8 @@ stan_model_config <- function(
   age = FALSE,
   inf_model = 1,
   diag_model = 1,
-  model_seed = NULL,
-  reduced_migration = FALSE
+  model_seed = NULL
 ) {
-  if (reduced_migration && (!migration || !age || rita)) {
-    stop("reduced_migration requires migration = TRUE, age = TRUE, and rita = FALSE.")
-  }
   if ((inf_model != 1 || diag_model != 1) && (migration || rita || age)) {
     stop(
       "The migration, rita, or age-specific models only support spline model configurations. Please use inf_model = 1 and diag_model = 1."
@@ -419,7 +410,6 @@ stan_model_config <- function(
     inf_model = inf_model,
     diag_model = diag_model,
     migration = migration,
-    reduced_migration = reduced_migration,
     rita = rita,
     age = age,
     model_seed = model_seed,
@@ -509,7 +499,7 @@ confirm_stan_data <- function(stan_data) {
           is.finite(stan_data$gamma_obs_slope_sd) &&
           stan_data$gamma_obs_slope_sd >= 0
     )
-    if (isTRUE(stan_data$model_config$reduced_migration)) {
+    if (isTRUE(stan_data$model_config$migration)) {
       stopifnot(
         "nyear must equal nquar / 4" =
           stan_data$nyear == stan_data$nquar %/% 4L,
@@ -634,8 +624,6 @@ load_stan_model <- function(config) {
   name <- if (config$age) {
     if (config$migration && config$rita) {
       "AD_ptens_migration_rita"
-    } else if (config$migration && isTRUE(config$reduced_migration)) {
-      "AD_ptens_migration_reduced"
     } else if (config$migration) {
       "AD_ptens_migration"
     } else if (config$rita) {
@@ -711,8 +699,7 @@ model_type_prep <- function(
   model_seed = NULL,
   basis = "ts",
   knots = 10,
-  penalty = 2,
-  reduced_migration = FALSE
+  penalty = 2
 ) {
   # Check if sim_diags object has been provided
   if ("stan_data" %in% names(stan_data)) {
@@ -921,7 +908,10 @@ model_type_prep <- function(
       stop("gamma_obs_slope_sd must be a single non-negative number.")
     }
 
-    if (reduced_migration) {
+    # All age-dependent migration models (with or without RITA) use the
+    # separated undiag/transfer flow design and its recent-arrival
+    # CD4 auxiliary likelihood.
+    if (isTRUE(age)) {
       if (stan_data$nquar %% 4L != 0L) {
         stop("nquar must be divisible by 4 for recent-arrival CD4 data.")
       }
@@ -952,8 +942,7 @@ model_type_prep <- function(
     age = age,
     inf_model = inf_model,
     diag_model = diag_model,
-    model_seed = model_seed,
-    reduced_migration = reduced_migration
+    model_seed = model_seed
   )
 
   # Generate fake data for jagam to create the spline basis
@@ -1020,12 +1009,10 @@ model_type_prep <- function(
   }
 
   if (stan_data$model_config$migration) {
-    # Migration model splines
+    # Migration model splines: all migration configurations (age-dependent
+    # or not) use the separated undiag/transfer flow splines on X_mig.
     jagam_out_mig <- create_spline(knots)
     jagam_out_cob <- create_spline(knots - 4)
-    if (!reduced_migration) {
-      jagam_out_mp <- create_spline(knots - 4)
-    }
 
     # Augment stan_data with design matrix and prior info
     stan_data$X_mig <- jagam_out_mig$jags.data$X
@@ -1033,18 +1020,6 @@ model_type_prep <- function(
 
     stan_data$X_cob <- jagam_out_cob$jags.data$X
     stan_data$npars_cob <- ncol(stan_data$X_cob)
-
-    if (!reduced_migration) {
-      stan_data$X_mp <- if (stan_data$model_config$age) {
-        jagam_out_mp$jags.data$X[, -1, drop = FALSE]
-      } else {
-        jagam_out_mp$jags.data$X
-      }
-      stan_data$npars_mp <- ncol(stan_data$X_mp)
-    } else {
-      stan_data$X_mp <- NULL
-      stan_data$npars_mp <- NULL
-    }
   }
 
   # Add model types to stan_data

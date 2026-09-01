@@ -1,11 +1,13 @@
-// Age-independent spline model including migration
+// Age-independent spline model with migration
+// Separate undiagnosed/transfer flows and a fixed CD4-composition simplex,
+// matching AD_ptens_migration.stan.
 
 functions {
-  // Function to create transition matrices
+  // Build transition matrix for quarter t
   matrix tmat_fct(int t, vector q, matrix d) {
     matrix[9, 9] Lambda = rep_matrix(0, 9, 9);
     
-    // Setting diagonal entries to one
+    // Diagnosed states are absorbing
     for (i in 5 : 9) {
       Lambda[i, i] = 1;
     }
@@ -50,34 +52,49 @@ data {
   int<lower=1> npars_inf;
   int<lower=1> npars_mig;
   int<lower=1> npars_cob;
-  int<lower=1> npars_mp;
   matrix[nquar, npars_inf] X_inf;
   matrix[nquar, npars_mig] X_mig;
   matrix[nquar, npars_cob] X_cob;
-  matrix[nquar, npars_mp] X_mp;
   
   // External evidence for the log born-abroad:UK-born UK-acquired ratio
   vector[nquar] eta_mean;
   real<lower=0> eta_sd;
   
-  // External data-linkage estimates of detection probability (on logit scale).
-  // Observations can be sparse, e.g. occasional linkage studies.
+  // External data-linkage estimates of detection probability (logit scale, can be sparse)
   int<lower=0> n_detect_obs;
   array[n_detect_obs] int<lower=1, upper=nquar> detect_obs_index;
   vector[n_detect_obs] detect_logit_obs;
   real<lower=0> detect_obs_sd;
+  
+  // Quarters where abroad-diagnosis ascertainment steps up/down (e.g. reporting change)
+  int<lower=0> n_detect_steps;
+  array[n_detect_steps] int<lower=2, upper=nquar> detect_step_quarter;
 }
 transformed data {
-  // No pre-computed constants needed
+  vector[nquar] t_std;
+  for (t in 1 : nquar) {
+    t_std[t] = (t - 0.5 * (nquar + 1)) / nquar;
+  }
+  
+  // Step indicators for ascertainment changes in the abroad-diagnosis field
+  matrix[nquar, n_detect_steps] detect_step_design = rep_matrix(0, nquar,
+                                                                n_detect_steps);
+  for (s in 1 : n_detect_steps) {
+    for (t in detect_step_quarter[s] : nquar) {
+      detect_step_design[t, s] = 1;
+    }
+  }
 }
 parameters {
   // Infection parameters
   vector[npars_inf] beta_inf; // infection parameters
   real log_sigma_inf;
   
-  // Migration parameters
-  vector[npars_mig] beta_mig_raw;
-  real log_sigma_mig;
+  // Separate undiagnosed and previously diagnosed migration flows
+  vector[npars_mig] beta_undiag_mig_raw;
+  vector[npars_mig] beta_transfer_raw;
+  real log_sigma_undiag_mig;
+  real log_sigma_transfer;
   
   // Diagnosis probability parameters (AR(1))
   vector[nquar] delta_raw_1;
@@ -91,7 +108,7 @@ parameters {
   real alpha_diag_2;
   real alpha_diag_3;
   real alpha_diag_4;
-  vector[4] alpha_diag_mig; // born-abroad diagnosis offset by state
+  real alpha_diag_mig; // shared born-abroad diagnosis offset
 
   // Born-abroad:UK-born ratio of UK-acquired incidence
   vector[npars_cob] beta_cob_raw;
@@ -99,24 +116,15 @@ parameters {
   real alpha_cob;
   real<lower=0, upper=0.9> rho_eta;
   
-  // Probability of migration into each compartment
-  vector[npars_mp] beta_mp_1_raw;
-  vector[npars_mp] beta_mp_2_raw;
-  vector[npars_mp] beta_mp_3_raw;
-  vector[npars_mp] beta_mp_5_raw;
-  real<lower=0> sigma_mp_1;
-  real<lower=0> sigma_mp_2;
-  real<lower=0> sigma_mp_3;
-  real<lower=0> sigma_mp_5;
-  vector[4] alpha_mp;
+  // Time-constant CD4 composition among undiagnosed arrivals
+  simplex[4] undiag_cd4_prop;
   
-  // Parameters for misclassification of abroad status
-  real alpha_detect; // Intercept for detection probability
-  vector[npars_mp] beta_detect; // Time-varying component 
-  real<lower=0> sigma_detect; // Smoothing parameter
+  // Misclassification of abroad diagnoses: logit trend plus ascertainment change-points
+  real alpha_detect;
+  real beta_detect_slope;
+  vector[n_detect_steps] delta_detect;
   
-  // AR(1) coefficient shared across diagnosis-probability walks.
-  // Constrained to (0, 1) so the process is mean-reverting but persistent.
+  // AR(1) coefficient shared across diagnosis-probability walks; (0,1) is mean-reverting
   real<lower=0, upper=1> rho_diag;
 }
 transformed parameters {
@@ -125,13 +133,24 @@ transformed parameters {
   vector[nquar] lambda = X_inf * beta_inf;
   vector<lower=0>[nquar] h = exp(lambda);
   
-  // Migration process (non-centred spline)
-  real<lower=0> sigma_mig = exp(log_sigma_mig);
-  vector[npars_mig] beta_mig;
-  beta_mig[1] = beta_mig_raw[1];
-  beta_mig[2 : npars_mig] = beta_mig_raw[2 : npars_mig] * sigma_mig;
-  vector[nquar] gamma = X_mig * beta_mig;
-  vector<lower=0>[nquar] omega = exp(gamma);
+  // Separate non-centred splines for undiagnosed arrivals vs transfers;
+  // omega and m are retained as derived compatibility outputs.
+  real<lower=0> sigma_undiag_mig = exp(log_sigma_undiag_mig);
+  real<lower=0> sigma_transfer = exp(log_sigma_transfer);
+  vector[npars_mig] beta_undiag_mig;
+  vector[npars_mig] beta_transfer;
+  beta_undiag_mig[1] = beta_undiag_mig_raw[1];
+  beta_transfer[1] = beta_transfer_raw[1];
+  beta_undiag_mig[2 : npars_mig]
+    = beta_undiag_mig_raw[2 : npars_mig] * sigma_undiag_mig;
+  beta_transfer[2 : npars_mig]
+    = beta_transfer_raw[2 : npars_mig] * sigma_transfer;
+  vector[nquar] gamma_undiag_mig = X_mig * beta_undiag_mig;
+  vector[nquar] gamma_transfer = X_mig * beta_transfer;
+  vector<lower=0>[nquar] undiag_migration = exp(gamma_undiag_mig);
+  vector<lower=0>[nquar] transfers = exp(gamma_transfer);
+  vector<lower=0>[nquar] omega = undiag_migration + transfers;
+  vector[nquar] gamma = log(omega);
   
   // Step variances on natural scale (non-centred)
   vector[4] log_vardelta = mu_log_var + sigma_log_var * log_vardelta_raw;
@@ -141,10 +160,7 @@ transformed parameters {
   vector[nquar] delta_2;
   vector[nquar] delta_3;
   vector[nquar] delta_4;
-  // AR(1) non-centred parameterisation.
-  // t = 1: initial condition drawn from stationary distribution
-  //   (variance = step_variance / (1 - rho^2)).
-  // t > 1: mean reversion toward alpha_diag_k prevents endpoint drift.
+  // AR(1), non-centred: t=1 draws from stationary dist, t>1 mean-reverts to alpha_diag_k
   real inv_stationary = inv_sqrt(1 - square(rho_diag));
   delta_1[1] = alpha_diag_1 + sqrt(vardelta[1]) * inv_stationary * delta_raw_1[1];
   delta_2[1] = alpha_diag_2 + sqrt(vardelta[2]) * inv_stationary * delta_raw_2[1];
@@ -159,13 +175,13 @@ transformed parameters {
   matrix<lower=0, upper=1>[4, nquar] d_nat;
   matrix<lower=0, upper=1>[4, nquar] d_mig;
   
-  // Transform diag probs using logit transformation
+  // d_mig adds a shared offset to d_nat, applied uniformly across states
   for (t in 1 : nquar) {
     d_nat[ : , t] = inv_logit([delta_1[t], delta_2[t], delta_3[t], delta_4[t]]');
-    d_mig[ : , t] = inv_logit([delta_1[t] + alpha_diag_mig[1],
-                               delta_2[t] + alpha_diag_mig[2],
-                               delta_3[t] + alpha_diag_mig[3],
-                               delta_4[t] + alpha_diag_mig[4]]');
+    d_mig[ : , t] = inv_logit([delta_1[t] + alpha_diag_mig,
+                               delta_2[t] + alpha_diag_mig,
+                               delta_3[t] + alpha_diag_mig,
+                               delta_4[t] + alpha_diag_mig]');
   }
   
   // Born-abroad:UK-born ratio of UK-acquired incidence (non-centred spline)
@@ -175,66 +191,43 @@ transformed parameters {
   vector[nquar] eta = alpha_cob + 0.5 * (X_cob * beta_cob);
   vector<lower=0>[nquar] p;
   
-  // Non-centred reconstruction of migration compartment splines
-  vector[npars_mp] beta_mp_1;
-  vector[npars_mp] beta_mp_2;
-  vector[npars_mp] beta_mp_3;
-  vector[npars_mp] beta_mp_5;
-  beta_mp_1[1] = beta_mp_1_raw[1];
-  beta_mp_2[1] = beta_mp_2_raw[1];
-  beta_mp_3[1] = beta_mp_3_raw[1];
-  beta_mp_5[1] = beta_mp_5_raw[1];
-  beta_mp_1[2 : npars_mp] = beta_mp_1_raw[2 : npars_mp] * sigma_mp_1;
-  beta_mp_2[2 : npars_mp] = beta_mp_2_raw[2 : npars_mp] * sigma_mp_2;
-  beta_mp_3[2 : npars_mp] = beta_mp_3_raw[2 : npars_mp] * sigma_mp_3;
-  beta_mp_5[2 : npars_mp] = beta_mp_5_raw[2 : npars_mp] * sigma_mp_5;
-  
-  // Migration probabilities using softmax, reference = compartment 4
-  vector[nquar] theta_1 = alpha_mp[2] + X_mp * beta_mp_1;
-  vector[nquar] theta_2 = alpha_mp[3] + X_mp * beta_mp_2;
-  vector[nquar] theta_3 = alpha_mp[4] + X_mp * beta_mp_3;
-  vector[nquar] theta_5 = alpha_mp[1] + X_mp * beta_mp_5;
+  // Derived compatibility outputs for existing post-processing.
   matrix<lower=0>[5, nquar] m;
-  
+  matrix[5, nquar] omega_m;
   for (t in 1 : nquar) {
-    vector[5] logits;
-    logits[1] = theta_1[t];
-    logits[2] = theta_2[t];
-    logits[3] = theta_3[t];
-    logits[4] = 0;  // reference category
-    logits[5] = theta_5[t];
-    m[ : , t] = softmax(logits);
+    omega_m[1 : 4, t] = undiag_cd4_prop * undiag_migration[t];
+    omega_m[5, t] = transfers[t];
+    m[ : , t] = omega_m[ : , t] / omega[t];
   }
   
-  // Epidemic state variables
-  array[nquar, 2] vector<lower=0>[9] cum_diags = rep_array(rep_vector
-                                                           (0, 9), nquar, 2);
-  
-  // Expected observations
-  matrix<lower=0>[nquar, 2] exp_HIV_dx;
-  matrix<lower=0>[nquar, 2] exp_AIDS_dx;
-  vector<lower=0>[nquar] exp_ABROAD_dx;
-  array[nquar, 2] simplex[4] exp_p = rep_array(rep_vector(0.25, 4), nquar, 2);
-  
-  // Detection probability for abroad diagnoses
-  vector[nquar] detect_logit = alpha_detect + 0.5 * (X_mp * beta_detect);
+  // Misclassification model for abroad diagnoses: logit trend in time, plus
+  // level shifts at any supplied ascertainment change-points.
+  vector[nquar] detect_logit = alpha_detect + beta_detect_slope * t_std
+                               + detect_step_design * delta_detect;
   vector<lower=0, upper=1>[nquar] detect_prob;
-  vector<lower=0>[nquar] true_abroad_dx;
+  vector<lower=0>[nquar] exp_ABROAD_dx;
   matrix<lower=0>[nquar, 2] misclassified_dx = rep_matrix(0, nquar, 2);
   
   for (t in 1 : nquar) {
     detect_prob[t] = inv_logit(detect_logit[t]);
-    true_abroad_dx[t] = omega[t] * m[5, t];
-    exp_ABROAD_dx[t] = true_abroad_dx[t] * detect_prob[t];
-    misclassified_dx[t, 2] = true_abroad_dx[t] * (1 - detect_prob[t]);
+    exp_ABROAD_dx[t] = transfers[t] * detect_prob[t];
+    misclassified_dx[t, 2] = transfers[t] * (1 - detect_prob[t]);
   }
   
-  // Expected incidence
-  matrix<lower=0>[nquar, 2] incidence_state_5 = rep_matrix(0, nquar, 2);
-  matrix<lower=0>[nquar, 2] incidence_state_6 = rep_matrix(0, nquar, 2);
-  matrix<lower=0>[nquar, 2] incidence_state_7 = rep_matrix(0, nquar, 2);
-  matrix<lower=0>[nquar, 2] incidence_state_8 = rep_matrix(0, nquar, 2);
-  matrix<lower=0>[nquar, 2] incidence_state_9 = rep_matrix(0, nquar, 2);
+  // Expected observations
+  matrix<lower=0>[nquar, 2] exp_HIV_dx;
+  matrix<lower=0>[nquar, 2] exp_AIDS_dx;
+  array[nquar, 2] simplex[4] exp_p = rep_array(rep_vector(0.25, 4), nquar, 2);
+  
+  {
+  // Local: not saved as draws; only exp_HIV_dx/exp_AIDS_dx/exp_p needed downstream
+  array[nquar, 2] vector[9] cum_diags = rep_array(rep_vector
+                                                           (0, 9), nquar, 2);
+  matrix[nquar, 2] incidence_state_5 = rep_matrix(0, nquar, 2);
+  matrix[nquar, 2] incidence_state_6 = rep_matrix(0, nquar, 2);
+  matrix[nquar, 2] incidence_state_7 = rep_matrix(0, nquar, 2);
+  matrix[nquar, 2] incidence_state_8 = rep_matrix(0, nquar, 2);
+  matrix[nquar, 2] incidence_state_9 = rep_matrix(0, nquar, 2);
   array[nquar, 2] vector[4] prev_mat;
   
   // Initial time period (t=1)
@@ -248,7 +241,7 @@ transformed parameters {
   p[1] = exp(eta[1]);
   cum_diags[1, 2,  : ] = Lambda1_mig' * append_row(init_prev_abroad, rep_vector(0, 5));
   cum_diags[1, 2, 1] += h[1] * p[1];
-  cum_diags[1, 2, 1 : 4] += omega[1] * m[1 : 4, 1];
+  cum_diags[1, 2, 1 : 4] += omega_m[1 : 4, 1];
   
   for (t in 2 : nquar) {
     matrix[9, 9] Lambda_t_nat = tmat_fct(t, q, d_nat);
@@ -262,7 +255,7 @@ transformed parameters {
     p[t] = exp(eta[t]);
     cum_diags[t, 2,  : ] = Lambda_t_mig' * cum_diags[t - 1, 2,  : ];
     cum_diags[t, 2, 1] += h[t] * p[t];
-    cum_diags[t, 2, 1 : 4] += omega[t] * m[1 : 4, t];
+    cum_diags[t, 2, 1 : 4] += omega_m[1 : 4, t];
   }
   
   // Calculate incidences
@@ -305,8 +298,8 @@ transformed parameters {
       exp_p[t, 1, 3] = incidence_state_8[t, 1] / exp_HIV_dx[t, 1];
       exp_p[t, 1, 4] = incidence_state_9[t, 1] / exp_HIV_dx[t, 1];
     }
-    // Born-abroad population (y = 2): include misclassified arrivals in exp_p,
-    // proportional to m[1:4,t], matching what the simulation puts in CD4 data.
+    // Born-abroad (y=2): include misclassified arrivals, proportional to
+    // m[1:4,t], matching what the simulation puts in CD4 data.
     {
       vector[4] raw_p = [incidence_state_6[t, 2], incidence_state_7[t, 2],
                          incidence_state_8[t, 2], incidence_state_9[t, 2]]'
@@ -322,25 +315,29 @@ transformed parameters {
       exp_p[t, 2] = (total_p > 1e-10) ? raw_p / total_p : rep_vector(0.25, 4);
     }
   }
+  }
 }
 model {
   // PRIORS
   
   // Infection priors
-  beta_inf[1] ~ normal(5, 1.5); // Vaguely informative priors: corresponds to quarter inf in (exp(2),exp(8)) = (8,4390)
+  beta_inf[1] ~ normal(5, 1.5); // quarterly infections in (exp(2),exp(8)) = (8,4390) at +-2 SD
   beta_inf[2 : npars_inf] ~ normal(0, sigma_inf);
   log_sigma_inf ~ normal(-1, 1);
   
-  // Migration priors
-  beta_mig_raw[1] ~ normal(4, 1);
-  beta_mig_raw[2 : npars_mig] ~ std_normal();
-  log_sigma_mig ~ normal(-0.5, 0.5);
+  // Separate flow priors
+  beta_undiag_mig_raw[1] ~ normal(4 + log(0.70), 1);
+  beta_transfer_raw[1] ~ normal(4 + log(0.30), 1);
+  beta_undiag_mig_raw[2 : npars_mig] ~ std_normal();
+  beta_transfer_raw[2 : npars_mig] ~ std_normal();
+  log_sigma_undiag_mig ~ normal(-0.5, 0.5);
+  log_sigma_transfer ~ normal(-0.5, 0.5);
   
-  // Diagnosis probability priors — centred on midpoints of observed empirical ranges.
-  // State 1 (CD4 ≥ 500):    2.5–10%  → logit midpoint ~ -2.90
-  // State 2 (CD4 350–500):  2.5–11%  → logit midpoint ~ -2.75
-  // State 3 (CD4 200–349):  5–25%    → logit midpoint ~ -2.00
-  // State 4 (CD4 < 200):    20–60%   → logit midpoint ~ -0.50
+  // Priors centred on empirical range midpoints:
+  // State 1 (CD4 ≥ 500):   2.5–10%  → logit ~ -2.90
+  // State 2 (CD4 350–500): 2.5–11%  → logit ~ -2.75
+  // State 3 (CD4 200–349): 5–25%    → logit ~ -2.00
+  // State 4 (CD4 < 200):   20–60%   → logit ~ -0.50
   alpha_diag_1 ~ normal(-2.9, 0.5);
   alpha_diag_2 ~ normal(-2.75, 0.5);
   alpha_diag_3 ~ normal(-2.0, 0.5);
@@ -349,19 +346,15 @@ model {
   delta_raw_2 ~ std_normal();
   delta_raw_3 ~ std_normal();
   delta_raw_4 ~ std_normal();
-  // mu_log_var: centres exp(-4.0) ~ 0.018 => step SD ~0.13 logit/quarter,
-  // stationary SD ~0.26 logit. SD=0.5 avoids the heavy upper tail of normal(-3.5,1)
-  // which allowed unrealistically large swings in diagnosis probability.
+  // Step SD ~0.13 logit/quarter (stationary ~0.26); avoids heavy-tailed swings
   mu_log_var ~ normal(-4.0, 0.5);
   sigma_log_var ~ normal(0, 0.5);
   log_vardelta_raw ~ std_normal();
   
-  // AR(1) coefficient: prior with mode ~ 0.86 (high persistence) but not a
-  // pure random walk. beta(7, 2) has mode = 6/7 ~ 0.857 and mean = 7/9 ~ 0.78,
-  // placing almost no mass below 0.5 and ruling out the RW1 boundary at 1.
+  // Mode ~0.86: persistent but rules out the random-walk boundary at rho=1
   rho_diag ~ beta(7, 2);
   
-  alpha_diag_mig ~ std_normal();
+  alpha_diag_mig ~ normal(0, 0.5);
   
   // UK-acquired incidence-ratio priors
   alpha_cob ~ normal(0, 1.5);
@@ -379,26 +372,15 @@ model {
                                  eta_sd * sqrt(1 - rho_eta ^ 2));
   }
   
-  // ABROAD alone identifies only omega * m[5] * detect_prob
+  // Detection probability priors
   alpha_detect ~ normal(1.1, 0.5);
-  beta_detect[1] ~ normal(0, 0.5);
-  beta_detect[2 : npars_mp] ~ normal(0, sigma_detect);
-  sigma_detect ~ gamma(2, 8);
+  beta_detect_slope ~ std_normal();
+  delta_detect ~ std_normal();
   
-  // Migration distribution priors
-  alpha_mp[1] ~ normal(0, 1.5);
-  alpha_mp[2 : 4] ~ std_normal();
-  beta_mp_1_raw ~ std_normal();
-  beta_mp_2_raw ~ std_normal();
-  beta_mp_3_raw ~ std_normal();
-  beta_mp_5_raw ~ std_normal();
-  sigma_mp_1 ~ gamma(2, 8);
-  sigma_mp_2 ~ gamma(2, 8);
-  sigma_mp_3 ~ gamma(2, 8);
-  sigma_mp_5 ~ gamma(2, 8);
+  // Mean proportions (2/7, 2/7, 2/7, 1/7), with moderate concentration.
+  undiag_cd4_prop ~ dirichlet([4, 4, 4, 2]');
   
-  // Auxiliary likelihood for detect_prob from data-linkage study.
-  // Only included when detect_obs_sd > 0 and a linkage study is observed.
+  // Auxiliary likelihood for detect_prob from a data-linkage study, when observed
   if (detect_obs_sd > 0 && n_detect_obs > 0) {
     for (i in 1 : n_detect_obs) {
       detect_logit_obs[i] ~ normal(detect_logit[detect_obs_index[i]], detect_obs_sd);

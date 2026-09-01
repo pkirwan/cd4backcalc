@@ -10,7 +10,7 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 [![R-CMD-check](https://github.com/pkirwan/cd4backcalc/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/pkirwan/cd4backcalc/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-The cd4backcalc package implements Bayesian, discrete-time, multi-state models to estimate HIV incidence and undiagnosed HIV prevalence from diagnosis data.
+The cd4backcalc package for R implements Bayesian, discrete-time, multi-state models to estimate HIV incidence and undiagnosed HIV prevalence from diagnosis data.
 
 ## Description
 

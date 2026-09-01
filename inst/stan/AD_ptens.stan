@@ -68,8 +68,7 @@ parameters {
   array[4] sum_to_zero_vector[4] gamma_age_raw;
   real<lower=0> sigma_age; // shared shrinkage for age effects
   
-  // AR(1) coefficient shared across diagnosis-probability walks.
-  // Constrained to (0, 1) so the process is mean-reverting but persistent.
+  // AR(1) coefficient shared across diagnosis-probability walks; (0,1) is mean-reverting
   real<lower=0, upper=1> rho_diag;
 }
 transformed parameters {
@@ -88,10 +87,7 @@ transformed parameters {
   vector[nquar] delta_2;
   vector[nquar] delta_3;
   vector[nquar] delta_4;
-  // AR(1) non-centred parameterisation.
-  // t = 1: initial condition drawn from stationary distribution
-  //   (variance = step_variance / (1 - rho^2)).
-  // t > 1: mean reversion toward alpha_diag_k prevents endpoint drift.
+  // AR(1), non-centred: t=1 draws from stationary dist, t>1 mean-reverts to alpha_diag_k
   real inv_stationary = inv_sqrt(1 - square(rho_diag));
   delta_1[1] = alpha_diag_1 + sqrt(vardelta[1]) * inv_stationary * delta_raw_1[1];
   delta_2[1] = alpha_diag_2 + sqrt(vardelta[2]) * inv_stationary * delta_raw_2[1];
@@ -104,9 +100,8 @@ transformed parameters {
     delta_4[t] = alpha_diag_4 + rho_diag * (delta_4[t - 1] - alpha_diag_4) + sqrt(vardelta[4]) * delta_raw_4[t];
   }
   
-  // Built-in zero-sum age effects by diagnosis state.
-  // The sqrt(4 / 3) factor corrects the constrained-vector variance so each
-  // age effect has marginal SD sigma_age rather than sigma_age * sqrt(3 / 4).
+  // Zero-sum age effects by diagnosis state; sqrt(4/3) corrects sum-to-zero
+  // variance so marginal SD = sigma_age
   matrix[4, 4] gamma_age;
   real age_effect_scale = sigma_age * sqrt(4.0 / 3.0);
   for (k in 1 : 4) {
@@ -124,15 +119,14 @@ transformed parameters {
     d[ag,  : , 4] = inv_logit(delta_4 + gamma_age[ag, 4]);
   }
   
-  // Expected diagnoses
-  array[nquar, nage] row_vector<lower=0>[5] exp_diag; // expected number of diag at time t age a state k
-  
   // Expected observations
   matrix[nquar, nage] exp_HIV_dx; // expected number of HIV_age diag at time t age a
   matrix[nquar, nage] exp_AIDS_dx; // expected number of HIV_age diag at time t age a
   array[nquar, nage] simplex[4] exp_p; // proportion of HIV_age diagnoses in state k (time t and age a)
   
-  exp_diag = rep_array(empty_vec, nquar, nage);
+  {
+  // exp_diag is local: not saved as a draw, only exp_HIV_dx/exp_AIDS_dx/exp_p are needed downstream
+  array[nquar, nage] row_vector[5] exp_diag = rep_array(empty_vec, nquar, nage);
   
   for (t0 in 1 : nquar) {
     for (a0 in 1 : nage) {
@@ -244,22 +238,23 @@ transformed parameters {
       }
     }
   }
+  }
 }
 model {
   // Infection surface priors
-  // beta_inf[1] is the log-scale intercept; normal(5.0, 1.5) covers [7, 3000]
-  // infections/quarter at +-2 SD, matching observed incidence scale.
+  // beta_inf[1]: log-scale intercept; normal(5.0, 1.5) covers [7, 3000]
+  // infections/quarter at ±2 SD, matching observed incidence scale.
   sigma_inf ~ std_normal();
   beta_inf[1] ~ normal(5.0, 1.5);
   
   matrix[np1, np1] K1_prec = S1a * tau[1] + S1b * tau[2];
   beta_inf[2 : npars_inf] ~ multi_normal_prec(zero_vec, K1_prec);
   
-  // Diagnosis priors — centred on midpoints of observed empirical ranges.
-  // State 1 (CD4 ≥ 500):    2.5–10%  → logit midpoint ~ -2.90
-  // State 2 (CD4 350–500):  2.5–11%  → logit midpoint ~ -2.75
-  // State 3 (CD4 200–349):  5–25%    → logit midpoint ~ -2.00
-  // State 4 (CD4 < 200):    20–60%   → logit midpoint ~ -0.50
+  // Diagnosis priors centred on empirical range midpoints:
+  // State 1 (CD4 ≥ 500):   2.5–10%  → logit ~ -2.90
+  // State 2 (CD4 350–500): 2.5–11%  → logit ~ -2.75
+  // State 3 (CD4 200–349): 5–25%    → logit ~ -2.00
+  // State 4 (CD4 < 200):   20–60%   → logit ~ -0.50
   alpha_diag_1 ~ normal(-2.9, 0.5);
   alpha_diag_2 ~ normal(-2.75, 0.5);
   alpha_diag_3 ~ normal(-2.0, 0.5);
@@ -268,16 +263,12 @@ model {
   delta_raw_2 ~ std_normal();
   delta_raw_3 ~ std_normal();
   delta_raw_4 ~ std_normal();
-  // mu_log_var: centres exp(-4.0) ~ 0.018 => step SD ~0.13 logit/quarter,
-  // stationary SD ~0.26 logit. SD=0.5 avoids the heavy upper tail of normal(-3.5,1)
-  // which allowed unrealistically large swings in diagnosis probability.
+  // Step SD ~0.13 logit/quarter (stationary ~0.26); avoids heavy-tailed swings
   mu_log_var ~ normal(-4.0, 0.5);
   sigma_log_var ~ normal(0, 0.5);
   log_vardelta_raw ~ std_normal();
   
-  // AR(1) coefficient: prior with mode ~ 0.86 (high persistence) but not a
-  // pure random walk. beta(7, 2) has mode = 6/7 ~ 0.857 and mean = 7/9 ~ 0.78,
-  // placing almost no mass below 0.5 and ruling out the RW1 boundary at 1.
+  // Mode ~0.86: persistent but rules out the random-walk boundary at rho=1
   rho_diag ~ beta(7, 2);
   
   for (k in 1 : 4) {

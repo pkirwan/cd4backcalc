@@ -1,10 +1,11 @@
-// Age-independent model with spline, random walk, or GP incidence
-// and spline or AR(1) diagnosis probabilities
+// Age-independent model: spline/RW/GP infections, spline or AR(1) diagnosis
 
 functions {
+  // Build transition matrix for quarter t
   matrix tmat_fct(int t, vector q, matrix d) {
     matrix[9, 9] Lambda = rep_matrix(0, 9, 9);
     
+    // Diagnosed states are absorbing
     for (i in 5 : 9) {
       Lambda[i, i] = 1;
     }
@@ -92,8 +93,7 @@ parameters {
   vector[nquar] delta_raw_3;
   vector[nquar] delta_raw_4;
   vector<lower=0>[4] vardelta; // variances of diagnoses
-  // AR(1) coefficient for diagnosis probability walks (diag_model == 2).
-  // Constrained to (0, 1) so the process is mean-reverting but persistent.
+  // AR(1) coefficient for diagnosis-probability walks (diag_model == 2); (0,1) is mean-reverting
   real<lower=0, upper=1> rho_diag;
 }
 transformed parameters {
@@ -102,10 +102,6 @@ transformed parameters {
   vector[nquar] lambda = X_inf * beta_inf;
   vector<lower=0>[nquar] h;
   
-  // GP parameters
-  matrix[nquar, nquar] Sigma;
-  matrix[nquar, nquar] L;
-  
   // Diagnosis probabilities
   vector[nquar] delta_1;
   vector[nquar] delta_2;
@@ -113,22 +109,10 @@ transformed parameters {
   vector[nquar] delta_4;
   matrix<lower=0, upper=1>[4, nquar] d;
   
-  // Epidemic state variables
-  array[nquar] vector<lower=0>[9] cum_diags = rep_array(rep_vector(0, 9),
-                                                        nquar);
-  
   // Expected observations
   row_vector<lower=0>[nquar] exp_HIV_dx;
   row_vector<lower=0>[nquar] exp_AIDS_dx;
   array[nquar] simplex[4] exp_p = rep_array(rep_vector(0.25, 4), nquar);
-  
-  // Expected incidence
-  row_vector<lower=0>[nquar] incidence_state_5;
-  row_vector<lower=0>[nquar] incidence_state_6;
-  row_vector<lower=0>[nquar] incidence_state_7;
-  row_vector<lower=0>[nquar] incidence_state_8;
-  row_vector<lower=0>[nquar] incidence_state_9;
-  array[nquar] vector[4] prev_mat;
   
   // Temporary variables
   real<lower=0> inv_rho = inv(rho);
@@ -140,14 +124,6 @@ transformed parameters {
     h = exp(gamma);
   }
   
-  if (inf_model == 3) {
-    Sigma = gp_exp_quad_cov(x, eta, inv_rho);
-    for (i in 1 : nquar) {
-      Sigma[i, i] = Sigma[i, i] + sigma_sq; // ensures numerical PD
-    }
-    L = cholesky_decompose(Sigma);
-  }
-  
   // Diagnosis process
   if (diag_model == 1) {
     // Spline model for diagnoses
@@ -156,10 +132,7 @@ transformed parameters {
     delta_3 = alpha_diag_3 + (X_diag * beta_diag_3);
     delta_4 = alpha_diag_4 + (X_diag * beta_diag_4);
   } else if (diag_model == 2) {
-    // Mean-reverting AR(1) diagnosis process
-    // t = 1: initial condition drawn from stationary distribution
-    //   (variance = step_variance / (1 - rho^2)).
-    // t > 1: mean reversion toward alpha_diag_k prevents endpoint drift.
+    // Mean-reverting AR(1), non-centred: t=1 draws from stationary dist, t>1 mean-reverts to alpha_diag_k
     real inv_stationary = inv_sqrt(1 - square(rho_diag));
     delta_1[1] = alpha_diag_1 + sqrt(vardelta[1]) * inv_stationary * delta_raw_1[1];
     delta_2[1] = alpha_diag_2 + sqrt(vardelta[2]) * inv_stationary * delta_raw_2[1];
@@ -178,6 +151,17 @@ transformed parameters {
   for (t in 1 : nquar) {
     d[ : , t] = inv_logit([delta_1[t], delta_2[t], delta_3[t], delta_4[t]]');
   }
+  
+  {
+  // Local: not saved as draws; only exp_HIV_dx/exp_AIDS_dx/exp_p needed downstream
+  array[nquar] vector[9] cum_diags = rep_array(rep_vector(0, 9),
+                                                        nquar);
+  row_vector[nquar] incidence_state_5;
+  row_vector[nquar] incidence_state_6;
+  row_vector[nquar] incidence_state_7;
+  row_vector[nquar] incidence_state_8;
+  row_vector[nquar] incidence_state_9;
+  array[nquar] vector[4] prev_mat;
   
   // Initial time period (t=1, y=1)
   vector[9] tmpvec = append_row(init_prev, rep_vector(0, 5));
@@ -226,13 +210,15 @@ transformed parameters {
       exp_p[t, 4] = incidence_state_9[t] / exp_HIV_dx[t];
     }
   }
+  }
 }
 model {
   // Infection priors
   if (inf_model == 1) {
     beta_inf[1] ~ normal(5, 1.5);
     beta_inf[2 : npars_inf] ~ normal(0, sigma_inf);
-    log_sigma_inf ~ normal(-2, 0.5);
+    // Loose prior avoids suppressing genuine peaks, as in AI_spl.stan
+    log_sigma_inf ~ normal(-1, 1);
     
     // weak priors for inactive infection params
     gamma ~ normal(0, 5);
@@ -250,6 +236,13 @@ model {
     eta ~ normal(0, 2);
     rho ~ lognormal(0, 1);
   } else if (inf_model == 3) {
+    // Sigma/L are local: not saved as (nquar x nquar) draws, only needed here
+    matrix[nquar, nquar] Sigma = gp_exp_quad_cov(x, eta, inv_rho);
+    for (i in 1 : nquar) {
+      Sigma[i, i] += sigma_sq; // ensures numerical PD
+    }
+    matrix[nquar, nquar] L = cholesky_decompose(Sigma);
+    
     rho ~ student_t(4, 0, 1);
     eta ~ normal(4, 1);
     gamma ~ multi_normal_cholesky(mu, L);
@@ -262,10 +255,11 @@ model {
   
   // Diagnosis probability priors
   if (diag_model == 1) {
-    alpha_diag_1 ~ normal(-3.2, 0.5);
-    alpha_diag_2 ~ normal(-3.0, 0.5);
-    alpha_diag_3 ~ normal(-2.5, 0.5);
-    alpha_diag_4 ~ normal(-2.0, 0.5);
+    // Empirical range midpoints (as elsewhere): State1 2.5-10%, State2 2.5-11%, State3 5-25%, State4 20-60%
+    alpha_diag_1 ~ normal(-2.9, 0.5);
+    alpha_diag_2 ~ normal(-2.75, 0.5);
+    alpha_diag_3 ~ normal(-2.0, 0.5);
+    alpha_diag_4 ~ normal(-0.5, 0.5);
     beta_diag_1[1] ~ std_normal();
     beta_diag_2[1] ~ std_normal();
     beta_diag_3[1] ~ std_normal();
@@ -292,9 +286,7 @@ model {
     delta_raw_3 ~ std_normal();
     delta_raw_4 ~ std_normal();
     vardelta ~ gamma(1, 32);
-    // AR(1) coefficient: prior with mode ~ 0.86 (high persistence) but not a
-    // pure random walk. beta(7, 2) has mode = 6/7 ~ 0.857 and mean = 7/9 ~ 0.78,
-    // placing almost no mass below 0.5 and ruling out the RW1 boundary at 1.
+    // Mode ~0.86: persistent but rules out the random-walk boundary at rho=1
     rho_diag ~ beta(7, 2);
     
     // Priors for AR(1) mean-reversion targets

@@ -10,8 +10,7 @@ stan_model_config(
   age = FALSE,
   inf_model = 1,
   diag_model = 1,
-  model_seed = NULL,
-  reduced_migration = FALSE
+  model_seed = NULL
 )
 }
 \arguments{
@@ -26,8 +25,6 @@ stan_model_config(
 \item{diag_model}{Diagnosis model type (1 = spline, 2 = AR(1)).}
 
 \item{model_seed}{Seed for model fitting.}
-
-\item{reduced_migration}{Logical indicating whether to use the reduced age-dependent migration model.}
 }
 \value{
 A list containing configuration settings for model fitting.

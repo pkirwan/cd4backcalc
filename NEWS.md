@@ -1,5 +1,11 @@
 # Changelog
 
+# Changes in v0.1.6
+
+### Improvements
+
+- Incoroporated efficiency improvements from age-dependent migration models into other age-dependent models.
+
 # Changes in v0.1.5
 
 ### Improvements

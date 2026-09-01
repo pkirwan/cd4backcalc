@@ -1,11 +1,11 @@
 // Age-independent spline model with RITA state
 
 functions {
-  // Function to create transition matrices
+  // Build transition matrix for quarter t
   matrix tmat_fct(int t, vector q, matrix d) {
     matrix[13, 13] Lambda = rep_matrix(0, 13, 13);
     
-    // Setting diagonal entries to one
+    // Diagnosed states are absorbing
     for (i in 8 : 13) {
       Lambda[i, i] = 1;
     }
@@ -91,8 +91,7 @@ parameters {
   real alpha_diag_4;
   real alpha_diag_5;
   
-  // AR(1) coefficient shared across diagnosis-probability walks.
-  // Constrained to (0, 1) so the process is mean-reverting but persistent.
+  // AR(1) coefficient for diagnosis-probability walks; (0,1) is mean-reverting
   real<lower=0, upper=1> rho_diag;
 }
 transformed parameters {
@@ -113,10 +112,7 @@ transformed parameters {
   vector[nquar] delta_3;
   vector[nquar] delta_4;
   vector[nquar] delta_5;
-  // AR(1) non-centred parameterisation.
-  // t = 1: initial condition drawn from stationary distribution
-  //   (variance = step_variance / (1 - rho^2)).
-  // t > 1: mean reversion toward alpha_diag_k prevents endpoint drift.
+  // AR(1), non-centred: t=1 draws from stationary dist, t>1 mean-reverts to alpha_diag_k
   real inv_stationary = inv_sqrt(1 - square(rho_diag));
   delta_1[1] = alpha_diag_1 + sqrt(vardelta[1]) * inv_stationary * delta_raw_1[1];
   delta_2[1] = alpha_diag_2 + sqrt(vardelta[2]) * inv_stationary * delta_raw_2[1];
@@ -139,23 +135,22 @@ transformed parameters {
                            delta_5[t]]');
   }
   
-  // Epidemic state variables
-  array[nquar] vector<lower=0>[13] cum_diags = rep_array(rep_vector(0, 13),
-                                                         nquar);
-  
   // Expected observations
   row_vector<lower=0>[nquar] exp_HIV_dx;
   row_vector<lower=0>[nquar] exp_AIDS_dx;
   array[nquar] simplex[5] exp_p = rep_array(rep_vector(0.20, 5), nquar);
   
-  // Expected incidence
-  row_vector<lower=0>[nquar] incidence_state_8;
-  row_vector<lower=0>[nquar] incidence_state_9;
-  row_vector<lower=0>[nquar] incidence_state_10;
-  row_vector<lower=0>[nquar] incidence_state_11;
-  row_vector<lower=0>[nquar] incidence_state_12;
-  row_vector<lower=0>[nquar] incidence_state_13;
-  array[nquar] vector<lower=0>[7] prev_mat;
+  {
+  // Local: not saved as draws; only exp_HIV_dx/exp_AIDS_dx/exp_p needed downstream
+  array[nquar] vector[13] cum_diags = rep_array(rep_vector(0, 13),
+                                                         nquar);
+  row_vector[nquar] incidence_state_8;
+  row_vector[nquar] incidence_state_9;
+  row_vector[nquar] incidence_state_10;
+  row_vector[nquar] incidence_state_11;
+  row_vector[nquar] incidence_state_12;
+  row_vector[nquar] incidence_state_13;
+  array[nquar] vector[7] prev_mat;
   
   // Initial time period (t=1, y=1)
   vector[13] init_vec = rep_vector(0, 13);
@@ -213,25 +208,24 @@ transformed parameters {
       exp_p[t, 5] = (1 - frr) * incidence_state_13[t] / exp_HIV_dx[t];
     }
   }
+  }
 }
 model {
   // Infection priors
   // Note: unlike the AD model which penalises curvature via a precision matrix,
-  // this model shrinks coefficient magnitude (ridge). A tight log_sigma_inf
-  // suppresses peaks even when the data support them. normal(-1, 1) loosens
-  // the prior to median sigma ~ 0.37 with a wide range, matching the AD
-  // model's effective permissiveness for large smooth peaks.
+  // this model shrinks coefficient magnitude (ridge); normal(-1, 1) loosens the
+  // prior so large peaks aren't suppressed, matching the AD model's permissiveness.
   beta_inf[1] ~ normal(5, 1.5);
   beta_inf[2 : npars_inf] ~ normal(0, sigma_inf);
   log_sigma_inf ~ normal(-1, 1);
   
   // Diagnosis probability priors
-  // Initial level intercepts — centred on midpoints of observed empirical ranges.
-  // State 1 (recently acquired / RITA+): 5–30%   → logit midpoint ~ -1.75
-  // State 2 (CD4 ≥ 500):                2.5–10%  → logit midpoint ~ -2.90
-  // State 3 (CD4 350–500):              2.5–11%  → logit midpoint ~ -2.75
-  // State 4 (CD4 200–349):              5–25%    → logit midpoint ~ -2.00
-  // State 5 (CD4 < 200):                20–60%   → logit midpoint ~ -0.50
+  // Initial level intercepts, centred on empirical range midpoints:
+  // State 1 (recent/RITA+):   5–30%  → logit ~ -1.75
+  // State 2 (CD4 ≥ 500):     2.5–10%  → logit ~ -2.90
+  // State 3 (CD4 350–500):   2.5–11%  → logit ~ -2.75
+  // State 4 (CD4 200–349):   5–25%    → logit ~ -2.00
+  // State 5 (CD4 < 200):     20–60%   → logit ~ -0.50
   alpha_diag_1 ~ normal(-1.75, 0.5);
   alpha_diag_2 ~ normal(-2.9, 0.5);
   alpha_diag_3 ~ normal(-2.75, 0.5);
@@ -242,16 +236,12 @@ model {
   delta_raw_3 ~ std_normal();
   delta_raw_4 ~ std_normal();
   delta_raw_5 ~ std_normal();
-  // mu_log_var: centres exp(-4.0) ~ 0.018 => step SD ~0.13 logit/quarter,
-  // stationary SD ~0.26 logit. SD=0.5 avoids the heavy upper tail of normal(-3.5,1)
-  // which allowed unrealistically large swings in diagnosis probability.
+  // Step SD ~0.13 logit/quarter (stationary ~0.26); avoids heavy-tailed swings
   mu_log_var ~ normal(-4.0, 0.5);
   sigma_log_var ~ normal(0, 0.5);
   log_vardelta_raw ~ std_normal();
   
-  // AR(1) coefficient: prior with mode ~ 0.86 (high persistence) but not a
-  // pure random walk. beta(7, 2) has mode = 6/7 ~ 0.857 and mean = 7/9 ~ 0.78,
-  // placing almost no mass below 0.5 and ruling out the RW1 boundary at 1.
+  // Mode ~0.86: persistent but rules out the random-walk boundary at rho=1
   rho_diag ~ beta(7, 2);
   
   // False recency rate prior centred on logit(0.019)

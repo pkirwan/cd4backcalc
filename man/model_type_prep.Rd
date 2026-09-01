@@ -14,8 +14,7 @@ model_type_prep(
   model_seed = NULL,
   basis = "ts",
   knots = 10,
-  penalty = 2,
-  reduced_migration = FALSE
+  penalty = 2
 )
 }
 \arguments{

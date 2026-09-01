@@ -25,8 +25,7 @@ run_backcalc(
   return_fit = TRUE,
   checkpoint_dir = NULL,
   iter_per_chunk = NULL,
-  init = NULL,
-  reduced_migration = FALSE
+  init = NULL
 )
 }
 \arguments{
@@ -76,9 +75,6 @@ single chunk.}
 \item{init}{Initial values passed to Stan. When checkpointing, these are
 only used when starting a new run; resumed checkpointed fits use the
 saved checkpoint state.}
-
-\item{reduced_migration}{Logical indicating whether to use the reduced
-age-dependent migration model.}
 }
 \value{
 List of posterior predictive quantities and (optionally) the stanfit object.
