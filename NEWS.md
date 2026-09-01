@@ -5,6 +5,7 @@
 ### Improvements
 
 - Incoroporated efficiency improvements from age-dependent migration models into other age-dependent models.
+- Re-ran migration models for R vignettes with improved migration model logic.
 
 # Changes in v0.1.5
 
