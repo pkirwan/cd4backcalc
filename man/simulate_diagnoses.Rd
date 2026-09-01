@@ -40,7 +40,7 @@ simulate_diagnoses(
   detect_step_quarter = NULL,
   detect_step_size = 0,
   gamma_obs_scale_trend = 0,
-  recent_arrival_cd4_completeness = 0
+  recent_arrival_completeness = 0
 )
 }
 \arguments{
@@ -149,8 +149,11 @@ step in detect_prob (e.g. a surveillance reporting change). \code{NULL}
 HIV-positive share of the external migration index (gamma_obs_scale);
 0 = constant share.}
 
-\item{recent_arrival_cd4_completeness}{Proportion of eligible diagnoses with
-observed recent-arrival CD4 data. Set to 0 to disable.}
+\item{recent_arrival_completeness}{Proportion of eligible diagnoses with
+avidity testing done and a recorded year of arrival. Combined
+multiplicatively with \code{cd4_completeness} (a recorded CD4 value is
+also required) to give the overall completeness of the recent-arrival
+CD4 auxiliary data. Set to 0 to disable.}
 }
 \value{
 List containing simulated epidemic data.

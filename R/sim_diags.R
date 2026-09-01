@@ -55,8 +55,11 @@
 #' @param gamma_obs_scale_trend Total log-scale change (start to end) in the
 #'   HIV-positive share of the external migration index (gamma_obs_scale);
 #'   0 = constant share.
-#' @param recent_arrival_cd4_completeness Proportion of eligible diagnoses with
-#'   observed recent-arrival CD4 data. Set to 0 to disable.
+#' @param recent_arrival_completeness Proportion of eligible diagnoses with
+#'   avidity testing done and a recorded year of arrival. Combined
+#'   multiplicatively with \code{cd4_completeness} (a recorded CD4 value is
+#'   also required) to give the overall completeness of the recent-arrival
+#'   CD4 auxiliary data. Set to 0 to disable.
 #' @return Configuration list.
 #' @keywords internal
 define_sim_config <- function(
@@ -93,7 +96,7 @@ define_sim_config <- function(
   detect_step_quarter = NULL, # quarter of an ascertainment step in detect_prob
   detect_step_size = 0, # logit-scale size of that step
   gamma_obs_scale_trend = 0, # log-scale drift in gamma_obs_scale
-  recent_arrival_cd4_completeness = 0
+  recent_arrival_completeness = 0
 ) {
   if (rita) {
     nlatst <- 7
@@ -160,12 +163,12 @@ define_sim_config <- function(
   }
 
   if (
-    length(recent_arrival_cd4_completeness) != 1L ||
-      !is.finite(recent_arrival_cd4_completeness) ||
-      recent_arrival_cd4_completeness < 0 ||
-      recent_arrival_cd4_completeness > 1
+    length(recent_arrival_completeness) != 1L ||
+      !is.finite(recent_arrival_completeness) ||
+      recent_arrival_completeness < 0 ||
+      recent_arrival_completeness > 1
   ) {
-    stop("recent_arrival_cd4_completeness must be a number between 0 and 1.")
+    stop("recent_arrival_completeness must be a number between 0 and 1.")
   }
 
   # Standard configuration parameters
@@ -217,7 +220,7 @@ define_sim_config <- function(
     },
     detect_step_size = detect_step_size,
     gamma_obs_scale_trend = gamma_obs_scale_trend,
-    recent_arrival_cd4_completeness = recent_arrival_cd4_completeness
+    recent_arrival_completeness = recent_arrival_completeness
   )
 
   if (!is.null(sim_type)) {
@@ -605,8 +608,11 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #' @param gamma_obs_scale_trend Total log-scale change (start to end) in the
 #'   HIV-positive share of the external migration index (gamma_obs_scale);
 #'   0 = constant share.
-#' @param recent_arrival_cd4_completeness Proportion of eligible diagnoses with
-#'   observed recent-arrival CD4 data. Set to 0 to disable.
+#' @param recent_arrival_completeness Proportion of eligible diagnoses with
+#'   avidity testing done and a recorded year of arrival. Combined
+#'   multiplicatively with \code{cd4_completeness} (a recorded CD4 value is
+#'   also required) to give the overall completeness of the recent-arrival
+#'   CD4 auxiliary data. Set to 0 to disable.
 #' @return List containing simulated epidemic data.
 #' @examples
 #' simulate_diagnoses()
@@ -647,7 +653,7 @@ simulate_diagnoses <- function(
   detect_step_quarter = NULL, # quarter of an ascertainment step in detect_prob
   detect_step_size = 0, # logit-scale size of that step
   gamma_obs_scale_trend = 0, # log-scale drift in gamma_obs_scale
-  recent_arrival_cd4_completeness = 0
+  recent_arrival_completeness = 0
 ) {
   sim_config <- define_sim_config(
     h_pattern,
@@ -683,7 +689,7 @@ simulate_diagnoses <- function(
     detect_step_quarter,
     detect_step_size,
     gamma_obs_scale_trend,
-    recent_arrival_cd4_completeness
+    recent_arrival_completeness
   )
   set.seed(sim_config$sim_seed)
 
@@ -1008,7 +1014,10 @@ simulate_diagnoses <- function(
       m_age = m_age[,, 1:4, drop = FALSE],
       d_probs_mig = d_probs_mig,
       q_age = sim_config$q_age,
-      completeness = sim_config$recent_arrival_cd4_completeness,
+      # recent_arrival_completeness covers avidity testing and recorded
+      # arrival year
+      completeness = sim_config$recent_arrival_completeness *
+        sim_config$cd4_completeness,
       dist = sim_config$dist
     )
   }

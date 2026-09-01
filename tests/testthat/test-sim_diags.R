@@ -82,7 +82,7 @@ test_that("recent-arrival CD4 data are annual age-by-state counts", {
     age = TRUE,
     migration = TRUE,
     m_pattern = "reduced",
-    recent_arrival_cd4_completeness = 0.2
+    recent_arrival_completeness = 0.2
   )
 
   expect_equal(sim_diags$stan_data$nyear, 10L)
