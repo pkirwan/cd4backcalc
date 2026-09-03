@@ -95,6 +95,8 @@ parameters {
   vector[npars_mig] beta_transfer_raw;
   real log_sigma_undiag_mig;
   real log_sigma_transfer;
+  // Extra smoothness on transfers of care
+  real log_sigma_transfer_share;
   
   // Diagnosis probability parameters (AR(1))
   vector[nquar] delta_raw_1;
@@ -137,6 +139,7 @@ transformed parameters {
   // omega and m are retained as derived compatibility outputs.
   real<lower=0> sigma_undiag_mig = exp(log_sigma_undiag_mig);
   real<lower=0> sigma_transfer = exp(log_sigma_transfer);
+  real<lower=0> sigma_transfer_share = exp(log_sigma_transfer_share);
   vector[npars_mig] beta_undiag_mig;
   vector[npars_mig] beta_transfer;
   beta_undiag_mig[1] = beta_undiag_mig_raw[1];
@@ -332,7 +335,15 @@ model {
   beta_transfer_raw[2 : npars_mig] ~ std_normal();
   log_sigma_undiag_mig ~ normal(-0.5, 0.5);
   log_sigma_transfer ~ normal(-0.5, 0.5);
-  
+
+  // Penalize quarter-to-quarter change in logit(transfers share of arrivals)
+  vector[nquar - 1] share_logit_diff = (gamma_transfer[2 : nquar]
+                                        - gamma_undiag_mig[2 : nquar])
+                                       - (gamma_transfer[1 : (nquar - 1)]
+                                          - gamma_undiag_mig[1 : (nquar - 1)]);
+  share_logit_diff ~ normal(0, sigma_transfer_share);
+  log_sigma_transfer_share ~ normal(-1.5, 0.5);
+
   // Priors centred on empirical range midpoints:
   // State 1 (CD4 ≥ 500):   2.5–10%  → logit ~ -2.90
   // State 2 (CD4 350–500): 2.5–11%  → logit ~ -2.75

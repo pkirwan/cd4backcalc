@@ -319,7 +319,7 @@ define_simulation_type <- function(config, sim_type = "constant") {
     config$o_pattern <- "increasing"
     config$d_pattern <- "varying"
     config$p_pattern <- "increasing"
-    config$m_pattern <- "varying"
+    config$m_pattern <- "reduced"
     config$a_pattern <- "wedge"
     if (config$age) {
       config$age_diag_effect <- 0.5
@@ -334,7 +334,7 @@ define_simulation_type <- function(config, sim_type = "constant") {
     config$o_pattern <- "step_change_2"
     config$d_pattern <- "varying"
     config$p_pattern <- "increasing"
-    config$m_pattern <- "varying"
+    config$m_pattern <- "reduced"
     config$a_pattern <- "wedge"
     if (config$age) {
       config$age_diag_effect <- 0.5

@@ -100,7 +100,7 @@ test_that("simulated plots are generated correctly for migration_prob", {
     nquar = 40,
     sim_seed = 123,
     migration = TRUE,
-    m_pattern = "varying"
+    m_pattern = "reduced"
   )
   # Generate plots of key quantities
   p1 <- plot_simulations(stan_data, "migration_prob")
@@ -110,7 +110,7 @@ test_that("simulated plots are generated correctly for migration_prob", {
     sim_seed = 123,
     migration = TRUE,
     rita = TRUE,
-    m_pattern = "varying"
+    m_pattern = "reduced"
   )
   # Generate plots of key quantities
   p2 <- plot_simulations(stan_data, "migration_prob")
@@ -376,7 +376,7 @@ test_that("plots work for migration and rita model bias plots", {
     sim_seed = 123,
     rita = TRUE,
     migration = TRUE,
-    m_pattern = "varying"
+    m_pattern = "reduced"
   )
   # Fit back-calculation model
   hiv_list <- list()
