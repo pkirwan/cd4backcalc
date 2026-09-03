@@ -134,13 +134,14 @@ parameters {
   vector[npars_inf] beta_inf;
   vector<lower=0>[2] sigma_inf;
   
-  // Separate undiagnosed and previously diagnosed migration flows
-  vector[npars_mig] beta_undiag_mig_raw;
-  vector[npars_mig] beta_transfer_raw;
-  real log_sigma_undiag_mig;
-  real log_sigma_transfer;
-  // Extra smoothness on transfers of care
-  real log_sigma_transfer_share;
+  // Total migration (omega) and the transfers-of-care arrivals are
+  // parameterised directly
+  real beta_omega_raw_1;
+  vector[npars_mig - 1] beta_omega_wiggle_raw;
+  real log_sigma_omega;
+  real alpha_share;
+  vector[npars_mig - 1] beta_share_raw;
+  real log_sigma_share;
   // Offset leaves the level of omega unidentified by the external index
   real gamma_obs_offset;
   real gamma_obs_slope;
@@ -203,24 +204,21 @@ transformed parameters {
   // False recency rate
   real<lower=0, upper=1> frr = inv_logit(logit_frr);
   
-  // Separate non-centred splines for undiagnosed arrivals vs transfers;
-  // omega and m are retained as derived compatibility outputs.
-  real<lower=0> sigma_undiag_mig = exp(log_sigma_undiag_mig);
-  real<lower=0> sigma_transfer = exp(log_sigma_transfer);
-  real<lower=0> sigma_transfer_share = exp(log_sigma_transfer_share);
-  vector[npars_mig] beta_undiag_mig;
-  vector[npars_mig] beta_transfer;
-  beta_undiag_mig[1] = beta_undiag_mig_raw[1];
-  beta_transfer[1] = beta_transfer_raw[1];
-  beta_undiag_mig[2 : npars_mig]
-    = beta_undiag_mig_raw[2 : npars_mig] * sigma_undiag_mig;
-  beta_transfer[2 : npars_mig]
-    = beta_transfer_raw[2 : npars_mig] * sigma_transfer;
-  vector[nquar] gamma_undiag_mig = X_mig * beta_undiag_mig;
-  vector[nquar] gamma_transfer = X_mig * beta_transfer;
-  vector<lower=0>[nquar] undiag_migration = exp(gamma_undiag_mig);
-  vector<lower=0>[nquar] transfers = exp(gamma_transfer);
-  vector<lower=0>[nquar] omega = undiag_migration + transfers;
+  // omega (total) and the transfer share are separate splines
+  real<lower=0> sigma_omega = exp(log_sigma_omega);
+  real<lower=0> sigma_share = exp(log_sigma_share);
+  vector[npars_mig] beta_omega;
+  beta_omega[1] = beta_omega_raw_1;
+  beta_omega[2 : npars_mig] = beta_omega_wiggle_raw * sigma_omega;
+  vector[nquar] gamma_omega = X_mig * beta_omega;
+  vector<lower=0>[nquar] omega = exp(gamma_omega);
+  vector[nquar] logit_transfer_share = alpha_share
+                                       + X_mig[ : , 2 : npars_mig]
+                                         * (beta_share_raw * sigma_share);
+  vector<lower=0, upper=1>[nquar] transfer_share = inv_logit(
+                                                    logit_transfer_share);
+  vector<lower=0>[nquar] transfers = omega .* transfer_share;
+  vector<lower=0>[nquar] undiag_migration = omega .* (1 - transfer_share);
   vector[nquar] gamma = log(omega);
   vector<lower=0>[3] omega_pre = rep_vector(omega[1], 3);
   
@@ -658,21 +656,13 @@ model {
   matrix[np1, np1] K1_prec = S1a * tau[1] + S1b * tau[2];
   beta_inf[2 : npars_inf] ~ multi_normal_prec(zero_vec, K1_prec);
   
-  // Separate flow priors
-  beta_undiag_mig_raw[1] ~ normal(4 + log(0.70), 1);
-  beta_transfer_raw[1] ~ normal(4 + log(0.30), 1);
-  beta_undiag_mig_raw[2 : npars_mig] ~ std_normal();
-  beta_transfer_raw[2 : npars_mig] ~ std_normal();
-  log_sigma_undiag_mig ~ normal(-0.5, 0.5);
-  log_sigma_transfer ~ normal(-0.5, 0.5);
-
-  // Penalize quarter-to-quarter change in logit(transfers share of arrivals)
-  vector[nquar - 1] share_logit_diff = (gamma_transfer[2 : nquar]
-                                        - gamma_undiag_mig[2 : nquar])
-                                       - (gamma_transfer[1 : (nquar - 1)]
-                                          - gamma_undiag_mig[1 : (nquar - 1)]);
-  share_logit_diff ~ normal(0, sigma_transfer_share);
-  log_sigma_transfer_share ~ normal(-1.5, 0.5);
+  // omega's own level/trend prior; transfer_share's own baseline + smoothness
+  beta_omega_raw_1 ~ normal(4, 1);
+  beta_omega_wiggle_raw ~ std_normal();
+  log_sigma_omega ~ normal(-0.5, 0.5);
+  alpha_share ~ normal(logit(0.30), 1);
+  beta_share_raw ~ std_normal();
+  log_sigma_share ~ normal(-1, 0.5);
 
   // Age composition of previous diagnoses abroad, with a linear time trend
   alpha_abroad_age ~ normal(0, 1.5);
