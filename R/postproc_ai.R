@@ -1434,9 +1434,7 @@ undiag.prev.df <- function(
   annual = FALSE
 ) {
   nyr <- stan_data$nquar / 4
-  use_direct_prev <-
-    isTRUE(stan_data$model_config$migration) &&
-    "undiagnosed_total" %in% rownames(prev_dist)
+  use_direct_prev <- "undiagnosed_total" %in% rownames(prev_dist)
 
   if (use_direct_prev) {
     undiagnosed.prevalence <- as.matrix(

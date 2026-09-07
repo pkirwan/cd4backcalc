@@ -4,8 +4,14 @@
 
 ### Improvements
 
-- Incoroporated efficiency improvements from age-dependent migration models into other age-dependent models.
+- Simplified age-dependent model is now the default, with a small re-parameterisation of the transfers of care to align to epidemiologically relevant quantities.
+- Incorporated efficiency improvements from age-dependent migration models into other age-dependent models.
 - Re-ran migration models for R vignettes with improved migration model logic.
+
+### Bug fixes
+
+- Fixed the simulation of old-age AIDS cases using a multinomial draw rather than simple rounding logic.
+- Fixed the reconstruction of age-independent initial prevalence in C++ code.
 
 # Changes in v0.1.5
 

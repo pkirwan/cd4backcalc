@@ -391,8 +391,8 @@ arma::mat prev_t_rita(int t, const arma::vec &CD4_prev, const arma::vec &h, cons
 
   prev.row(t) = infs.t(); // Can change to row/col vector to avoid .t()
   if (t == 0)
-  { // In case of initial prevalence
-    prev.row(t) = (infs + prev0).t();
+  {
+    prev.row(t) = (prev0.t() * trans_mats.slice(0)) + infs.t();
   }
 
   for (int i = t + 1; i < t_max; ++i)
@@ -432,8 +432,7 @@ arma::mat prev_t_m_rita(int t, const arma::vec &CD4_prev, const arma::mat &om, c
   prev.row(t) = infs.t();
   if (t == 0)
   {
-    // In case of initial prevalence
-    prev.row(t) = (infs + prev0).t();
+    prev.row(t) = (prev0.t() * trans_mats.slice(0)) + infs.t();
   }
 
   for (int i = t + 1; i < t_max; ++i)

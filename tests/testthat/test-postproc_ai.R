@@ -71,10 +71,10 @@ test_that("migration post-processing works", {
   expect_true("migration_prob" %in% names(hiv_list))
 })
 
-test_that("migration undiag_prev uses direct latent prevalence", {
+test_that("undiag_prev uses direct latent prevalence", {
   stan_data <- list(
     nquar = 4,
-    model_config = list(migration = TRUE)
+    model_config = list(migration = FALSE)
   )
 
   prev_dist <- sapply(
@@ -117,6 +117,38 @@ test_that("migration undiag_prev uses direct latent prevalence", {
     dplyr::pull(.data$value)
 
   expect_equal(median_values, c(12, 11, 10, 9))
+})
+
+test_that("RITA forward calculation transitions initial prevalence at quarter 1", {
+  init_prev <- c(10, 20, 30, 40, 50, 60, 70)
+  h <- c(100, 100)
+  d1 <- c(0.1, 0.1)
+  d2 <- c(0.2, 0.2)
+  d3 <- c(0.3, 0.3)
+  d4 <- c(0.4, 0.4)
+  d5 <- c(0.5, 0.5)
+  q <- c(0.1, 0.2, 0.3, 0.4)
+
+  out <- forward_calculate_rita(
+    init_prev,
+    h,
+    d1,
+    d2,
+    d3,
+    d4,
+    d5,
+    q
+  )
+
+  expected <-
+    sum(init_prev[1:3]) * (1 - d1[1]) +
+    init_prev[4] * (1 - d2[1]) +
+    init_prev[5] * (1 - d3[1]) +
+    init_prev[6] * (1 - d4[1]) +
+    init_prev[7] * (1 - d5[1]) * (1 - q[4]) +
+    h[1]
+
+  expect_equal(sum(out$prevalence[1, 1:7, 1]), expected)
 })
 
 test_that("rita post-processing works", {
