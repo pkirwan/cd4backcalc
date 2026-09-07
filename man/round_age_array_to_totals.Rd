@@ -4,13 +4,16 @@
 \alias{round_age_array_to_totals}
 \title{Round age-stratified arrays to match pre-rounded quarter/state totals}
 \usage{
-round_age_array_to_totals(arr, totals)
+round_age_array_to_totals(arr, totals, stochastic = FALSE)
 }
 \arguments{
 \item{arr}{Numeric array with age in the first dimension.}
 
 \item{totals}{Numeric array giving the target sums for each combination of
 the remaining dimensions.}
+
+\item{stochastic}{Logical; if TRUE, allocate each total across ages with a
+multinomial draw instead of largest-remainder rounding.}
 }
 \value{
 Rounded array whose sums over age match totals exactly.

@@ -33,3 +33,25 @@ test_that("round_fields works", {
   expect_equal(sum(rounded_epi$lat), round(sum(epi_obj$lat)))
   expect_equal(sum(rounded_epi$diags), round(sum(epi_obj$diags)))
 })
+
+test_that("stochastic diagnosis-age rounding preserves diffuse tails", {
+  nquarters <- 100L
+  diags_age <- array(
+    rep(c(0.9, 0.1), nquarters),
+    dim = c(2L, nquarters, 1L)
+  )
+  epi_obj <- list(
+    diags = matrix(1, nrow = nquarters, ncol = 1L),
+    diags_age = diags_age
+  )
+
+  set.seed(123)
+  rounded_epi <- round_fields(
+    epi_obj,
+    fields = c("diags", "diags_age"),
+    stochastic_diags_age = TRUE
+  )
+
+  expect_equal(apply(rounded_epi$diags_age, c(2, 3), sum), rounded_epi$diags)
+  expect_gt(sum(rounded_epi$diags_age[2, , ]), 0)
+})

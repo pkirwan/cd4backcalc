@@ -83,9 +83,22 @@ round_array_preserve <- function(arr) {
 #' @param arr Numeric array with age in the first dimension.
 #' @param totals Numeric array giving the target sums for each combination of
 #'   the remaining dimensions.
+#' @param stochastic Logical; if TRUE, allocate each total across ages with a
+#'   multinomial draw instead of largest-remainder rounding.
 #' @return Rounded array whose sums over age match totals exactly.
-round_age_array_to_totals <- function(arr, totals) {
+round_age_array_to_totals <- function(arr, totals, stochastic = FALSE) {
   dims <- dim(arr)
+
+  allocate <- function(slice, target) {
+    slice_total <- sum(slice)
+    if (target <= 0 || slice_total <= 0) {
+      return(rep(0, length(slice)))
+    }
+    if (stochastic) {
+      return(as.vector(stats::rmultinom(1, target, slice / slice_total)))
+    }
+    round_preserve(target * slice / slice_total)
+  }
 
   if (length(dims) < 2) {
     return(round_preserve(arr))
@@ -96,12 +109,7 @@ round_age_array_to_totals <- function(arr, totals) {
     for (j in seq_len(dims[2])) {
       slice <- arr[, j]
       target <- totals[j]
-      slice_total <- sum(slice)
-      rounded[, j] <- if (target <= 0 || slice_total <= 0) {
-        rep(0, length(slice))
-      } else {
-        round_preserve(target * slice / slice_total)
-      }
+      rounded[, j] <- allocate(slice, target)
     }
     return(rounded)
   }
@@ -115,12 +123,7 @@ round_age_array_to_totals <- function(arr, totals) {
     for (k in seq_len(dims[3])) {
       slice <- arr[, j, k]
       target <- totals[j, k]
-      slice_total <- sum(slice)
-      rounded[, j, k] <- if (target <= 0 || slice_total <= 0) {
-        rep(0, length(slice))
-      } else {
-        round_preserve(target * slice / slice_total)
-      }
+      rounded[, j, k] <- allocate(slice, target)
     }
   }
 
@@ -131,10 +134,13 @@ round_age_array_to_totals <- function(arr, totals) {
 #'
 #' @param epi_obj Epidemic object containing fields to round.
 #' @param fields Character vector of field names to round.
+#' @param stochastic_diags_age Logical; if TRUE, allocate diagnosis totals
+#'   across ages with multinomial draws.
 #' @return Epidemic object with specified fields rounded.
 round_fields <- function(
   epi_obj,
-  fields = c("lat", "diags", "lat_age", "diags_age")
+  fields = c("lat", "diags", "lat_age", "diags_age"),
+  stochastic_diags_age = FALSE
 ) {
   if ("lat_age" %in% fields && !is.null(epi_obj$lat_age)) {
     lat_totals <- if ("lat" %in% fields && !is.null(epi_obj$lat)) {
@@ -156,7 +162,11 @@ round_fields <- function(
     } else {
       round_matrix_preserve(apply(epi_obj$diags_age, c(2, 3), sum))
     }
-    epi_obj$diags_age <- round_age_array_to_totals(epi_obj$diags_age, diags_totals)
+    epi_obj$diags_age <- round_age_array_to_totals(
+      epi_obj$diags_age,
+      diags_totals,
+      stochastic = stochastic_diags_age
+    )
     if ("diags" %in% fields) {
       epi_obj$diags <- diags_totals
     }

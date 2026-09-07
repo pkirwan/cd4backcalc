@@ -4,12 +4,19 @@
 \alias{round_fields}
 \title{Round specified fields in an epidemic object}
 \usage{
-round_fields(epi_obj, fields = c("lat", "diags", "lat_age", "diags_age"))
+round_fields(
+  epi_obj,
+  fields = c("lat", "diags", "lat_age", "diags_age"),
+  stochastic_diags_age = FALSE
+)
 }
 \arguments{
 \item{epi_obj}{Epidemic object containing fields to round.}
 
 \item{fields}{Character vector of field names to round.}
+
+\item{stochastic_diags_age}{Logical; if TRUE, allocate diagnosis totals
+across ages with multinomial draws.}
 }
 \value{
 Epidemic object with specified fields rounded.
