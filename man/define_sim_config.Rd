@@ -38,6 +38,7 @@ define_sim_config(
   detect_step_quarter = NULL,
   detect_step_size = 0,
   gamma_obs_scale_trend = 0,
+  gamma_obs_drift_sd = 0.02,
   recent_arrival_completeness = 0
 )
 }
@@ -124,6 +125,11 @@ step in detect_prob (e.g. a surveillance reporting change). \code{NULL}
 \item{gamma_obs_scale_trend}{Total log-scale change (start to end) in the
 HIV-positive share of the external migration index (gamma_obs_scale);
 0 = constant share.}
+
+\item{gamma_obs_drift_sd}{Quarterly random-walk innovation SD on the log
+ratio of the external migration index to HIV-positive migration. This
+controls stochastic variation in migrant HIV prevalence and is passed to
+the matching Stan model. Set to 0 to disable.}
 
 \item{recent_arrival_completeness}{Proportion of eligible diagnoses with
 avidity testing done and a recorded year of arrival. Combined

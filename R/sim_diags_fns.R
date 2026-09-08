@@ -216,10 +216,10 @@ generate_mu <- function(nquar, nlatst, pattern, dist = FALSE) {
     ))
   }
 
-  cbind(
+  unname(cbind(
     outer(1 - transfer_prob, undiag_cd4_prop),
     transfer_prob
-  )
+  ))
 }
 
 #' Generate UK-acquired incidence-ratio patterns

@@ -55,6 +55,10 @@
 #' @param gamma_obs_scale_trend Total log-scale change (start to end) in the
 #'   HIV-positive share of the external migration index (gamma_obs_scale);
 #'   0 = constant share.
+#' @param gamma_obs_drift_sd Quarterly random-walk innovation SD on the log
+#'   ratio of the external migration index to HIV-positive migration. This
+#'   controls stochastic variation in migrant HIV prevalence and is passed to
+#'   the matching Stan model. Set to 0 to disable.
 #' @param recent_arrival_completeness Proportion of eligible diagnoses with
 #'   avidity testing done and a recorded year of arrival. Combined
 #'   multiplicatively with \code{cd4_completeness} (a recorded CD4 value is
@@ -96,6 +100,7 @@ define_sim_config <- function(
   detect_step_quarter = NULL, # quarter of an ascertainment step in detect_prob
   detect_step_size = 0, # logit-scale size of that step
   gamma_obs_scale_trend = 0, # log-scale drift in gamma_obs_scale
+  gamma_obs_drift_sd = 0.02, # quarterly log-scale random-walk innovation sd
   recent_arrival_completeness = 0
 ) {
   if (rita) {
@@ -170,6 +175,13 @@ define_sim_config <- function(
   ) {
     stop("recent_arrival_completeness must be a number between 0 and 1.")
   }
+  if (
+    length(gamma_obs_drift_sd) != 1L ||
+      !is.finite(gamma_obs_drift_sd) ||
+      gamma_obs_drift_sd < 0
+  ) {
+    stop("gamma_obs_drift_sd must be a single non-negative number.")
+  }
 
   # Standard configuration parameters
   config <- list(
@@ -220,6 +232,7 @@ define_sim_config <- function(
     },
     detect_step_size = detect_step_size,
     gamma_obs_scale_trend = gamma_obs_scale_trend,
+    gamma_obs_drift_sd = gamma_obs_drift_sd,
     recent_arrival_completeness = recent_arrival_completeness
   )
 
@@ -608,6 +621,10 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #' @param gamma_obs_scale_trend Total log-scale change (start to end) in the
 #'   HIV-positive share of the external migration index (gamma_obs_scale);
 #'   0 = constant share.
+#' @param gamma_obs_drift_sd Quarterly random-walk innovation SD on the log
+#'   ratio of the external migration index to HIV-positive migration. This
+#'   controls stochastic variation in migrant HIV prevalence and is passed to
+#'   the matching Stan model. Set to 0 to disable.
 #' @param recent_arrival_completeness Proportion of eligible diagnoses with
 #'   avidity testing done and a recorded year of arrival. Combined
 #'   multiplicatively with \code{cd4_completeness} (a recorded CD4 value is
@@ -653,6 +670,7 @@ simulate_diagnoses <- function(
   detect_step_quarter = NULL, # quarter of an ascertainment step in detect_prob
   detect_step_size = 0, # logit-scale size of that step
   gamma_obs_scale_trend = 0, # log-scale drift in gamma_obs_scale
+  gamma_obs_drift_sd = 0.02, # quarterly log-scale random-walk innovation sd
   recent_arrival_completeness = 0
 ) {
   sim_config <- define_sim_config(
@@ -689,6 +707,7 @@ simulate_diagnoses <- function(
     detect_step_quarter,
     detect_step_size,
     gamma_obs_scale_trend,
+    gamma_obs_drift_sd,
     recent_arrival_completeness
   )
   set.seed(sim_config$sim_seed)
@@ -1235,8 +1254,18 @@ simulate_diagnoses <- function(
   # Time-varying share of the external index that is HIV-positive migration
   t_std_gamma <- (seq_len(sim_config$nquar) - 0.5 * (sim_config$nquar + 1)) /
     sim_config$nquar
-  gamma_obs_scale_t <- sim_config$gamma_obs_scale *
-    exp(sim_config$gamma_obs_scale_trend * t_std_gamma)
+  gamma_obs_drift <- numeric(sim_config$nquar)
+  if (sim_config$dist && sim_config$gamma_obs_drift_sd > 0) {
+    gamma_obs_drift[-1L] <- cumsum(stats::rnorm(
+      sim_config$nquar - 1L,
+      0,
+      sim_config$gamma_obs_drift_sd
+    ))
+    gamma_obs_drift <- gamma_obs_drift - mean(gamma_obs_drift)
+  }
+  gamma_obs_scale_t <- sim_config$gamma_obs_scale * exp(
+    sim_config$gamma_obs_scale_trend * t_std_gamma + gamma_obs_drift
+  )
   sim_data$migrant_hiv_prevalence <- 1 / gamma_obs_scale_t
 
   # External migration-index auxiliary data (e.g. ONS total immigration trend)
@@ -1365,6 +1394,7 @@ simulate_diagnoses <- function(
     "gamma_obs" = gamma_obs,
     "gamma_obs_group" = gamma_obs_group,
     "gamma_obs_sd" = gamma_obs_sd,
+    "gamma_obs_drift_sd" = sim_config$gamma_obs_drift_sd,
     "sim_config" = sim_config
   )
   if (sim_config$age && sim_config$migration && !sim_config$rita) {

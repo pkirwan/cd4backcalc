@@ -139,7 +139,8 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
       abroad_age_trend = sim_config$abroad_age_trend,
       detect_step_quarter = sim_config$detect_step_quarter,
       detect_step_size = sim_config$detect_step_size,
-      gamma_obs_scale_trend = sim_config$gamma_obs_scale_trend
+      gamma_obs_scale_trend = sim_config$gamma_obs_scale_trend,
+      gamma_obs_drift_sd = sim_config$gamma_obs_drift_sd
     )
   }
   stan_data <- sim_diags$stan_data

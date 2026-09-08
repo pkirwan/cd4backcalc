@@ -190,6 +190,7 @@ test_that("age-specific migration simulation with gamma produces expected extern
     sim_type = "combo_3",
     gamma_obs_sd = 0.1,
     gamma_obs_scale_trend = 0.1,
+    gamma_obs_drift_sd = 0.05,
     abroad_age_trend = 0.1,
     detect_step_quarter = 30,
     detect_step_size = 0.1
@@ -201,6 +202,23 @@ test_that("age-specific migration simulation with gamma produces expected extern
   expect_equal(
     length(sim_diags$stan_data$gamma_obs),
     sim_diags$stan_data$nquar
+  )
+  expect_equal(sim_diags$stan_data$gamma_obs_drift_sd, 0.05)
+  expect_gt(
+    stats::sd(diff(log(sim_diags$sim_data$migrant_hiv_prevalence))),
+    0
+  )
+  t_std <- (seq_len(sim_diags$stan_data$nquar) -
+    0.5 * (sim_diags$stan_data$nquar + 1)) / sim_diags$stan_data$nquar
+  expected_log_prevalence <-
+    -log(sim_diags$stan_data$sim_config$gamma_obs_scale) - 0.1 * t_std
+  expect_equal(
+    mean(
+      log(sim_diags$sim_data$migrant_hiv_prevalence) -
+        expected_log_prevalence
+    ),
+    0,
+    tolerance = 1e-12
   )
 })
 
