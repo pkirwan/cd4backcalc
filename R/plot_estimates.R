@@ -519,7 +519,7 @@ get_plot_title <- function(quantity) {
   } else if (quantity == "undiag_migration") {
     "migration with undiagnosed HIV"
   } else if (quantity == "all_migration") {
-    "overall migration with HIV (including diagnosed and undiagnosed)"
+    "overall migration with HIV"
   } else if (quantity == "diag_prob") {
     "HIV diagnosis probabilities, by CD4 strata"
   } else if (quantity == "diagnoses") {
@@ -531,7 +531,7 @@ get_plot_title <- function(quantity) {
   } else if (quantity == "transfers_detected") {
     "detected transfers of care"
   } else if (quantity == "ratio_abroad_uk") {
-    "born-abroad:UK-born ratio of UK-acquired incidence"
+    "UK-acquired born-abroad:UK-born ratio"
   } else if (quantity == "detect_prob") {
     "detection probability for transfers of care"
   } else if (quantity == "migrant_hiv_prevalence") {
