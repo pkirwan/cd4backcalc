@@ -128,7 +128,7 @@ The scalar \code{gamma_obs} series is always simulated; quarters where
 \code{gamma_obs_group}.}
 
 \item{gamma_obs_sd}{Standard deviation, on the log scale, of an independent
-rolling-annual migration index used by age-dependent migration models.
+rolling-annual migration index used by migration models.
 This evidence informs temporal trend, not absolute migration level. Set
 to 0 to disable this auxiliary likelihood.}
 

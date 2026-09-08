@@ -41,6 +41,7 @@ After fitting a model with `run_backcalc()`, several quantities can be plotted o
 | `"transfers"` | Estimated transfers of care |
 | `"transfers_detected"` | Estimated detected transfers of care |
 | `"detect_prob"` | Estimated detection probabilities |
+| `"migrant_hiv_prevalence"` | Estimated HIV-positive share of the external migration index |
 
 **Age-dependent models** (additional):
 

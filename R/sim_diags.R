@@ -605,7 +605,7 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #'   \code{gamma_obs_grouped} is \code{FALSE} have \code{-1} rows in
 #'   \code{gamma_obs_group}.
 #' @param gamma_obs_sd Standard deviation, on the log scale, of an independent
-#'   rolling-annual migration index used by age-dependent migration models.
+#'   rolling-annual migration index used by migration models.
 #'   This evidence informs temporal trend, not absolute migration level. Set
 #'   to 0 to disable this auxiliary likelihood.
 #' @param gamma_obs_scale Ratio of total external migration to HIV-positive

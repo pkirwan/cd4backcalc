@@ -427,6 +427,21 @@ stan_model_config <- function(
 #' @param stan_data A list of data formatted for Stan.
 #' @return NULL. Throws an error if checks fail.
 confirm_stan_data <- function(stan_data) {
+  if (stan_data$model_config$migration) {
+    stopifnot(
+      "Incorrect length in stan_data, gamma_obs should be (nquar)" =
+        length(stan_data$gamma_obs) == stan_data$nquar,
+      "gamma_obs_drift_sd must be a single non-negative number" =
+        length(stan_data$gamma_obs_drift_sd) == 1L &&
+          is.finite(stan_data$gamma_obs_drift_sd) &&
+          stan_data$gamma_obs_drift_sd >= 0,
+      "gamma_obs_slope_sd must be a single non-negative number" =
+        length(stan_data$gamma_obs_slope_sd) == 1L &&
+          is.finite(stan_data$gamma_obs_slope_sd) &&
+          stan_data$gamma_obs_slope_sd >= 0
+    )
+  }
+
   if (stan_data$model_config$age && stan_data$model_config$migration) {
     stopifnot(
       "Incorrect dimensions in stan_data, HIV_age should be (nquar, nage, 2)" = all(
@@ -467,10 +482,6 @@ confirm_stan_data <- function(stan_data) {
       )
     )
     stopifnot(
-      "Incorrect length in stan_data, gamma_obs should be (nquar)" =
-        length(stan_data$gamma_obs) == stan_data$nquar
-    )
-    stopifnot(
       "Incorrect dimensions in stan_data, gamma_obs_group should be (nquar, 4)" = all(
         dim(stan_data$gamma_obs_group) == c(stan_data$nquar, 4L)
       )
@@ -486,18 +497,6 @@ confirm_stan_data <- function(stan_data) {
           as.integer(stan_data$n_detect_steps),
           length(stan_data$detect_step_quarter)
         )
-    )
-    stopifnot(
-      "gamma_obs_drift_sd must be a single non-negative number" =
-        length(stan_data$gamma_obs_drift_sd) == 1L &&
-          is.finite(stan_data$gamma_obs_drift_sd) &&
-          stan_data$gamma_obs_drift_sd >= 0
-    )
-    stopifnot(
-      "gamma_obs_slope_sd must be a single non-negative number" =
-        length(stan_data$gamma_obs_slope_sd) == 1L &&
-          is.finite(stan_data$gamma_obs_slope_sd) &&
-          stan_data$gamma_obs_slope_sd >= 0
     )
     if (isTRUE(stan_data$model_config$migration)) {
       stopifnot(

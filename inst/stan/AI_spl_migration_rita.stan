@@ -90,6 +90,12 @@ data {
   // Quarters where abroad-diagnosis ascertainment steps up/down (e.g. reporting change)
   int<lower=0> n_detect_steps;
   array[n_detect_steps] int<lower=2, upper=nquar> detect_step_quarter;
+
+  // Independent rolling-annual migration index; sd=0 disables the likelihood
+  vector[nquar] gamma_obs;
+  real<lower=0> gamma_obs_sd;
+  real<lower=0> gamma_obs_drift_sd;
+  real<lower=0> gamma_obs_slope_sd;
 }
 transformed data {
   vector[nquar] t_std;
@@ -119,6 +125,9 @@ parameters {
   real alpha_share;
   vector[npars_mig - 1] beta_share_raw;
   real log_sigma_share;
+  real gamma_obs_offset;
+  real gamma_obs_slope;
+  vector[nquar - 1] gamma_obs_drift_raw;
   
   // False recency rate
   real logit_frr;
@@ -182,6 +191,30 @@ transformed parameters {
   vector<lower=0>[nquar] transfers = omega .* transfer_share;
   vector<lower=0>[nquar] undiag_migration = omega .* (1 - transfer_share);
   vector[nquar] gamma = log(omega);
+  vector<lower=0>[3] omega_pre = rep_vector(omega[1], 3);
+  vector[nquar] gamma_agg;
+  {
+    real running = sum(omega_pre);
+    for (t in 1 : nquar) {
+      running += omega[t];
+      if (t > 1) {
+        running -= t <= 4 ? omega_pre[t - 1] : omega[t - 4];
+      }
+      gamma_agg[t] = log(running);
+    }
+  }
+
+  vector[nquar] gamma_obs_offset_t;
+  {
+    real drift = 0;
+    for (t in 1 : nquar) {
+      if (t > 1) {
+        drift += gamma_obs_drift_sd * gamma_obs_drift_raw[t - 1];
+      }
+      gamma_obs_offset_t[t] = gamma_obs_offset + gamma_obs_slope * t_std[t]
+                              + drift;
+    }
+  }
   
   // Step variances on natural scale (non-centred)
   vector[5] log_vardelta = mu_log_var + sigma_log_var * log_vardelta_raw;
@@ -389,6 +422,13 @@ model {
   alpha_share ~ normal(logit(0.30), 1);
   beta_share_raw ~ std_normal();
   log_sigma_share ~ normal(-1, 0.5);
+  gamma_obs_offset ~ normal(0, 10);
+  gamma_obs_slope ~ normal(0, gamma_obs_slope_sd);
+  gamma_obs_drift_raw ~ std_normal();
+
+  if (gamma_obs_sd > 0) {
+    gamma_obs ~ normal(gamma_agg + gamma_obs_offset_t, gamma_obs_sd);
+  }
 
   // Priors centred on empirical range midpoints:
   // State 1 (recent/RITA+):   5–30%  → logit ~ -1.75

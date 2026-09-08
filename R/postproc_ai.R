@@ -118,6 +118,7 @@ postproc_ai <- function(
         hiv_list[[paste0("transfers_detected_", ch)]] <- ppq$transfers_detected
         hiv_list[[paste0("ratio_abroad_uk_", ch)]] <- ppq$ratio_abroad_uk
         hiv_list[[paste0("detect_prob_", ch)]] <- ppq$detect_prob
+        hiv_list[[paste0("migrant_hiv_prevalence_", ch)]] <- ppq$migrant_hiv_prevalence
       }
     }
   } else {
@@ -352,6 +353,17 @@ build_ppq_list <- function(
           start.yr = start_yr
         )
       )
+    )
+
+    offset_idx <- grep("^gamma_obs_offset_t\\[", colnames(fit_slice))
+    if (length(offset_idx) != stan_data$nquar) {
+      stop("gamma_obs_offset_t[...] not found or wrong length.")
+    }
+    out$migrant_hiv_prevalence <- make_tibble(
+      apply(exp(-fit_slice[, offset_idx, drop = FALSE]), 2, get_quantiles),
+      nt = stan_data$nquar,
+      start_yr = start_yr,
+      qt.flag = TRUE
     )
   }
 
