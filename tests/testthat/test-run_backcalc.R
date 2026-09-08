@@ -20,6 +20,7 @@ test_that("cd4-only back-calculation produces a stanfit object", {
   })
   expect_r6_class(hiv_list$fit, "CmdStanMCMC")
   expect_true("diag_prob" %in% names(hiv_list))
+  expect_true(all(c("conv.chk", "n.divg", "time") %in% names(hiv_list)))
 })
 
 test_that("run_backcalc accepts user-supplied inits", {

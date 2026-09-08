@@ -100,7 +100,7 @@ test_that("simulated plots are generated correctly for migration_prob", {
     nquar = 40,
     sim_seed = 123,
     migration = TRUE,
-    m_pattern = "reduced"
+    m_pattern = "varying"
   )
   # Generate plots of key quantities
   p1 <- plot_simulations(stan_data, "migration_prob")
@@ -110,7 +110,7 @@ test_that("simulated plots are generated correctly for migration_prob", {
     sim_seed = 123,
     migration = TRUE,
     rita = TRUE,
-    m_pattern = "reduced"
+    m_pattern = "varying"
   )
   # Generate plots of key quantities
   p2 <- plot_simulations(stan_data, "migration_prob")
@@ -255,6 +255,30 @@ test_that("chained plots are generated correctly", {
   expect_s3_class(p1, "ggplot")
 })
 
+test_that("chain plot colours can be customised", {
+  groups <- c("Model 1, Chain 1", "Model 1, Chain 2")
+
+  expect_identical(
+    cd4backcalc:::make_model_colors(
+      groups,
+      chain_results = TRUE,
+      colours = c("navy", "firebrick")
+    ),
+    stats::setNames(c("navy", "firebrick"), groups)
+  )
+  expect_identical(
+    cd4backcalc:::make_model_colors(
+      groups,
+      chain_results = TRUE,
+      colours = c(
+        "Model 1, Chain 2" = "firebrick",
+        "Model 1, Chain 1" = "navy"
+      )
+    ),
+    stats::setNames(c("navy", "firebrick"), groups)
+  )
+})
+
 test_that("plots are generated correctly for migration model", {
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 60, sim_seed = 123, migration = TRUE)
@@ -376,7 +400,7 @@ test_that("plots work for migration and rita model bias plots", {
     sim_seed = 123,
     rita = TRUE,
     migration = TRUE,
-    m_pattern = "reduced"
+    m_pattern = "varying"
   )
   # Fit back-calculation model
   hiv_list <- list()

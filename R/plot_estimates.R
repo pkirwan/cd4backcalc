@@ -106,6 +106,8 @@ plot_simulations <- function(
 #' @param model_2_name A string specifying the name of the second model for the legend (default is "Model 2").
 #' @param credible_intervals A logical indicating whether to plot 95% credible intervals (default is TRUE).
 #' @param sim_comparison A string specifying which simulated values to compare against when `hiv_list` contains simulated data. Options are `"sampled"` (the stochastic realisation for the particular seed, the default) or `"generative"` (deterministic expected values).
+#' @param colours Optional character vector of model or chain colours. Unnamed
+#'   values are matched in legend order; named values must match legend labels.
 #' @return A ggplot2 object.
 #' @examples
 #' # See ?run_backcalc for a full end-to-end workflow.
@@ -120,7 +122,8 @@ plot_estimates <- function(
   model_1_name = "Model 1",
   model_2_name = "Model 2",
   credible_intervals = TRUE,
-  sim_comparison = c("sampled", "generative")
+  sim_comparison = c("sampled", "generative"),
+  colours = NULL
 ) {
   sim_comparison <- match.arg(sim_comparison)
   hiv_list <- purrr::compact(hiv_list)
@@ -240,7 +243,8 @@ plot_estimates <- function(
     chain_results = chain_results,
     has_second_model = !is.null(hiv_list_2),
     model_1_name = model_1_name,
-    model_2_name = model_2_name
+    model_2_name = model_2_name,
+    colours = colours
   )
   legend_breaks <- model_groups
 
@@ -583,10 +587,24 @@ make_model_colors <- function(
   chain_results = FALSE,
   has_second_model = FALSE,
   model_1_name = "Model 1",
-  model_2_name = "Model 2"
+  model_2_name = "Model 2",
+  colours = NULL
 ) {
   if (length(groups) == 0) {
     return(stats::setNames(character(), character()))
+  }
+
+  if (!is.null(colours)) {
+    if (!is.character(colours) || length(colours) != length(groups)) {
+      stop("`colours` must contain one character value per model or chain.")
+    }
+    if (!is.null(names(colours)) && !setequal(names(colours), groups)) {
+      stop("Named `colours` must match the model or chain legend labels.")
+    }
+    if (!is.null(names(colours))) {
+      return(stats::setNames(unname(colours[groups]), groups))
+    }
+    return(stats::setNames(colours, groups))
   }
 
   if (!has_second_model) {

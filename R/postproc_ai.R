@@ -145,6 +145,11 @@ postproc_ai <- function(
     )
   }
 
+  diagnostics <- fit$diagnostic_summary()
+  hiv_list$conv.chk <- diagnostics$ebfmi > 0.3
+  hiv_list$n.divg <- sum(diagnostics$num_divergent)
+  hiv_list$time <- fit$time()$total
+
   return(hiv_list)
 }
 

@@ -58,7 +58,7 @@ data {
   real<lower=0> sigma_sq; // Arbitrary noise of GP
 }
 transformed data {
-  vector[nquar] mu = rep_vector(0, nquar);
+  vector[nquar] mu = rep_vector(5.521461, nquar);
 }
 parameters {
   // Infection parameters
@@ -244,7 +244,7 @@ model {
     matrix[nquar, nquar] L = cholesky_decompose(Sigma);
     
     rho ~ student_t(4, 0, 1);
-    eta ~ normal(4, 1);
+    eta ~ normal(0, 1);
     gamma ~ multi_normal_cholesky(mu, L);
     
     // weak priors for inactive infection params

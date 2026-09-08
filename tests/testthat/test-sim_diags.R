@@ -36,22 +36,43 @@ test_that("migration simulation preserves scientific input contracts", {
   expect_equal(rowSums(sim_diags$sim_data$m), sim_diags$sim_data$omega)
 })
 
-test_that("reduced migration pattern varies transfers with fixed CD4 composition", {
-  sim_diags <- simulate_diagnoses(
-    nquar = 20,
-    sim_seed = 123,
-    migration = TRUE,
-    m_pattern = "reduced",
-    dist = FALSE
+test_that("migration probability patterns follow the Stan decomposition", {
+  expected_cd4 <- list(
+    constant = rep(0.25, 4),
+    differing = c(1, 2, 2, 1) / 6,
+    varying = c(2, 2, 2, 1) / 7
+  )
+  expected_transfer <- list(
+    constant = rep(0.2, 20),
+    differing = rep(0.4, 20),
+    varying = seq(0.2, 0.4, length.out = 20)
   )
 
-  mu <- sim_diags$sim_data$mu
-  conditional_cd4 <- mu[, 1:4, drop = FALSE] / rowSums(mu[, 1:4, drop = FALSE])
-  expect_equal(
-    unname(conditional_cd4),
-    matrix(c(2, 2, 2, 1) / 7, 20, 4, byrow = TRUE)
-  )
-  expect_equal(mu[, 5], seq(0.2, 0.4, length.out = 20))
+  for (pattern in names(expected_cd4)) {
+    mu <- generate_mu(20, 4, pattern, dist = FALSE)
+    conditional_cd4 <-
+      mu[, 1:4, drop = FALSE] / rowSums(mu[, 1:4, drop = FALSE])
+    expect_equal(
+      unname(conditional_cd4),
+      matrix(expected_cd4[[pattern]], 20, 4, byrow = TRUE)
+    )
+    expect_equal(mu[, 5], expected_transfer[[pattern]])
+
+    set.seed(123)
+    stochastic_mu <- generate_mu(20, 4, pattern, dist = TRUE)
+    stochastic_conditional_cd4 <-
+      stochastic_mu[, 1:4, drop = FALSE] /
+        rowSums(stochastic_mu[, 1:4, drop = FALSE])
+    expect_equal(
+      unname(stochastic_conditional_cd4),
+      matrix(expected_cd4[[pattern]], 20, 4, byrow = TRUE)
+    )
+    expect_equal(rowSums(stochastic_mu), rep(1, 20))
+    expect_false(isTRUE(all.equal(
+      stochastic_mu[, 5],
+      expected_transfer[[pattern]]
+    )))
+  }
 })
 
 test_that("transfer detection preserves totals and age allocation", {
@@ -61,7 +82,7 @@ test_that("transfer detection preserves totals and age allocation", {
     sim_seed = 123,
     age = TRUE,
     migration = TRUE,
-    m_pattern = "reduced"
+    m_pattern = "varying"
   )
 
   expect_equal(
@@ -81,7 +102,7 @@ test_that("recent-arrival CD4 data are annual age-by-state counts", {
     sim_seed = 123,
     age = TRUE,
     migration = TRUE,
-    m_pattern = "reduced",
+    m_pattern = "varying",
     recent_arrival_completeness = 0.2
   )
 
@@ -91,13 +112,13 @@ test_that("recent-arrival CD4 data are annual age-by-state counts", {
   expect_true(all(sim_diags$stan_data$recent_arrival_cd4 >= 0))
 })
 
-test_that("reduced model preparation defaults missing recent-arrival data", {
+test_that("migration model preparation defaults missing recent-arrival data", {
   sim_diags <- simulate_diagnoses(
     nquar = 20,
     sim_seed = 123,
     age = TRUE,
     migration = TRUE,
-    m_pattern = "reduced"
+    m_pattern = "varying"
   )
   sim_diags$stan_data$nyear <- NULL
   sim_diags$stan_data$recent_arrival_cd4 <- NULL

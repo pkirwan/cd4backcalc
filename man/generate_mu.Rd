@@ -11,14 +11,16 @@ generate_mu(nquar, nlatst, pattern, dist = FALSE)
 
 \item{nlatst}{Number of latent states.}
 
-\item{pattern}{Pattern type for mu ("constant", "differing", "varying",
-or "reduced").}
+\item{pattern}{Pattern type for mu ("constant", "differing", or "varying").}
 
-\item{dist}{Logical indicating whether to add logit-scale noise.}
+\item{dist}{Logical indicating whether to add logit-scale temporal variation.}
 }
 \value{
 Matrix of mu values over time.
 }
 \description{
-Generate migration probability patterns
+Each pattern combines a time-varying transfer share with a time-constant
+conditional CD4 composition among undiagnosed arrivals, matching the Stan
+model parameterisation. With \code{dist = TRUE}, smooth temporal variation
+is added to the transfer share on the logit scale.
 }

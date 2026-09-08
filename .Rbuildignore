@@ -8,5 +8,6 @@
 ^_pkgdown\.yml$
 ^docs$
 ^pkgdown$
+^tools$
 ^vignettes/articles/figures/.*\.RData$
 ^src/.*\.(o|obj|dll|so)$

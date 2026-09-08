@@ -8,8 +8,8 @@
 #' @param d_pattern Pattern type for diagnosis probabilities ("constant", "varying").
 #' @param p_pattern Pattern for the born-abroad:UK-born ratio of UK-acquired
 #'   incidence ("constant", "increasing").
-#' @param m_pattern Pattern type for mu ("constant", "differing", "varying",
-#'   or "reduced").
+#' @param m_pattern Pattern type for mu ("constant", "differing", or
+#'   "varying").
 #' @param r_pattern Pattern type for RITA data ("constant", "increasing", "none").
 #' @param a_pattern Pattern type for age-based data ("constant", "wedge", "varying_wedge").
 #' @param sim_type If provided, a preset type of simulation to define patterns for.
@@ -319,7 +319,7 @@ define_simulation_type <- function(config, sim_type = "constant") {
     config$o_pattern <- "increasing"
     config$d_pattern <- "varying"
     config$p_pattern <- "increasing"
-    config$m_pattern <- "reduced"
+    config$m_pattern <- "varying"
     config$a_pattern <- "wedge"
     if (config$age) {
       config$age_diag_effect <- 0.5
@@ -334,7 +334,7 @@ define_simulation_type <- function(config, sim_type = "constant") {
     config$o_pattern <- "step_change_2"
     config$d_pattern <- "varying"
     config$p_pattern <- "increasing"
-    config$m_pattern <- "reduced"
+    config$m_pattern <- "varying"
     config$a_pattern <- "wedge"
     if (config$age) {
       config$age_diag_effect <- 0.5
@@ -543,8 +543,8 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #' @param d_pattern Pattern type for diagnosis probabilities ("constant", "varying").
 #' @param p_pattern Pattern for the born-abroad:UK-born ratio of UK-acquired
 #'   incidence ("constant", "increasing").
-#' @param m_pattern Pattern type for mu ("constant", "differing", "varying",
-#'   or "reduced").
+#' @param m_pattern Pattern type for mu ("constant", "differing", or
+#'   "varying").
 #' @param r_pattern Pattern type for RITA data ("constant", "increasing", "none").
 #' @param a_pattern Pattern type for age-based data ("constant", "wedge", "varying_wedge").
 #' @param sim_type If provided, a preset type of simulation to define patterns for.
@@ -999,7 +999,7 @@ simulate_diagnoses <- function(
   )
 
   recent_arrival_cd4 <- if (
-    sim_config$rita || sim_config$m_pattern != "reduced"
+    !sim_config$age || !sim_config$migration || sim_config$rita
   ) {
     empty_recent_arrival_cd4 <- array(
       0,
@@ -1367,7 +1367,7 @@ simulate_diagnoses <- function(
     "gamma_obs_sd" = gamma_obs_sd,
     "sim_config" = sim_config
   )
-  if (sim_config$m_pattern == "reduced") {
+  if (sim_config$age && sim_config$migration && !sim_config$rita) {
     stan_data$nyear <- sim_config$nquar %/% 4L
     stan_data$recent_arrival_cd4 <- recent_arrival_cd4$observed
   }

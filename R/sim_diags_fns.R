@@ -183,66 +183,43 @@ generate_omega <- function(nquar, pattern, target_mig = 12000, dist = TRUE) {
 
 #' Generate migration probability patterns
 #'
+#' Each pattern combines a time-varying transfer share with a time-constant
+#' conditional CD4 composition among undiagnosed arrivals, matching the Stan
+#' model parameterisation. With \code{dist = TRUE}, smooth temporal variation
+#' is added to the transfer share on the logit scale.
+#'
 #' @param nquar Number of time quarters.
 #' @param nlatst Number of latent states.
-#' @param pattern Pattern type for mu ("constant", "differing", "varying",
-#'   or "reduced").
-#' @param dist Logical indicating whether to add logit-scale noise.
+#' @param pattern Pattern type for mu ("constant", "differing", or "varying").
+#' @param dist Logical indicating whether to add logit-scale temporal variation.
 #' @return Matrix of mu values over time.
 generate_mu <- function(nquar, nlatst, pattern, dist = FALSE) {
   # check pattern
-  stopifnot(pattern %in% c("constant", "differing", "varying", "reduced"))
+  stopifnot(pattern %in% c("constant", "differing", "varying"))
   if (pattern == "constant") {
-    mu <- matrix(0.2, nrow = nquar, ncol = nlatst + 1)
-  } else if (pattern == "reduced") {
+    transfer_prob <- rep(0.2, nquar)
+    undiag_cd4_prop <- rep(0.25, nlatst)
+  } else if (pattern == "differing") {
+    transfer_prob <- rep(0.4, nquar)
+    undiag_cd4_prop <- c(1, 2, 2, 1) / 6
+  } else if (pattern == "varying") {
     transfer_prob <- seq(0.2, 0.4, length.out = nquar)
     undiag_cd4_prop <- c(2, 2, 2, 1) / 7
-    mu <- cbind(
-      outer(1 - transfer_prob, undiag_cd4_prop),
-      transfer_prob
-    )
-  } else {
-    mu <- if (pattern == "differing") {
-      matrix(
-        c(0.1, 0.2, 0.2, 0.1, 0.4),
-        nrow = nquar,
-        ncol = nlatst + 1,
-        byrow = TRUE
-      )
-    } else if (pattern == "varying") {
-      matrix(
-        c(
-          seq(0.15, 0.3, length.out = nquar),
-          seq(0.2, 0.22, length.out = nquar),
-          seq(0.2, 0.15, length.out = nquar),
-          seq(0.10, 0.08, length.out = nquar),
-          seq(0.2, 0.4, length.out = nquar)
-        ),
-        nrow = nquar,
-        ncol = nlatst + 1
-      )
-    }
   }
 
-  if (dist && pattern != "reduced") {
-    sigma <- 0.1
-    # Add noise on logit scale with compartment nlatst as reference,
-    # matching Stan's softmax parameterization
-    log_mu <- log(mu)
-    logits <- sweep(log_mu, 1, log_mu[, nlatst])
-    noise_idx <- setdiff(seq_len(nlatst + 1), nlatst)
-    logits[, noise_idx] <- logits[, noise_idx] +
-      matrix(
-        stats::rnorm(nquar * length(noise_idx), 0, sigma),
-        nrow = nquar
-      )
-    exp_logits <- exp(logits)
-    mu <- exp_logits / rowSums(exp_logits)
-  } else {
-    mu <- mu / rowSums(mu)
+  if (dist) {
+    transfer_prob <- invlogit(simulate_ar1_logit(
+      nquar,
+      logit(transfer_prob),
+      rho = 0.86,
+      vardelta = exp(-4.0)
+    ))
   }
 
-  return(mu)
+  cbind(
+    outer(1 - transfer_prob, undiag_cd4_prop),
+    transfer_prob
+  )
 }
 
 #' Generate UK-acquired incidence-ratio patterns

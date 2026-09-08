@@ -5,8 +5,10 @@
 ### Improvements
 
 - Simplified age-dependent model is now the default, with a small re-parameterisation of the transfers of care to align to epidemiologically relevant quantities.
+- Migration probability simulation patterns now mirror the Stan model and the redundant `m_pattern="reduced"` option has been removed.
 - Incorporated efficiency improvements from age-dependent migration models into other age-dependent models.
 - Re-ran migration models for R vignettes with improved migration model logic.
+- `plot_estimates()` now accepts a `colours` argument with the model or chain colours.
 
 ### Bug fixes
 
