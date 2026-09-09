@@ -75,7 +75,7 @@ plot_simulations <- function(
         "^(.)",
         "\\U\\1",
         gsub(
-          ", by CD4 strata| by age|, by CD4 strata and age|Simulated | for transfers of care",
+          ", by CD4 strata| by age group|, by CD4 strata and age group|Simulated | for transfers of care",
           "",
           get_plot_title(quantity)
         ),
@@ -298,7 +298,7 @@ plot_estimates <- function(
         "^(.)",
         "\\U\\1",
         gsub(
-          ", by CD4 strata| by age|, by CD4 strata and age|Estimated | for transfers of care",
+          ", by CD4 strata| by age group|, by CD4 strata and age group|Estimated | for transfers of care",
           "",
           get_plot_title(quantity)
         ),
@@ -547,35 +547,35 @@ get_plot_title <- function(quantity) {
   } else if (quantity == "detect_prob") {
     "detection probability for transfers of care"
   } else if (quantity == "migrant_hiv_prevalence") {
-    "HIV-positive share of the external migration index"
+    "HIV prevalence among migrants"
   } else if (quantity == "incidence_age") {
-    "HIV incidence by age"
+    "HIV incidence by age group"
   } else if (quantity == "undiag_prev_age") {
-    "undiagnosed HIV prevalence by age"
+    "undiagnosed HIV prevalence by age group"
   } else if (quantity == "undiag_migration_age") {
-    "migration with undiagnosed HIV by age"
+    "migration with undiagnosed HIV by age group"
   } else if (quantity == "diagnoses_age") {
-    "HIV diagnoses by age"
+    "HIV diagnoses by age group"
   } else if (quantity == "aids_diagnoses_age") {
-    "AIDS diagnoses by age"
+    "AIDS diagnoses by age group"
   } else if (quantity == "cd4_diagnoses_age") {
-    "CD4 diagnoses, by CD4 strata and age"
+    "CD4 diagnoses, by CD4 strata and age group"
   } else if (quantity == "transfers_detected_age") {
-    "Detected transfers of care by age group"
+    "detected transfers of care by age group"
   } else if (quantity == "gamma_obs") {
-    "Log external migration index"
+    "external migration index"
   } else if (quantity == "gamma_obs_group") {
-    "Log external migration index by age group"
+    "external migration index by age group"
   } else if (quantity == "diag_prob_age") {
-    "HIV diagnosis probabilities, by CD4 strata and age"
+    "HIV diagnosis probabilities, by CD4 strata and age group"
   } else if (quantity == "diag_prob_mig") {
     "HIV diagnosis probabilities (born abroad), by CD4 strata"
   } else if (quantity == "diag_prob_mig_age") {
-    "HIV diagnosis probabilities (born abroad), by CD4 strata and age"
+    "HIV diagnosis probabilities (born abroad), by CD4 strata and age group"
   } else if (quantity == "incidence_trend") {
-    "HIV incidence trend by age"
+    "HIV incidence trend by age group"
   } else if (quantity == "peak_incidence") {
-    "year of peak HIV incidence by age"
+    "year of peak HIV incidence by age group"
   } else {
     stop("Invalid quantity specified.")
   }

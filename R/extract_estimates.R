@@ -469,12 +469,14 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
     out <- make_grouped_age_data(stan_data$ABROAD_group)
   } else if (quantity == "gamma_obs") {
     out <- tibble::tibble(
-      value = stan_data$gamma_obs,
+      value = exp(stan_data$gamma_obs),
       year = seq(0, plot_years, by = 0.25),
       group = "Generative values"
     )
   } else if (quantity == "gamma_obs_group") {
-    out <- make_grouped_age_data(stan_data$gamma_obs_group) |>
+    gamma_obs_group <- stan_data$gamma_obs_group
+    gamma_obs_group[gamma_obs_group >= 0] <- exp(gamma_obs_group[gamma_obs_group >= 0])
+    out <- make_grouped_age_data(gamma_obs_group) |>
       dplyr::filter(.data$value >= 0)
   } else if (quantity == "cd4_diagnoses_age") {
     cd4_age <- if (stan_data$sim_config$migration) {

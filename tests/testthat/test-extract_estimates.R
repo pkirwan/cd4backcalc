@@ -209,7 +209,11 @@ test_that("observed Stan quantities are extracted for plotting", {
   )
   expect_equal(
     extracted[[which(quantities == "gamma_obs")]]$value[1],
-    sim_diags$stan_data$gamma_obs[1]
+    exp(sim_diags$stan_data$gamma_obs[1])
+  )
+  expect_equal(
+    extracted[[which(quantities == "gamma_obs_group")]]$value[1],
+    exp(sim_diags$stan_data$gamma_obs_group[1, 1])
   )
   expect_false(any(extracted[[which(quantities == "gamma_obs_group")]]$value < 0))
   expect_equal(
