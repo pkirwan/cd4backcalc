@@ -49,6 +49,32 @@ test_that("simulated plots are generated correctly", {
   expect_s3_class(p11, "ggplot")
 })
 
+test_that("observed Stan quantities can be plotted", {
+  sim_diags <- simulate_diagnoses(
+    nquar = 40,
+    sim_seed = 123,
+    age = TRUE,
+    migration = TRUE,
+    gamma_obs_sd = 0.1,
+    gamma_obs_grouped = TRUE
+  )
+
+  quantities <- c(
+    "aids_diagnoses",
+    "aids_diagnoses_age",
+    "transfers_detected_age",
+    "gamma_obs",
+    "gamma_obs_group",
+    "cd4_diagnoses",
+    "cd4_diagnoses_age"
+  )
+  plots <- lapply(quantities, function(quantity) {
+    plot_simulations(sim_diags, quantity)
+  })
+
+  expect_true(all(vapply(plots, inherits, logical(1), what = "ggplot")))
+})
+
 test_that("simulated plots are generated correctly", {
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(

@@ -164,3 +164,60 @@ test_that("extract_simulated_quantity correctly extracts values for ad", {
     sum(stan_data$sim_data$omega_age[1:10, 1])
   )
 })
+
+test_that("observed Stan quantities are extracted for plotting", {
+  sim_diags <- simulate_diagnoses(
+    nquar = 40,
+    sim_seed = 123,
+    age = TRUE,
+    migration = TRUE,
+    gamma_obs_sd = 0.1,
+    gamma_obs_grouped = TRUE
+  )
+  quantities <- c(
+    "aids_diagnoses",
+    "aids_diagnoses_age",
+    "transfers_detected_age",
+    "gamma_obs",
+    "gamma_obs_group",
+    "cd4_diagnoses",
+    "cd4_diagnoses_age"
+  )
+
+  extracted <- lapply(
+    quantities,
+    function(quantity) extract_simulated_quantity(sim_diags, quantity)
+  )
+
+  expect_true(all(vapply(extracted, nrow, integer(1)) > 0))
+  expect_true(all(vapply(
+    extracted,
+    function(x) all(c("value", "year", "group") %in% names(x)),
+    logical(1)
+  )))
+  expect_equal(
+    extracted[[which(quantities == "aids_diagnoses")]]$value[1],
+    sum(sim_diags$stan_data$AIDS[1, ])
+  )
+  expect_equal(
+    extracted[[which(quantities == "aids_diagnoses_age")]]$value[1],
+    sum(sim_diags$stan_data$AIDS_age[1, 1:10, ])
+  )
+  expect_equal(
+    extracted[[which(quantities == "transfers_detected_age")]]$value[1],
+    sim_diags$stan_data$ABROAD_group[1, 1]
+  )
+  expect_equal(
+    extracted[[which(quantities == "gamma_obs")]]$value[1],
+    sim_diags$stan_data$gamma_obs[1]
+  )
+  expect_false(any(extracted[[which(quantities == "gamma_obs_group")]]$value < 0))
+  expect_equal(
+    extracted[[which(quantities == "cd4_diagnoses")]]$value[1],
+    sum(sim_diags$stan_data$CD4[1, , 1])
+  )
+  expect_equal(
+    extracted[[which(quantities == "cd4_diagnoses_age")]]$value[1],
+    sum(sim_diags$stan_data$CD4_age[1, 1:10, , 1])
+  )
+})

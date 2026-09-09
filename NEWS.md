@@ -4,12 +4,14 @@
 
 ### Improvements
 
-- Simplified age-dependent model is now the default, with a small re-parameterisation of the transfers of care to align to epidemiologically relevant quantities.
+- The simplified age-dependent migration model is now the default, with a re-parameterisation of transfers of care to align to epidemiologically relevant quantities. 
 - Migration probability simulation patterns now mirror the Stan model and the redundant `m_pattern="reduced"` option has been removed.
+- Ported the optional `gamma_obs` into the age-independent migration models.
+- Incorporated efficiency improvements from age-dependent migration models into other age-dependent Stan models.
 - New `gamma_obs_drift_sd` option in `simulate_diagnoses()` to control the log-scale random-walk variation on `migrant_hiv_prevalence`.
-- Incorporated efficiency improvements from age-dependent migration models into other age-dependent models.
-- Re-ran migration models for R vignettes with improved migration model logic.
+- `plot_simulations()` extended to plot all observed quantities, e.g. `aids_diagnoses_age`, `gamma_obs_group`, and `cd4_diagnoses_age`.
 - `plot_estimates()` now accepts a `colours` argument with the model or chain colours.
+- Re-ran R vignettes with improved plotting and model logic.
 
 ### Bug fixes
 

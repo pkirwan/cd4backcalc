@@ -9,7 +9,13 @@ plot_simulations(sim_diags, quantity)
 \arguments{
 \item{sim_diags}{A list containing the simulated diagnosis data objects sim_data and stan_data.}
 
-\item{quantity}{A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "undiag_migration", "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "transfers_detected", "ratio_abroad_uk", "detect_prob", and "migrant_hiv_prevalence".}
+\item{quantity}{A string specifying the quantity to plot. Options include
+"incidence", "undiag_prev", "undiag_migration", "all_migration",
+"diag_prob", "diagnoses", "migration_prob", "transfers",
+"transfers_detected", "ratio_abroad_uk", "detect_prob",
+"migrant_hiv_prevalence", "aids_diagnoses", "aids_diagnoses_age",
+"cd4_diagnoses", "cd4_diagnoses_age", "transfers_detected_age",
+"gamma_obs", and "gamma_obs_group".}
 }
 \value{
 A ggplot2 object.

@@ -3,7 +3,13 @@
 #' Generate a ggplot2 object plotting simulated quantities over time.
 #'
 #' @param sim_diags A list containing the simulated diagnosis data objects sim_data and stan_data.
-#' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "undiag_migration", "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "transfers_detected", "ratio_abroad_uk", "detect_prob", and "migrant_hiv_prevalence".
+#' @param quantity A string specifying the quantity to plot. Options include
+#'   "incidence", "undiag_prev", "undiag_migration", "all_migration",
+#'   "diag_prob", "diagnoses", "migration_prob", "transfers",
+#'   "transfers_detected", "ratio_abroad_uk", "detect_prob",
+#'   "migrant_hiv_prevalence", "aids_diagnoses", "aids_diagnoses_age",
+#'   "cd4_diagnoses", "cd4_diagnoses_age", "transfers_detected_age",
+#'   "gamma_obs", and "gamma_obs_group".
 #' @return A ggplot2 object.
 #' @examples
 #' # See ?run_backcalc for a full end-to-end workflow.
@@ -29,8 +35,10 @@ plot_simulations <- function(
         dplyr::mutate(group = "Generative values")
     )
 
-  # exclude "all" age_band from age-facetted plots
-  if ("age_band" %in% names(sim_estimates) && grepl("_age$", quantity)) {
+  if (
+    "age_band" %in% names(sim_estimates) &&
+      (grepl("_age$", quantity) || quantity == "gamma_obs_group")
+  ) {
     sim_estimates <- sim_estimates |>
       dplyr::filter(.data$age_band != "all")
   }
@@ -524,6 +532,10 @@ get_plot_title <- function(quantity) {
     "HIV diagnosis probabilities, by CD4 strata"
   } else if (quantity == "diagnoses") {
     "HIV diagnoses"
+  } else if (quantity == "aids_diagnoses") {
+    "AIDS diagnoses"
+  } else if (quantity == "cd4_diagnoses") {
+    "CD4 diagnoses, by CD4 strata"
   } else if (quantity == "migration_prob") {
     "migration probabilities, by CD4 strata"
   } else if (quantity == "transfers") {
@@ -544,6 +556,16 @@ get_plot_title <- function(quantity) {
     "migration with undiagnosed HIV by age"
   } else if (quantity == "diagnoses_age") {
     "HIV diagnoses by age"
+  } else if (quantity == "aids_diagnoses_age") {
+    "AIDS diagnoses by age"
+  } else if (quantity == "cd4_diagnoses_age") {
+    "CD4 diagnoses, by CD4 strata and age"
+  } else if (quantity == "transfers_detected_age") {
+    "Detected transfers of care by age group"
+  } else if (quantity == "gamma_obs") {
+    "Log external migration index"
+  } else if (quantity == "gamma_obs_group") {
+    "Log external migration index by age group"
   } else if (quantity == "diag_prob_age") {
     "HIV diagnosis probabilities, by CD4 strata and age"
   } else if (quantity == "diag_prob_mig") {
@@ -656,7 +678,9 @@ do_facetting <- function(p1, quantity) {
   }
 
   # facet by strata for diagnosis and migration probabilities
-  if (quantity %in% c("diag_prob", "diag_prob_mig", "migration_prob")) {
+  if (quantity %in% c(
+    "diag_prob", "diag_prob_mig", "migration_prob", "cd4_diagnoses"
+  )) {
     p1 <- p1 +
       ggplot2::facet_grid(cols = ggplot2::vars(.data$strata), scales = "free_y")
   }
@@ -668,7 +692,10 @@ do_facetting <- function(p1, quantity) {
         "incidence_age",
         "undiag_prev_age",
         "undiag_migration_age",
-        "diagnoses_age"
+        "diagnoses_age",
+        "aids_diagnoses_age",
+        "transfers_detected_age",
+        "gamma_obs_group"
       )
   ) {
     p1 <- p1 +
@@ -679,7 +706,12 @@ do_facetting <- function(p1, quantity) {
   }
 
   # facet by strata and age for age-dependent diagnosis and migration probabilities
-  if (quantity %in% c("diag_prob_age", "diag_prob_mig_age", "migration_prob_age")) {
+  if (quantity %in% c(
+    "diag_prob_age",
+    "diag_prob_mig_age",
+    "migration_prob_age",
+    "cd4_diagnoses_age"
+  )) {
     p1 <- p1 +
       ggplot2::facet_grid(
         rows = ggplot2::vars(.data$strata),

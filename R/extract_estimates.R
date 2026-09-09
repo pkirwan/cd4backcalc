@@ -92,6 +92,32 @@ get_estimates <- function(hiv_list, quantity) {
   return(estimates)
 }
 
+make_grouped_age_data <- function(values, group = "Generative values") {
+  age_group_labels <- c("15-24", "25-34", "35-44", "45+")
+  nquar <- nrow(values)
+
+  tibble::tibble(
+    value = as.vector(values),
+    year = rep(seq(0, nquar / 4 - 0.25, by = 0.25), 4),
+    age_band = factor(
+      rep(age_group_labels, each = nquar),
+      levels = age_group_labels
+    ),
+    group = group
+  )
+}
+
+make_age_band_data <- function(values, group = "Generative values") {
+  age_group <- pmin(4L, 1L + (seq_len(ncol(values)) - 1L) %/% 10L)
+  grouped_values <- vapply(
+    1:4,
+    function(i) rowSums(values[, age_group == i, drop = FALSE]),
+    numeric(nrow(values))
+  )
+
+  make_grouped_age_data(grouped_values, group)
+}
+
 #' Extract simulated quantities based on the provided configuration.
 #'
 #' @param sim_diags The simulated diagnosis data containing stan_data and sim_data.
@@ -255,6 +281,16 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
     out <- all_migration
   } else if (quantity == "diagnoses") {
     out <- diagnoses
+  } else if (quantity == "aids_diagnoses") {
+    out <- tibble::tibble(
+      value = if (stan_data$sim_config$migration) {
+        rowSums(stan_data$AIDS)
+      } else {
+        stan_data$AIDS
+      },
+      year = seq(0, plot_years, by = 0.25),
+      group = "Generative values"
+    )
   } else if (quantity == "diag_prob") {
     out <- diag_prob
   } else if (quantity == "diag_prob_mig") {
@@ -422,32 +458,47 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
         group = "Generative values"
       )
   } else if (quantity == "diagnoses_age") {
-    out <- tidyr::expand_grid(
-      # diagnoses are age x year
-      age = 15:(stan_data$nage + 14),
-      year = seq(0, plot_years, by = 0.25)
+    out <- make_age_band_data(
+      apply(stan_data$HIV_age, c(1, 2), sum) +
+        apply(stan_data$AIDS_age, c(1, 2), sum)
     ) |>
-      dplyr::mutate(
-        value = as.vector(
-          apply(stan_data$HIV_age, c(1, 2), sum) +
-            apply(stan_data$AIDS_age, c(1, 2), sum)
-        ),
-        group = "Generative values",
-        age_band = cut(
-          .data$age,
-          breaks = c(15, 25, 35, 45, 100),
-          labels = age_group_labels,
-          right = FALSE
-        )
-      ) |>
-      dplyr::group_by(.data$year, .data$age_band, .data$group) |>
-      dplyr::summarise(value = sum(.data$value), .groups = "drop") |>
       dplyr::bind_rows(
         diagnoses |>
           dplyr::mutate(
             age_band = "all"
           )
       )
+  } else if (quantity == "aids_diagnoses_age") {
+    out <- make_age_band_data(apply(stan_data$AIDS_age, c(1, 2), sum))
+  } else if (quantity == "transfers_detected_age") {
+    out <- make_grouped_age_data(stan_data$ABROAD_group)
+  } else if (quantity == "gamma_obs") {
+    out <- tibble::tibble(
+      value = stan_data$gamma_obs,
+      year = seq(0, plot_years, by = 0.25),
+      group = "Generative values"
+    )
+  } else if (quantity == "gamma_obs_group") {
+    out <- make_grouped_age_data(stan_data$gamma_obs_group) |>
+      dplyr::filter(.data$value >= 0)
+  } else if (quantity == "cd4_diagnoses_age") {
+    cd4_age <- if (stan_data$sim_config$migration) {
+      apply(stan_data$CD4_age, c(1, 2, 4), sum)
+    } else {
+      stan_data$CD4_age
+    }
+    state_labels <- if (stan_data$sim_config$rita) {
+      c("Recently acquired", "CD4>=500", "CD4 350-499", "CD4 200-349", "CD4<200")
+    } else {
+      c("CD4>=500", "CD4 350-499", "CD4 200-349", "CD4<200")
+    }
+    out <- purrr::map(seq_along(state_labels), function(i) {
+      make_age_band_data(cd4_age[,, i]) |>
+        dplyr::mutate(
+          strata = factor(state_labels[i], levels = state_labels)
+        )
+    }) |>
+      purrr::list_rbind()
   } else if (quantity == "migration_prob") {
     # no recently acquired category in migration prob
     out <- tibble::tibble(
@@ -500,7 +551,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
       year = seq(0, plot_years, by = 0.25),
       group = "Generative values"
     )
-  } else if (quantity == "cd4_strata") {
+  } else if (quantity %in% c("cd4_strata", "cd4_diagnoses")) {
     out <- if (stan_data$sim_config$rita) {
       if (stan_data$sim_config$migration) {
         tibble::tibble(
@@ -577,7 +628,6 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
 extract_real_data <- function(hiv_list, quantity) {
   stan_data <- hiv_list$stan_data
   plot_years <- stan_data$nquar / 4 - 0.25
-  age_group_labels <- c("15-24", "25-34", "35-44", "45+")
 
   diagnoses <- if (stan_data$model_config$migration) {
     tibble::tibble(
@@ -595,26 +645,11 @@ extract_real_data <- function(hiv_list, quantity) {
   if (quantity == "diagnoses") {
     return(diagnoses)
   } else if (quantity == "diagnoses_age") {
-    out <- tidyr::expand_grid(
-      # diagnoses are age x year
-      age = 15:(stan_data$nage + 14),
-      year = seq(0, plot_years, by = 0.25)
+    out <- make_age_band_data(
+      apply(stan_data$HIV_age, c(1, 2), sum) +
+        apply(stan_data$AIDS_age, c(1, 2), sum),
+      group = "Observed values"
     ) |>
-      dplyr::mutate(
-        value = as.vector(
-          apply(stan_data$HIV_age, c(1, 2), sum) +
-            apply(stan_data$AIDS_age, c(1, 2), sum)
-        ),
-        group = "Observed values",
-        age_band = cut(
-          .data$age,
-          breaks = c(15, 25, 35, 45, 100),
-          labels = age_group_labels,
-          right = FALSE
-        )
-      ) |>
-      dplyr::group_by(.data$year, .data$age_band, .data$group) |>
-      dplyr::summarise(value = sum(.data$value), .groups = "drop") |>
       dplyr::bind_rows(
         diagnoses |>
           dplyr::mutate(
