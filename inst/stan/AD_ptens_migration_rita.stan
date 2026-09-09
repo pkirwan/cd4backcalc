@@ -23,9 +23,10 @@ data {
   // model_type_prep()): sum(HIV_age[,,2]) / sum(ABROAD_group). 1 = no reweighting.
   real<lower=0> abroad_group_weight;
 
-  // Annual CD4 counts among diagnoses within two recorded arrival years
+  // Annual numerator and auxiliary-observed non-recent risk set by age/state
   int<lower=1> nyear;
   array[nyear, 4, 4] int<lower=0> recent_arrival_cd4;
+  array[nyear, 4, 4] int<lower=0> recent_arrival_cd4_total;
   
   // Progression by age at acquisition or arrival
   matrix<lower=0, upper=1>[4, nage] q_age;
@@ -389,7 +390,7 @@ transformed parameters {
   array[nquar, nage, 2] real<lower=0> exp_HIV_dx;
   array[nquar, nage, 2] real<lower=0> exp_AIDS_dx;
   array[nquar, nage, 2] simplex[5] exp_p;
-  array[nyear, 4] simplex[4] recent_arrival_cd4_p;
+  array[nyear, 4] vector<lower=0, upper=1>[4] recent_arrival_cd4_prob;
   
   {
   array[nquar, nage, 2] row_vector[6] exp_diag
@@ -602,6 +603,16 @@ transformed parameters {
   {
   array[nyear, 4] vector[4] exp_recent_arrival_cd4
     = rep_array(rep_vector(0, 4), nyear, 4);
+  array[nyear, 4] vector[4] exp_migrant_cd4
+    = rep_array(rep_vector(0, 4), nyear, 4);
+  for (t in 1 : nquar) {
+    int diagnosis_year = year_index[t] + 1;
+    for (a in 1 : nage) {
+      int ag = age_group_lookup[a];
+      exp_migrant_cd4[diagnosis_year, ag]
+        += exp_HIV_dx[t, a, 2] * exp_p[t, a, 2, 2 : 5];
+    }
+  }
   for (t0 in 1 : nquar) {
     int arrival_year = year_index[t0] + 1;
     int last_t = min(nquar, 4 * (arrival_year + 1));
@@ -639,9 +650,13 @@ transformed parameters {
   }
   for (year in 1 : nyear) {
     for (ag in 1 : 4) {
-      vector[4] raw_p = exp_recent_arrival_cd4[year, ag]
-                        + rep_vector(1e-12, 4);
-      recent_arrival_cd4_p[year, ag] = raw_p / sum(raw_p);
+      for (state in 1 : 4) {
+        recent_arrival_cd4_prob[year, ag, state] = fmin(
+          1,
+          (1 - frr) * exp_recent_arrival_cd4[year, ag, state]
+          / (exp_migrant_cd4[year, ag, state] + 1e-12)
+        );
+      }
     }
   }
   }
@@ -780,8 +795,11 @@ model {
   ABROAD ~ poisson(exp_ABROAD_dx);
   for (year in 1 : nyear) {
     for (ag in 1 : 4) {
-      recent_arrival_cd4[year, ag]
-        ~ multinomial(recent_arrival_cd4_p[year, ag]);
+      for (state in 1 : 4) {
+        recent_arrival_cd4[year, ag, state]
+          ~ binomial(recent_arrival_cd4_total[year, ag, state],
+                     recent_arrival_cd4_prob[year, ag, state]);
+      }
     }
   }
 }
@@ -793,9 +811,13 @@ generated quantities {
 
   for (year in 1 : nyear) {
     for (ag in 1 : 4) {
-      log_lik_recent_arrival_cd4[year, ag]
-        = multinomial_lpmf(recent_arrival_cd4[year, ag]
-                           | recent_arrival_cd4_p[year, ag]);
+      log_lik_recent_arrival_cd4[year, ag] = 0;
+      for (state in 1 : 4) {
+        log_lik_recent_arrival_cd4[year, ag]
+          += binomial_lpmf(recent_arrival_cd4[year, ag, state]
+                           | recent_arrival_cd4_total[year, ag, state],
+                             recent_arrival_cd4_prob[year, ag, state]);
+      }
     }
   }
   

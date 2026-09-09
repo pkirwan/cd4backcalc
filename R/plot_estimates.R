@@ -9,7 +9,7 @@
 #'   "transfers_detected", "ratio_abroad_uk", "detect_prob",
 #'   "migrant_hiv_prevalence", "aids_diagnoses", "aids_diagnoses_age",
 #'   "cd4_diagnoses", "cd4_diagnoses_age", "transfers_detected_age",
-#'   "gamma_obs", and "gamma_obs_group".
+#'   "gamma_obs", "gamma_obs_group", and "recent_arrival_cd4".
 #' @return A ggplot2 object.
 #' @examples
 #' # See ?run_backcalc for a full end-to-end workflow.
@@ -37,7 +37,9 @@ plot_simulations <- function(
 
   if (
     "age_band" %in% names(sim_estimates) &&
-      (grepl("_age$", quantity) || quantity == "gamma_obs_group")
+      (grepl("_age$", quantity) || quantity %in% c(
+        "gamma_obs_group", "recent_arrival_cd4"
+      ))
   ) {
     sim_estimates <- sim_estimates |>
       dplyr::filter(.data$age_band != "all")
@@ -566,6 +568,8 @@ get_plot_title <- function(quantity) {
     "external migration index"
   } else if (quantity == "gamma_obs_group") {
     "external migration index by age group"
+  } else if (quantity == "recent_arrival_cd4") {
+    "recent-arrival CD4 diagnoses, by CD4 strata and age group"
   } else if (quantity == "diag_prob_age") {
     "HIV diagnosis probabilities, by CD4 strata and age group"
   } else if (quantity == "diag_prob_mig") {
@@ -710,7 +714,8 @@ do_facetting <- function(p1, quantity) {
     "diag_prob_age",
     "diag_prob_mig_age",
     "migration_prob_age",
-    "cd4_diagnoses_age"
+    "cd4_diagnoses_age",
+    "recent_arrival_cd4"
   )) {
     p1 <- p1 +
       ggplot2::facet_grid(

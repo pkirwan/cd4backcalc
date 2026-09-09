@@ -438,7 +438,34 @@ confirm_stan_data <- function(stan_data) {
       "gamma_obs_slope_sd must be a single non-negative number" =
         length(stan_data$gamma_obs_slope_sd) == 1L &&
           is.finite(stan_data$gamma_obs_slope_sd) &&
-          stan_data$gamma_obs_slope_sd >= 0
+          stan_data$gamma_obs_slope_sd >= 0,
+      "nyear must equal nquar / 4" =
+        stan_data$nyear == stan_data$nquar %/% 4L,
+      "recent_arrival_cd4 must contain non-negative integer counts" =
+        all(is.finite(stan_data$recent_arrival_cd4)) &&
+          all(stan_data$recent_arrival_cd4 >= 0) &&
+          all(stan_data$recent_arrival_cd4 ==
+                as.integer(stan_data$recent_arrival_cd4)),
+      "recent_arrival_cd4_total must contain non-negative integer counts" =
+        all(is.finite(stan_data$recent_arrival_cd4_total)) &&
+          all(stan_data$recent_arrival_cd4_total >= 0) &&
+          all(stan_data$recent_arrival_cd4_total ==
+                as.integer(stan_data$recent_arrival_cd4_total)),
+      "recent_arrival_cd4 cannot exceed recent_arrival_cd4_total" =
+        all(stan_data$recent_arrival_cd4 <=
+              stan_data$recent_arrival_cd4_total)
+    )
+    expected_recent_arrival_dims <- if (stan_data$model_config$age) {
+      c(stan_data$nyear, 4L, 4L)
+    } else {
+      c(stan_data$nyear, 4L)
+    }
+    stopifnot(
+      "Incorrect dimensions in stan_data, recent_arrival_cd4" =
+        all(dim(stan_data$recent_arrival_cd4) == expected_recent_arrival_dims),
+      "Incorrect dimensions in stan_data, recent_arrival_cd4_total" =
+        all(dim(stan_data$recent_arrival_cd4_total) ==
+              expected_recent_arrival_dims)
     )
   }
 
@@ -500,17 +527,6 @@ confirm_stan_data <- function(stan_data) {
     )
     if (isTRUE(stan_data$model_config$migration)) {
       stopifnot(
-        "nyear must equal nquar / 4" =
-          stan_data$nyear == stan_data$nquar %/% 4L,
-        "recent_arrival_cd4 must have dimensions (nquar / 4, 4, 4)" = all(
-          dim(stan_data$recent_arrival_cd4) ==
-            c(stan_data$nyear, 4L, 4L)
-        ),
-        "recent_arrival_cd4 must contain non-negative integer counts" =
-          all(is.finite(stan_data$recent_arrival_cd4)) &&
-          all(stan_data$recent_arrival_cd4 >= 0) &&
-          all(stan_data$recent_arrival_cd4 ==
-                as.integer(stan_data$recent_arrival_cd4)),
         "abroad_group_weight must be a single non-negative number" =
           length(stan_data$abroad_group_weight) == 1L &&
           is.finite(stan_data$abroad_group_weight) &&
@@ -907,22 +923,54 @@ model_type_prep <- function(
       stop("gamma_obs_slope_sd must be a single non-negative number.")
     }
 
-    # All age-dependent migration models (with or without RITA) use the
-    # separated undiag/transfer flow design and its recent-arrival
-    # CD4 auxiliary likelihood.
-    if (isTRUE(age)) {
-      if (stan_data$nquar %% 4L != 0L) {
-        stop("nquar must be divisible by 4 for recent-arrival CD4 data.")
-      }
-      if (is.null(stan_data$nyear)) {
-        stan_data$nyear <- stan_data$nquar %/% 4L
-      }
-      if (is.null(stan_data$recent_arrival_cd4)) {
-        stan_data$recent_arrival_cd4 <- array(
+    if (stan_data$nquar %% 4L != 0L) {
+      stop("nquar must be divisible by 4 for recent-arrival CD4 data.")
+    }
+    if (is.null(stan_data$nyear)) {
+      stan_data$nyear <- stan_data$nquar %/% 4L
+    }
+    if (!isTRUE(age) && length(dim(stan_data$recent_arrival_cd4)) == 3L) {
+      stan_data$recent_arrival_cd4 <- apply(
+        stan_data$recent_arrival_cd4,
+        c(1, 3),
+        sum
+      )
+    }
+    if (
+      !isTRUE(age) &&
+        length(dim(stan_data$recent_arrival_cd4_total)) == 3L
+    ) {
+      stan_data$recent_arrival_cd4_total <- apply(
+        stan_data$recent_arrival_cd4_total,
+        c(1, 3),
+        sum
+      )
+    }
+    if (is.null(stan_data$recent_arrival_cd4)) {
+      stan_data$recent_arrival_cd4 <- if (isTRUE(age)) {
+        array(
           0L,
           dim = c(stan_data$nyear, 4L, 4L)
         )
+      } else {
+        matrix(0L, nrow = stan_data$nyear, ncol = 4L)
       }
+    }
+    if (is.null(stan_data$recent_arrival_cd4_total)) {
+      if (any(stan_data$recent_arrival_cd4 > 0)) {
+        stop(
+          "recent_arrival_cd4_total is required when recent_arrival_cd4 contains data."
+        )
+      }
+      stan_data$recent_arrival_cd4_total <- if (isTRUE(age)) {
+        array(0L, dim = c(stan_data$nyear, 4L, 4L))
+      } else {
+        matrix(0L, nrow = stan_data$nyear, ncol = 4L)
+      }
+    }
+    # All age-dependent migration models use ABROAD_group to inform the same
+    # age-composition parameter as the diagnosis likelihood.
+    if (isTRUE(age)) {
       # Puts ABROAD_group's direct age signal on comparable footing with the
       # much larger migrant HIV_age/CD4_age likelihood sharing the same
       # age-composition parameter, rather than requiring a manually-chosen

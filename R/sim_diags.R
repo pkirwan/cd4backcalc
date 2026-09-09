@@ -1017,9 +1017,7 @@ simulate_diagnoses <- function(
     sim_config
   )
 
-  recent_arrival_cd4 <- if (
-    !sim_config$age || !sim_config$migration || sim_config$rita
-  ) {
+  recent_arrival_cd4 <- if (!sim_config$migration) {
     empty_recent_arrival_cd4 <- array(
       0,
       dim = c(sim_config$nquar %/% 4L, 4L, 4L)
@@ -1030,14 +1028,11 @@ simulate_diagnoses <- function(
     )
   } else {
     generate_recent_arrival_cd4(
-      m_age = m_age[,, 1:4, drop = FALSE],
-      d_probs_mig = d_probs_mig,
+      m_age = m_age[,, if (sim_config$rita) 4:7 else 1:4, drop = FALSE],
+      d_probs_mig = d_probs_mig[,, if (sim_config$rita) 2:5 else 1:4, drop = FALSE],
       q_age = sim_config$q_age,
-      # recent_arrival_completeness covers avidity testing and recorded
-      # arrival year
-      completeness = sim_config$recent_arrival_completeness *
-        sim_config$cd4_completeness,
-      dist = sim_config$dist
+      completeness = 0,
+      dist = FALSE
     )
   }
 
@@ -1400,9 +1395,8 @@ simulate_diagnoses <- function(
     "gamma_obs_drift_sd" = sim_config$gamma_obs_drift_sd,
     "sim_config" = sim_config
   )
-  if (sim_config$age && sim_config$migration && !sim_config$rita) {
+  if (sim_config$migration) {
     stan_data$nyear <- sim_config$nquar %/% 4L
-    stan_data$recent_arrival_cd4 <- recent_arrival_cd4$observed
   }
 
   # Perform validation checks
@@ -1469,6 +1463,51 @@ simulate_diagnoses <- function(
         rita_state_probs,
         sim_config$dist
       )
+    }
+  }
+
+  if (sim_config$migration) {
+    expected_total <- aggregate_migrant_cd4(cd4_dx_age, sim_config$rita)
+    observed_total <- aggregate_migrant_cd4(
+      stan_data$CD4_age,
+      sim_config$rita
+    )
+    expected_recent <- recent_arrival_cd4$expected
+
+    if (!sim_config$age) {
+      expected_total <- apply(expected_total, c(1, 3), sum)
+      observed_total <- apply(observed_total, c(1, 3), sum)
+      expected_recent <- apply(expected_recent, c(1, 3), sum)
+    }
+
+    eligible_total <- if (sim_config$dist) {
+      array(
+        stats::rbinom(
+          length(observed_total),
+          as.integer(observed_total),
+          sim_config$recent_arrival_completeness
+        ),
+        dim = dim(observed_total)
+      )
+    } else {
+      round(observed_total * sim_config$recent_arrival_completeness)
+    }
+    recent_prob <- pmin(
+      1,
+      expected_recent / pmax(expected_total, .Machine$double.eps)
+    )
+    stan_data$recent_arrival_cd4_total <- eligible_total
+    stan_data$recent_arrival_cd4 <- if (sim_config$dist) {
+      array(
+        stats::rbinom(
+          length(eligible_total),
+          as.integer(eligible_total),
+          recent_prob
+        ),
+        dim = dim(eligible_total)
+      )
+    } else {
+      round(eligible_total * recent_prob)
     }
   }
 

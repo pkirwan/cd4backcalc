@@ -166,7 +166,8 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
       detect_step_quarter = sim_config$detect_step_quarter,
       detect_step_size = sim_config$detect_step_size,
       gamma_obs_scale_trend = sim_config$gamma_obs_scale_trend,
-      gamma_obs_drift_sd = sim_config$gamma_obs_drift_sd
+      gamma_obs_drift_sd = sim_config$gamma_obs_drift_sd,
+      recent_arrival_completeness = sim_config$recent_arrival_completeness
     )
   }
   stan_data <- sim_diags$stan_data
@@ -496,6 +497,18 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
         )
     }) |>
       purrr::list_rbind()
+  } else if (quantity == "recent_arrival_cd4") {
+    state_labels <- c("CD4>=500", "CD4 350-499", "CD4 200-349", "CD4<200")
+    age_bands <- if (stan_data$sim_config$age) age_group_labels else "all"
+    out <- tidyr::expand_grid(
+      strata = factor(state_labels, levels = state_labels),
+      age_band = factor(age_bands, levels = age_bands),
+      year = seq_len(stan_data$nyear) - 1
+    ) |>
+      dplyr::mutate(
+        value = as.vector(stan_data$recent_arrival_cd4),
+        group = "Generative values"
+      )
   } else if (quantity == "migration_prob") {
     # no recently acquired category in migration prob
     out <- tibble::tibble(

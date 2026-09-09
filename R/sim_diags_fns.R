@@ -64,8 +64,10 @@ generate_infections <- function(
 #' Generates annual age-group by CD4 counts among diagnoses of infections
 #' present on arrival, restricted to arrival in the diagnosis year or the
 #' preceding calendar year.
-#' @param m_age Migrant arrivals by age, quarter, and latent state.
-#' @param d_probs_mig Migrant diagnosis probabilities by quarter, age, and state.
+#' @param m_age Undiagnosed migrant arrivals by age, quarter, and the four
+#'   non-recent CD4 states.
+#' @param d_probs_mig Migrant diagnosis probabilities by quarter, age, and the
+#'   four non-AIDS CD4 states.
 #' @param q_age Progression probabilities by age and state.
 #' @param completeness Proportion of eligible diagnoses observed.
 #' @param dist Logical indicating whether to add stochastic variation.
@@ -78,6 +80,11 @@ generate_recent_arrival_cd4 <- function(
   completeness,
   dist
 ) {
+  if (dim(m_age)[3] != 4L || dim(d_probs_mig)[3] != 4L) {
+    stop(
+      "Recent-arrival CD4 data require four non-AIDS migrant CD4 states."
+    )
+  }
   nage <- dim(m_age)[1]
   nquar <- dim(m_age)[2]
   nyear <- nquar %/% 4L
@@ -137,6 +144,33 @@ generate_recent_arrival_cd4 <- function(
   }
 
   list(observed = observed, expected = expected)
+}
+
+aggregate_migrant_cd4 <- function(cd4_age, rita) {
+  nquar <- dim(cd4_age)[1]
+  nage <- dim(cd4_age)[2]
+  nyear <- nquar %/% 4L
+  states <- if (rita) 2:5 else 1:4
+  age_group <- pmin(4L, 1L + (seq_len(nage) - 1L) %/% 10L)
+  out <- array(0, dim = c(nyear, 4L, 4L))
+
+  for (year in seq_len(nyear)) {
+    quarters <- (4L * year - 3L):(4L * year)
+    for (group in 1:4) {
+      out[year, group, ] <- apply(
+        cd4_age[
+          quarters,
+          age_group == group,
+          2,
+          states,
+          drop = FALSE
+        ],
+        4,
+        sum
+      )
+    }
+  }
+  out
 }
 
 #' Generate migration patterns

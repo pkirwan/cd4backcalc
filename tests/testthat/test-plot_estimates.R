@@ -67,13 +67,30 @@ test_that("observed Stan quantities can be plotted", {
     "gamma_obs",
     "gamma_obs_group",
     "cd4_diagnoses",
-    "cd4_diagnoses_age"
+    "cd4_diagnoses_age",
+    "recent_arrival_cd4"
   )
   plots <- lapply(quantities, function(quantity) {
     plot_simulations(sim_diags, quantity)
   })
 
   expect_true(all(vapply(plots, inherits, logical(1), what = "ggplot")))
+
+  ai_sim_diags <- simulate_diagnoses(
+    nquar = 40,
+    sim_seed = 123,
+    migration = TRUE
+  )
+  recent_arrival <- extract_simulated_quantity(
+    ai_sim_diags,
+    "recent_arrival_cd4"
+  )
+  expect_equal(nrow(recent_arrival), 40L)
+  expect_equal(
+    recent_arrival$value,
+    as.vector(ai_sim_diags$stan_data$recent_arrival_cd4)
+  )
+  expect_s3_class(plot_simulations(ai_sim_diags, "recent_arrival_cd4"), "ggplot")
 })
 
 test_that("simulated plots are generated correctly", {
