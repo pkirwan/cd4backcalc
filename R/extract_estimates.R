@@ -118,6 +118,65 @@ make_age_band_data <- function(values, group = "Generative values") {
   make_grouped_age_data(grouped_values, group)
 }
 
+cd4_state_labels <- function(rita) {
+  labels <- c("CD4>=500", "CD4 350-499", "CD4 200-349", "CD4<200")
+  if (rita) c("Recently acquired", labels) else labels
+}
+
+make_cd4_data <- function(values, migration, rita, group) {
+  if (migration) {
+    values <- apply(values, c(1, length(dim(values))), sum)
+  }
+  state_labels <- cd4_state_labels(rita)
+  colnames(values) <- state_labels
+
+  tibble::as_tibble(values) |>
+    dplyr::mutate(
+      year = seq(0, nrow(values) / 4 - 0.25, by = 0.25),
+      group = group
+    ) |>
+    tidyr::pivot_longer(
+      cols = tidyselect::all_of(state_labels),
+      names_to = "strata",
+      values_to = "value"
+    )
+}
+
+make_cd4_age_data <- function(values, migration, rita, group) {
+  if (migration) {
+    values <- apply(values, c(1, 2, 4), sum)
+  }
+  state_labels <- cd4_state_labels(rita)
+
+  purrr::map(seq_along(state_labels), function(i) {
+    make_age_band_data(values[,, i], group = group) |>
+      dplyr::mutate(
+        strata = factor(state_labels[i], levels = state_labels)
+      )
+  }) |>
+    purrr::list_rbind()
+}
+
+make_recent_arrival_cd4_data <- function(stan_data, age, group) {
+  state_labels <- cd4_state_labels(FALSE)
+  age_bands <- if (age) c("15-24", "25-34", "35-44", "45+") else "all"
+  nyear <- if (is.null(stan_data$nyear)) {
+    stan_data$nquar %/% 4
+  } else {
+    stan_data$nyear
+  }
+
+  tidyr::expand_grid(
+    strata = factor(state_labels, levels = state_labels),
+    age_band = factor(age_bands, levels = age_bands),
+    year = seq_len(nyear) - 1
+  ) |>
+    dplyr::mutate(
+      value = as.vector(stan_data$recent_arrival_cd4),
+      group = group
+    )
+}
+
 #' Extract simulated quantities based on the provided configuration.
 #'
 #' @param sim_diags The simulated diagnosis data containing stan_data and sim_data.
@@ -480,35 +539,18 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
     out <- make_grouped_age_data(gamma_obs_group) |>
       dplyr::filter(.data$value >= 0)
   } else if (quantity == "cd4_diagnoses_age") {
-    cd4_age <- if (stan_data$sim_config$migration) {
-      apply(stan_data$CD4_age, c(1, 2, 4), sum)
-    } else {
-      stan_data$CD4_age
-    }
-    state_labels <- if (stan_data$sim_config$rita) {
-      c("Recently acquired", "CD4>=500", "CD4 350-499", "CD4 200-349", "CD4<200")
-    } else {
-      c("CD4>=500", "CD4 350-499", "CD4 200-349", "CD4<200")
-    }
-    out <- purrr::map(seq_along(state_labels), function(i) {
-      make_age_band_data(cd4_age[,, i]) |>
-        dplyr::mutate(
-          strata = factor(state_labels[i], levels = state_labels)
-        )
-    }) |>
-      purrr::list_rbind()
+    out <- make_cd4_age_data(
+      stan_data$CD4_age,
+      migration = stan_data$sim_config$migration,
+      rita = stan_data$sim_config$rita,
+      group = "Generative values"
+    )
   } else if (quantity == "recent_arrival_cd4") {
-    state_labels <- c("CD4>=500", "CD4 350-499", "CD4 200-349", "CD4<200")
-    age_bands <- if (stan_data$sim_config$age) age_group_labels else "all"
-    out <- tidyr::expand_grid(
-      strata = factor(state_labels, levels = state_labels),
-      age_band = factor(age_bands, levels = age_bands),
-      year = seq_len(stan_data$nyear) - 1
-    ) |>
-      dplyr::mutate(
-        value = as.vector(stan_data$recent_arrival_cd4),
-        group = "Generative values"
-      )
+    out <- make_recent_arrival_cd4_data(
+      stan_data,
+      age = stan_data$sim_config$age,
+      group = "Generative values"
+    )
   } else if (quantity == "migration_prob") {
     # no recently acquired category in migration prob
     out <- tibble::tibble(
@@ -562,54 +604,12 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
       group = "Generative values"
     )
   } else if (quantity %in% c("cd4_strata", "cd4_diagnoses")) {
-    out <- if (stan_data$sim_config$rita) {
-      if (stan_data$sim_config$migration) {
-        tibble::tibble(
-          `Recently acquired` = rowSums(stan_data$CD4[,, 1]),
-          `CD4>=500` = rowSums(stan_data$CD4[,, 2]),
-          `CD4 350-499` = rowSums(stan_data$CD4[,, 3]),
-          `CD4 200-349` = rowSums(stan_data$CD4[,, 4]),
-          `CD4<200` = rowSums(stan_data$CD4[,, 5]),
-          year = seq(0, plot_years, by = 0.25),
-          group = "Generative values"
-        )
-      } else {
-        tibble::tibble(
-          `Recently acquired` = stan_data$CD4[, 1],
-          `CD4>=500` = stan_data$CD4[, 2],
-          `CD4 350-499` = stan_data$CD4[, 3],
-          `CD4 200-349` = stan_data$CD4[, 4],
-          `CD4<200` = stan_data$CD4[, 5],
-          year = seq(0, plot_years, by = 0.25),
-          group = "Generative values"
-        )
-      }
-    } else if (stan_data$sim_config$migration) {
-      tibble::tibble(
-        `CD4>=500` = rowSums(stan_data$CD4[,, 1]),
-        `CD4 350-499` = rowSums(stan_data$CD4[,, 2]),
-        `CD4 200-349` = rowSums(stan_data$CD4[,, 3]),
-        `CD4<200` = rowSums(stan_data$CD4[,, 4]),
-        year = seq(0, plot_years, by = 0.25),
-        group = "Generative values"
-      )
-    } else {
-      tibble::tibble(
-        `CD4>=500` = stan_data$CD4[, 1],
-        `CD4 350-499` = stan_data$CD4[, 2],
-        `CD4 200-349` = stan_data$CD4[, 3],
-        `CD4<200` = stan_data$CD4[, 4],
-        year = seq(0, plot_years, by = 0.25),
-        group = "Generative values"
-      )
-    }
-
-    out <- out |>
-      tidyr::pivot_longer(
-        cols = tidyselect::starts_with(c("CD4", "Recently")),
-        names_to = "strata",
-        values_to = "value"
-      )
+    out <- make_cd4_data(
+      stan_data$CD4,
+      migration = stan_data$sim_config$migration,
+      rita = stan_data$sim_config$rita,
+      group = "Generative values"
+    )
   } else if (quantity == "detect_prob") {
     out <- tibble::tibble(
       value = sim_data$detect_prob,
@@ -628,9 +628,10 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
 
 #' Extract real data for plotting
 #'
-#' @param hiv_list A list of HIV model results.
+#' @param hiv_list A list of HIV model results containing `stan_data`.
 #' @param quantity A string specifying the quantity to extract.
-#' @return A data frame of observed diagnoses for plotting.
+#' @return A data frame of observed values for plotting, or `NULL` when the
+#'   requested quantity is not present in the real-data inputs.
 #' @examples
 #' # See ?run_backcalc for a full end-to-end workflow.
 #' invisible(NULL)
@@ -638,8 +639,15 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
 extract_real_data <- function(hiv_list, quantity) {
   stan_data <- hiv_list$stan_data
   plot_years <- stan_data$nquar / 4 - 0.25
+  model_config <- stan_data$model_config
+  if (is.null(model_config)) {
+    stop("stan_data$model_config is required for real-data plotting.")
+  }
+  migration <- isTRUE(model_config$migration)
+  rita <- isTRUE(model_config$rita)
+  age <- isTRUE(model_config$age)
 
-  diagnoses <- if (stan_data$model_config$migration) {
+  diagnoses <- if (migration) {
     tibble::tibble(
       value = rowSums(stan_data$HIV) + rowSums(stan_data$AIDS),
       year = seq(0, plot_years, by = 0.25),
@@ -654,7 +662,16 @@ extract_real_data <- function(hiv_list, quantity) {
   }
   if (quantity == "diagnoses") {
     return(diagnoses)
+  } else if (quantity == "aids_diagnoses") {
+    return(tibble::tibble(
+      value = if (migration) rowSums(stan_data$AIDS) else stan_data$AIDS,
+      year = seq(0, plot_years, by = 0.25),
+      group = "Observed values"
+    ))
   } else if (quantity == "diagnoses_age") {
+    if (is.null(stan_data$HIV_age) || is.null(stan_data$AIDS_age)) {
+      return(NULL)
+    }
     out <- make_age_band_data(
       apply(stan_data$HIV_age, c(1, 2), sum) +
         apply(stan_data$AIDS_age, c(1, 2), sum),
@@ -666,12 +683,94 @@ extract_real_data <- function(hiv_list, quantity) {
             age_band = "all"
           )
       )
+  } else if (quantity == "aids_diagnoses_age") {
+    if (is.null(stan_data$AIDS_age)) {
+      return(NULL)
+    }
+    out <- make_age_band_data(
+      apply(stan_data$AIDS_age, c(1, 2), sum),
+      group = "Observed values"
+    )
   } else if (quantity == "transfers_detected") {
+    if (is.null(stan_data$ABROAD)) {
+      return(NULL)
+    }
     # ABROAD counts only transfers whose previous diagnosis was identified, so
     # they are comparable with transfers_detected, not with total transfers.
     out <- tibble::tibble(
       value = stan_data$ABROAD,
       year = seq(0, plot_years, by = 0.25),
+      group = "Observed values"
+    )
+  } else if (quantity == "transfers_detected_age") {
+    if (!age || is.null(stan_data$ABROAD_group)) {
+      return(NULL)
+    }
+    out <- make_grouped_age_data(
+      stan_data$ABROAD_group,
+      group = "Observed values"
+    )
+  } else if (quantity == "gamma_obs") {
+    if (!migration || is.null(stan_data$gamma_obs)) {
+      return(NULL)
+    }
+    out <- tibble::tibble(
+      value = exp(stan_data$gamma_obs),
+      year = seq(0, plot_years, by = 0.25),
+      group = "Observed values"
+    )
+  } else if (quantity == "gamma_obs_group") {
+    if (!migration || is.null(stan_data$gamma_obs_group)) {
+      return(NULL)
+    }
+    gamma_obs_group <- stan_data$gamma_obs_group
+    gamma_obs_group[gamma_obs_group >= 0] <-
+      exp(gamma_obs_group[gamma_obs_group >= 0])
+    out <- make_grouped_age_data(
+      gamma_obs_group,
+      group = "Observed values"
+    ) |>
+      dplyr::filter(.data$value >= 0)
+  } else if (quantity == "cd4_diagnoses") {
+    if (is.null(stan_data$CD4)) {
+      return(NULL)
+    }
+    out <- make_cd4_data(
+      stan_data$CD4,
+      migration = migration,
+      rita = rita,
+      group = "Observed values"
+    )
+  } else if (quantity == "cd4_diagnoses_age") {
+    if (is.null(stan_data$CD4_age)) {
+      return(NULL)
+    }
+    out <- make_cd4_age_data(
+      stan_data$CD4_age,
+      migration = migration,
+      rita = rita,
+      group = "Observed values"
+    )
+  } else if (quantity == "recent_arrival_cd4") {
+    if (!migration || is.null(stan_data$recent_arrival_cd4)) {
+      return(NULL)
+    }
+    out <- make_recent_arrival_cd4_data(
+      stan_data,
+      age = age,
+      group = "Observed values"
+    )
+  } else if (quantity == "detect_prob") {
+    if (
+      is.null(stan_data$detect_obs_index) ||
+        is.null(stan_data$detect_logit_obs) ||
+        length(stan_data$detect_obs_index) == 0
+    ) {
+      return(NULL)
+    }
+    out <- tibble::tibble(
+      value = invlogit(stan_data$detect_logit_obs),
+      year = (stan_data$detect_obs_index - 1) / 4,
       group = "Observed values"
     )
   }

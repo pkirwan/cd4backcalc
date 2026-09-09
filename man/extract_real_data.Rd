@@ -7,12 +7,13 @@
 extract_real_data(hiv_list, quantity)
 }
 \arguments{
-\item{hiv_list}{A list of HIV model results.}
+\item{hiv_list}{A list of HIV model results containing \code{stan_data}.}
 
 \item{quantity}{A string specifying the quantity to extract.}
 }
 \value{
-A data frame of observed diagnoses for plotting.
+A data frame of observed values for plotting, or \code{NULL} when the
+requested quantity is not present in the real-data inputs.
 }
 \description{
 Extract real data for plotting

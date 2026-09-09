@@ -93,6 +93,48 @@ test_that("observed Stan quantities can be plotted", {
   expect_s3_class(plot_simulations(ai_sim_diags, "recent_arrival_cd4"), "ggplot")
 })
 
+test_that("observed quantities can be plotted without sim_config", {
+  sim_diags <- simulate_diagnoses(
+    nquar = 40,
+    sim_seed = 123,
+    age = TRUE,
+    migration = TRUE,
+    gamma_obs_sd = 0.1,
+    gamma_obs_grouped = TRUE
+  )
+  real_data <- sim_diags
+  real_data$stan_data$sim_config <- NULL
+  real_data$stan_data$model_config <- list(
+    migration = TRUE,
+    rita = FALSE,
+    age = TRUE
+  )
+  real_data$sim_data <- NULL
+
+  quantities <- c(
+    "diagnoses",
+    "diagnoses_age",
+    "aids_diagnoses",
+    "aids_diagnoses_age",
+    "transfers_detected",
+    "transfers_detected_age",
+    "gamma_obs",
+    "gamma_obs_group",
+    "cd4_diagnoses",
+    "cd4_diagnoses_age",
+    "recent_arrival_cd4"
+  )
+  plots <- lapply(quantities, function(quantity) {
+    plot_simulations(real_data, quantity)
+  })
+
+  expect_true(all(vapply(plots, inherits, logical(1), what = "ggplot")))
+  expect_identical(
+    plots[[1]]$labels$title,
+    "Observed HIV diagnoses"
+  )
+})
+
 test_that("simulated plots are generated correctly", {
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(

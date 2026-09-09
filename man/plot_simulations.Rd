@@ -2,12 +2,14 @@
 % Please edit documentation in R/plot_estimates.R
 \name{plot_simulations}
 \alias{plot_simulations}
-\title{Plot simulated quantities}
+\title{Plot simulated or observed quantities}
 \usage{
 plot_simulations(sim_diags, quantity)
 }
 \arguments{
-\item{sim_diags}{A list containing the simulated diagnosis data objects sim_data and stan_data.}
+\item{sim_diags}{A list containing simulated diagnosis data objects \code{sim_data}
+and \code{stan_data}, or a real-data result containing \code{stan_data} and no
+\code{sim_data}.}
 
 \item{quantity}{A string specifying the quantity to plot. Options include
 "incidence", "undiag_prev", "undiag_migration", "all_migration",
@@ -15,13 +17,15 @@ plot_simulations(sim_diags, quantity)
 "transfers_detected", "ratio_abroad_uk", "detect_prob",
 "migrant_hiv_prevalence", "aids_diagnoses", "aids_diagnoses_age",
 "cd4_diagnoses", "cd4_diagnoses_age", "transfers_detected_age",
-"gamma_obs", and "gamma_obs_group".}
+"gamma_obs", "gamma_obs_group", and "recent_arrival_cd4".}
 }
 \value{
 A ggplot2 object.
 }
 \description{
-Generate a ggplot2 object plotting simulated quantities over time.
+Generate a ggplot2 object plotting simulated quantities over time. When
+\code{sim_data} is absent, quantities available directly from real-data Stan
+inputs are plotted instead.
 }
 \examples{
 # See ?run_backcalc for a full end-to-end workflow.

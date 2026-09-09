@@ -1,8 +1,12 @@
-#' Plot simulated quantities
+#' Plot simulated or observed quantities
 #'
-#' Generate a ggplot2 object plotting simulated quantities over time.
+#' Generate a ggplot2 object plotting simulated quantities over time. When
+#' `sim_data` is absent, quantities available directly from real-data Stan
+#' inputs are plotted instead.
 #'
-#' @param sim_diags A list containing the simulated diagnosis data objects sim_data and stan_data.
+#' @param sim_diags A list containing simulated diagnosis data objects `sim_data`
+#'   and `stan_data`, or a real-data result containing `stan_data` and no
+#'   `sim_data`.
 #' @param quantity A string specifying the quantity to plot. Options include
 #'   "incidence", "undiag_prev", "undiag_migration", "all_migration",
 #'   "diag_prob", "diagnoses", "migration_prob", "transfers",
@@ -19,36 +23,54 @@ plot_simulations <- function(
   sim_diags,
   quantity
 ) {
-  plot_title <- get_plot_title(quantity)
-  # replace "Estimated" with "Simulated"
-  plot_title <- paste0("Simulated ", plot_title)
-  sim_estimates <- extract_simulated_quantity(sim_diags, quantity)
-  sim_estimates_det <- extract_simulated_quantity(
-    sim_diags,
-    quantity,
-    deterministic = TRUE
+  is_real_data <- is.null(sim_diags$sim_data)
+  plot_title <- paste0(
+    if (is_real_data) "Observed " else "Simulated ",
+    get_plot_title(quantity)
   )
-  sim_estimates <- sim_estimates |>
-    dplyr::mutate(group = "Sampled values") |>
-    dplyr::bind_rows(
-      sim_estimates_det |>
-        dplyr::mutate(group = "Generative values")
+
+  if (is_real_data) {
+    sim_estimates <- extract_real_data(sim_diags, quantity)
+    if (is.null(sim_estimates) || nrow(sim_estimates) == 0) {
+      stop(
+        sprintf(
+          "Quantity '%s' is not available as observed data.",
+          quantity
+        ),
+        call. = FALSE
+      )
+    }
+  } else {
+    sim_estimates <- extract_simulated_quantity(sim_diags, quantity)
+    sim_estimates_det <- extract_simulated_quantity(
+      sim_diags,
+      quantity,
+      deterministic = TRUE
     )
+    sim_estimates <- sim_estimates |>
+      dplyr::mutate(group = "Sampled values") |>
+      dplyr::bind_rows(
+        sim_estimates_det |>
+          dplyr::mutate(group = "Generative values")
+      )
+  }
 
   if (
     "age_band" %in% names(sim_estimates) &&
-      (grepl("_age$", quantity) || quantity %in% c(
-        "gamma_obs_group", "recent_arrival_cd4"
-      ))
+      (grepl("_age$", quantity) || quantity == "gamma_obs_group")
   ) {
     sim_estimates <- sim_estimates |>
       dplyr::filter(.data$age_band != "all")
   }
 
-  model_colors <- stats::setNames(
-    c("mediumturquoise", "mediumorchid"),
-    c("Sampled values", "Generative values")
-  )
+  model_colors <- if (is_real_data) {
+    stats::setNames("mediumturquoise", "Observed values")
+  } else {
+    stats::setNames(
+      c("mediumturquoise", "mediumorchid"),
+      c("Sampled values", "Generative values")
+    )
+  }
 
   # plot simulated values as points and expected values as lines
   p1 <- sim_estimates |>
@@ -59,16 +81,6 @@ plot_simulations <- function(
       color = .data$group,
       group = .data$group
     ) +
-    ggplot2::geom_point(
-      data = sim_estimates |>
-        dplyr::filter(.data$group == "Sampled values"),
-      size = 1.1,
-      shape = 3
-    ) +
-    ggplot2::geom_line(
-      data = sim_estimates |>
-        dplyr::filter(.data$group == "Generative values")
-    ) +
     ggplot2::labs(
       title = plot_title,
       x = "Year",
@@ -77,7 +89,7 @@ plot_simulations <- function(
         "^(.)",
         "\\U\\1",
         gsub(
-          ", by CD4 strata| by age group|, by CD4 strata and age group|Simulated | for transfers of care",
+          ", by CD4 strata| by age group|, by CD4 strata and age group|Simulated |Observed | for transfers of care",
           "",
           get_plot_title(quantity)
         ),
@@ -97,6 +109,26 @@ plot_simulations <- function(
       panel.grid.minor = ggplot2::element_line(color = "grey80"),
       legend.position = "bottom"
     )
+
+  if (is_real_data) {
+    p1 <- p1 +
+      ggplot2::geom_point(
+        size = 1.1,
+        shape = 3
+      )
+  } else {
+    p1 <- p1 +
+      ggplot2::geom_point(
+        data = sim_estimates |>
+          dplyr::filter(.data$group == "Sampled values"),
+        size = 1.1,
+        shape = 3
+      ) +
+      ggplot2::geom_line(
+        data = sim_estimates |>
+          dplyr::filter(.data$group == "Generative values")
+      )
+  }
 
   p1 <- do_facetting(p1, quantity)
 

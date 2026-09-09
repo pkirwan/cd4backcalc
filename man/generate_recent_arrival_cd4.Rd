@@ -7,9 +7,11 @@
 generate_recent_arrival_cd4(m_age, d_probs_mig, q_age, completeness, dist)
 }
 \arguments{
-\item{m_age}{Migrant arrivals by age, quarter, and latent state.}
+\item{m_age}{Undiagnosed migrant arrivals by age, quarter, and the four
+non-recent CD4 states.}
 
-\item{d_probs_mig}{Migrant diagnosis probabilities by quarter, age, and state.}
+\item{d_probs_mig}{Migrant diagnosis probabilities by quarter, age, and the
+four non-AIDS CD4 states.}
 
 \item{q_age}{Progression probabilities by age and state.}
 

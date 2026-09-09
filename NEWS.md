@@ -9,7 +9,7 @@
 - Ported the optional `gamma_obs` into the age-independent migration models.
 - Incorporated efficiency improvements from age-dependent migration models into other age-dependent Stan models.
 - New `gamma_obs_drift_sd` option in `simulate_diagnoses()` to control the log-scale random-walk variation on `migrant_hiv_prevalence`.
-- `plot_simulations()` extended to plot all observed quantities, e.g. `aids_diagnoses_age`, `gamma_obs_group`, and `cd4_diagnoses_age`.
+- `plot_simulations()` now also plots observed quantities from real-data results without `sim_config`, e.g. `aids_diagnoses_age`, `gamma_obs_group`, and `cd4_diagnoses_age`.
 - `plot_estimates()` now accepts a `colours` argument with the model or chain colours.
 - Re-ran R vignettes with improved plotting and model logic.
 
