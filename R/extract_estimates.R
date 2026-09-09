@@ -209,19 +209,17 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
     year = seq(0, plot_years, by = 0.25),
     group = "Generative values"
   )
-  diagnoses <- if (stan_data$sim_config$migration) {
-    tibble::tibble(
-      value = rowSums(stan_data$HIV) + rowSums(stan_data$AIDS),
-      year = seq(0, plot_years, by = 0.25),
-      group = "Generative values"
-    )
-  } else {
-    tibble::tibble(
-      value = stan_data$HIV + stan_data$AIDS,
-      year = seq(0, plot_years, by = 0.25),
-      group = "Generative values"
-    )
-  }
+  total_diags <- sim_data$epi_uk$diags +
+    sim_data$epi_uk_abroad$diags +
+    sim_data$epi_abroad$diags
+  total_diags_age <- sim_data$epi_uk$diags_age +
+    sim_data$epi_uk_abroad$diags_age +
+    sim_data$epi_abroad$diags_age
+  diagnoses <- tibble::tibble(
+    value = rowSums(total_diags) + sim_data$misclassified,
+    year = seq(0, plot_years, by = 0.25),
+    group = "Generative values"
+  )
   diag_prob <- if (stan_data$sim_config$rita) {
     # Use middle age as representative for non-age-stratified summary
     mid_age <- ceiling(stan_data$nage / 2)
@@ -283,11 +281,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
     out <- diagnoses
   } else if (quantity == "aids_diagnoses") {
     out <- tibble::tibble(
-      value = if (stan_data$sim_config$migration) {
-        rowSums(stan_data$AIDS)
-      } else {
-        stan_data$AIDS
-      },
+      value = total_diags[, stan_data$sim_config$ndiagst],
       year = seq(0, plot_years, by = 0.25),
       group = "Generative values"
     )
@@ -459,8 +453,7 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
       )
   } else if (quantity == "diagnoses_age") {
     out <- make_age_band_data(
-      apply(stan_data$HIV_age, c(1, 2), sum) +
-        apply(stan_data$AIDS_age, c(1, 2), sum)
+      t(apply(total_diags_age, c(1, 2), sum) + sim_data$misclassified_age)
     ) |>
       dplyr::bind_rows(
         diagnoses |>
@@ -469,7 +462,9 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
           )
       )
   } else if (quantity == "aids_diagnoses_age") {
-    out <- make_age_band_data(apply(stan_data$AIDS_age, c(1, 2), sum))
+    out <- make_age_band_data(
+      t(total_diags_age[,, stan_data$sim_config$ndiagst])
+    )
   } else if (quantity == "transfers_detected_age") {
     out <- make_grouped_age_data(stan_data$ABROAD_group)
   } else if (quantity == "gamma_obs") {

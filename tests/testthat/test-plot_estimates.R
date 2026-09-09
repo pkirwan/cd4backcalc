@@ -55,6 +55,7 @@ test_that("observed Stan quantities can be plotted", {
     sim_seed = 123,
     age = TRUE,
     migration = TRUE,
+    sim_type = "combo_3",
     gamma_obs_sd = 0.1,
     gamma_obs_grouped = TRUE
   )

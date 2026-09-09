@@ -1068,23 +1068,26 @@ simulate_diagnoses <- function(
   validate_sim_data(sim_data)
 
   # Apply rounding which preserves sums
-  sim_data$epi_uk <- round_fields(
+  epi_uk <- round_fields(
     sim_data$epi_uk,
     stochastic_diags_age = sim_config$dist
   )
-  sim_data$epi_uk_abroad <- round_fields(
+  epi_uk_abroad <- round_fields(
     sim_data$epi_uk_abroad,
     stochastic_diags_age = sim_config$dist
   )
-  sim_data$epi_abroad <- round_fields(
+  epi_abroad <- round_fields(
     sim_data$epi_abroad,
     stochastic_diags_age = sim_config$dist
   )
 
+  if (sim_config$dist) {
+    sim_data$epi_uk <- epi_uk
+    sim_data$epi_uk_abroad <- epi_uk_abroad
+    sim_data$epi_abroad <- epi_abroad
+  }
+
   # Prepare Stan data
-  epi_uk <- sim_data$epi_uk
-  epi_uk_abroad <- sim_data$epi_uk_abroad
-  epi_abroad <- sim_data$epi_abroad
   born_abroad <- epi_abroad$diags + epi_uk_abroad$diags
   born_abroad_age <- epi_abroad$diags_age + epi_uk_abroad$diags_age
 
