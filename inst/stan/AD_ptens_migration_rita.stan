@@ -829,8 +829,10 @@ generated quantities {
                                                 abroad_age_group_prop[t,  : ]));
     
     for (y in 1 : 2) {
-      for (a in 1 : nage) {
-        // keep a==1 defined, even though it is omitted from sampling likelihood
+      // a == 1 is omitted from the sampling likelihood, so its log-lik
+      // contribution is set to 0 (not computed)
+      log_lik[t, 1, y] = 0;
+      for (a in 2 : nage) {
         log_lik[t, a, y] = poisson_lpmf(HIV_age[t, a, y] |
                                         exp_HIV_dx[t, a, y])
                            + poisson_lpmf(AIDS_age[t, a, y] |
