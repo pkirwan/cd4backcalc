@@ -68,9 +68,10 @@ parameters {
   // Random walk model
   vector[nquar] gamma;
   real<lower=0> var1;
-  // GP model
+  // GP model (non-centred)
   real<lower=0> eta;
   real<lower=0> rho;
+  vector[nquar] gamma_raw;
   
   // Diagnosis probability parameters
   // Spline model
@@ -114,14 +115,19 @@ transformed parameters {
   row_vector<lower=0>[nquar] exp_AIDS_dx;
   array[nquar] simplex[4] exp_p = rep_array(rep_vector(0.25, 4), nquar);
   
-  // Temporary variables
-  real<lower=0> inv_rho = inv(rho);
-  
   // Initialize h based on infection model
   if (inf_model == 1) {
     h = exp(lambda);
-  } else {
+  } else if (inf_model == 2) {
     h = exp(gamma);
+  } else {
+    // Non-centred GP: gamma_gp = mu + L * gamma_raw, L from covariance built on rho
+    matrix[nquar, nquar] Sigma = gp_exp_quad_cov(x, eta, rho);
+    for (i in 1 : nquar) {
+      Sigma[i, i] += sigma_sq; // ensures numerical PD
+    }
+    vector[nquar] gamma_gp = mu + cholesky_decompose(Sigma) * gamma_raw;
+    h = exp(gamma_gp);
   }
   
   // Diagnosis process
@@ -225,6 +231,7 @@ model {
     var1 ~ gamma(2, 2);
     eta ~ normal(0, 2);
     rho ~ lognormal(0, 1);
+    gamma_raw ~ std_normal();
   } else if (inf_model == 2) {
     gamma[1] ~ normal(5.521461, 0.2938935);
     var1 ~ gamma(1, 32);
@@ -235,17 +242,12 @@ model {
     log_sigma_inf ~ normal(-2, 1);
     eta ~ normal(0, 2);
     rho ~ lognormal(0, 1);
+    gamma_raw ~ std_normal();
   } else if (inf_model == 3) {
-    // Sigma/L are local: not saved as (nquar x nquar) draws, only needed here
-    matrix[nquar, nquar] Sigma = gp_exp_quad_cov(x, eta, inv_rho);
-    for (i in 1 : nquar) {
-      Sigma[i, i] += sigma_sq; // ensures numerical PD
-    }
-    matrix[nquar, nquar] L = cholesky_decompose(Sigma);
-    
-    rho ~ student_t(4, 0, 1);
+    // Non-centred GP: gamma_raw is white noise; gamma built in transformed parameters
+    rho ~ lognormal(0, 1);
     eta ~ normal(0, 1);
-    gamma ~ multi_normal_cholesky(mu, L);
+    gamma_raw ~ std_normal();
     
     // weak priors for inactive infection params
     beta_inf ~ normal(0, 5);
