@@ -168,7 +168,7 @@ load_or_build_cached <- function(
 }
 
 message("Preparing simulated datasets...")
-set.seed(123)
+set.seed(140926)
 
 message("Generating figures from README.Rmd...")
 sim_readme <- simulate_diagnoses(h_pattern = "increasing")
