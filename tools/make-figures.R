@@ -306,13 +306,7 @@ fit_mig <- load_or_build_cached(
   cache_file = "model-types-fit-migration.RData",
   object_name = "fit_mig",
   build_fn = function() {
-    fit_model(
-      sim_mig,
-      migration = TRUE,
-      return_fit = FALSE,
-      adapt_delta = 0.99,
-      max_treedepth = 15
-    )
+    fit_model(sim_mig, migration = TRUE, return_fit = FALSE, init = 0)
   },
   label = "model fit for migration model",
   validate_fn = healthy_fit
@@ -457,27 +451,21 @@ models <- load_or_build_cached(
         inf_model = 1,
         diag_model = 1,
         model_seed = 123,
-        return_fit = FALSE,
-        adapt_delta = 0.99,
-        max_treedepth = 15
+        return_fit = FALSE
       ),
       "Random-walk incidence" = fit_model(
         sim_cd4,
         inf_model = 2,
         diag_model = 1,
         model_seed = 123,
-        return_fit = FALSE,
-        adapt_delta = 0.99,
-        max_treedepth = 15
+        return_fit = FALSE
       ),
       "Gaussian-process incidence" = fit_model(
         sim_cd4,
         inf_model = 3,
         diag_model = 1,
         model_seed = 123,
-        return_fit = FALSE,
-        adapt_delta = 0.99,
-        max_treedepth = 15
+        return_fit = FALSE
       )
     )
   },
