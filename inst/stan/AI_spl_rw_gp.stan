@@ -252,6 +252,7 @@ model {
     // weak priors for inactive infection params
     beta_inf ~ normal(0, 5);
     log_sigma_inf ~ normal(-2, 1);
+    gamma ~ normal(0, 5);
     var1 ~ gamma(2, 2);
   }
   
