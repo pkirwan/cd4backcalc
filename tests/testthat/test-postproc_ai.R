@@ -39,6 +39,28 @@ test_that("cd4-only post-processing works", {
   expect_true("diag_prob_1" %in% names(hiv_list))
 })
 
+test_that("post-processing indexes active incidence draws", {
+  nquar <- 3
+  draw_names <- c(
+    paste0("d[1,", seq_len(nquar), "]"),
+    paste0("d[2,", seq_len(nquar), "]"),
+    paste0("d[3,", seq_len(nquar), "]"),
+    paste0("d[4,", seq_len(nquar), "]"),
+    paste0("h[", seq_len(nquar), "]"),
+    paste0("lambda[", seq_len(nquar), "]")
+  )
+  fit_mat <- matrix(0, nrow = 1, ncol = length(draw_names))
+  colnames(fit_mat) <- draw_names
+
+  idx <- make_fit_indices(
+    fit_mat,
+    config = list(migration = FALSE, rita = FALSE),
+    nquar = nquar
+  )
+
+  expect_equal(colnames(fit_mat)[idx$h], paste0("h[", seq_len(nquar), "]"))
+})
+
 test_that("migration post-processing works", {
   # Simulate diagnoses
   sim_diags <- simulate_diagnoses(

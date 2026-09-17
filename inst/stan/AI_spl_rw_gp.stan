@@ -57,9 +57,6 @@ data {
   array[nquar] real x; // inputs of GP - 1:nquar
   real<lower=0> sigma_sq; // Arbitrary noise of GP
 }
-transformed data {
-  vector[nquar] mu = rep_vector(5.521461, nquar);
-}
 parameters {
   // Infection parameters
   // Spline model
@@ -68,10 +65,9 @@ parameters {
   // Random walk model
   vector[nquar] gamma;
   real<lower=0> var1;
-  // GP model (non-centred)
-  real<lower=0> eta;
-  real<lower=0> rho;
-  vector[nquar] gamma_raw;
+  // GP covariance parameters
+  real<lower=0.05, upper=1> eta;
+  real<lower=0.1, upper=1> rho;
   
   // Diagnosis probability parameters
   // Spline model
@@ -118,16 +114,8 @@ transformed parameters {
   // Initialize h based on infection model
   if (inf_model == 1) {
     h = exp(lambda);
-  } else if (inf_model == 2) {
-    h = exp(gamma);
   } else {
-    // Non-centred GP: gamma_gp = mu + L * gamma_raw, L from covariance built on rho
-    matrix[nquar, nquar] Sigma = gp_exp_quad_cov(x, eta, rho);
-    for (i in 1 : nquar) {
-      Sigma[i, i] += sigma_sq; // ensures numerical PD
-    }
-    vector[nquar] gamma_gp = mu + cholesky_decompose(Sigma) * gamma_raw;
-    h = exp(gamma_gp);
+    h = exp(gamma);
   }
   
   // Diagnosis process
@@ -231,7 +219,6 @@ model {
     var1 ~ gamma(2, 2);
     eta ~ normal(0, 2);
     rho ~ lognormal(0, 1);
-    gamma_raw ~ std_normal();
   } else if (inf_model == 2) {
     gamma[1] ~ normal(5.521461, 0.2938935);
     var1 ~ gamma(1, 32);
@@ -242,17 +229,21 @@ model {
     log_sigma_inf ~ normal(-2, 1);
     eta ~ normal(0, 2);
     rho ~ lognormal(0, 1);
-    gamma_raw ~ std_normal();
   } else if (inf_model == 3) {
-    // Non-centred GP: gamma_raw is white noise; gamma built in transformed parameters
-    rho ~ lognormal(0, 1);
-    eta ~ normal(0, 1);
-    gamma_raw ~ std_normal();
+    matrix[nquar, nquar] Sigma = gp_exp_quad_cov(x, eta, rho);
+    for (i in 1 : nquar) {
+      Sigma[i, i] += sigma_sq;
+    }
+    matrix[nquar, nquar] L = cholesky_decompose(Sigma);
+
+    rho ~ inv_gamma(5, 1);
+    eta ~ lognormal(log(0.5), 0.35);
+    gamma ~ multi_normal_cholesky(rep_vector(beta_inf[1], nquar), L);
     
-    // weak priors for inactive infection params
-    beta_inf ~ normal(0, 5);
+    // GP mean and weak priors for inactive infection parameters
+    beta_inf[1] ~ normal(5.521461, 1.5);
+    beta_inf[2 : npars_inf] ~ normal(0, 5);
     log_sigma_inf ~ normal(-2, 1);
-    gamma ~ normal(0, 5);
     var1 ~ gamma(2, 2);
   }
   

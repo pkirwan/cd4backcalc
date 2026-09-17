@@ -171,6 +171,10 @@ fit_stan_model <- function(
     model_seed <- stan_data$model_config$model_seed
   }
 
+  if (is.null(init) && isTRUE(stan_data$model_config$inf_model == 3)) {
+    init <- 0
+  }
+
   # Check stan_data validity
   confirm_stan_data(stan_data)
 

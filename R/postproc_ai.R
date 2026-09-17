@@ -180,6 +180,7 @@ make_fit_indices <- function(fit_mat, config, nquar) {
     d3_mig = grep("^d_mig\\[3,", cn),
     d4_mig = grep("^d_mig\\[4,", cn),
     d5_mig = grep("^d_mig\\[5,", cn),
+    h = grep("^h\\[", cn),
     lambda = grep("^lambda\\[", cn),
     gamma = grep("^gamma\\[", cn),
     p = grep("^p\\[", cn),
@@ -199,8 +200,8 @@ make_fit_indices <- function(fit_mat, config, nquar) {
       "config$rita=TRUE but could not find d[5,] in fit matrix column names."
     )
   }
-  if (length(idx$lambda) == 0L) {
-    stop("Could not find lambda[...] in fit matrix column names.")
+  if (length(idx$h) != nquar) {
+    stop("Could not find h[...] in fit matrix column names.")
   }
 
   if (config$migration) {
@@ -432,7 +433,7 @@ infect_dist_by_year_dx <- function(stan_data, fit_mat, i, idx) {
   d4 <- as.numeric(fit_mat[i, idx$d4])
 
   # Get infections and migrations
-  temp_h <- exp(as.numeric(fit_mat[i, idx$lambda]))
+  temp_h <- as.numeric(fit_mat[i, idx$h])
 
   if (config$migration) {
     temp_omega <- exp(as.numeric(fit_mat[i, idx$gamma]))
@@ -805,7 +806,7 @@ prev_by_year_infection <- function(stan_data, fit_mat, i, idx) {
   d4 <- as.numeric(fit_mat[i, idx$d4])
 
   # Get infections and migrations
-  temp_h <- exp(as.numeric(fit_mat[i, idx$lambda]))
+  temp_h <- as.numeric(fit_mat[i, idx$h])
 
   if (config$migration) {
     temp_omega <- exp(as.numeric(fit_mat[i, idx$gamma]))
