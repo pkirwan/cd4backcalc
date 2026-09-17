@@ -439,10 +439,10 @@ confirm_stan_data <- function(stan_data) {
         length(stan_data$gamma_obs_drift_sd) == 1L &&
           is.finite(stan_data$gamma_obs_drift_sd) &&
           stan_data$gamma_obs_drift_sd >= 0,
-      "gamma_obs_slope_sd must be a single non-negative number" =
+      "gamma_obs_slope_sd must be a single positive number" =
         length(stan_data$gamma_obs_slope_sd) == 1L &&
           is.finite(stan_data$gamma_obs_slope_sd) &&
-          stan_data$gamma_obs_slope_sd >= 0,
+          stan_data$gamma_obs_slope_sd > 0,
       "nyear must equal nquar / 4" =
         stan_data$nyear == stan_data$nquar %/% 4L,
       "recent_arrival_cd4 must contain non-negative integer counts" =
@@ -922,9 +922,9 @@ model_type_prep <- function(
     if (
       length(stan_data$gamma_obs_slope_sd) != 1L ||
         !is.finite(stan_data$gamma_obs_slope_sd) ||
-        stan_data$gamma_obs_slope_sd < 0
+        stan_data$gamma_obs_slope_sd <= 0
     ) {
-      stop("gamma_obs_slope_sd must be a single non-negative number.")
+      stop("gamma_obs_slope_sd must be a single positive number.")
     }
 
     if (stan_data$nquar %% 4L != 0L) {

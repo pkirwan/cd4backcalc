@@ -120,6 +120,20 @@ test_that("migration back-calculation produces a stanfit object", {
   expect_true("diag_prob" %in% names(hiv_list))
 })
 
+test_that("migration trend prior scale must be positive", {
+  stan_data <- simulate_diagnoses(
+    sim_seed = 123,
+    nquar = 40,
+    migration = TRUE
+  )
+  stan_data$stan_data$gamma_obs_slope_sd <- 0
+
+  expect_error(
+    model_type_prep(stan_data),
+    "gamma_obs_slope_sd must be a single positive number"
+  )
+})
+
 test_that("rita back-calculation produces a stanfit object", {
   stan_data <- simulate_diagnoses(sim_seed = 123, rita = TRUE)
   # Test run_backcalc
