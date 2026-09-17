@@ -9,6 +9,24 @@ test_that("migration plot titles describe their estimands", {
   )
 })
 
+test_that("plot labels are inherited from model list names", {
+  estimates <- tibble::tibble(
+    year = 0:2,
+    `2.5%` = 1:3,
+    `50%` = 2:4,
+    mean = 2:4,
+    `97.5%` = 3:5
+  )
+  models <- list(
+    "Spline incidence" = list(incidence = estimates),
+    "Gaussian-process incidence" = list(incidence = estimates)
+  )
+
+  plot <- plot_estimates(models, quantity = "incidence")
+
+  expect_identical(unique(plot$data$group), names(models))
+})
+
 test_that("simulated plots are generated correctly", {
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(

@@ -46,7 +46,14 @@ get_estimates <- function(hiv_list, quantity) {
   # extract estimates
   estimates <- purrr::map(seq_along(hiv_list), function(i) {
     x <- hiv_list[[i]]
-    group_label <- if (!is.null(x$group)) x$group else paste0("Model ", i)
+    list_name <- names(hiv_list)[i]
+    group_label <- if (!is.null(x$group)) {
+      x$group
+    } else if (!is.null(list_name) && nzchar(list_name)) {
+      list_name
+    } else {
+      paste0("Model ", i)
+    }
 
     estimate_tbl <- x[[quantity]] |>
       tibble::as_tibble()

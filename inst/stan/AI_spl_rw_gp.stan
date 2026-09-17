@@ -221,7 +221,8 @@ model {
     rho ~ lognormal(0, 1);
   } else if (inf_model == 2) {
     gamma[1] ~ normal(5.521461, 0.2938935);
-    var1 ~ gamma(1, 32);
+    // Prior mean step SD is 0.05; quarterly incidence should change smoothly.
+    var1 ~ gamma(2, 800);
     tail(gamma, nquar - 1) ~ normal(head(gamma, nquar - 1), sqrt(var1));
     
     // weak priors for inactive infection params

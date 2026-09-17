@@ -139,7 +139,8 @@ plot_simulations <- function(
 #'
 #' Generate a ggplot2 object plotting estimated quantities over time, optionally compared to the simulated values.
 #'
-#' @param hiv_list A list returned from the `postproc` function containing model estimates.
+#' @param hiv_list A list returned from the `postproc` function containing model
+#'   estimates, or a named list of model results. Names are used as plot labels.
 #' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "undiag_migration", "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "transfers_detected", "ratio_abroad_uk", "detect_prob", and "migrant_hiv_prevalence".
 #' @param start_year An integer specifying the starting year for the x-axis (default is 0).
 #' @param chain_results A logical indicating whether to plot chain-by-chain estimates (default is FALSE).
