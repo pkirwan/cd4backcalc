@@ -41,10 +41,10 @@ knitr::opts_chunk$set(fig.path = "../vignettes/articles/figures/")
     \path (n2) edge node[scale = 0.8] {$q_2$} (n3);
     \path (n3) edge node[scale = 0.8] {$q_3$} (n4);
     \path (n4) edge node[scale = 0.8] {$q_4$} (n5);
-    \path (n1) edge[dashed] node[', scale = 0.8] {$d_{2,i}$} (n6);
-    \path (n2) edge[dashed] node[', scale = 0.8] {$d_{3,i}$} (n7);
-    \path (n3) edge[dashed] node[', scale = 0.8] {$d_{4,i}$} (n8);
-    \path (n4) edge[dashed] node[', scale = 0.8] {$d_{5,i}$} (n9);
+    \path (n1) edge[dashed] node[', scale = 0.8] {$d_{1,i}$} (n6);
+    \path (n2) edge[dashed] node[', scale = 0.8] {$d_{2,i}$} (n7);
+    \path (n3) edge[dashed] node[', scale = 0.8] {$d_{3,i}$} (n8);
+    \path (n4) edge[dashed] node[', scale = 0.8] {$d_{4,i}$} (n9);
   \end{tikzpicture}
 ```
 
@@ -80,10 +80,10 @@ knitr::opts_chunk$set(fig.path = "../vignettes/articles/figures/")
     \path (n2) edge node[scale = 0.8] {$q_2^{j_0}$} (n3);
     \path (n3) edge node[scale = 0.8] {$q_3^{j_0}$} (n4);
     \path (n4) edge node[scale = 0.8] {$q_4^{j_0}$} (n5);
-    \path (n1) edge[dashed] node[', scale = 0.8] {$d_{2,i,j}$} (n6);
-    \path (n2) edge[dashed] node[', scale = 0.8] {$d_{3,i,j}$} (n7);
-    \path (n3) edge[dashed] node[', scale = 0.8] {$d_{4,i,j}$} (n8);
-    \path (n4) edge[dashed] node[', scale = 0.8] {$d_{5,i,j}$} (n9);
+    \path (n1) edge[dashed] node[', scale = 0.8] {$d_{1,i,j}$} (n6);
+    \path (n2) edge[dashed] node[', scale = 0.8] {$d_{2,i,j}$} (n7);
+    \path (n3) edge[dashed] node[', scale = 0.8] {$d_{3,i,j}$} (n8);
+    \path (n4) edge[dashed] node[', scale = 0.8] {$d_{4,i,j}$} (n9);
   \end{tikzpicture}
 ```
 
