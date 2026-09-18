@@ -1,0 +1,195 @@
+---
+title: "Model diagrams"
+format: html
+---
+
+```{r setup, include=FALSE}
+# Figures are saved as ../vignettes/articles/figures/<label>-1.pdf and
+# <label>-1.png (knitr's tikz engine compiles a PDF, then converts to PNG
+# via the magick package).
+knitr::opts_chunk$set(fig.path = "../vignettes/articles/figures/")
+```
+
+```{tikz backcalc-model, fig.cap = "CD4 model", fig.ext = 'png', echo=FALSE}
+\usetikzlibrary{shapes,decorations,arrows,calc,arrows.meta,fit,positioning}
+\tikzset{
+    -Latex,auto,node distance =1 cm and 1 cm,semithick,
+    state/.style ={rectangle, draw, minimum width = 0.7 cm},
+    rstate/.style = {rectangle, draw, minimum width = 0.7 cm, rounded corners = 0.2cm},
+    point/.style = {circle, draw, inner sep=0.04cm,fill,node contents={}},
+    bidirected/.style={Latex-Latex,solid},
+    el/.style = {inner sep=2pt, align=left, sloped},
+    every picture/.style={line width=0.75pt}
+}
+\begin{tikzpicture}
+    % Nodes
+    \node[] (n0) at (0,0) {};
+    
+    \node[rstate, align=center] (n1) [right = of n0] {CD4$\geq$500};
+    \node[rstate, align=center] (n2) [right = 12mm of n1] {CD4 350--499};
+    \node[rstate, align=center] (n3) [right = of n2] {CD4 200--349};
+    \node[rstate, align=center] (n4) [right = of n3] {CD4$<$200};
+    \node[state, align=center] (n5) [right = of n4] {AIDS};
+    \node[state, align=center] (n6) [below = of n1] {CD4$\geq$500};
+    \node[state, align=center] (n7) [below = of n2] {CD4 350--499};
+    \node[state, align=center] (n8) [below = of n3] {CD4 200--349};
+    \node[state, align=center] (n9) [below = of n4] {CD4$<$200};
+    % Edges
+    \path (n0) edge node[above] {$h_{i}$} (n1);
+
+    \path (n1) edge node[scale = 0.8] {$q_1$} (n2);
+    \path (n2) edge node[scale = 0.8] {$q_2$} (n3);
+    \path (n3) edge node[scale = 0.8] {$q_3$} (n4);
+    \path (n4) edge node[scale = 0.8] {$q_4$} (n5);
+    \path (n1) edge[dashed] node[', scale = 0.8] {$d_{2,i}$} (n6);
+    \path (n2) edge[dashed] node[', scale = 0.8] {$d_{3,i}$} (n7);
+    \path (n3) edge[dashed] node[', scale = 0.8] {$d_{4,i}$} (n8);
+    \path (n4) edge[dashed] node[', scale = 0.8] {$d_{5,i}$} (n9);
+  \end{tikzpicture}
+```
+
+
+```{tikz agedep-model, fig.cap = "Age dep model", fig.ext = 'png', echo=FALSE}
+\usetikzlibrary{shapes,decorations,arrows,calc,arrows.meta,fit,positioning}
+\tikzset{
+    -Latex,auto,node distance =1 cm and 1 cm,semithick,
+    state/.style ={rectangle, draw, minimum width = 0.7 cm},
+    rstate/.style = {rectangle, draw, minimum width = 0.7 cm, rounded corners = 0.2cm},
+    point/.style = {circle, draw, inner sep=0.04cm,fill,node contents={}},
+    bidirected/.style={Latex-Latex,solid},
+    el/.style = {inner sep=2pt, align=left, sloped},
+    every picture/.style={line width=0.75pt}
+}
+\begin{tikzpicture}
+    % Nodes
+    \node[] (n0) at (0,0) {};
+    
+    \node[rstate, align=center] (n1) [right = of n0] {CD4$\geq$500};
+    \node[rstate, align=center] (n2) [right = 12mm of n1] {CD4 350--499};
+    \node[rstate, align=center] (n3) [right = of n2] {CD4 200--349};
+    \node[rstate, align=center] (n4) [right = of n3] {CD4$<$200};
+    \node[state, align=center] (n5) [right = of n4] {AIDS};
+    \node[state, align=center] (n6) [below = of n1] {CD4$\geq$500};
+    \node[state, align=center] (n7) [below = of n2] {CD4 350--499};
+    \node[state, align=center] (n8) [below = of n3] {CD4 200--349};
+    \node[state, align=center] (n9) [below = of n4] {CD4$<$200};
+    % Edges
+    \path (n0) edge node[above] {$h_{i,j}$} (n1);
+
+    \path (n1) edge node[scale = 0.8] {$q_1^{j_0}$} (n2);
+    \path (n2) edge node[scale = 0.8] {$q_2^{j_0}$} (n3);
+    \path (n3) edge node[scale = 0.8] {$q_3^{j_0}$} (n4);
+    \path (n4) edge node[scale = 0.8] {$q_4^{j_0}$} (n5);
+    \path (n1) edge[dashed] node[', scale = 0.8] {$d_{2,i,j}$} (n6);
+    \path (n2) edge[dashed] node[', scale = 0.8] {$d_{3,i,j}$} (n7);
+    \path (n3) edge[dashed] node[', scale = 0.8] {$d_{4,i,j}$} (n8);
+    \path (n4) edge[dashed] node[', scale = 0.8] {$d_{5,i,j}$} (n9);
+  \end{tikzpicture}
+```
+
+```{tikz rita-model, fig.cap = "RITA model", fig.ext = 'png', echo=FALSE}
+\usetikzlibrary{shapes,decorations,arrows,calc,arrows.meta,fit,positioning}
+\tikzset{
+    -Latex,auto,node distance =1 cm and 1 cm,semithick,
+    state/.style ={rectangle, draw, minimum width = 0.7 cm},
+    rstate/.style = {rectangle, draw, minimum width = 0.7 cm, rounded corners = 0.2cm},
+    point/.style = {circle, draw, inner sep=0.04cm,fill,node contents={}},
+    bidirected/.style={Latex-Latex,solid},
+    el/.style = {inner sep=2pt, align=left, sloped},
+    every picture/.style={line width=0.75pt}
+}
+\begin{tikzpicture}
+    % Nodes
+    \node[] (n0) at (0,0) {};
+    \node[rstate, align=center] (a1) [right = of n0] {A/w 0--3 mo.};
+    \node[rstate, align=center] (a2) [below = of a1] {A/w 3--6 mo.};
+    \node[rstate, align=center] (a3) [right = 10mm of a2] {A/w 3--6 mo.};
+    \node[state, align=center] (r1) [right = 50mm of a1] {Recent HIV\\diagnosis};
+
+    \node[rstate, align=center] (n1) [below = of a2] {CD4$\geq$500};
+    \node[rstate, align=center] (n2) [right = 12mm of n1] {CD4 350--499};
+    \node[rstate, align=center] (n3) [right = of n2] {CD4 200--349};
+    \node[rstate, align=center] (n4) [right = of n3] {CD4$<$200};
+    \node[state, align=center] (n5) [right = of n4] {AIDS};
+    \node[state, align=center] (n6) [below = of n1] {Non-recent HIV\\CD4$\geq$500};
+    \node[state, align=center] (n7) [below = of n2] {Non-recent HIV\\CD4 350--499};
+    \node[state, align=center] (n8) [below = of n3] {Non-recent HIV\\CD4 200--349};
+    \node[state, align=center] (n9) [below = of n4] {Non-recent HIV\\CD4$<$200};
+    % Edges
+    \path (n0) edge node[above] {$h_{i,j}$} (a1);
+
+    \path (a1) edge node[', scale = 0.8] {$1-q_1^{j_0}$} (a2);
+    \path (a1) edge node[pos = 0.7, scale = 0.8] {$q_1^{j_0}$} (a3);
+    \path (a2) edge node[', scale = 0.8] {$1-q_1^{j_0}$} (n1);
+    \path (a2) edge node[scale = 0.8] {$q_1^{j_0}$} (n2);
+    \path (a3) edge node[pos = 0.75, scale = 0.8] {$1-q_2^{j_0}$} (n2);
+    \path (a3) edge node[scale = 0.8] {$q_2^{j_0}$} (n3);
+    \path (a1) edge[dashed, bend left=20] node[scale = 0.8] {$d_{1,i,j}$} (r1);
+    \path (a2) edge[dashed, bend left=25] node[scale = 0.8] {$d_{1,i,j}$} (r1);
+    \path (a3) edge[dashed, bend left=20] node[pos = 0.4, scale = 0.8] {$d_{1,i,j}$} (r1);
+
+    \path (n1) edge node[scale = 0.8] {$q_1^{j_0}$} (n2);
+    \path (n2) edge node[scale = 0.8] {$q_2^{j_0}$} (n3);
+    \path (n3) edge node[scale = 0.8] {$q_3^{j_0}$} (n4);
+    \path (n4) edge node[scale = 0.8] {$q_4^{j_0}$} (n5);
+    \path (n1) edge[dashed] node[', scale = 0.8] {$d_{2,i,j}$} (n6);
+    \path (n2) edge[dashed] node[', scale = 0.8] {$d_{3,i,j}$} (n7);
+    \path (n3) edge[dashed] node[', scale = 0.8] {$d_{4,i,j}$} (n8);
+    \path (n4) edge[dashed] node[', scale = 0.8] {$d_{5,i,j}$} (n9);
+  \end{tikzpicture}
+```
+
+
+```{tikz migration-model, fig.cap = "Migration model", fig.ext = 'png', echo=FALSE, engine.opts = list(extra.preamble = "\\definecolor{Plum}{RGB}{142,69,133}")}
+\usetikzlibrary{shapes,decorations,arrows,calc,arrows.meta,fit,positioning}
+\tikzset{
+    -Latex,auto,node distance =1 cm and 1 cm,semithick,
+    state/.style ={rectangle, draw, minimum width = 0.7 cm},
+    rstate/.style = {rectangle, draw, minimum width = 0.7 cm, rounded corners = 0.2cm},
+    point/.style = {circle, draw, inner sep=0.04cm,fill,node contents={}},
+    bidirected/.style={Latex-Latex,solid},
+    el/.style = {inner sep=2pt, align=left, sloped},
+    every picture/.style={line width=0.75pt}
+}
+\begin{tikzpicture}
+    % Nodes
+    \node[] (m0) at (0,0) {};
+
+    \node[rstate, align=center] (e1) [right = 11mm of m0] {CD4$\geq$500};
+    \node[rstate, align=center] (e2) [right = 11mm of e1] {CD4 350--499};
+    \node[rstate, align=center] (e3) [right = 11mm of e2] {CD4 200--349};
+    \node[rstate, align=center] (e4) [right = 11mm of e3] {CD4$<$200};
+
+    \node[state, align=center] (d1) [below = of e1] {CD4$\geq$500};
+    \node[state, align=center] (d2) [below = of e2] {CD4 350--499};
+    \node[state, align=center] (d3) [below = of e3] {CD4 200--349};
+    \node[state, align=center] (d4) [below = of e4] {CD4$<$200};
+    \node[state, align=center] (d5) [right = 11mm of e4] {AIDS};
+
+    \node[] (i1) [above = of e1] {};
+    \node[] (i2) [above = of e2] {};
+    \node[] (i3) [above = of e3] {};
+    \node[] (i4) [above = of e4] {};
+    \node[state, align=center, color = Plum] (m1) [above right = 15mm and -4mm of e2] {Diagnosed\\abroad on\\arrival};
+    \node[] (i5) [above = of m1] {};
+
+    % Edges
+    \path (m0) edge[dashed, transform canvas={yshift=2mm}] node[above] {$h_{i,j}$} (e1);
+    \path (m0) edge[dotted, color = Plum, transform canvas={yshift=-2mm}] node[below] {$\xi_i h_{i,j}$} (e1);
+    \path (e1) edge node[] {$q_1^{j_0}$} (e2);
+    \path (e2) edge node[] {$q_2^{j_0}$} (e3);
+    \path (e3) edge node[] {$q_3^{j_0}$} (e4);
+    \path (e4) edge node[] {$q_4^{j_0}$} (d5);
+
+    \path (e1) edge[] node[] {$d_{1,i,j,b}$} (d1);
+    \path (e2) edge[] node[] {$d_{2,i,j,b}$} (d2);
+    \path (e3) edge[] node[] {$d_{3,i,j,b}$} (d3);
+    \path (e4) edge[] node[] {$d_{4,i,j,b}$} (d4);
+
+    \path (i1) edge[dotted, color = Plum] node[] {$\omega_{i,j}m_{1,i}$} (e1);
+    \path (i2) edge[dotted, color = Plum] node[] {$\omega_{i,j}m_{2,i}$} (e2);
+    \path (i3) edge[dotted, color = Plum] node[] {$\omega_{i,j}m_{3,i}$} (e3);
+    \path (i4) edge[dotted, color = Plum] node[] {$\omega_{i,j}m_{4,i}$} (e4);
+    \path (i5) edge[dotted, color = Plum] node[] {$\omega_{i,j}m_{5,i}$} (m1);
+  \end{tikzpicture}
+```

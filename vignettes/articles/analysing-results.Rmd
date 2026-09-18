@@ -232,13 +232,16 @@ sim_diags <- simulate_diagnoses(
 
 models <- list(
   "Spline incidence" = run_backcalc(
-    sim_diags, inf_model = 1, diag_model = 1, model_seed = 123
+    sim_diags,
+    inf_model = 1, diag_model = 1, model_seed = 123
   ),
   "Random-walk incidence" = run_backcalc(
-    sim_diags, inf_model = 2, diag_model = 1, model_seed = 123
+    sim_diags,
+    inf_model = 2, diag_model = 1, model_seed = 123
   ),
   "Gaussian-process incidence" = run_backcalc(
-    sim_diags, inf_model = 3, diag_model = 1, model_seed = 123
+    sim_diags,
+    inf_model = 3, diag_model = 1, model_seed = 123
   )
 )
 
@@ -274,7 +277,12 @@ extract_real_data(hiv_list, quantity = "diagnoses")
 For chain-specific estimates, set `chain_results = TRUE` in `run_backcalc()` to obtain separate posterior summaries for each chain. A small number of iterations are used in the example below to demonstrate poor convergence behavior.
 
 ```{r chain, eval=FALSE}
-hiv_list <- run_backcalc(sim_diags, chain_results = TRUE, iter_warmup = 50, iter_sampling = 50)
+hiv_list <- run_backcalc(
+  sim_diags,
+  chain_results = TRUE,
+  iter_warmup = 50,
+  iter_sampling = 50
+)
 plot_estimates(hiv_list, quantity = "incidence", chain_results = TRUE)
 ```
 
