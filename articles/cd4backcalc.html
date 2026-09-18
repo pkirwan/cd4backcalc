@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,7 +62,7 @@
       <h1>Getting started</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.5/vignettes/cd4backcalc.Rmd" class="external-link"><code>vignettes/cd4backcalc.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.6/vignettes/cd4backcalc.Rmd" class="external-link"><code>vignettes/cd4backcalc.Rmd</code></a></small>
       <div class="d-none name"><code>cd4backcalc.Rmd</code></div>
     </div>
 
@@ -94,9 +94,12 @@ Stan-ready list containing the diagnosis arrays required for the chosen
 model. At minimum this includes diagnosis counts (<code>HIV</code>,
 <code>AIDS</code>, and <code>CD4</code>); migration, RITA, and
 age-dependent models additionally require the corresponding migration,
-recency, and age-specific arrays. When fitting real data, pass the
-matching <code>migration</code>, <code>rita</code>, and <code>age</code>
-flags explicitly to <code><a href="../reference/run_backcalc.html">run_backcalc()</a></code>.</p>
+recency, and age-specific arrays. Migration models can also use an
+independent external migration index supplied through
+<code>gamma_obs</code>; see <a href="https://pkirwan.github.io/cd4backcalc/articles/model-types.html">Model
+types</a>. When fitting real data, pass the matching
+<code>migration</code>, <code>rita</code>, and <code>age</code> flags
+explicitly to <code><a href="../reference/run_backcalc.html">run_backcalc()</a></code>.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hiv_list_real</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span></span>
 <span>  <span class="va">real_stan_data</span>,</span>

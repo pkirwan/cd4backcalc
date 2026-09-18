@@ -1,8 +1,8 @@
 # cd4backcalc ![](reference/figures/hex_sticker.png)
 
-The cd4backcalc package implements Bayesian, discrete-time, multi-state
-models to estimate HIV incidence and undiagnosed HIV prevalence from
-diagnosis data.
+The cd4backcalc package for R implements Bayesian, discrete-time,
+multi-state models to estimate HIV incidence and undiagnosed HIV
+prevalence from diagnosis data.
 
 ## Description
 
@@ -210,7 +210,7 @@ Plot model estimates, diagnostics, and goodness of fit
 - [`plot_estimates()`](https://pkirwan.github.io/cd4backcalc/reference/plot_estimates.md)
   : Plot estimated model quantities
 - [`plot_simulations()`](https://pkirwan.github.io/cd4backcalc/reference/plot_simulations.md)
-  : Plot simulated quantities
+  : Plot simulated or observed quantities
 - [`plot_diagnostics()`](https://pkirwan.github.io/cd4backcalc/reference/plot_diagnostics.md)
   : Plot diagnostics for fitted model
 - [`bias_plot()`](https://pkirwan.github.io/cd4backcalc/reference/bias_plot.md)

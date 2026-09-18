@@ -28,7 +28,7 @@ Plot model estimates, diagnostics, and goodness of fit
 - [`plot_estimates()`](https://pkirwan.github.io/cd4backcalc/reference/plot_estimates.md)
   : Plot estimated model quantities
 - [`plot_simulations()`](https://pkirwan.github.io/cd4backcalc/reference/plot_simulations.md)
-  : Plot simulated quantities
+  : Plot simulated or observed quantities
 - [`plot_diagnostics()`](https://pkirwan.github.io/cd4backcalc/reference/plot_diagnostics.md)
   : Plot diagnostics for fitted model
 - [`bias_plot()`](https://pkirwan.github.io/cd4backcalc/reference/bias_plot.md)

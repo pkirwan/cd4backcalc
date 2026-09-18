@@ -38,6 +38,7 @@ depend on the model type:
 | `"transfers"` | Estimated transfers of care |
 | `"transfers_detected"` | Estimated detected transfers of care |
 | `"detect_prob"` | Estimated detection probabilities |
+| `"migrant_hiv_prevalence"` | Estimated HIV-positive share of the external migration index |
 
 **Age-dependent models** (additional):
 
@@ -245,11 +246,22 @@ simultaneously:
 
 ``` r
 
-sim_diags <- simulate_diagnoses(sim_type = "combo_3")
-models <- list()
-for (i in 1:3) {
-  models[[i]] <- run_backcalc(sim_diags, model_seed = 100 + i)
-}
+sim_diags <- simulate_diagnoses(
+  sim_type = "combo_3",
+  sim_seed = 123
+)
+
+models <- list(
+  "Spline incidence" = run_backcalc(
+    sim_diags, inf_model = 1, diag_model = 1, model_seed = 123
+  ),
+  "Random-walk incidence" = run_backcalc(
+    sim_diags, inf_model = 2, diag_model = 1, model_seed = 123
+  ),
+  "Gaussian-process incidence" = run_backcalc(
+    sim_diags, inf_model = 3, diag_model = 1, model_seed = 123
+  )
+)
 
 p1 <- plot_estimates(models, quantity = "incidence")
 p2 <- bias_plot(models, quantity = "incidence")
@@ -258,7 +270,7 @@ p1 / p2
 ```
 
 ![Figure: Patchwork of incidence and bias comparisons for multiple
-models.](figures/analysing-results-compare-list-patchwork.png)
+models.](figures/analysing-results-compare-smoothing-patchwork.png)
 
 ## Working with real data
 
@@ -285,13 +297,15 @@ extract_real_data(hiv_list, quantity = "diagnoses")
 
 ## Per-chain results
 
-For detailed convergence analysis, set `chain_results = TRUE` in
+For chain-specific estimates, set `chain_results = TRUE` in
 [`run_backcalc()`](https://pkirwan.github.io/cd4backcalc/reference/run_backcalc.md)
-to obtain separate posterior summaries for each chain:
+to obtain separate posterior summaries for each chain. A small number of
+iterations are used in the example below to demonstrate poor convergence
+behavior.
 
 ``` r
 
-hiv_list <- run_backcalc(sim_diags, chain_results = TRUE)
+hiv_list <- run_backcalc(sim_diags, chain_results = TRUE, iter_warmup = 50, iter_sampling = 50)
 plot_estimates(hiv_list, quantity = "incidence", chain_results = TRUE)
 ```
 

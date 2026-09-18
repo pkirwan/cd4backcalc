@@ -35,8 +35,11 @@ should be a Stan-ready list containing the diagnosis arrays required for
 the chosen model. At minimum this includes diagnosis counts (`HIV`,
 `AIDS`, and `CD4`); migration, RITA, and age-dependent models
 additionally require the corresponding migration, recency, and
-age-specific arrays. When fitting real data, pass the matching
-`migration`, `rita`, and `age` flags explicitly to
+age-specific arrays. Migration models can also use an independent
+external migration index supplied through `gamma_obs`; see [Model
+types](https://pkirwan.github.io/cd4backcalc/articles/model-types.html).
+When fitting real data, pass the matching `migration`, `rita`, and `age`
+flags explicitly to
 [`run_backcalc()`](https://pkirwan.github.io/cd4backcalc/reference/run_backcalc.md).
 
 ``` r

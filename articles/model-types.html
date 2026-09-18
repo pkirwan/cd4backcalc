@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,7 +62,7 @@
       <h1>Model types</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.5/vignettes/articles/model-types.Rmd" class="external-link"><code>vignettes/articles/model-types.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.6/vignettes/articles/model-types.Rmd" class="external-link"><code>vignettes/articles/model-types.Rmd</code></a></small>
       <div class="d-none name"><code>model-types.Rmd</code></div>
     </div>
 
@@ -245,6 +245,15 @@ distinguish between HIV acquired in the UK and abroad, and estimate
 trends in migration. Both the age-independent and age-dependent models
 can be extended to include migration transitions, as well as models with
 RITA evidence, see Kirwan et al. (2026).</p>
+<p>Migration models can optionally use an independent rolling-annual
+migration index to inform the shape of total migration with HIV. Supply
+its logged values in <code>gamma_obs</code> and set
+<code>gamma_obs_sd &gt; 0</code>; the free offset leaves the absolute
+level to be identified by the HIV surveillance data. Age-independent
+models use only this overall series. Age-dependent models can
+additionally use grouped observations through
+<code>gamma_obs_group</code>. The index must be independent of the HIV,
+AIDS, CD4, and previous-diagnosis counts in the model likelihood.</p>
 <div class="figure">
 <img src="figures/migration-model-1.png" alt="Figure: Migration-adjusted CD4-staged back-calculation model." width="100%"><p class="caption">
 Migration-adjusted CD4-staged back-calculation model. Solid lines
@@ -266,7 +275,7 @@ abroad.
 <span><span class="va">p5</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"migration_prob"</span><span class="op">)</span></span>
 <span><span class="va">p6</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">fit_mig</span>, quantity <span class="op">=</span> <span class="st">"diag_prob_mig"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="op">(</span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span><span class="op">)</span> <span class="op">/</span> <span class="op">(</span><span class="va">p3</span> <span class="op">+</span> <span class="va">p4</span><span class="op">)</span> <span class="op">/</span> <span class="va">p5</span>  <span class="op">/</span> <span class="va">p6</span></span></code></pre></div>
+<span><span class="op">(</span><span class="va">p1</span> <span class="op">+</span> <span class="va">p2</span><span class="op">)</span> <span class="op">/</span> <span class="op">(</span><span class="va">p3</span> <span class="op">+</span> <span class="va">p4</span><span class="op">)</span> <span class="op">/</span> <span class="va">p5</span> <span class="op">/</span> <span class="va">p6</span></span></code></pre></div>
 <div class="figure">
 <p><img src="figures/model-types-migration-patchwork.png" alt="Figure: Migration-model estimates shown as a patchwork of migration-specific outputs." width="100%"></p>
 </div>

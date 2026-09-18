@@ -14,11 +14,13 @@ generate_recent_arrival_cd4(m_age, d_probs_mig, q_age, completeness, dist)
 
 - m_age:
 
-  Migrant arrivals by age, quarter, and latent state.
+  Undiagnosed migrant arrivals by age, quarter, and the four non-recent
+  CD4 states.
 
 - d_probs_mig:
 
-  Migrant diagnosis probabilities by quarter, age, and state.
+  Migrant diagnosis probabilities by quarter, age, and the four non-AIDS
+  CD4 states.
 
 - q_age:
 

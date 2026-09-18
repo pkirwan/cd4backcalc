@@ -1,5 +1,37 @@
 # Changelog
 
+## Changes in v0.1.6
+
+#### Improvements
+
+- The simplified age-dependent migration model is now the default, with
+  a re-parameterisation of transfers of care to align to
+  epidemiologically relevant quantities.
+- Migration probability simulation patterns now mirror the Stan model
+  and the redundant `m_pattern="reduced"` option has been removed.
+- Ported the optional `gamma_obs` into the age-independent migration
+  models.
+- Incorporated efficiency improvements from age-dependent migration
+  models into other age-dependent Stan models.
+- New `gamma_obs_drift_sd` option in
+  [`simulate_diagnoses()`](https://pkirwan.github.io/cd4backcalc/reference/simulate_diagnoses.md)
+  to control the log-scale random-walk variation on
+  `migrant_hiv_prevalence`.
+- [`plot_simulations()`](https://pkirwan.github.io/cd4backcalc/reference/plot_simulations.md)
+  now also plots observed quantities from real-data results without
+  `sim_config`, e.g. `aids_diagnoses_age`, `gamma_obs_group`, and
+  `cd4_diagnoses_age`.
+- [`plot_estimates()`](https://pkirwan.github.io/cd4backcalc/reference/plot_estimates.md)
+  now accepts a `colours` argument with the model or chain colours.
+- Re-ran R vignettes with improved plotting and model logic.
+
+#### Bug fixes
+
+- Fixed the simulation of old-age AIDS cases using a multinomial draw
+  rather than simple rounding logic.
+- Fixed the reconstruction of age-independent initial prevalence in C++
+  code.
+
 ## Changes in v0.1.5
 
 #### Improvements

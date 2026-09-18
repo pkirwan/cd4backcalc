@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,7 +62,7 @@
       <h1>Analysing results</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.5/vignettes/articles/analysing-results.Rmd" class="external-link"><code>vignettes/articles/analysing-results.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.6/vignettes/articles/analysing-results.Rmd" class="external-link"><code>vignettes/articles/analysing-results.Rmd</code></a></small>
       <div class="d-none name"><code>analysing-results.Rmd</code></div>
     </div>
 
@@ -148,6 +148,10 @@ among UK-born people</td>
 <tr class="even">
 <td><code>"detect_prob"</code></td>
 <td>Estimated detection probabilities</td>
+</tr>
+<tr class="odd">
+<td><code>"migrant_hiv_prevalence"</code></td>
+<td>Estimated HIV-positive share of the external migration index</td>
 </tr>
 </tbody>
 </table>
@@ -352,18 +356,29 @@ list of models for side-by-side comparison:</p>
 <p>Pass a list of model fits to compare more than two models
 simultaneously:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sim_diags</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span>sim_type <span class="op">=</span> <span class="st">"combo_3"</span><span class="op">)</span></span>
-<span><span class="va">models</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">models</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_diags</span>, model_seed <span class="op">=</span> <span class="fl">100</span> <span class="op">+</span> <span class="va">i</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
+<code class="sourceCode R"><span><span class="va">sim_diags</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/simulate_diagnoses.html">simulate_diagnoses</a></span><span class="op">(</span></span>
+<span>  sim_type <span class="op">=</span> <span class="st">"combo_3"</span>,</span>
+<span>  sim_seed <span class="op">=</span> <span class="fl">123</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">models</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  <span class="st">"Spline incidence"</span> <span class="op">=</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span></span>
+<span>    <span class="va">sim_diags</span>, inf_model <span class="op">=</span> <span class="fl">1</span>, diag_model <span class="op">=</span> <span class="fl">1</span>, model_seed <span class="op">=</span> <span class="fl">123</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  <span class="st">"Random-walk incidence"</span> <span class="op">=</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span></span>
+<span>    <span class="va">sim_diags</span>, inf_model <span class="op">=</span> <span class="fl">2</span>, diag_model <span class="op">=</span> <span class="fl">1</span>, model_seed <span class="op">=</span> <span class="fl">123</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  <span class="st">"Gaussian-process incidence"</span> <span class="op">=</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span></span>
+<span>    <span class="va">sim_diags</span>, inf_model <span class="op">=</span> <span class="fl">3</span>, diag_model <span class="op">=</span> <span class="fl">1</span>, model_seed <span class="op">=</span> <span class="fl">123</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">p1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">models</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
 <span><span class="va">p2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bias_plot.html">bias_plot</a></span><span class="op">(</span><span class="va">models</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">p1</span> <span class="op">/</span> <span class="va">p2</span></span></code></pre></div>
 <div class="figure">
-<p><img src="figures/analysing-results-compare-list-patchwork.png" alt="Figure: Patchwork of incidence and bias comparisons for multiple models." width="100%"></p>
+<p><img src="figures/analysing-results-compare-smoothing-patchwork.png" alt="Figure: Patchwork of incidence and bias comparisons for multiple models." width="100%"></p>
 </div>
 </div>
 <div class="section level2">
@@ -390,11 +405,12 @@ required for the chosen model, with matching <code>migration</code>,
 <div class="section level2">
 <h2 id="per-chain-results">Per-chain results<a class="anchor" aria-label="anchor" href="#per-chain-results"></a>
 </h2>
-<p>For detailed convergence analysis, set
-<code>chain_results = TRUE</code> in <code><a href="../reference/run_backcalc.html">run_backcalc()</a></code> to
-obtain separate posterior summaries for each chain:</p>
+<p>For chain-specific estimates, set <code>chain_results = TRUE</code>
+in <code><a href="../reference/run_backcalc.html">run_backcalc()</a></code> to obtain separate posterior summaries
+for each chain. A small number of iterations are used in the example
+below to demonstrate poor convergence behavior.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">hiv_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_diags</span>, chain_results <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">hiv_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/run_backcalc.html">run_backcalc</a></span><span class="op">(</span><span class="va">sim_diags</span>, chain_results <span class="op">=</span> <span class="cn">TRUE</span>, iter_warmup <span class="op">=</span> <span class="fl">50</span>, iter_sampling <span class="op">=</span> <span class="fl">50</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/plot_estimates.html">plot_estimates</a></span><span class="op">(</span><span class="va">hiv_list</span>, quantity <span class="op">=</span> <span class="st">"incidence"</span>, chain_results <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
 <p><img src="figures/analysing-results-chain-results-incidence.png" alt="Figure: Per-chain incidence estimates." width="100%"></p>

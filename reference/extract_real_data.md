@@ -12,7 +12,7 @@ extract_real_data(hiv_list, quantity)
 
 - hiv_list:
 
-  A list of HIV model results.
+  A list of HIV model results containing `stan_data`.
 
 - quantity:
 
@@ -20,7 +20,8 @@ extract_real_data(hiv_list, quantity)
 
 ## Value
 
-A data frame of observed diagnoses for plotting.
+A data frame of observed values for plotting, or `NULL` when the
+requested quantity is not present in the real-data inputs.
 
 ## Examples
 

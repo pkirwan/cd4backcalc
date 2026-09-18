@@ -41,6 +41,7 @@ define_sim_config(
   detect_step_quarter = NULL,
   detect_step_size = 0,
   gamma_obs_scale_trend = 0,
+  gamma_obs_drift_sd = 0.02,
   recent_arrival_completeness = 0
 )
 ```
@@ -68,8 +69,7 @@ define_sim_config(
 
 - m_pattern:
 
-  Pattern type for mu ("constant", "differing", "varying", or
-  "reduced").
+  Pattern type for mu ("constant", "differing", or "varying").
 
 - r_pattern:
 
@@ -194,6 +194,13 @@ define_sim_config(
 
   Total log-scale change (start to end) in the HIV-positive share of the
   external migration index (gamma_obs_scale); 0 = constant share.
+
+- gamma_obs_drift_sd:
+
+  Quarterly random-walk innovation SD on the log ratio of the external
+  migration index to HIV-positive migration. This controls stochastic
+  variation in migrant HIV prevalence and is passed to the matching Stan
+  model. Set to 0 to disable.
 
 - recent_arrival_completeness:
 

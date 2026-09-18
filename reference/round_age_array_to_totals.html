@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,7 +36,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Round age-stratified arrays to match pre-rounded quarter/state totals</h1>
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.5/R/utils.R" class="external-link"><code>R/utils.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.6/R/utils.R" class="external-link"><code>R/utils.R</code></a></small>
       <div class="d-none name"><code>round_age_array_to_totals.Rd</code></div>
     </div>
 
@@ -46,7 +46,7 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">round_age_array_to_totals</span><span class="op">(</span><span class="va">arr</span>, <span class="va">totals</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">round_age_array_to_totals</span><span class="op">(</span><span class="va">arr</span>, <span class="va">totals</span>, stochastic <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -60,6 +60,11 @@
 <dt id="arg-totals">totals<a class="anchor" aria-label="anchor" href="#arg-totals"></a></dt>
 <dd><p>Numeric array giving the target sums for each combination of
 the remaining dimensions.</p></dd>
+
+
+<dt id="arg-stochastic">stochastic<a class="anchor" aria-label="anchor" href="#arg-stochastic"></a></dt>
+<dd><p>Logical; if TRUE, allocate each total across ages with a
+multinomial draw instead of largest-remainder rounding.</p></dd>
 
 </dl></div>
     <div class="section level2">

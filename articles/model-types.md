@@ -164,6 +164,15 @@ trends in migration. Both the age-independent and age-dependent models
 can be extended to include migration transitions, as well as models with
 RITA evidence, see Kirwan et al. (2026).
 
+Migration models can optionally use an independent rolling-annual
+migration index to inform the shape of total migration with HIV. Supply
+its logged values in `gamma_obs` and set `gamma_obs_sd > 0`; the free
+offset leaves the absolute level to be identified by the HIV
+surveillance data. Age-independent models use only this overall series.
+Age-dependent models can additionally use grouped observations through
+`gamma_obs_group`. The index must be independent of the HIV, AIDS, CD4,
+and previous-diagnosis counts in the model likelihood.
+
 ![Figure: Migration-adjusted CD4-staged back-calculation
 model.](figures/migration-model-1.png)
 
@@ -186,7 +195,7 @@ p4 <- plot_estimates(fit_mig, quantity = "detect_prob")
 p5 <- plot_estimates(fit_mig, quantity = "migration_prob")
 p6 <- plot_estimates(fit_mig, quantity = "diag_prob_mig")
 
-(p1 + p2) / (p3 + p4) / p5  / p6
+(p1 + p2) / (p3 + p4) / p5 / p6
 ```
 
 ![Figure: Migration-model estimates shown as a patchwork of

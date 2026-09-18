@@ -15,7 +15,8 @@ plot_estimates(
   model_1_name = "Model 1",
   model_2_name = "Model 2",
   credible_intervals = TRUE,
-  sim_comparison = c("sampled", "generative")
+  sim_comparison = c("sampled", "generative"),
+  colours = NULL
 )
 ```
 
@@ -24,7 +25,8 @@ plot_estimates(
 - hiv_list:
 
   A list returned from the `postproc` function containing model
-  estimates.
+  estimates, or a named list of model results. Names are used as plot
+  labels.
 
 - quantity:
 
@@ -68,6 +70,11 @@ plot_estimates(
   `hiv_list` contains simulated data. Options are `"sampled"` (the
   stochastic realisation for the particular seed, the default) or
   `"generative"` (deterministic expected values).
+
+- colours:
+
+  Optional character vector of model or chain colours. Unnamed values
+  are matched in legend order; named values must match legend labels.
 
 ## Value
 

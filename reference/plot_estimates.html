@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -36,7 +36,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Plot estimated model quantities</h1>
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.5/R/plot_estimates.R" class="external-link"><code>R/plot_estimates.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.6/R/plot_estimates.R" class="external-link"><code>R/plot_estimates.R</code></a></small>
       <div class="d-none name"><code>plot_estimates.Rd</code></div>
     </div>
 
@@ -55,7 +55,8 @@
 <span>  model_1_name <span class="op">=</span> <span class="st">"Model 1"</span>,</span>
 <span>  model_2_name <span class="op">=</span> <span class="st">"Model 2"</span>,</span>
 <span>  credible_intervals <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  sim_comparison <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sampled"</span>, <span class="st">"generative"</span><span class="op">)</span></span>
+<span>  sim_comparison <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sampled"</span>, <span class="st">"generative"</span><span class="op">)</span>,</span>
+<span>  colours <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -64,7 +65,8 @@
 
 
 <dl><dt id="arg-hiv-list">hiv_list<a class="anchor" aria-label="anchor" href="#arg-hiv-list"></a></dt>
-<dd><p>A list returned from the <code>postproc</code> function containing model estimates.</p></dd>
+<dd><p>A list returned from the <code>postproc</code> function containing model
+estimates, or a named list of model results. Names are used as plot labels.</p></dd>
 
 
 <dt id="arg-quantity">quantity<a class="anchor" aria-label="anchor" href="#arg-quantity"></a></dt>
@@ -97,6 +99,11 @@
 
 <dt id="arg-sim-comparison">sim_comparison<a class="anchor" aria-label="anchor" href="#arg-sim-comparison"></a></dt>
 <dd><p>A string specifying which simulated values to compare against when <code>hiv_list</code> contains simulated data. Options are <code>"sampled"</code> (the stochastic realisation for the particular seed, the default) or <code>"generative"</code> (deterministic expected values).</p></dd>
+
+
+<dt id="arg-colours">colours<a class="anchor" aria-label="anchor" href="#arg-colours"></a></dt>
+<dd><p>Optional character vector of model or chain colours. Unnamed
+values are matched in legend order; named values must match legend labels.</p></dd>
 
 </dl></div>
     <div class="section level2">
