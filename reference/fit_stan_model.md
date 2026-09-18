@@ -94,8 +94,8 @@ stan_data <- cd4backcalc:::model_type_prep(sim_diags)
 fit <- cd4backcalc:::fit_stan_model(
  stan_data, iter_warmup = 10, iter_sampling = 10, chains = 1, refresh = 0, messages = FALSE
 )
-#> CmdStan model cache dir: /tmp/RtmpTOk4Q3/cd4backcalc-cmdstan
-#> R tempdir(): /tmp/RtmpTOk4Q3
+#> CmdStan model cache dir: /tmp/Rtmp7FtLKM/cd4backcalc-cmdstan
+#> R tempdir(): /tmp/Rtmp7FtLKM
 #> Error: CmdStan path has not been set yet. See ?set_cmdstan_path.
 # }
 ```

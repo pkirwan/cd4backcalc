@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,7 +62,7 @@
       <h1>Checkpointing and long runs</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.1.6/vignettes/articles/checkpointing.Rmd" class="external-link"><code>vignettes/articles/checkpointing.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.2.0/vignettes/articles/checkpointing.Rmd" class="external-link"><code>vignettes/articles/checkpointing.Rmd</code></a></small>
       <div class="d-none name"><code>checkpointing.Rmd</code></div>
     </div>
 
@@ -150,15 +150,10 @@ the checkpointed adaptation state.</p>
 </h2>
 <p>Checkpointing is most useful for:</p>
 <ul>
-<li>
-<strong>Age-dependent models</strong> which can take hours or days
-to fit;</li>
-<li>
-<strong>SLURM or HPC environments</strong> with wall-time
-limits;</li>
-<li>
-<strong>Iterative model development</strong> where you want to
-extend a run without starting from scratch.</li>
+<li>Age-dependent models which can take hours or days to fit;</li>
+<li>SLURM or HPC environments with wall-time limits;</li>
+<li>Iterative model development where you want to extend a run without
+starting from scratch.</li>
 </ul>
 <p>For age-independent models, fitting is typically fast enough that
 checkpointing is unnecessary.</p>

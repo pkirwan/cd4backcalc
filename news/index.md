@@ -1,6 +1,6 @@
 # Changelog
 
-## Changes in v0.1.6
+## Changes in v0.2.0
 
 #### Improvements
 
