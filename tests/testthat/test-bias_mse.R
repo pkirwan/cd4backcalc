@@ -45,12 +45,14 @@ test_that("make_mse_list uses posterior means and fit-specific truths", {
         )
       ),
       sim_data = list(
-        epi_uk = list(lat = zero_matrix),
-        epi_uk_abroad = list(lat = zero_matrix),
+        epi_uk = list(lat = zero_matrix, diags = zero_matrix),
+        epi_uk_abroad = list(lat = zero_matrix, diags = zero_matrix),
+        epi_abroad = list(diags = zero_matrix),
         infs = cbind(truth),
         m = zero_migration,
         omega = c(0, 0, 0),
-        d_probs = array(0, dim = c(3, 1, 4))
+        d_probs = array(0, dim = c(3, 1, 4)),
+        misclassified = c(0, 0, 0)
       )
     )
   }

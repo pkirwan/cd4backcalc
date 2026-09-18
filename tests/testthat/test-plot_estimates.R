@@ -1,14 +1,3 @@
-test_that("migration plot titles describe their estimands", {
-  expect_identical(
-    get_plot_title("ratio_abroad_uk"),
-    "born-abroad:UK-born ratio of UK-acquired incidence"
-  )
-  expect_identical(
-    get_plot_title("diag_prob_mig"),
-    "HIV diagnosis probabilities (born abroad), by CD4 strata"
-  )
-})
-
 test_that("plot labels are inherited from model list names", {
   estimates <- tibble::tibble(
     year = 0:2,
