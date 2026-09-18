@@ -37,14 +37,14 @@ knitr::opts_chunk$set(fig.path = "../vignettes/articles/figures/")
     % Edges
     \path (n0) edge node[above] {$h_{i}$} (n1);
 
-    \path (n1) edge node[scale = 0.8] {$q_1$} (n2);
-    \path (n2) edge node[scale = 0.8] {$q_2$} (n3);
-    \path (n3) edge node[scale = 0.8] {$q_3$} (n4);
-    \path (n4) edge node[scale = 0.8] {$q_4$} (n5);
-    \path (n1) edge[dashed] node[', scale = 0.8] {$d_{1,i}$} (n6);
-    \path (n2) edge[dashed] node[', scale = 0.8] {$d_{2,i}$} (n7);
-    \path (n3) edge[dashed] node[', scale = 0.8] {$d_{3,i}$} (n8);
-    \path (n4) edge[dashed] node[', scale = 0.8] {$d_{4,i}$} (n9);
+    \path (n1) edge node {$q_1$} (n2);
+    \path (n2) edge node {$q_2$} (n3);
+    \path (n3) edge node {$q_3$} (n4);
+    \path (n4) edge node {$q_4$} (n5);
+    \path (n1) edge[dashed] node['] {$d_{1,i}$} (n6);
+    \path (n2) edge[dashed] node['] {$d_{2,i}$} (n7);
+    \path (n3) edge[dashed] node['] {$d_{3,i}$} (n8);
+    \path (n4) edge[dashed] node['] {$d_{4,i}$} (n9);
   \end{tikzpicture}
 ```
 
@@ -76,14 +76,14 @@ knitr::opts_chunk$set(fig.path = "../vignettes/articles/figures/")
     % Edges
     \path (n0) edge node[above] {$h_{i,j}$} (n1);
 
-    \path (n1) edge node[scale = 0.8] {$q_1^{j_0}$} (n2);
-    \path (n2) edge node[scale = 0.8] {$q_2^{j_0}$} (n3);
-    \path (n3) edge node[scale = 0.8] {$q_3^{j_0}$} (n4);
-    \path (n4) edge node[scale = 0.8] {$q_4^{j_0}$} (n5);
-    \path (n1) edge[dashed] node[', scale = 0.8] {$d_{1,i,j}$} (n6);
-    \path (n2) edge[dashed] node[', scale = 0.8] {$d_{2,i,j}$} (n7);
-    \path (n3) edge[dashed] node[', scale = 0.8] {$d_{3,i,j}$} (n8);
-    \path (n4) edge[dashed] node[', scale = 0.8] {$d_{4,i,j}$} (n9);
+    \path (n1) edge node {$q_1^{j_0}$} (n2);
+    \path (n2) edge node {$q_2^{j_0}$} (n3);
+    \path (n3) edge node {$q_3^{j_0}$} (n4);
+    \path (n4) edge node {$q_4^{j_0}$} (n5);
+    \path (n1) edge[dashed] node['] {$d_{1,i,j}$} (n6);
+    \path (n2) edge[dashed] node['] {$d_{2,i,j}$} (n7);
+    \path (n3) edge[dashed] node['] {$d_{3,i,j}$} (n8);
+    \path (n4) edge[dashed] node['] {$d_{4,i,j}$} (n9);
   \end{tikzpicture}
 ```
 
@@ -116,7 +116,7 @@ knitr::opts_chunk$set(fig.path = "../vignettes/articles/figures/")
     \node[state, align=center] (n8) [below = of n3] {Non-recent HIV\\CD4 200--349};
     \node[state, align=center] (n9) [below = of n4] {Non-recent HIV\\CD4$<$200};
     % Edges
-    \path (n0) edge node[above] {$h_{i,j}$} (a1);
+    \path (n0) edge node[above, scale = 0.8] {$h_{i,j}$} (a1);
 
     \path (a1) edge node[', scale = 0.8] {$1-q_1^{j_0}$} (a2);
     \path (a1) edge node[pos = 0.7, scale = 0.8] {$q_1^{j_0}$} (a3);
