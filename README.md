@@ -25,9 +25,9 @@ Models are fitted within a Bayesian framework using cmdstanr to estimate HIV inc
 
 Figure: CD4-staged back-calculation model. The model compartments
 represent undiagnosed HIV (round boxes) and diagnosed HIV or AIDS
-(square boxes); the $h_j$ arrow represents HIV acquired at each time
-point ($j$); HIV progression probabilities ($q_i$) vary by CD4 stratum;
-HIV diagnosis probabilities ($d_{i,j}$) vary by CD4 stratum and time.
+(square boxes); the $h_i$ arrow represents HIV acquired at each time
+point ($i$); HIV progression probabilities ($q_k$) vary by CD4 stratum;
+HIV diagnosis probabilities ($d_{k,i}$) vary by CD4 stratum and time.
 </p>
 
 </div>

@@ -42,9 +42,9 @@ The CD4-only, age-independent model uses CD4 count at diagnosis and known HIV pr
 <p class="caption">
 Figure: CD4-staged back-calculation model. The model compartments
 represent undiagnosed HIV (round boxes) and diagnosed HIV or AIDS
-(square boxes); the $h_j$ arrow represents HIV acquired at each time
-point ($j$); HIV progression probabilities ($q_i$) vary by CD4 stratum;
-HIV diagnosis probabilities ($d_{i,j}$) vary by CD4 stratum and time.
+(square boxes); the $h_i$ arrow represents HIV acquired at each time
+point ($i$); HIV progression probabilities ($q_k$) vary by CD4 stratum;
+HIV diagnosis probabilities ($d_{k,i}$) vary by CD4 stratum and time.
 </p>
 </div>
 
@@ -85,7 +85,7 @@ Checkpointing is available for fitting age-dependent models on resource-constrai
 <div class="figure">
 <img src="figures/agedep-model-1.png" alt="Figure: Age-dependent CD4 back-calculation model." width="100%" />
 <p class="caption">
-Figure: Age-dependent CD4 back-calculation model with $k$ representing the current age-category and $k_0$ representing the age category at HIV acquisition.
+Figure: Age-dependent CD4 back-calculation model with $j$ representing the current age-category and $j_0$ representing the age category at HIV acquisition.
 </p>
 </div>
 
