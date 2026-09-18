@@ -720,7 +720,19 @@ postproc_ad <- function(
       STATS = cd4_denom,
       FUN = "/"
     )
-    cd4_p_all[!is.finite(cd4_p_all)] <- 0
+    cd4_p_all[!is.finite(cd4_p_all)] <- 1 / dim(cd4_p_all)[3]
+
+    if (config$rita) {
+      frr <- fit_mat[, "frr"]
+      for (draw in seq_len(dim(cd4_p_all)[4])) {
+        cd4_p_all[,, 1, draw] <- cd4_p_all[,, 1, draw] +
+          frr[draw] * (1 - cd4_p_all[,, 1, draw])
+        cd4_p_all[,, 2:5, draw] <-
+          (1 - frr[draw]) * cd4_p_all[,, 2:5, draw]
+      }
+    }
+
+    p_all <- cd4_p_all
 
     CD4_all <- sweep(cd4_p_all, MARGIN = c(1, 2), STATS = nCD4, FUN = "*")
 
@@ -894,65 +906,22 @@ postproc_ad <- function(
   HIV.p <- aperm(.posterior_predictive_poisson(HIV), c(3, 1, 2))
   AIDS.p <- aperm(.posterior_predictive_poisson(AIDS), c(3, 1, 2))
 
-  # Probability of diagnosis by stage
+  n_biomarker_states <- if (config$rita) 5L else 4L
+  CD4.Poiss <- array(0, dim = c(nquar, nage, n_biomarker_states, N.Poiss))
+  predictive_draws <- sample.int(
+    dim(p_all)[4],
+    N.Poiss,
+    replace = dim(p_all)[4] < N.Poiss
+  )
 
-  # denom dims: (nt, nage, nsim)
-  if (!config$migration) {
-    denom <- apply(
-      exp.diags.arr[,, seq_len(config$ndiagst - 1), , drop = FALSE],
-      c(1, 2, 4),
-      sum
-    )
-
-    # p_all dims: (nt, nage, stage, nsim)
-    p_num <- exp.diags.arr[,, seq_len(config$ndiagst - 1), , drop = FALSE]
-    p_all <- sweep(p_num, MARGIN = c(1, 2, 4), STATS = denom, FUN = "/")
-    p_all[!is.finite(p_all)] <- 0
-  }
-
-  # extract each stage
-  p1 <- p_all[,, 1, ]
-  p2 <- p_all[,, 2, ]
-  p3 <- p_all[,, 3, ]
-  p4 <- p_all[,, 4, ]
-  if (config$rita) {
-    p5 <- p_all[,, 5, ]
-  }
-
-  p1.m <- apply(p1, c(1, 2), mean)
-  p2.m <- apply(p2, c(1, 2), mean)
-  p3.m <- apply(p3, c(1, 2), mean)
-  p4.m <- apply(p4, c(1, 2), mean)
-  if (config$rita) {
-    p5.m <- apply(p5, c(1, 2), mean)
-  }
-
-  if (config$rita) {
-    CD4.Poiss <- array(0, dim = c(nquar, nage, 5, N.Poiss))
-  } else {
-    CD4.Poiss <- array(0, dim = c(nquar, nage, 4, N.Poiss))
-  }
-
-  if (config$rita) {
-    ### if quarterly there cannot be CD4 for a=1, at t=5, t=9,...
-    ### as anyway nCD4[,1] = 0 then ignore and put 0
-    for (t in 1:nquar) {
-      for (a in 2:nage) {
-        CD4.Poiss[t, a, , ] <- stats::rmultinom(
-          N.Poiss,
+  for (t in seq_len(nquar)) {
+    for (a in 2:nage) {
+      for (replicate in seq_len(N.Poiss)) {
+        CD4.Poiss[t, a, , replicate] <- stats::rmultinom(
+          1,
           size = nCD4[t, a],
-          prob = c(p1.m[t, a], p2.m[t, a], p3.m[t, a], p4.m[t, a], p5.m[t, a])
-        )
-      }
-    }
-  } else {
-    for (t in 1:nquar) {
-      for (a in 2:nage) {
-        CD4.Poiss[t, a, , ] <- stats::rmultinom(
-          N.Poiss,
-          size = nCD4[t, a],
-          prob = c(p1.m[t, a], p2.m[t, a], p3.m[t, a], p4.m[t, a])
-        )
+          prob = p_all[t, a, , predictive_draws[replicate]]
+        )[, 1]
       }
     }
   }

@@ -275,7 +275,14 @@ transformed parameters {
     }
   }
   for (ag in 1 : 4) {
-    gamma_agg_group[ : , ag] = gamma_agg + log(abroad_age_group_prop[ : , ag]);
+    for (t in 1 : nquar) {
+      real group_total = 0;
+      for (lag in 0 : 3) {
+        int quarter = max(1, t - lag);
+        group_total += omega[quarter] * abroad_age_group_prop[quarter, ag];
+      }
+      gamma_agg_group[t, ag] = log(group_total);
+    }
   }
   
   // Step variances on natural scale (non-centred)
