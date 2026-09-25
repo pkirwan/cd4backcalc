@@ -168,6 +168,7 @@ plot_estimates <- function(
   sim_comparison = c("sampled", "generative"),
   colours = NULL
 ) {
+  model_1_name_supplied <- !missing(model_1_name)
   sim_comparison <- match.arg(sim_comparison)
   hiv_list <- purrr::compact(hiv_list)
   if (length(hiv_list) == 0) {
@@ -199,11 +200,15 @@ plot_estimates <- function(
       x$group <- model_2_name
       return(x)
     })
+  }
+  if (model_1_name_supplied || !is.null(hiv_list_2)) {
     # add group variable to hiv_list estimates
     hiv_list <- lapply(hiv_list, function(x) {
       x$group <- model_1_name
       return(x)
     })
+  }
+  if (!is.null(hiv_list_2)) {
     # combine hiv_list and hiv_list_2 into one list
     hiv_list <- c(hiv_list, hiv_list_2)
   }
