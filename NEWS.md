@@ -1,5 +1,13 @@
 # Changelog
 
+# Changes in v0.2.1
+
+### Improvements
+
+- Plotting and labelling improvements for `plot_simulations()` and `plot_estimates()`.
+- Updated target_inf and target_mig in `simulate_diagnoses()' to be consistent.
+- Updated vignettes to show latest model DAGs.
+
 # Changes in v0.2.0
 
 ### Improvements

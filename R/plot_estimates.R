@@ -56,7 +56,8 @@ plot_simulations <- function(
   }
 
   if (
-    "age_band" %in% names(sim_estimates) &&
+    "age_band" %in%
+      names(sim_estimates) &&
       (grepl("_age$", quantity) || quantity == "gamma_obs_group")
   ) {
     sim_estimates <- sim_estimates |>
@@ -356,12 +357,19 @@ plot_estimates <- function(
       panel.grid.major = ggplot2::element_line(color = "grey80")
     )
 
-  sim_ref_label <- if (sim_comparison == "sampled") "Sampled values" else "Generative values"
+  sim_ref_label <- if (sim_comparison == "sampled") {
+    "Sampled values"
+  } else {
+    "Generative values"
+  }
 
   # add simulated values if data were simulated
   if ("sim_data" %in% names(hiv_list[[1]])) {
     use_deterministic <- sim_comparison == "generative"
-    model_colors <- c(model_colors, stats::setNames("mediumturquoise", sim_ref_label))
+    model_colors <- c(
+      model_colors,
+      stats::setNames("mediumturquoise", sim_ref_label)
+    )
     legend_breaks <- c(legend_breaks, sim_ref_label)
     sim_estimates <- extract_simulated_quantity(
       hiv_list[[1]],
@@ -383,11 +391,14 @@ plot_estimates <- function(
         size = 1.1,
         shape = 3
       )
-  } else if (quantity %in% c(
-    "diagnoses",
-    "diagnoses_age",
-    "transfers_detected"
-  )) {
+  } else if (
+    quantity %in%
+      c(
+        "diagnoses",
+        "diagnoses_age",
+        "transfers_detected"
+      )
+  ) {
     # add observed diagnoses if real data
     observed_data <- extract_real_data(hiv_list[[1]], quantity)
     if ("age_band" %in% names(observed_data) && grepl("_age$", quantity)) {
@@ -407,9 +418,15 @@ plot_estimates <- function(
       )
   }
 
-  legend_linetypes <- stats::setNames(rep("blank", length(legend_breaks)), legend_breaks)
+  legend_linetypes <- stats::setNames(
+    rep("blank", length(legend_breaks)),
+    legend_breaks
+  )
   legend_linetypes[model_groups] <- unname(model_linetypes[model_groups])
-  legend_shapes <- stats::setNames(rep(NA, length(legend_breaks)), legend_breaks)
+  legend_shapes <- stats::setNames(
+    rep(NA, length(legend_breaks)),
+    legend_breaks
+  )
   legend_shapes[setdiff(legend_breaks, model_groups)] <- 3
 
   p1 <- p1 +
@@ -630,7 +647,14 @@ make_model_linetypes <- function(groups, chain_results = FALSE) {
     return(stats::setNames(character(), character()))
   }
 
-  base_linetypes <- c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
+  base_linetypes <- c(
+    "solid",
+    "dashed",
+    "dotted",
+    "dotdash",
+    "longdash",
+    "twodash"
+  )
   model_groups <- if (chain_results) {
     sub(", Chain [0-9]+$", "", groups)
   } else {
@@ -694,12 +718,11 @@ label_cd4_strata <- function(labels) {
   ifelse(
     labels == "CD4>=500",
     "CD4>=500",
-    encodeString(labels, quote = "'")
-  )
-  ifelse(
-    labels == "CD4<200",
-    "CD4<200",
-    encodeString(labels, quote = "'")
+    ifelse(
+      labels == "CD4<200",
+      "CD4<200",
+      encodeString(labels, quote = "'")
+    )
   )
 }
 
@@ -718,8 +741,14 @@ do_facetting <- function(p1, quantity) {
   if (
     quantity %in%
       c(
-        "diag_prob", "diag_prob_mig", "diag_prob_age", "diag_prob_mig_age",
-        "ratio_abroad_uk", "detect_prob", "migration_prob", "migration_prob_age",
+        "diag_prob",
+        "diag_prob_mig",
+        "diag_prob_age",
+        "diag_prob_mig_age",
+        "ratio_abroad_uk",
+        "detect_prob",
+        "migration_prob",
+        "migration_prob_age",
         "migrant_hiv_prevalence"
       )
   ) {
@@ -739,9 +768,15 @@ do_facetting <- function(p1, quantity) {
   }
 
   # facet by strata for diagnosis and migration probabilities
-  if (quantity %in% c(
-    "diag_prob", "diag_prob_mig", "migration_prob", "cd4_diagnoses"
-  )) {
+  if (
+    quantity %in%
+      c(
+        "diag_prob",
+        "diag_prob_mig",
+        "migration_prob",
+        "cd4_diagnoses"
+      )
+  ) {
     p1 <- p1 +
       ggplot2::facet_grid(
         cols = ggplot2::vars(.data$strata),
@@ -771,13 +806,16 @@ do_facetting <- function(p1, quantity) {
   }
 
   # facet by strata and age for age-dependent diagnosis and migration probabilities
-  if (quantity %in% c(
-    "diag_prob_age",
-    "diag_prob_mig_age",
-    "migration_prob_age",
-    "cd4_diagnoses_age",
-    "recent_arrival_cd4"
-  )) {
+  if (
+    quantity %in%
+      c(
+        "diag_prob_age",
+        "diag_prob_mig_age",
+        "migration_prob_age",
+        "cd4_diagnoses_age",
+        "recent_arrival_cd4"
+      )
+  ) {
     p1 <- p1 +
       ggplot2::facet_grid(
         rows = ggplot2::vars(.data$strata),
