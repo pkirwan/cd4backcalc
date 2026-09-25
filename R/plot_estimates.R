@@ -691,8 +691,17 @@ make_model_colors <- function(
 
 # Internal helper to format CD4 facet labels.
 label_cd4_strata <- function(labels) {
-  sub("CD4>=500", "CD4 \u2265 500", labels, fixed = TRUE)
+  ifelse(
+    labels == "CD4>=500",
+    "CD4 >= 500",
+    encodeString(labels, quote = "'")
+  )
 }
+
+cd4_strata_labeller <- ggplot2::as_labeller(
+  label_cd4_strata,
+  default = ggplot2::label_parsed
+)
 
 #' Helper function to do facetting for plots
 #'
@@ -732,7 +741,7 @@ do_facetting <- function(p1, quantity) {
       ggplot2::facet_grid(
         cols = ggplot2::vars(.data$strata),
         scales = "free_y",
-        labeller = ggplot2::labeller(strata = label_cd4_strata)
+        labeller = ggplot2::labeller(strata = cd4_strata_labeller)
       )
   }
 
@@ -769,7 +778,7 @@ do_facetting <- function(p1, quantity) {
         rows = ggplot2::vars(.data$strata),
         cols = ggplot2::vars(.data$age_band),
         scales = "free_y",
-        labeller = ggplot2::labeller(strata = label_cd4_strata)
+        labeller = ggplot2::labeller(strata = cd4_strata_labeller)
       )
   }
 
