@@ -49,8 +49,8 @@ fit <- cd4backcalc:::fit_stan_model(
    refresh = 0,
    messages = FALSE
 )
-#> CmdStan model cache dir: /tmp/RtmpS0OgDp/cd4backcalc-cmdstan
-#> R tempdir(): /tmp/RtmpS0OgDp
+#> CmdStan model cache dir: /tmp/RtmpssN1Os/cd4backcalc-cmdstan
+#> R tempdir(): /tmp/RtmpssN1Os
 #> Error: CmdStan path has not been set yet. See ?set_cmdstan_path.
 hiv_list <- cd4backcalc:::postproc(fit, stan_data, start_yr = 0, nworkers = 1)
 #> Error: object 'fit' not found
