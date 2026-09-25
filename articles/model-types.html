@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,7 +62,7 @@
       <h1>Model types</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.2.0/vignettes/articles/model-types.Rmd" class="external-link"><code>vignettes/articles/model-types.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.2.1/vignettes/articles/model-types.Rmd" class="external-link"><code>vignettes/articles/model-types.Rmd</code></a></small>
       <div class="d-none name"><code>model-types.Rmd</code></div>
     </div>
 
@@ -139,13 +139,13 @@ undiagnosed prevalence, see Birrell et al. (2012).</p>
 Figure: CD4-staged back-calculation model. The model compartments
 represent undiagnosed HIV (round boxes) and diagnosed HIV or AIDS
 (square boxes); the
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>h</mi><mi>j</mi></msub><annotation encoding="application/x-tex">h_j</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>h</mi><mi>i</mi></msub><annotation encoding="application/x-tex">h_i</annotation></semantics></math>
 arrow represents HIV acquired at each time point
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>j</mi><annotation encoding="application/x-tex">j</annotation></semantics></math>);
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>i</mi><annotation encoding="application/x-tex">i</annotation></semantics></math>);
 HIV progression probabilities
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>q</mi><mi>i</mi></msub><annotation encoding="application/x-tex">q_i</annotation></semantics></math>)
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>q</mi><mi>k</mi></msub><annotation encoding="application/x-tex">q_k</annotation></semantics></math>)
 vary by CD4 stratum; HIV diagnosis probabilities
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>d</mi><mrow><mi>i</mi><mo>,</mo><mi>j</mi></mrow></msub><annotation encoding="application/x-tex">d_{i,j}</annotation></semantics></math>)
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>d</mi><mrow><mi>i</mi><mo>,</mo><mi>k</mi></mrow></msub><annotation encoding="application/x-tex">d_{i,k}</annotation></semantics></math>)
 vary by CD4 stratum and time.
 </p>
 </div>
@@ -184,9 +184,9 @@ systems — see <a href="checkpointing.html">Checkpointing</a>.</p>
 <div class="figure">
 <img src="figures/agedep-model-1.png" alt="Figure: Age-dependent CD4 back-calculation model." width="100%"><p class="caption">
 Figure: Age-dependent CD4 back-calculation model with
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>k</mi><annotation encoding="application/x-tex">k</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>j</mi><annotation encoding="application/x-tex">j</annotation></semantics></math>
 representing the current age-category and
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>k</mi><mn>0</mn></msub><annotation encoding="application/x-tex">k_0</annotation></semantics></math>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>j</mi><mn>0</mn></msub><annotation encoding="application/x-tex">j_0</annotation></semantics></math>
 representing the age category at HIV acquisition.
 </p>
 </div>
@@ -357,13 +357,9 @@ Commun. Infect. Dis.</em> 4(1). doi: <a href="https://doi.org/10.1515/1948-4690.
 <li>Brizzi F, Birrell PJ, Plummer MT, Kirwan PD, et al. (2019).
 Extending Bayesian back-calculation to estimate age and time specific
 HIV incidence. <em>Lifetime Data Anal.</em> 25(4), pp.757-780. doi: <a href="https://doi.org/10.1007/s10985-019-09465-1" class="external-link">10.1007/s10985-019-09465-1</a>.</li>
-<li>Kirwan PD, Presanis A, Birrell PJ, et al. (2026). Extending a
-Bayesian back-calculation model for HIV incidence to include biomarkers
-of recent acquisition. (in press).</li>
-<li>Kirwan PD, Presanis A, Birrell PJ, et al. (2026). HIV incidence
-among gay and bisexual men in England, Wales, and Northern Ireland:
-estimates from a migration-adjusted CD4-staged HIV back-calculation
-model. (in press).</li>
+<li>Kirwan PD, Presanis A, Birrell PJ, et al. (2026). Bayesian
+back-calculation for HIV incidence incorporating recency biomarkers and
+inward migration. (in press).</li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -50,9 +50,9 @@ model.](figures/backcalc-model-1.png)
 
 Figure: CD4-staged back-calculation model. The model compartments
 represent undiagnosed HIV (round boxes) and diagnosed HIV or AIDS
-(square boxes); the $`h_j`$ arrow represents HIV acquired at each time
-point ($`j`$); HIV progression probabilities ($`q_i`$) vary by CD4
-stratum; HIV diagnosis probabilities ($`d_{i,j}`$) vary by CD4 stratum
+(square boxes); the $`h_i`$ arrow represents HIV acquired at each time
+point ($`i`$); HIV progression probabilities ($`q_k`$) vary by CD4
+stratum; HIV diagnosis probabilities ($`d_{i,k}`$) vary by CD4 stratum
 and time.
 
 This model can be fitted with:
@@ -98,8 +98,8 @@ for fitting age-dependent models on resource-constrained systems — see
 ![Figure: Age-dependent CD4 back-calculation
 model.](figures/agedep-model-1.png)
 
-Figure: Age-dependent CD4 back-calculation model with $`k`$ representing
-the current age-category and $`k_0`$ representing the age category at
+Figure: Age-dependent CD4 back-calculation model with $`j`$ representing
+the current age-category and $`j_0`$ representing the age category at
 HIV acquisition.
 
 ``` r
@@ -287,10 +287,6 @@ Available simulation types include: `"constant"`, `"h_increasing"`,
   Bayesian back-calculation to estimate age and time specific HIV
   incidence. *Lifetime Data Anal.* 25(4), pp.757-780. doi:
   [10.1007/s10985-019-09465-1](https://doi.org/10.1007/s10985-019-09465-1).
-- Kirwan PD, Presanis A, Birrell PJ, et al. (2026). Extending a Bayesian
-  back-calculation model for HIV incidence to include biomarkers of
-  recent acquisition. (in press).
-- Kirwan PD, Presanis A, Birrell PJ, et al. (2026). HIV incidence among
-  gay and bisexual men in England, Wales, and Northern Ireland:
-  estimates from a migration-adjusted CD4-staged HIV back-calculation
-  model. (in press).
+- Kirwan PD, Presanis A, Birrell PJ, et al. (2026). Bayesian
+  back-calculation for HIV incidence incorporating recency biomarkers
+  and inward migration. (in press).
