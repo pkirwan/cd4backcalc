@@ -689,6 +689,11 @@ make_model_colors <- function(
   stats::setNames(unname(model_colors[model_groups]), groups)
 }
 
+# Internal helper to format CD4 facet labels.
+label_cd4_strata <- function(labels) {
+  sub("CD4>=500", "CD4 \u2265 500", labels, fixed = TRUE)
+}
+
 #' Helper function to do facetting for plots
 #'
 #' @param p1 A ggplot2 object.
@@ -724,7 +729,11 @@ do_facetting <- function(p1, quantity) {
     "diag_prob", "diag_prob_mig", "migration_prob", "cd4_diagnoses"
   )) {
     p1 <- p1 +
-      ggplot2::facet_grid(cols = ggplot2::vars(.data$strata), scales = "free_y")
+      ggplot2::facet_grid(
+        cols = ggplot2::vars(.data$strata),
+        scales = "free_y",
+        labeller = ggplot2::labeller(strata = label_cd4_strata)
+      )
   }
 
   # facet by age if age-dependent model
@@ -759,7 +768,8 @@ do_facetting <- function(p1, quantity) {
       ggplot2::facet_grid(
         rows = ggplot2::vars(.data$strata),
         cols = ggplot2::vars(.data$age_band),
-        scales = "free_y"
+        scales = "free_y",
+        labeller = ggplot2::labeller(strata = label_cd4_strata)
       )
   }
 
