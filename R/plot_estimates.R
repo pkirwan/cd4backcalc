@@ -696,6 +696,11 @@ label_cd4_strata <- function(labels) {
     "CD4>=500",
     encodeString(labels, quote = "'")
   )
+  ifelse(
+    labels == "CD4<200",
+    "CD4<200",
+    encodeString(labels, quote = "'")
+  )
 }
 
 cd4_strata_labeller <- ggplot2::as_labeller(

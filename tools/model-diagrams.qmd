@@ -41,10 +41,10 @@ knitr::opts_chunk$set(fig.path = "../vignettes/articles/figures/")
     \path (n2) edge node {$q_2$} (n3);
     \path (n3) edge node {$q_3$} (n4);
     \path (n4) edge node {$q_4$} (n5);
-    \path (n1) edge[dashed] node['] {$d_{1,i}$} (n6);
-    \path (n2) edge[dashed] node['] {$d_{2,i}$} (n7);
-    \path (n3) edge[dashed] node['] {$d_{3,i}$} (n8);
-    \path (n4) edge[dashed] node['] {$d_{4,i}$} (n9);
+    \path (n1) edge[dashed] node['] {$d_{i,1}$} (n6);
+    \path (n2) edge[dashed] node['] {$d_{i,2}$} (n7);
+    \path (n3) edge[dashed] node['] {$d_{i,3}$} (n8);
+    \path (n4) edge[dashed] node['] {$d_{i,4}$} (n9);
   \end{tikzpicture}
 ```
 
@@ -80,10 +80,10 @@ knitr::opts_chunk$set(fig.path = "../vignettes/articles/figures/")
     \path (n2) edge node {$q_2^{j_0}$} (n3);
     \path (n3) edge node {$q_3^{j_0}$} (n4);
     \path (n4) edge node {$q_4^{j_0}$} (n5);
-    \path (n1) edge[dashed] node['] {$d_{1,i,j}$} (n6);
-    \path (n2) edge[dashed] node['] {$d_{2,i,j}$} (n7);
-    \path (n3) edge[dashed] node['] {$d_{3,i,j}$} (n8);
-    \path (n4) edge[dashed] node['] {$d_{4,i,j}$} (n9);
+    \path (n1) edge[dashed] node['] {$d_{i,j,1}$} (n6);
+    \path (n2) edge[dashed] node['] {$d_{i,j,2}$} (n7);
+    \path (n3) edge[dashed] node['] {$d_{i,j,3}$} (n8);
+    \path (n4) edge[dashed] node['] {$d_{i,j,4}$} (n9);
   \end{tikzpicture}
 ```
 
@@ -124,18 +124,18 @@ knitr::opts_chunk$set(fig.path = "../vignettes/articles/figures/")
     \path (a2) edge node[scale = 0.8] {$q_1^{j_0}$} (n2);
     \path (a3) edge node[pos = 0.75, scale = 0.8] {$1-q_2^{j_0}$} (n2);
     \path (a3) edge node[scale = 0.8] {$q_2^{j_0}$} (n3);
-    \path (a1) edge[dashed, bend left=20] node[scale = 0.8] {$d_{1,i,j}$} (r1);
-    \path (a2) edge[dashed, bend left=25] node[scale = 0.8] {$d_{1,i,j}$} (r1);
-    \path (a3) edge[dashed, bend left=20] node[pos = 0.4, scale = 0.8] {$d_{1,i,j}$} (r1);
+    \path (a1) edge[dashed, bend left=20] node[scale = 0.8] {$d_{i,j,1}$} (r1);
+    \path (a2) edge[dashed, bend left=25] node[scale = 0.8] {$d_{i,j,1}$} (r1);
+    \path (a3) edge[dashed, bend left=20] node[pos = 0.4, scale = 0.8] {$d_{i,j,1}$} (r1);
 
     \path (n1) edge node[scale = 0.8] {$q_1^{j_0}$} (n2);
     \path (n2) edge node[scale = 0.8] {$q_2^{j_0}$} (n3);
     \path (n3) edge node[scale = 0.8] {$q_3^{j_0}$} (n4);
     \path (n4) edge node[scale = 0.8] {$q_4^{j_0}$} (n5);
-    \path (n1) edge[dashed] node[', scale = 0.8] {$d_{2,i,j}$} (n6);
-    \path (n2) edge[dashed] node[', scale = 0.8] {$d_{3,i,j}$} (n7);
-    \path (n3) edge[dashed] node[', scale = 0.8] {$d_{4,i,j}$} (n8);
-    \path (n4) edge[dashed] node[', scale = 0.8] {$d_{5,i,j}$} (n9);
+    \path (n1) edge[dashed] node[', scale = 0.8] {$d_{i,j,2}$} (n6);
+    \path (n2) edge[dashed] node[', scale = 0.8] {$d_{i,j,3}$} (n7);
+    \path (n3) edge[dashed] node[', scale = 0.8] {$d_{i,j,4}$} (n8);
+    \path (n4) edge[dashed] node[', scale = 0.8] {$d_{i,j,5}$} (n9);
   \end{tikzpicture}
 ```
 
@@ -181,15 +181,15 @@ knitr::opts_chunk$set(fig.path = "../vignettes/articles/figures/")
     \path (e3) edge node[] {$q_3^{j_0}$} (e4);
     \path (e4) edge node[] {$q_4^{j_0}$} (d5);
 
-    \path (e1) edge[] node[] {$d_{1,i,j,b}$} (d1);
-    \path (e2) edge[] node[] {$d_{2,i,j,b}$} (d2);
-    \path (e3) edge[] node[] {$d_{3,i,j,b}$} (d3);
-    \path (e4) edge[] node[] {$d_{4,i,j,b}$} (d4);
+    \path (e1) edge[] node[] {$d_{i,j,1,b}$} (d1);
+    \path (e2) edge[] node[] {$d_{i,j,2,b}$} (d2);
+    \path (e3) edge[] node[] {$d_{i,j,3,b}$} (d3);
+    \path (e4) edge[] node[] {$d_{i,j,4,b}$} (d4);
 
-    \path (i1) edge[dotted, color = Plum] node[] {$\omega_{i,j}m_{1,i}$} (e1);
-    \path (i2) edge[dotted, color = Plum] node[] {$\omega_{i,j}m_{2,i}$} (e2);
-    \path (i3) edge[dotted, color = Plum] node[] {$\omega_{i,j}m_{3,i}$} (e3);
-    \path (i4) edge[dotted, color = Plum] node[] {$\omega_{i,j}m_{4,i}$} (e4);
-    \path (i5) edge[dotted, color = Plum] node[] {$\omega_{i,j}m_{5,i}$} (m1);
+    \path (i1) edge[dotted, color = Plum] node[] {$\omega_{i,j}m_{i,1}$} (e1);
+    \path (i2) edge[dotted, color = Plum] node[] {$\omega_{i,j}m_{i,2}$} (e2);
+    \path (i3) edge[dotted, color = Plum] node[] {$\omega_{i,j}m_{i,3}$} (e3);
+    \path (i4) edge[dotted, color = Plum] node[] {$\omega_{i,j}m_{i,4}$} (e4);
+    \path (i5) edge[dotted, color = Plum] node[] {$\omega_{i,j}m_{i,5}$} (m1);
   \end{tikzpicture}
 ```
