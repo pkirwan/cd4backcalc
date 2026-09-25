@@ -693,7 +693,7 @@ make_model_colors <- function(
 label_cd4_strata <- function(labels) {
   ifelse(
     labels == "CD4>=500",
-    "CD4 >= 500",
+    "CD4>=500",
     encodeString(labels, quote = "'")
   )
 }
