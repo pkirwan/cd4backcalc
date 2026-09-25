@@ -83,8 +83,8 @@ define_sim_config <- function(
   nquar = 40, # number of quarters
   nage = 52, # number of age groups
   q = c(0.0976, 0.115, 0.116, 0.148), # progression probabilities
-  target_inf = 30000, # target total number of HIV acquisitions
-  target_mig = 6000, # target total number of migrations
+  target_inf = 20000, # target total number of HIV acquisitions
+  target_mig = 10000, # target total number of migrations
   abroad_prop = 0.2, # proportion acquired abroad at outset
   cd4_completeness = 1, # CD4 completeness
   rita_completeness = 1, # RITA completeness
@@ -651,8 +651,8 @@ simulate_diagnoses <- function(
   nquar = 120, # number of quarters
   nage = 52, # number of age groups
   q = c(0.0976, 0.115, 0.116, 0.148), # progression probabilities
-  target_inf = 90000, # target total number of HIV acquisitions
-  target_mig = 12000, # target total number of migrations
+  target_inf = 20000, # target total number of HIV acquisitions
+  target_mig = 10000, # target total number of migrations
   abroad_prop = 0.2, # proportion acquired abroad at outset
   cd4_completeness = 1, # CD4 completeness
   rita_completeness = 1, # RITA completeness
