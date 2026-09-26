@@ -1,13 +1,27 @@
 test_that("rita completeness by state simulation produces expected HIV data", {
+  state_completeness <- c(0.8, 0.8, 0.7, 0.6, 0.5)
+  complete_diags <- simulate_diagnoses(
+    sim_seed = 123,
+    age = TRUE,
+    rita = TRUE,
+    dist = FALSE
+  )
   sim_diags <- simulate_diagnoses(
     sim_seed = 123,
     age = TRUE,
     rita = TRUE,
-    rita_completeness_by_state = c(0.8, 0.8, 0.7, 0.6, 0.5)
+    dist = FALSE,
+    rita_completeness_by_state = state_completeness
   )
-  expect_true(all(
-    rowSums(sim_diags$stan_data$CD4) < 0.8 * sim_diags$stan_data$HIV
+  expected_cd4 <- round(sweep(
+    complete_diags$stan_data$CD4,
+    2,
+    state_completeness,
+    "*"
   ))
+
+  expect_equal(sim_diags$stan_data$CD4, expected_cd4)
+  expect_equal(sim_diags$stan_data$HIV, complete_diags$stan_data$HIV)
 })
 
 test_that("migration simulation produces expected HIV data", {
