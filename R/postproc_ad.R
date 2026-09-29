@@ -599,10 +599,25 @@ postproc_ad <- function(
           nage = nage
         )
       }
-      prev_nat + prev_mig
+      list(native = prev_nat, abroad = prev_mig)
     })
 
-    exp.prev.arr <- simplify2array(exp.prev) # (t, age, state, draw)
+    exp.prev.nat.arr <- simplify2array(lapply(exp.prev, `[[`, "native"))
+    exp.prev.mig.arr <- simplify2array(lapply(exp.prev, `[[`, "abroad"))
+    exp.prev.arr <- exp.prev.nat.arr + exp.prev.mig.arr
+
+    out$undiag_prev_matrix <- .summarize_migration_prevalence(
+      exp.prev.nat.arr,
+      exp.prev.mig.arr
+    )
+    dimnames(out$undiag_prev_matrix$native) <- list(
+      quarter = seq_len(nquar),
+      age = seq.int(15L, length.out = nage),
+      state = seq_len(config$nlatst)
+    )
+    dimnames(out$undiag_prev_matrix$abroad) <-
+      dimnames(out$undiag_prev_matrix$native)
+    rm(exp.prev, exp.prev.nat.arr, exp.prev.mig.arr)
 
     exp.diags.arr <- NULL
   } else {
@@ -1127,6 +1142,23 @@ postproc_ad <- function(
   }
 
   return(out)
+}
+
+.summarize_migration_prevalence <- function(native_draws, abroad_draws) {
+  if (
+    length(dim(native_draws)) != 4L ||
+      !identical(dim(native_draws), dim(abroad_draws))
+  ) {
+    stop(
+      "Native and abroad prevalence draws must have matching ",
+      "quarter-by-age-by-state-by-draw dimensions."
+    )
+  }
+
+  list(
+    native = apply(native_draws, c(1L, 2L, 3L), stats::median),
+    abroad = apply(abroad_draws, c(1L, 2L, 3L), stats::median)
+  )
 }
 
 #' Helper function to bind tidy data frames
