@@ -12,7 +12,7 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/pkirwan/cd4backcalc/blob/v0.2.1/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/pkirwan/cd4backcalc/blob/v0.2.2/DESCRIPTION)
 
 Kirwan P (2026). *cd4backcalc: CD4 Back-Calculation R Package*. R
 package version 0.2.1, <https://pkirwan.github.io/cd4backcalc/>.
