@@ -1,5 +1,12 @@
 # Changelog
 
+# Changes in v0.2.2
+
+### Improvements
+
+- Emit undiag_prev_matrix from `postproc_ad()` to simplify defining initial prevalence from existing runs.
+- Fix a failing text on macOS.
+
 # Changes in v0.2.1
 
 ### Improvements
