@@ -379,12 +379,14 @@ plot_estimates <- function(
       ggplot2::geom_line(
         ggplot2::aes(y = .data$`2.5%`, linetype = .data$plot_linetype),
         linewidth = 0.5,
-        alpha = 0.5
+        alpha = 0.5,
+        show.legend = FALSE
       ) +
       ggplot2::geom_line(
         ggplot2::aes(y = .data$`97.5%`, linetype = .data$plot_linetype),
         linewidth = 0.5,
-        alpha = 0.5
+        alpha = 0.5,
+        show.legend = FALSE
       ) +
       ggplot2::geom_ribbon(
         ggplot2::aes(ymin = .data$`2.5%`, ymax = .data$`97.5%`),
