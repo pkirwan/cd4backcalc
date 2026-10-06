@@ -165,6 +165,34 @@ postproc_ad <- function(
     start_yr = start_yr
   )
 
+  if (config$migration) {
+    incidence_by_birthplace <- .uk_acquired_log_incidence_by_birthplace(
+      infs,
+      p.draws.early,
+      nquar,
+      nage
+    )
+    out$incidence_cob <- purrr::imap_dfr(
+      incidence_by_birthplace,
+      \(log_incidence, country_of_birth) {
+        infs.fct.qt(
+          log_incidence,
+          age.st = age_bands$all[1],
+          age.end = age_bands$all[2],
+          nquar,
+          nage = nage,
+          start_yr = start_yr
+        ) |>
+          dplyr::mutate(
+            country_of_birth = factor(
+              country_of_birth,
+              levels = names(incidence_by_birthplace)
+            )
+          )
+      }
+    )
+  }
+
   out$annual_incidence <- infs.fct(
     infs_for_incidence,
     age.st = age_bands$all[1],

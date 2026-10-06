@@ -12,8 +12,8 @@ and \code{stan_data}, or a real-data result containing \code{stan_data} and no
 \code{sim_data}.}
 
 \item{quantity}{A string specifying the quantity to plot. Options include
-"incidence", "undiag_prev", "undiag_migration", "all_migration",
-"diag_prob", "diagnoses", "migration_prob", "transfers",
+"incidence", "incidence_cob", "undiag_prev", "undiag_migration",
+"all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers",
 "transfers_detected", "ratio_abroad_uk", "detect_prob",
 "migrant_hiv_prevalence", "aids_diagnoses", "aids_diagnoses_age",
 "cd4_diagnoses", "cd4_diagnoses_age", "transfers_detected_age",

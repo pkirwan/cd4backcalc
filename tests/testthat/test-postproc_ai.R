@@ -92,6 +92,7 @@ test_that("migration post-processing works", {
   )
   expect_true("migration_prob" %in% names(hiv_list))
   expect_true("migrant_hiv_prevalence" %in% names(hiv_list))
+  expect_true("incidence_cob" %in% names(hiv_list))
 })
 
 test_that("undiag_prev uses direct latent prevalence", {

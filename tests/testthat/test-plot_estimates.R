@@ -43,6 +43,7 @@ test_that("simulated plots are generated correctly", {
   p9 <- plot_simulations(stan_data, "ratio_abroad_uk")
   p10 <- plot_simulations(stan_data, "detect_prob")
   p11 <- plot_simulations(stan_data, "migrant_hiv_prevalence")
+  p12 <- plot_simulations(stan_data, "incidence_cob")
   expect_s3_class(p1, "ggplot")
   expect_s3_class(p2, "ggplot")
   expect_s3_class(p3, "ggplot")
@@ -54,6 +55,12 @@ test_that("simulated plots are generated correctly", {
   expect_s3_class(p9, "ggplot")
   expect_s3_class(p10, "ggplot")
   expect_s3_class(p11, "ggplot")
+  expect_s3_class(p12, "ggplot")
+  expect_identical(
+    p12$scales$get_scales("linetype")$palette(2),
+    c("UK-born" = "solid", "Born abroad" = "dashed")
+  )
+  expect_length(unique(ggplot2::ggplot_build(p12)$data[[2]]$group), 2)
 })
 
 test_that("observed Stan quantities can be plotted", {
@@ -174,6 +181,7 @@ test_that("simulated plots are generated correctly", {
       size = 2
     )
   p11 <- plot_simulations(stan_data, "diag_prob_mig")
+  p12 <- plot_simulations(stan_data, "incidence_cob")
   expect_s3_class(p1, "ggplot")
   expect_s3_class(p2, "ggplot")
   expect_s3_class(p3, "ggplot")
@@ -185,6 +193,7 @@ test_that("simulated plots are generated correctly", {
   expect_s3_class(p9, "ggplot")
   expect_s3_class(p10, "ggplot")
   expect_s3_class(p11, "ggplot")
+  expect_s3_class(p12, "ggplot")
 })
 
 test_that("simulated plots are generated correctly for migration_prob", {
@@ -398,12 +407,14 @@ test_that("plots are generated correctly for migration model", {
   p4 <- plot_estimates(hiv_list, "transfers_detected")
   p5 <- plot_estimates(hiv_list, "ratio_abroad_uk")
   p6 <- plot_estimates(hiv_list, "detect_prob")
+  p7 <- plot_estimates(hiv_list, "incidence_cob")
   expect_s3_class(p1, "ggplot")
   expect_s3_class(p2, "ggplot")
   expect_s3_class(p3, "ggplot")
   expect_s3_class(p4, "ggplot")
   expect_s3_class(p5, "ggplot")
   expect_s3_class(p6, "ggplot")
+  expect_s3_class(p7, "ggplot")
 })
 
 test_that("plots work for migration model lists", {

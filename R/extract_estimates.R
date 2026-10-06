@@ -55,6 +55,17 @@ get_estimates <- function(hiv_list, quantity) {
       paste0("Model ", i)
     }
 
+    if (is.null(x[[quantity]])) {
+      stop(
+        sprintf(
+          "Estimate '%s' is not available in model result %d.",
+          quantity,
+          i
+        ),
+        call. = FALSE
+      )
+    }
+
     estimate_tbl <- x[[quantity]] |>
       tibble::as_tibble()
 
@@ -264,6 +275,22 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
     year = seq(0, plot_years, by = 0.25),
     group = "Generative values"
   )
+  incidence_cob <- if (stan_data$sim_config$migration) {
+    total_incidence <- sim_data$infs[, 1]
+    ratio <- sim_data$ratio_abroad_uk
+    tibble::tibble(
+      value = c(
+        total_incidence / (1 + ratio),
+        total_incidence * ratio / (1 + ratio)
+      ),
+      year = rep(seq(0, plot_years, by = 0.25), 2),
+      country_of_birth = factor(
+        rep(c("UK-born", "Born abroad"), each = stan_data$nquar),
+        levels = c("UK-born", "Born abroad")
+      ),
+      group = "Generative values"
+    )
+  }
   undiag_migration <- tibble::tibble(
     # m[, 1:nlatst] now contains only true undiagnosed migrants (misclassified
     # are handled separately via detect_prob split in sim_diags)
@@ -340,6 +367,8 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
     out <- undiag_prev
   } else if (quantity == "incidence") {
     out <- incidence
+  } else if (quantity == "incidence_cob") {
+    out <- incidence_cob
   } else if (quantity == "undiag_migration") {
     out <- undiag_migration
   } else if (quantity == "all_migration") {

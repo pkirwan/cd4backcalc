@@ -33,6 +33,7 @@ After fitting a model with `run_backcalc()`, several quantities can be plotted o
 
 | Quantity | Description |
 |---------|-------------|
+| `"incidence_cob"` | UK-acquired incidence among UK-born and born-abroad people |
 | `"all_migration"` | Estimated overall migration with HIV |
 | `"undiag_migration"` | Estimated undiagnosed migration |
 | `"diag_prob_mig"` | Estimated diagnosis probabilities for migrants by CD4 stratum |

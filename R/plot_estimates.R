@@ -8,8 +8,8 @@
 #'   and `stan_data`, or a real-data result containing `stan_data` and no
 #'   `sim_data`.
 #' @param quantity A string specifying the quantity to plot. Options include
-#'   "incidence", "undiag_prev", "undiag_migration", "all_migration",
-#'   "diag_prob", "diagnoses", "migration_prob", "transfers",
+#'   "incidence", "incidence_cob", "undiag_prev", "undiag_migration",
+#'   "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers",
 #'   "transfers_detected", "ratio_abroad_uk", "detect_prob",
 #'   "migrant_hiv_prevalence", "aids_diagnoses", "aids_diagnoses_age",
 #'   "cd4_diagnoses", "cd4_diagnoses_age", "transfers_detected_age",
@@ -24,6 +24,7 @@ plot_simulations <- function(
   quantity
 ) {
   is_real_data <- is.null(sim_diags$sim_data)
+  birthplace_quantity <- identical(quantity, "incidence_cob")
   plot_title <- paste0(
     if (is_real_data) "Observed " else "Simulated ",
     get_plot_title(quantity)
@@ -75,13 +76,42 @@ plot_simulations <- function(
 
   # plot simulated values as points and expected values as lines
   p1 <- sim_estimates |>
-    ggplot2::ggplot() +
-    ggplot2::aes(
-      .data$year,
-      .data$value,
-      color = .data$group,
-      group = .data$group
-    ) +
+    ggplot2::ggplot()
+  if (birthplace_quantity) {
+    birthplace_groups <- c("UK-born", "Born abroad")
+    if (!setequal(
+      unique(as.character(sim_estimates$country_of_birth)),
+      birthplace_groups
+    )) {
+      stop(
+        "`incidence_cob` must contain UK-born and Born abroad estimates.",
+        call. = FALSE
+      )
+    }
+    p1 <- p1 +
+      ggplot2::aes(
+        .data$year,
+        .data$value,
+        color = .data$group,
+        linetype = .data$country_of_birth,
+        group = interaction(.data$group, .data$country_of_birth)
+      ) +
+      ggplot2::scale_linetype_manual(
+        values = c("UK-born" = "solid", "Born abroad" = "dashed"),
+        breaks = birthplace_groups,
+        name = "Country of birth"
+      )
+  } else {
+    p1 <- p1 +
+      ggplot2::aes(
+        .data$year,
+        .data$value,
+        color = .data$group,
+        group = .data$group
+      )
+  }
+
+  p1 <- p1 +
     ggplot2::labs(
       title = plot_title,
       x = "Year",
@@ -142,7 +172,11 @@ plot_simulations <- function(
 #'
 #' @param hiv_list A list returned from the `postproc` function containing model
 #'   estimates, or a named list of model results. Names are used as plot labels.
-#' @param quantity A string specifying the quantity to plot. Options are "incidence", "undiag_prev", "undiag_migration", "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers", "transfers_detected", "ratio_abroad_uk", "detect_prob", and "migrant_hiv_prevalence".
+#' @param quantity A string specifying the quantity to plot. Options are
+#'   "incidence", "incidence_cob", "undiag_prev", "undiag_migration",
+#'   "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers",
+#'   "transfers_detected", "ratio_abroad_uk", "detect_prob", and
+#'   "migrant_hiv_prevalence".
 #' @param start_year An integer specifying the starting year for the x-axis (default is 0).
 #' @param chain_results A logical indicating whether to plot chain-by-chain estimates (default is FALSE).
 #' @param hiv_list_2 An optional second list of model estimates for comparison (default is NULL).
@@ -215,6 +249,7 @@ plot_estimates <- function(
   }
 
   plot_title <- paste0("Estimated ", get_plot_title(quantity))
+  birthplace_quantity <- identical(quantity, "incidence_cob")
 
   # chain-by-chain plotting if requested
   if (chain_results) {
@@ -237,7 +272,14 @@ plot_estimates <- function(
   # filter out zero time point for incidence and diagnosis plots
   # by construction these are always zero at time zero
   if (
-    quantity %in% c("incidence", "incidence_age", "diagnoses", "diagnoses_age")
+    quantity %in%
+      c(
+        "incidence",
+        "incidence_cob",
+        "incidence_age",
+        "diagnoses",
+        "diagnoses_age"
+      )
   ) {
     quantiles <- quantiles |>
       dplyr::filter(.data$year > 0)
@@ -286,7 +328,28 @@ plot_estimates <- function(
   }
 
   model_groups <- unique(quantiles$group)
-  model_linetypes <- make_model_linetypes(model_groups, chain_results)
+  if (birthplace_quantity) {
+    birthplace_groups <- c("UK-born", "Born abroad")
+    if (!setequal(
+      unique(as.character(quantiles$country_of_birth)),
+      birthplace_groups
+    )) {
+      stop(
+        "`incidence_cob` must contain UK-born and Born abroad estimates.",
+        call. = FALSE
+      )
+    }
+    model_linetypes <- stats::setNames(
+      c("solid", "dashed"),
+      birthplace_groups
+    )
+    quantiles <- quantiles |>
+      dplyr::mutate(plot_linetype = as.character(.data$country_of_birth))
+  } else {
+    model_linetypes <- make_model_linetypes(model_groups, chain_results)
+    quantiles <- quantiles |>
+      dplyr::mutate(plot_linetype = .data$group)
+  }
   model_colors <- make_model_colors(
     model_groups,
     chain_results = chain_results,
@@ -304,18 +367,22 @@ plot_estimates <- function(
       y = .data$`50%`,
       color = .data$group,
       fill = .data$group,
-      group = interaction(.data$group, .data$iteration)
+      group = interaction(
+        .data$group,
+        .data$iteration,
+        .data$plot_linetype
+      )
     )
 
   if (credible_intervals) {
     p1 <- p1 +
       ggplot2::geom_line(
-        ggplot2::aes(y = .data$`2.5%`, linetype = .data$group),
+        ggplot2::aes(y = .data$`2.5%`, linetype = .data$plot_linetype),
         linewidth = 0.5,
         alpha = 0.5
       ) +
       ggplot2::geom_line(
-        ggplot2::aes(y = .data$`97.5%`, linetype = .data$group),
+        ggplot2::aes(y = .data$`97.5%`, linetype = .data$plot_linetype),
         linewidth = 0.5,
         alpha = 0.5
       ) +
@@ -327,7 +394,7 @@ plot_estimates <- function(
 
   p1 <- p1 +
     ggplot2::geom_line(
-      ggplot2::aes(linetype = .data$group),
+      ggplot2::aes(linetype = .data$plot_linetype),
       linewidth = 1,
       alpha = 0.7
     ) +
@@ -387,7 +454,14 @@ plot_estimates <- function(
     p1 <- p1 +
       ggplot2::geom_point(
         data = sim_estimates,
-        ggplot2::aes(y = .data$value, group = .data$group),
+        ggplot2::aes(
+          y = .data$value,
+          group = if (birthplace_quantity) {
+            interaction(.data$country_of_birth, .data$group)
+          } else {
+            .data$group
+          }
+        ),
         size = 1.1,
         shape = 3
       )
@@ -422,7 +496,11 @@ plot_estimates <- function(
     rep("blank", length(legend_breaks)),
     legend_breaks
   )
-  legend_linetypes[model_groups] <- unname(model_linetypes[model_groups])
+  if (birthplace_quantity) {
+    legend_linetypes[model_groups] <- "solid"
+  } else {
+    legend_linetypes[model_groups] <- unname(model_linetypes[model_groups])
+  }
   legend_shapes <- stats::setNames(
     rep(NA, length(legend_breaks)),
     legend_breaks
@@ -442,13 +520,18 @@ plot_estimates <- function(
     ) +
     ggplot2::scale_linetype_manual(
       values = model_linetypes,
-      breaks = model_groups,
-      name = ""
+      breaks = if (birthplace_quantity) birthplace_groups else model_groups,
+      name = if (birthplace_quantity) "Country of birth" else ""
     ) +
     ggplot2::guides(
       fill = "none",
-      linetype = "none",
+      linetype = if (birthplace_quantity) {
+        ggplot2::guide_legend(order = 2)
+      } else {
+        "none"
+      },
       color = ggplot2::guide_legend(
+        order = 1,
         override.aes = list(
           linetype = unname(legend_linetypes[legend_breaks]),
           shape = unname(legend_shapes[legend_breaks]),
@@ -579,6 +662,8 @@ plot_diagnostics <- function(hiv_list, ntraces = 4) {
 get_plot_title <- function(quantity) {
   plot_title <- if (quantity == "incidence") {
     "HIV incidence"
+  } else if (quantity == "incidence_cob") {
+    "UK-acquired HIV incidence by country of birth"
   } else if (quantity == "undiag_prev") {
     "undiagnosed HIV prevalence"
   } else if (quantity == "undiag_migration") {

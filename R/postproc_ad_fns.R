@@ -66,6 +66,28 @@ get_quantiles <- function(x) {
   )
 }
 
+.uk_acquired_log_incidence_by_birthplace <- function(
+  log_incidence_uk,
+  ratio_abroad_uk,
+  nquar,
+  nage
+) {
+  .total_uk_acquired_log_incidence(
+    log_incidence_uk,
+    ratio_abroad_uk,
+    nquar,
+    nage
+  )
+
+  quarter_index <- rep(seq_len(nquar), times = nage)
+  list(
+    `UK-born` = log_incidence_uk,
+    `Born abroad` = log_incidence_uk + log(
+      ratio_abroad_uk[, quarter_index, drop = FALSE]
+    )
+  )
+}
+
 .age_to_idx <- function(age.st, age.end, nage, offset = 14) {
   if (length(age.st) != 1 || length(age.end) != 1) {
     stop("age.st and age.end must be scalars.")

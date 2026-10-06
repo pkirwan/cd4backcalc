@@ -111,6 +111,7 @@ postproc_ai <- function(
       hiv_list[[paste0("diagnoses_", ch)]] <- ppq$diagnoses
 
       if (stan_data$model_config$migration) {
+        hiv_list[[paste0("incidence_cob_", ch)]] <- ppq$incidence_cob
         hiv_list[[paste0("all_migration_", ch)]] <- ppq$all_migration
         hiv_list[[paste0("undiag_migration_", ch)]] <- ppq$undiag_migration
         hiv_list[[paste0("migration_prob_", ch)]] <- ppq$migration_prob
@@ -309,6 +310,11 @@ build_ppq_list <- function(
     out <- c(
       out,
       list(
+        incidence_cob = incidence_cob.df(
+          stan_data,
+          fit_slice,
+          start.yr = start_yr
+        ),
         diag_prob_mig = diag.prob.df(
           stan_data,
           fit_slice,
@@ -369,6 +375,38 @@ build_ppq_list <- function(
   }
 
   out
+}
+
+incidence_cob.df <- function(stan_data, fit_mat, start.yr = 1978) {
+  nquar <- stan_data$nquar
+  h_idx <- grep("^h\\[", colnames(fit_mat))
+  p_idx <- grep("^p\\[", colnames(fit_mat))
+  if (length(h_idx) != nquar || length(p_idx) != nquar) {
+    stop("h[...] or p[...] not found or wrong length.")
+  }
+
+  h_draws <- fit_mat[, h_idx, drop = FALSE]
+  incidence_draws <- list(
+    `UK-born` = h_draws,
+    `Born abroad` = h_draws * fit_mat[, p_idx, drop = FALSE]
+  )
+
+  purrr::imap_dfr(incidence_draws, \(draws, country_of_birth) {
+    summaries <- apply(draws, 2, .posterior_summary_vec)
+    tibble::as_tibble(t(summaries)) |>
+      dplyr::mutate(
+        year = start.yr + (seq_len(nquar) - 1) / 4,
+        country_of_birth = factor(
+          country_of_birth,
+          levels = names(incidence_draws)
+        )
+      ) |>
+      tidyr::pivot_longer(
+        cols = tidyselect::all_of(c("2.5%", "50%", "mean", "97.5%")),
+        names_to = "quartile",
+        values_to = "value"
+      )
+  })
 }
 
 # Internal helpers for age-independent posterior summaries.
