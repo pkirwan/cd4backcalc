@@ -646,3 +646,31 @@ test_that("start_year and overlay of real values works", {
   expect_s3_class(p4, "ggplot")
   expect_s3_class(p5, "ggplot")
 })
+
+test_that("observed values align with calendar-year estimates", {
+  estimates <- tibble::tibble(
+    year = 2011 + (0:3) / 4,
+    `2.5%` = 1:4,
+    `50%` = 2:5,
+    mean = 2:5,
+    `97.5%` = 3:6
+  )
+  hiv_list <- list(
+    incidence = estimates,
+    diagnoses = estimates,
+    stan_data = list(
+      nquar = 4,
+      model_config = list(migration = FALSE, rita = FALSE, age = FALSE),
+      HIV = rep(1, 4),
+      AIDS = rep(0, 4)
+    )
+  )
+
+  plot <- plot_estimates(hiv_list, "diagnoses")
+  built_plot <- ggplot2::ggplot_build(plot)
+
+  expect_equal(
+    range(built_plot$data[[5]]$x),
+    range(estimates$year)
+  )
+})

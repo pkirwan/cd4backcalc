@@ -177,7 +177,9 @@ plot_simulations <- function(
 #'   "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers",
 #'   "transfers_detected", "ratio_abroad_uk", "detect_prob", and
 #'   "migrant_hiv_prevalence".
-#' @param start_year An integer specifying the starting year for the x-axis (default is 0).
+#' @param start_year An integer offset added to the stored estimate years for
+#'   the x-axis (default is 0). Leave this at 0 when estimates already contain
+#'   calendar years.
 #' @param chain_results A logical indicating whether to plot chain-by-chain estimates (default is FALSE).
 #' @param hiv_list_2 An optional second list of model estimates for comparison (default is NULL).
 #' @param model_1_name A string specifying the name of the first model for the legend (default is "Model 1").
@@ -268,6 +270,8 @@ plot_estimates <- function(
   } else {
     quantiles <- get_estimates(hiv_list, quantity)
   }
+
+  estimate_start_year <- min(quantiles$year, na.rm = TRUE)
 
   # filter out zero time point for incidence and diagnosis plots
   # by construction these are always zero at time zero
@@ -476,7 +480,8 @@ plot_estimates <- function(
       )
   ) {
     # add observed diagnoses if real data
-    observed_data <- extract_real_data(hiv_list[[1]], quantity)
+    observed_data <- extract_real_data(hiv_list[[1]], quantity) |>
+      dplyr::mutate(year = .data$year + estimate_start_year)
     if ("age_band" %in% names(observed_data) && grepl("_age$", quantity)) {
       observed_data <- observed_data |>
         dplyr::filter(.data$age_band != "all")
