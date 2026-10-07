@@ -56,11 +56,6 @@ test_that("simulated plots are generated correctly", {
   expect_s3_class(p10, "ggplot")
   expect_s3_class(p11, "ggplot")
   expect_s3_class(p12, "ggplot")
-  expect_identical(
-    p12$scales$get_scales("linetype")$palette(2),
-    c("UK-born" = "solid", "Born abroad" = "dashed")
-  )
-  expect_length(unique(ggplot2::ggplot_build(p12)$data[[2]]$group), 2)
 })
 
 test_that("observed Stan quantities can be plotted", {

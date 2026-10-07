@@ -24,7 +24,6 @@ plot_simulations <- function(
   quantity
 ) {
   is_real_data <- is.null(sim_diags$sim_data)
-  birthplace_quantity <- identical(quantity, "incidence_cob")
   plot_title <- paste0(
     if (is_real_data) "Observed " else "Simulated ",
     get_plot_title(quantity)
@@ -56,6 +55,10 @@ plot_simulations <- function(
       )
   }
 
+  if (quantity == "incidence_cob") {
+    return(plot_incidence_cob_simulations(sim_estimates, plot_title))
+  }
+
   if (
     "age_band" %in%
       names(sim_estimates) &&
@@ -66,52 +69,23 @@ plot_simulations <- function(
   }
 
   model_colors <- if (is_real_data) {
-    stats::setNames("mediumturquoise", "Observed values")
+    stats::setNames("gray30", "Observed values")
   } else {
     stats::setNames(
-      c("mediumturquoise", "mediumorchid"),
+      c("gray30", "mediumorchid"),
       c("Sampled values", "Generative values")
     )
   }
 
   # plot simulated values as points and expected values as lines
   p1 <- sim_estimates |>
-    ggplot2::ggplot()
-  if (birthplace_quantity) {
-    birthplace_groups <- c("UK-born", "Born abroad")
-    if (!setequal(
-      unique(as.character(sim_estimates$country_of_birth)),
-      birthplace_groups
-    )) {
-      stop(
-        "`incidence_cob` must contain UK-born and Born abroad estimates.",
-        call. = FALSE
-      )
-    }
-    p1 <- p1 +
-      ggplot2::aes(
-        .data$year,
-        .data$value,
-        color = .data$group,
-        linetype = .data$country_of_birth,
-        group = interaction(.data$group, .data$country_of_birth)
-      ) +
-      ggplot2::scale_linetype_manual(
-        values = c("UK-born" = "solid", "Born abroad" = "dashed"),
-        breaks = birthplace_groups,
-        name = "Country of birth"
-      )
-  } else {
-    p1 <- p1 +
-      ggplot2::aes(
-        .data$year,
-        .data$value,
-        color = .data$group,
-        group = .data$group
-      )
-  }
-
-  p1 <- p1 +
+    ggplot2::ggplot() +
+    ggplot2::aes(
+      .data$year,
+      .data$value,
+      color = .data$group,
+      group = .data$group
+    ) +
     ggplot2::labs(
       title = plot_title,
       x = "Year",
@@ -251,7 +225,6 @@ plot_estimates <- function(
   }
 
   plot_title <- paste0("Estimated ", get_plot_title(quantity))
-  birthplace_quantity <- identical(quantity, "incidence_cob")
 
   # chain-by-chain plotting if requested
   if (chain_results) {
@@ -269,6 +242,28 @@ plot_estimates <- function(
       dplyr::mutate(group = paste0(.data$group, ", ", .data$chain))
   } else {
     quantiles <- get_estimates(hiv_list, quantity)
+  }
+
+  if (quantity == "incidence_cob") {
+    simulated <- if ("sim_data" %in% names(hiv_list[[1]])) {
+      extract_simulated_quantity(
+        hiv_list[[1]],
+        quantity,
+        deterministic = sim_comparison == "generative"
+      )
+    }
+    return(plot_incidence_cob_estimates(
+      quantiles,
+      simulated,
+      plot_title,
+      start_year,
+      credible_intervals,
+      if (sim_comparison == "sampled") {
+        "Sampled values"
+      } else {
+        "Generative values"
+      }
+    ))
   }
 
   estimate_start_year <- min(quantiles$year, na.rm = TRUE)
@@ -332,28 +327,7 @@ plot_estimates <- function(
   }
 
   model_groups <- unique(quantiles$group)
-  if (birthplace_quantity) {
-    birthplace_groups <- c("UK-born", "Born abroad")
-    if (!setequal(
-      unique(as.character(quantiles$country_of_birth)),
-      birthplace_groups
-    )) {
-      stop(
-        "`incidence_cob` must contain UK-born and Born abroad estimates.",
-        call. = FALSE
-      )
-    }
-    model_linetypes <- stats::setNames(
-      c("solid", "dashed"),
-      birthplace_groups
-    )
-    quantiles <- quantiles |>
-      dplyr::mutate(plot_linetype = as.character(.data$country_of_birth))
-  } else {
-    model_linetypes <- make_model_linetypes(model_groups, chain_results)
-    quantiles <- quantiles |>
-      dplyr::mutate(plot_linetype = .data$group)
-  }
+  model_linetypes <- make_model_linetypes(model_groups, chain_results)
   model_colors <- make_model_colors(
     model_groups,
     chain_results = chain_results,
@@ -363,7 +337,6 @@ plot_estimates <- function(
     colours = colours
   )
   legend_breaks <- model_groups
-
   p1 <- quantiles |>
     ggplot2::ggplot() +
     ggplot2::aes(
@@ -371,26 +344,20 @@ plot_estimates <- function(
       y = .data$`50%`,
       color = .data$group,
       fill = .data$group,
-      group = interaction(
-        .data$group,
-        .data$iteration,
-        .data$plot_linetype
-      )
+      group = interaction(.data$group, .data$iteration)
     )
 
   if (credible_intervals) {
     p1 <- p1 +
       ggplot2::geom_line(
-        ggplot2::aes(y = .data$`2.5%`, linetype = .data$plot_linetype),
+        ggplot2::aes(y = .data$`2.5%`),
         linewidth = 0.5,
-        alpha = 0.5,
-        show.legend = FALSE
+        alpha = 0.5
       ) +
       ggplot2::geom_line(
-        ggplot2::aes(y = .data$`97.5%`, linetype = .data$plot_linetype),
+        ggplot2::aes(y = .data$`97.5%`),
         linewidth = 0.5,
-        alpha = 0.5,
-        show.legend = FALSE
+        alpha = 0.5
       ) +
       ggplot2::geom_ribbon(
         ggplot2::aes(ymin = .data$`2.5%`, ymax = .data$`97.5%`),
@@ -400,7 +367,7 @@ plot_estimates <- function(
 
   p1 <- p1 +
     ggplot2::geom_line(
-      ggplot2::aes(linetype = .data$plot_linetype),
+      ggplot2::aes(linetype = .data$group),
       linewidth = 1,
       alpha = 0.7
     ) +
@@ -441,7 +408,7 @@ plot_estimates <- function(
     use_deterministic <- sim_comparison == "generative"
     model_colors <- c(
       model_colors,
-      stats::setNames("mediumturquoise", sim_ref_label)
+      stats::setNames("gray30", sim_ref_label)
     )
     legend_breaks <- c(legend_breaks, sim_ref_label)
     sim_estimates <- extract_simulated_quantity(
@@ -460,14 +427,7 @@ plot_estimates <- function(
     p1 <- p1 +
       ggplot2::geom_point(
         data = sim_estimates,
-        ggplot2::aes(
-          y = .data$value,
-          group = if (birthplace_quantity) {
-            interaction(.data$country_of_birth, .data$group)
-          } else {
-            .data$group
-          }
-        ),
+        ggplot2::aes(y = .data$value, group = .data$group),
         size = 1.1,
         shape = 3
       )
@@ -487,7 +447,7 @@ plot_estimates <- function(
         dplyr::filter(.data$age_band != "all")
     }
 
-    model_colors <- c(model_colors, "Observed values" = "mediumturquoise")
+    model_colors <- c(model_colors, "Observed values" = "gray30")
     legend_breaks <- c(legend_breaks, "Observed values")
 
     p1 <- p1 +
@@ -503,11 +463,7 @@ plot_estimates <- function(
     rep("blank", length(legend_breaks)),
     legend_breaks
   )
-  if (birthplace_quantity) {
-    legend_linetypes[model_groups] <- "solid"
-  } else {
-    legend_linetypes[model_groups] <- unname(model_linetypes[model_groups])
-  }
+  legend_linetypes[model_groups] <- unname(model_linetypes[model_groups])
   legend_shapes <- stats::setNames(
     rep(NA, length(legend_breaks)),
     legend_breaks
@@ -525,18 +481,9 @@ plot_estimates <- function(
       breaks = legend_breaks,
       name = ""
     ) +
-    ggplot2::scale_linetype_manual(
-      values = model_linetypes,
-      breaks = if (birthplace_quantity) birthplace_groups else model_groups,
-      name = if (birthplace_quantity) "Country of birth" else ""
-    ) +
     ggplot2::guides(
       fill = "none",
-      linetype = if (birthplace_quantity) {
-        ggplot2::guide_legend(order = 2)
-      } else {
-        "none"
-      },
+      linetype = "none",
       color = ggplot2::guide_legend(
         order = 1,
         override.aes = list(
@@ -547,9 +494,162 @@ plot_estimates <- function(
       )
     )
 
+  p1 <- p1 +
+    ggplot2::scale_linetype_manual(
+      values = model_linetypes,
+      breaks = model_groups,
+      name = ""
+    )
+
   p1 <- do_facetting(p1, quantity)
 
   return(p1)
+}
+
+birthplace_colors <- c("UK-born" = "#009E73", "Born abroad" = "#0072B2")
+
+plot_incidence_cob_simulations <- function(estimates, plot_title) {
+  estimates |>
+    ggplot2::ggplot(
+      ggplot2::aes(
+        .data$year,
+        .data$value,
+        color = .data$country_of_birth,
+        group = .data$country_of_birth
+      )
+    ) +
+    ggplot2::geom_point(
+      data = estimates |> dplyr::filter(.data$group == "Sampled values"),
+      size = 1.1,
+      shape = 3
+    ) +
+    ggplot2::geom_line(
+      data = estimates |> dplyr::filter(.data$group == "Generative values")
+    ) +
+    ggplot2::labs(
+      title = plot_title,
+      x = "Year",
+      y = "UK-acquired HIV incidence by country of birth",
+      color = "Country of birth"
+    ) +
+    ggplot2::scale_color_manual(values = birthplace_colors) +
+    ggplot2::scale_y_continuous(
+      limits = c(0, NA),
+      expand = ggplot2::expansion(mult = c(0, 0.05)),
+      labels = scales::comma
+    ) +
+    ggplot2::scale_x_continuous(
+      expand = ggplot2::expansion(mult = c(0.01, 0.01))
+    ) +
+    ggplot2::theme_classic() +
+    ggplot2::theme(
+      panel.grid.minor = ggplot2::element_line(color = "grey80"),
+      legend.position = "bottom"
+    ) +
+    ggplot2::guides(
+      fill = "none",
+      linetype = "none"
+    )
+}
+
+plot_incidence_cob_estimates <- function(
+  estimates,
+  simulated,
+  plot_title,
+  start_year,
+  credible_intervals,
+  simulated_label
+) {
+  estimates <- estimates |> dplyr::filter(.data$year > 0)
+  legend_colors <- birthplace_colors
+  legend_linetypes <- rep("solid", length(birthplace_colors))
+  legend_shapes <- rep(NA, length(birthplace_colors))
+
+  p <- estimates |>
+    ggplot2::ggplot(
+      ggplot2::aes(
+        x = .data$year + start_year,
+        y = .data$`50%`,
+        color = .data$country_of_birth,
+        fill = .data$country_of_birth,
+        linetype = .data$country_of_birth,
+        group = interaction(.data$country_of_birth, .data$iteration)
+      )
+    )
+
+  if (credible_intervals) {
+    p <- p +
+      ggplot2::geom_line(
+        ggplot2::aes(y = .data$`2.5%`),
+        linewidth = 0.5,
+        alpha = 0.5
+      ) +
+      ggplot2::geom_line(
+        ggplot2::aes(y = .data$`97.5%`),
+        linewidth = 0.5,
+        alpha = 0.5
+      ) +
+      ggplot2::geom_ribbon(
+        ggplot2::aes(ymin = .data$`2.5%`, ymax = .data$`97.5%`),
+        alpha = 0.2
+      )
+  }
+
+  p <- p +
+    ggplot2::geom_line(linewidth = 1, alpha = 0.7)
+
+  if (!is.null(simulated)) {
+    legend_colors <- c(
+      legend_colors,
+      stats::setNames("gray30", simulated_label)
+    )
+    legend_linetypes <- c(legend_linetypes, "blank")
+    legend_shapes <- c(legend_shapes, 3)
+    p <- p +
+      ggplot2::geom_point(
+        data = simulated,
+        ggplot2::aes(
+          y = .data$value,
+          color = simulated_label,
+          group = .data$country_of_birth
+        ),
+        size = 1.1,
+        shape = 3
+      )
+  }
+
+  p +
+    ggplot2::labs(
+      title = plot_title,
+      x = "Year",
+      y = "UK-acquired HIV incidence by country of birth",
+      color = "Country of birth"
+    ) +
+    ggplot2::scale_color_manual(values = legend_colors) +
+    ggplot2::scale_fill_manual(values = birthplace_colors, guide = "none") +
+    ggplot2::scale_linetype_discrete(guide = "none") +
+    ggplot2::scale_y_continuous(
+      limits = c(0, NA),
+      expand = ggplot2::expansion(mult = c(0, 0.05)),
+      labels = scales::comma
+    ) +
+    ggplot2::scale_x_continuous(
+      expand = ggplot2::expansion(mult = c(0.01, 0.01))
+    ) +
+    ggplot2::theme_classic() +
+    ggplot2::theme(
+      legend.position = "bottom",
+      panel.grid.major = ggplot2::element_line(color = "grey80")
+    ) +
+    ggplot2::guides(
+      color = ggplot2::guide_legend(
+        override.aes = list(
+          fill = NA,
+          linetype = legend_linetypes,
+          shape = legend_shapes
+        )
+      )
+    )
 }
 
 #' Plot diagnostics for fitted model
@@ -798,7 +898,7 @@ make_model_colors <- function(
   }
 
   model_colors <- stats::setNames(
-    c("mediumorchid", "coral"),
+    c("mediumorchid", "darkorange1"),
     c(model_1_name, model_2_name)
   )
 
