@@ -9,7 +9,7 @@
 
 ### Bug fixes
 
-- Plots will now use the stored `start_year' value, as defined when running the model fit, if available.
+- Plots will now use the stored `start_year` value, as defined when running the model fit, if available.
 
 # Changes in v0.2.2
 
