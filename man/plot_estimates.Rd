@@ -24,8 +24,9 @@ estimates, or a named list of model results. Names are used as plot labels.}
 \item{quantity}{A string specifying the quantity to plot. Options are
 "incidence", "incidence_cob", "undiag_prev", "undiag_migration",
 "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers",
-"transfers_detected", "ratio_abroad_uk", "detect_prob", and
-"migrant_hiv_prevalence".}
+"transfers_detected", "ratio_abroad_uk", "detect_prob",
+"migrant_hiv_prevalence", and "alpha_diag_mig" (the scalar logit-scale
+born-abroad diagnosis offset, shown with its odds ratio).}
 
 \item{start_year}{An integer specifying the starting year for the x-axis (default is 0).}
 

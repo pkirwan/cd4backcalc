@@ -149,8 +149,9 @@ plot_simulations <- function(
 #' @param quantity A string specifying the quantity to plot. Options are
 #'   "incidence", "incidence_cob", "undiag_prev", "undiag_migration",
 #'   "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers",
-#'   "transfers_detected", "ratio_abroad_uk", "detect_prob", and
-#'   "migrant_hiv_prevalence".
+#'   "transfers_detected", "ratio_abroad_uk", "detect_prob",
+#'   "migrant_hiv_prevalence", and "alpha_diag_mig" (the scalar logit-scale
+#'   born-abroad diagnosis offset, shown with its odds ratio).
 #' @param start_year An integer offset added to the stored estimate years for
 #'   the x-axis (default is 0). Leave this at 0 when estimates already contain
 #'   calendar years.
@@ -258,6 +259,40 @@ plot_estimates <- function(
       plot_title,
       start_year,
       credible_intervals,
+      if (sim_comparison == "sampled") {
+        "Sampled values"
+      } else {
+        "Generative values"
+      }
+    ))
+  }
+
+  if (quantity == "alpha_diag_mig") {
+    simulated <- if ("sim_data" %in% names(hiv_list[[1]])) {
+      offset <- hiv_list[[1]]$stan_data$sim_config$mig_diag_offset
+      offset <- unique(if (is.null(offset)) 0 else offset)
+      tibble::tibble(
+        scale = factor(
+          rep(c("logit", "odds_ratio"), each = length(offset)),
+          levels = c("logit", "odds_ratio")
+        ),
+        value = c(offset, exp(offset))
+      )
+    }
+    model_groups <- unique(quantiles$group)
+    return(plot_alpha_diag_mig_estimates(
+      quantiles,
+      simulated,
+      plot_title,
+      credible_intervals,
+      make_model_colors(
+        model_groups,
+        chain_results = chain_results,
+        has_second_model = !is.null(hiv_list_2),
+        model_1_name = model_1_name,
+        model_2_name = model_2_name,
+        colours = colours
+      ),
       if (sim_comparison == "sampled") {
         "Sampled values"
       } else {
@@ -652,6 +687,78 @@ plot_incidence_cob_estimates <- function(
     )
 }
 
+plot_alpha_diag_mig_estimates <- function(
+  estimates,
+  simulated,
+  plot_title,
+  credible_intervals,
+  model_colors,
+  simulated_label
+) {
+  scale_labels <- c(
+    logit = "Log-odds offset",
+    odds_ratio = "Odds ratio (born abroad vs UK-born)"
+  )
+  reference <- tibble::tibble(
+    scale = factor(c("logit", "odds_ratio"), levels = names(scale_labels)),
+    value = c(0, 1)
+  )
+  dodge <- ggplot2::position_dodge(width = 0.5)
+
+  p <- estimates |>
+    ggplot2::ggplot(
+      ggplot2::aes(
+        x = .data$group,
+        y = .data$`50%`,
+        color = .data$group,
+        group = interaction(.data$group, .data$iteration)
+      )
+    ) +
+    ggplot2::geom_hline(
+      data = reference,
+      ggplot2::aes(yintercept = .data$value),
+      linetype = "dotted",
+      color = "grey50"
+    )
+
+  if (credible_intervals) {
+    p <- p +
+      ggplot2::geom_pointrange(
+        ggplot2::aes(ymin = .data$`2.5%`, ymax = .data$`97.5%`),
+        position = dodge
+      )
+  } else {
+    p <- p + ggplot2::geom_point(size = 2.5, position = dodge)
+  }
+
+  if (!is.null(simulated)) {
+    p <- p +
+      ggplot2::geom_hline(
+        data = simulated,
+        ggplot2::aes(yintercept = .data$value, linetype = simulated_label),
+        color = "gray30"
+      ) +
+      ggplot2::scale_linetype_manual(
+        values = stats::setNames("dashed", simulated_label),
+        name = ""
+      )
+  }
+
+  p +
+    ggplot2::facet_wrap(
+      ggplot2::vars(.data$scale),
+      scales = "free_y",
+      labeller = ggplot2::as_labeller(scale_labels)
+    ) +
+    ggplot2::scale_color_manual(values = model_colors, name = "") +
+    ggplot2::labs(title = plot_title, x = NULL, y = "Estimate") +
+    ggplot2::theme_classic() +
+    ggplot2::theme(
+      legend.position = "bottom",
+      panel.grid.major.y = ggplot2::element_line(color = "grey80")
+    )
+}
+
 #' Plot diagnostics for fitted model
 #'
 #' Generate diagnostic plots for a fitted back-calculation model.
@@ -823,6 +930,8 @@ get_plot_title <- function(quantity) {
     "HIV diagnosis probabilities (born abroad), by CD4 strata"
   } else if (quantity == "diag_prob_mig_age") {
     "HIV diagnosis probabilities (born abroad), by CD4 strata and age group"
+  } else if (quantity == "alpha_diag_mig") {
+    "born-abroad diagnosis offset (shared across CD4 strata, age and time)"
   } else if (quantity == "incidence_trend") {
     "HIV incidence trend by age group"
   } else if (quantity == "peak_incidence") {

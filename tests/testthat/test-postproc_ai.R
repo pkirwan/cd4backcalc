@@ -93,6 +93,10 @@ test_that("migration post-processing works", {
   expect_true("migration_prob" %in% names(hiv_list))
   expect_true("migrant_hiv_prevalence" %in% names(hiv_list))
   expect_true("incidence_cob" %in% names(hiv_list))
+  expect_equal(
+    as.character(hiv_list$alpha_diag_mig$scale),
+    c("logit", "odds_ratio")
+  )
 })
 
 test_that("undiag_prev uses direct latent prevalence", {
@@ -340,6 +344,7 @@ test_that("age-specific migration model fit works", {
   expect_true("incidence" %in% names(hiv_list))
   expect_true("undiag_prev" %in% names(hiv_list))
   expect_true("migration_prob" %in% names(hiv_list))
+  expect_true("alpha_diag_mig" %in% names(hiv_list))
 })
 
 test_that("age-specific rita migration model fit works", {

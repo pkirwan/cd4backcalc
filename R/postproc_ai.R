@@ -120,6 +120,7 @@ postproc_ai <- function(
         hiv_list[[paste0("ratio_abroad_uk_", ch)]] <- ppq$ratio_abroad_uk
         hiv_list[[paste0("detect_prob_", ch)]] <- ppq$detect_prob
         hiv_list[[paste0("migrant_hiv_prevalence_", ch)]] <- ppq$migrant_hiv_prevalence
+        hiv_list[[paste0("alpha_diag_mig_", ch)]] <- ppq$alpha_diag_mig
       }
     }
   } else {
@@ -372,6 +373,7 @@ build_ppq_list <- function(
       start_yr = start_yr,
       qt.flag = TRUE
     )
+    out$alpha_diag_mig <- alpha_diag_mig.df(fit_slice)
   }
 
   out

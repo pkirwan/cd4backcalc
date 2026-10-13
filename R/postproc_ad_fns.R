@@ -16,6 +16,28 @@ get_quantiles <- function(x) {
   out
 }
 
+# Posterior summary of the scalar born-abroad diagnosis offset alpha_diag_mig,
+# shared across CD4 states, ages and time in the migration models. Returned on
+# the logit scale and as an odds ratio (born abroad vs UK-born). Returns NULL
+# when the fit does not contain alpha_diag_mig.
+alpha_diag_mig.df <- function(fit_mat) {
+  idx <- match("alpha_diag_mig", colnames(fit_mat))
+  if (is.na(idx)) {
+    return(NULL)
+  }
+  draws <- as.numeric(fit_mat[, idx])
+  q <- rbind(get_quantiles(draws), get_quantiles(exp(draws)))
+
+  tibble::as_tibble(q) |>
+    dplyr::mutate(
+      scale = factor(
+        c("logit", "odds_ratio"),
+        levels = c("logit", "odds_ratio")
+      ),
+      .before = 1
+    )
+}
+
 .posterior_predictive_poisson <- function(x) {
   array(
     stats::rpois(length(x), lambda = as.numeric(x)),

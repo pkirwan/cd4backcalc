@@ -412,6 +412,8 @@ postproc_ad <- function(
         names_to = "quartile",
         values_to = "value"
       )
+
+    out$alpha_diag_mig <- alpha_diag_mig.df(fit_mat)
   }
 
   # Delta parameters (age progression rates)
