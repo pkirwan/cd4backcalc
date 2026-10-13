@@ -30,9 +30,11 @@ depend on the model type:
 
 | Quantity | Description |
 |----|----|
+| `"incidence_cob"` | UK-acquired incidence among UK-born and born-abroad people |
 | `"all_migration"` | Estimated overall migration with HIV |
 | `"undiag_migration"` | Estimated undiagnosed migration |
 | `"diag_prob_mig"` | Estimated diagnosis probabilities for migrants by CD4 stratum |
+| `"alpha_diag_mig"` | Born-abroad diagnosis offset (logit scale and odds ratio vs UK-born), shared across CD4 strata, age and time |
 | `"migration_prob"` | Estimated migration probabilities |
 | `"ratio_abroad_uk"` | Ratio of UK-acquired incidence among people born abroad to that among UK-born people |
 | `"transfers"` | Estimated transfers of care |

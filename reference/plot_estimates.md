@@ -31,9 +31,11 @@ plot_estimates(
 - quantity:
 
   A string specifying the quantity to plot. Options are "incidence",
-  "undiag_prev", "undiag_migration", "all_migration", "diag_prob",
-  "diagnoses", "migration_prob", "transfers", "transfers_detected",
-  "ratio_abroad_uk", "detect_prob", and "migrant_hiv_prevalence".
+  "incidence_cob", "undiag_prev", "undiag_migration", "all_migration",
+  "diag_prob", "diagnoses", "migration_prob", "transfers",
+  "transfers_detected", "ratio_abroad_uk", "detect_prob",
+  "migrant_hiv_prevalence", and "alpha_diag_mig" (the scalar logit-scale
+  born-abroad diagnosis offset, shown with its odds ratio).
 
 - start_year:
 

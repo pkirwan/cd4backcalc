@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">cd4backcalc</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,7 +62,7 @@
       <h1>Analysing results</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.2.2/vignettes/articles/analysing-results.Rmd" class="external-link"><code>vignettes/articles/analysing-results.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/pkirwan/cd4backcalc/blob/v0.2.3/vignettes/articles/analysing-results.Rmd" class="external-link"><code>vignettes/articles/analysing-results.Rmd</code></a></small>
       <div class="d-none name"><code>analysing-results.Rmd</code></div>
     </div>
 
@@ -117,16 +117,25 @@ on the model type:</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
+<td><code>"incidence_cob"</code></td>
+<td>UK-acquired incidence among UK-born and born-abroad people</td>
+</tr>
+<tr class="even">
 <td><code>"all_migration"</code></td>
 <td>Estimated overall migration with HIV</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>"undiag_migration"</code></td>
 <td>Estimated undiagnosed migration</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td><code>"diag_prob_mig"</code></td>
 <td>Estimated diagnosis probabilities for migrants by CD4 stratum</td>
+</tr>
+<tr class="odd">
+<td><code>"alpha_diag_mig"</code></td>
+<td>Born-abroad diagnosis offset (logit scale and odds ratio vs
+UK-born), shared across CD4 strata, age and time</td>
 </tr>
 <tr class="even">
 <td><code>"migration_prob"</code></td>

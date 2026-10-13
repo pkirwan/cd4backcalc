@@ -1,5 +1,21 @@
 # Changelog
 
+## Changes in v0.2.3
+
+#### Improvements
+
+- New \`quantity=incidence_cob’ option to plot estimated HIV incidence
+  by country of birth.
+- Migration-model post-processing now returns `alpha_diag_mig`, the
+  posterior summary of the shared born-abroad diagnosis offset (logit
+  scale and odds ratio), which can be plotted with
+  `plot_estimates(quantity = "alpha_diag_mig")`.
+
+#### Bug fixes
+
+- Plots will now use the stored `start_year` value, as defined when
+  running the model fit, if available.
+
 ## Changes in v0.2.2
 
 #### Improvements
