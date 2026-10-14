@@ -150,8 +150,8 @@ plot_simulations <- function(
 #'   "incidence", "incidence_cob", "undiag_prev", "undiag_migration",
 #'   "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers",
 #'   "transfers_detected", "ratio_abroad_uk", "detect_prob",
-#'   "migrant_hiv_prevalence", and "alpha_diag_mig" (the scalar logit-scale
-#'   born-abroad diagnosis offset, shown with its odds ratio).
+#'   "migrant_hiv_prevalence", and "alpha_diag_mig" (the scalar born-abroad
+#'   diagnosis offset).
 #' @param start_year An integer offset added to the stored estimate years for
 #'   the x-axis (default is 0). Leave this at 0 when estimates already contain
 #'   calendar years.
@@ -268,16 +268,12 @@ plot_estimates <- function(
   }
 
   if (quantity == "alpha_diag_mig") {
+    quantiles <- quantiles |>
+      dplyr::filter(as.character(.data$scale) == "odds_ratio")
     simulated <- if ("sim_data" %in% names(hiv_list[[1]])) {
       offset <- hiv_list[[1]]$stan_data$sim_config$mig_diag_offset
       offset <- unique(if (is.null(offset)) 0 else offset)
-      tibble::tibble(
-        scale = factor(
-          rep(c("logit", "odds_ratio"), each = length(offset)),
-          levels = c("logit", "odds_ratio")
-        ),
-        value = c(offset, exp(offset))
-      )
+      tibble::tibble(value = exp(offset))
     }
     model_groups <- unique(quantiles$group)
     return(plot_alpha_diag_mig_estimates(
@@ -695,14 +691,6 @@ plot_alpha_diag_mig_estimates <- function(
   model_colors,
   simulated_label
 ) {
-  scale_labels <- c(
-    logit = "Log-odds offset",
-    odds_ratio = "Odds ratio (born abroad vs UK-born)"
-  )
-  reference <- tibble::tibble(
-    scale = factor(c("logit", "odds_ratio"), levels = names(scale_labels)),
-    value = c(0, 1)
-  )
   dodge <- ggplot2::position_dodge(width = 0.5)
 
   p <- estimates |>
@@ -715,8 +703,7 @@ plot_alpha_diag_mig_estimates <- function(
       )
     ) +
     ggplot2::geom_hline(
-      data = reference,
-      ggplot2::aes(yintercept = .data$value),
+      yintercept = 1,
       linetype = "dotted",
       color = "grey50"
     )
@@ -745,13 +732,12 @@ plot_alpha_diag_mig_estimates <- function(
   }
 
   p +
-    ggplot2::facet_wrap(
-      ggplot2::vars(.data$scale),
-      scales = "free_y",
-      labeller = ggplot2::as_labeller(scale_labels)
-    ) +
     ggplot2::scale_color_manual(values = model_colors, name = "") +
-    ggplot2::labs(title = plot_title, x = NULL, y = "Estimate") +
+    ggplot2::labs(
+      title = plot_title,
+      x = NULL,
+      y = "Odds ratio (born abroad vs UK-born)"
+    ) +
     ggplot2::theme_classic() +
     ggplot2::theme(
       legend.position = "bottom",
