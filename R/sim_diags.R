@@ -739,8 +739,7 @@ simulate_diagnoses <- function(
   mu <- generate_mu(
     sim_config$nquar,
     4,
-    sim_config$m_pattern,
-    sim_config$dist
+    sim_config$m_pattern
   )
 
   # Detection probability for previous diagnoses abroad, with an optional

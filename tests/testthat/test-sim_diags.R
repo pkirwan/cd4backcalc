@@ -63,7 +63,7 @@ test_that("migration probability patterns follow the Stan decomposition", {
   )
 
   for (pattern in names(expected_cd4)) {
-    mu <- generate_mu(20, 4, pattern, dist = FALSE)
+    mu <- generate_mu(20, 4, pattern)
     conditional_cd4 <-
       mu[, 1:4, drop = FALSE] / rowSums(mu[, 1:4, drop = FALSE])
     expect_equal(
@@ -71,21 +71,7 @@ test_that("migration probability patterns follow the Stan decomposition", {
       matrix(expected_cd4[[pattern]], 20, 4, byrow = TRUE)
     )
     expect_equal(mu[, 5], expected_transfer[[pattern]])
-
-    set.seed(123)
-    stochastic_mu <- generate_mu(20, 4, pattern, dist = TRUE)
-    stochastic_conditional_cd4 <-
-      stochastic_mu[, 1:4, drop = FALSE] /
-        rowSums(stochastic_mu[, 1:4, drop = FALSE])
-    expect_equal(
-      unname(stochastic_conditional_cd4),
-      matrix(expected_cd4[[pattern]], 20, 4, byrow = TRUE)
-    )
-    expect_equal(rowSums(stochastic_mu), rep(1, 20))
-    expect_false(isTRUE(all.equal(
-      stochastic_mu[, 5],
-      expected_transfer[[pattern]]
-    )))
+    expect_equal(rowSums(mu), rep(1, 20))
   }
 })
 

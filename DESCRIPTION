@@ -54,4 +54,4 @@ Roxygen: list(markdown = TRUE)
 SystemRequirements: GNU make
 URL: https://pkirwan.github.io/cd4backcalc/, https://github.com/pkirwan/cd4backcalc
 Additional_repositories: https://stan-dev.r-universe.dev
-Config/roxygen2/version: 8.1.0
+Config/roxygen2/version: 8.1.1

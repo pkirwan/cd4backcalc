@@ -219,15 +219,13 @@ generate_omega <- function(nquar, pattern, target_mig = 12000, dist = TRUE) {
 #'
 #' Each pattern combines a time-varying transfer share with a time-constant
 #' conditional CD4 composition among undiagnosed arrivals, matching the Stan
-#' model parameterisation. With \code{dist = TRUE}, smooth temporal variation
-#' is added to the transfer share on the logit scale.
+#' model parameterisation.
 #'
 #' @param nquar Number of time quarters.
 #' @param nlatst Number of latent states.
 #' @param pattern Pattern type for mu ("constant", "differing", or "varying").
-#' @param dist Logical indicating whether to add logit-scale temporal variation.
 #' @return Matrix of mu values over time.
-generate_mu <- function(nquar, nlatst, pattern, dist = FALSE) {
+generate_mu <- function(nquar, nlatst, pattern) {
   # check pattern
   stopifnot(pattern %in% c("constant", "differing", "varying"))
   if (pattern == "constant") {
@@ -239,15 +237,6 @@ generate_mu <- function(nquar, nlatst, pattern, dist = FALSE) {
   } else if (pattern == "varying") {
     transfer_prob <- seq(0.2, 0.4, length.out = nquar)
     undiag_cd4_prop <- c(2, 2, 2, 1) / 7
-  }
-
-  if (dist) {
-    transfer_prob <- invlogit(simulate_ar1_logit(
-      nquar,
-      logit(transfer_prob),
-      rho = 0.86,
-      vardelta = exp(-4.0)
-    ))
   }
 
   unname(cbind(
