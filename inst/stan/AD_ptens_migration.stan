@@ -210,25 +210,17 @@ transformed parameters {
   vector<lower=0>[nquar] transfers = omega .* transfer_share;
   vector<lower=0>[nquar] undiag_migration = omega .* (1 - transfer_share);
   vector[nquar] gamma = log(omega);
-  vector<lower=0>[3] omega_pre = rep_vector(omega[1], 3);
   
   // Rolling 4-quarter aggregation of omega (log scale), matching the quarterly
   // rolling-annual external migration index. For t=1:3, the window is completed
-  // with omega_pre (the three quarters preceding the surveillance window).
+  // with omega[1] (the three quarters preceding the surveillance window).
   vector[nquar] gamma_agg;
-  {
-    real running = sum(omega_pre);
-    for (t in 1 : nquar) {
-      running += omega[t];
-      if (t > 1) {
-        if (t <= 4) {
-          running -= omega_pre[t - 1];
-        } else {
-          running -= omega[t - 4];
-        }
-      }
-      gamma_agg[t] = log(running);
+  for (t in 1 : nquar) {
+    real window_total = 0;
+    for (lag in 0 : 3) {
+      window_total += omega[max(1, t - lag)];
     }
+    gamma_agg[t] = log(window_total);
   }
   
   // Offset between the external all-cause migration index and log(omega), i.e.
@@ -346,15 +338,15 @@ transformed parameters {
   beta_cob[1] = beta_cob_raw[1];
   beta_cob[2 : npars_cob] = beta_cob_raw[2 : npars_cob] * sigma_cob;
   vector[nquar] eta = alpha_cob + 0.5 * (X_cob * beta_cob);
-  vector<lower=0>[nquar] p;
   
-  // Derived compatibility outputs for existing post-processing.
-  matrix<lower=0>[5, nquar] m;
+  // Time-varying born-abroad:UK-born UK-acquired incidence ratio
+  vector<lower=0>[nquar] p = exp(eta);
+  
+  // Arrival flows by latent state (1..4 undiagnosed, 5 transfers of care)
   matrix[5, nquar] omega_m;
   for (t in 1 : nquar) {
     omega_m[1 : 4, t] = undiag_cd4_prop * undiag_migration[t];
     omega_m[5, t] = transfers[t];
-    m[ : , t] = omega_m[ : , t] / omega[t];
   }
   
   // Misclassification model for abroad diagnoses: logit trend in time, plus
@@ -385,9 +377,6 @@ transformed parameters {
   // For each entry time (t0) and age (a0), propagate diagnosis and
   // progression forward, with ageing in diagnosis probabilities.
   for (t0 in 1 : nquar) {
-    // Time-varying born-abroad:UK-born UK-acquired incidence ratio
-    p[t0] = exp(eta[t0]);
-    
     for (a0 in 1 : nage) {
       // UK-born (y = 1) and born abroad (y = 2)
       for (y in 1 : 2) {
@@ -527,14 +516,12 @@ transformed parameters {
         // CD4 composition: include misclassified arrivals for migrants
         {
           vector[4] raw_p = to_vector(exp_diag[t, a, y, 1 : 4]) + 1e-12;
-          // Add misclassified arrivals proportional to m[1:4] (their latent-state
-          // distribution at arrival); otherwise each migrant cell's likelihood
-          // independently pushes detect_prob -> 99% to eliminate the mismatch.
+          // Add misclassified arrivals proportional to undiag_cd4_prop (their
+          // latent-state distribution at arrival); otherwise each migrant cell's
+          // likelihood independently pushes detect_prob -> 99% to eliminate the
+          // mismatch.
           if (y == 2 && misclassified_dx[t, a] > 1e-10) {
-            real total_lat = sum(m[1 : 4, t]);
-            vector[4] m_lat = (total_lat > 1e-10) ? m[1 : 4, t] / total_lat
-                              : rep_vector(0.25, 4);
-            raw_p += misclassified_dx[t, a] * m_lat;
+            raw_p += misclassified_dx[t, a] * undiag_cd4_prop;
           }
           real total_p = sum(raw_p);
           exp_p[t, a, y] = (total_p > 1e-10) ? raw_p / total_p
@@ -745,6 +732,13 @@ model {
   }
 }
 generated quantities {
+  // Arrival proportions by latent state, used by post-processing
+  matrix<lower=0>[5, nquar] m;
+  for (t in 1 : nquar) {
+    m[1 : 4, t] = undiag_cd4_prop * (1 - transfer_share[t]);
+    m[5, t] = transfer_share[t];
+  }
+
   // Log-likelihood contributions for model comparison
   array[nquar, nage, 2] real log_lik;
   vector[nquar] log_lik_abroad;
