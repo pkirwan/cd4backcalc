@@ -30,10 +30,13 @@
 #'   saved checkpoint state.
 #' @return List of posterior predictive quantities and (optionally) the stanfit object.
 #' @examples
+#' \dontrun{
+#' # Requires the cmdstanr package and a CmdStan installation
 #' sim_diags <- simulate_diagnoses(sim_seed = 123)
 #' hiv_list <- run_backcalc(
 #'  sim_diags, iter_warmup = 10, iter_sampling = 10, chains = 1, messages = FALSE, nworkers = 1
 #' )
+#' }
 #' @export
 run_backcalc <- function(
   stan_data,
@@ -134,7 +137,8 @@ run_backcalc <- function(
 #' @return A CmdStanFit object (without checkpointing) or a
 #'   \code{cd4backcalc_combined_fit} object (with checkpointing).
 #' @examples
-#' \donttest{
+#' \dontrun{
+#' # Requires the cmdstanr package and a CmdStan installation
 #' sim_diags <- simulate_diagnoses(sim_seed = 123)
 #' stan_data <- cd4backcalc:::model_type_prep(sim_diags)
 #' fit <- cd4backcalc:::fit_stan_model(
@@ -631,6 +635,43 @@ stan_model_cache_dir <- function() {
   normalizePath(user_cache_dir, winslash = "/", mustWork = FALSE)
 }
 
+#' Check that cmdstanr and CmdStan are available
+#'
+#' `cmdstanr` is not on CRAN, so it is a suggested package rather than a hard
+#' dependency. Model fitting needs both the R package and a CmdStan
+#' installation, so this stops with installation instructions if either is
+#' missing.
+#'
+#' @return `NULL`, invisibly.
+#' @keywords internal
+check_cmdstanr <- function() {
+  if (!requireNamespace("cmdstanr", quietly = TRUE)) {
+    stop(
+      "Fitting models requires the 'cmdstanr' package, which is not on CRAN. ",
+      "Install it with:\n",
+      "  install.packages(\"cmdstanr\", repos = c('https://stan-dev.r-universe.dev', getOption('repos')))\n",
+      "then install CmdStan with cmdstanr::install_cmdstan(). ",
+      "See https://mc-stan.org/cmdstanr/articles/cmdstanr.html",
+      call. = FALSE
+    )
+  }
+  cmdstan_ok <- tryCatch(
+    {
+      cmdstanr::cmdstan_path()
+      TRUE
+    },
+    error = function(e) FALSE
+  )
+  if (!cmdstan_ok) {
+    stop(
+      "CmdStan was not found. Install it with cmdstanr::install_cmdstan(); ",
+      "see https://mc-stan.org/cmdstanr/articles/cmdstanr.html",
+      call. = FALSE
+    )
+  }
+  invisible(NULL)
+}
+
 #' Choose Stan model based on configuration
 #'
 #' This function chooses the appropriate Stan model based on the provided
@@ -640,6 +681,7 @@ stan_model_cache_dir <- function() {
 #' @param config Configuration object containing model settings.
 #' @return The Stan model object (a CmdStanModel).
 load_stan_model <- function(config) {
+  check_cmdstanr()
   name <- if (config$age) {
     if (config$migration && config$rita) {
       "AD_ptens_migration_rita"

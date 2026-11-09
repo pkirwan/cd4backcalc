@@ -4,7 +4,7 @@
 \name{cd4backcalc-package}
 \alias{cd4backcalc}
 \alias{cd4backcalc-package}
-\title{cd4backcalc: CD4 Back-Calculation R Package}
+\title{cd4backcalc: CD4 Back-Calculation of HIV Incidence}
 \description{
 Bayesian, discrete-time, multi-state model used to estimate Human Immunodeficiency Virus (HIV) incidence and undiagnosed prevalence from diagnosis data. Includes utilities for simulation, model fitting, post-processing, and visualisation of key epidemic quantities.
 }
@@ -17,11 +17,11 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Peter Kirwan \email{pdk29@cam.ac.uk} (\href{https://orcid.org/0000-0001-6904-0500}{ORCID}) [copyright holder]
+\strong{Maintainer}: Peter Kirwan \email{peter.kirwan@isglobal.org} (\href{https://orcid.org/0000-0001-6904-0500}{ORCID}) [copyright holder]
 
 Authors:
 \itemize{
-  \item Peter Kirwan \email{pdk29@cam.ac.uk} (\href{https://orcid.org/0000-0001-6904-0500}{ORCID}) [copyright holder]
+  \item Peter Kirwan \email{peter.kirwan@isglobal.org} (\href{https://orcid.org/0000-0001-6904-0500}{ORCID}) [copyright holder]
 }
 
 Other contributors:

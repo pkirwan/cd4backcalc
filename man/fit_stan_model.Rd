@@ -62,7 +62,8 @@ After each chunk a checkpoint is written so that a timed-out SLURM job
 can be resubmitted and will resume from the last completed chunk.
 }
 \examples{
-\donttest{
+\dontrun{
+# Requires the cmdstanr package and a CmdStan installation
 sim_diags <- simulate_diagnoses(sim_seed = 123)
 stan_data <- cd4backcalc:::model_type_prep(sim_diags)
 fit <- cd4backcalc:::fit_stan_model(

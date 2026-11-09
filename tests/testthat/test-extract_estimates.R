@@ -59,7 +59,16 @@ test_that("extract_simulated_quantity correctly extracts values for ai", {
   )
   expect_equal(
     sim_estimates$value[1],
-    stan_data$sim_data$mu[1, 1]
+    stan_data$sim_data$m[1, 1] / sum(stan_data$sim_data$m[1, ])
+  )
+  expected_estimates <- extract_simulated_quantity(
+    stan_data,
+    quantity = "migration_prob",
+    deterministic = TRUE
+  )
+  expect_equal(
+    expected_estimates$value[expected_estimates$strata == "Transfers of care"],
+    stan_data$sim_data$mu[, 5]
   )
   sim_estimates <- extract_simulated_quantity(
     stan_data,

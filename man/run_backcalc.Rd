@@ -83,8 +83,11 @@ List of posterior predictive quantities and (optionally) the stanfit object.
 This function runs the CD4 back-calculation model using Stan and runs the post-processing.
 }
 \examples{
+\dontrun{
+# Requires the cmdstanr package and a CmdStan installation
 sim_diags <- simulate_diagnoses(sim_seed = 123)
 hiv_list <- run_backcalc(
  sim_diags, iter_warmup = 10, iter_sampling = 10, chains = 1, messages = FALSE, nworkers = 1
 )
+}
 }

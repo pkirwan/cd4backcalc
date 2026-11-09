@@ -10,4 +10,8 @@
 ^pkgdown$
 ^tools$
 ^vignettes/articles/figures/.*\.RData$
+^vignettes/articles/figures/.*\.pdf$
+^vignettes/articles/figures/(?!getting-started-).*\.png$
+^vignettes/articles/.*\.Rmd$
+^\.quarto$
 ^src/.*\.(o|obj|dll|so)$

@@ -588,12 +588,13 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
       group = "Generative values"
     )
   } else if (quantity == "migration_prob") {
-    # no recently acquired category in migration prob
+    # Realised proportions of arrivals in each state
+    realised_prop <- sim_data$m / rowSums(sim_data$m)
     out <- tibble::tibble(
       value = if (stan_data$sim_config$rita) {
-        as.vector(sim_data$mu[, 4:ncol(sim_data$mu)])
+        as.vector(realised_prop[, 4:ncol(realised_prop)])
       } else {
-        as.vector(sim_data$mu)
+        as.vector(realised_prop)
       },
       year = rep(seq(0, plot_years, by = 0.25), 5),
       strata = rep(

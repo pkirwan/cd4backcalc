@@ -1,8 +1,8 @@
 Package: cd4backcalc
-Title: CD4 Back-Calculation R Package
-Version: 0.2.3
+Title: CD4 Back-Calculation of HIV Incidence
+Version: 0.2.4
 Authors@R: c(
-    person("Peter", "Kirwan", , "pdk29@cam.ac.uk", role = c("aut", "cre", "cph"),
+    person("Peter", "Kirwan", , "peter.kirwan@isglobal.org", role = c("aut", "cre", "cph"),
            comment = c(ORCID = "0000-0001-6904-0500")),
     person("Paul", "Birrell", role = "ctb"),
     person("Francesco", "Brizzi", role = "ctb")
@@ -16,7 +16,6 @@ Depends:
     R (>= 4.1.0)
 Imports:
     bayesplot,
-    cmdstanr,
     dplyr,
     future,
     future.apply,
@@ -36,6 +35,7 @@ Imports:
     tidyr,
     tidyselect
 Suggests:
+    cmdstanr,
     knitr,
     rmarkdown,
     testthat (>= 3.0.0)

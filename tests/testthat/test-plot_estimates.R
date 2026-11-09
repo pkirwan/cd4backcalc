@@ -235,6 +235,7 @@ test_that("simulated age plots are generated correctly", {
 })
 
 test_that("plots are generated correctly", {
+  skip_if_no_cmdstan()
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123)
   # Fit back-calculation model
@@ -265,6 +266,7 @@ test_that("plots are generated correctly", {
 })
 
 test_that("dual plots are generated correctly", {
+  skip_if_no_cmdstan()
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123)
   # Fit back-calculation model
@@ -331,6 +333,7 @@ test_that("dual plots are generated correctly", {
 })
 
 test_that("chained plots are generated correctly", {
+  skip_if_no_cmdstan()
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123)
   # Fit back-calculation model
@@ -377,6 +380,7 @@ test_that("chain plot colours can be customised", {
 })
 
 test_that("plots are generated correctly for migration model", {
+  skip_if_no_cmdstan()
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 60, sim_seed = 123, migration = TRUE)
   # Fit back-calculation model
@@ -413,6 +417,7 @@ test_that("plots are generated correctly for migration model", {
 })
 
 test_that("plots work for migration model lists", {
+  skip_if_no_cmdstan()
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 60, sim_seed = 123, migration = TRUE)
   # Fit back-calculation model
@@ -459,6 +464,7 @@ test_that("plots work for migration model lists", {
 })
 
 test_that("plots work for rita model lists", {
+  skip_if_no_cmdstan()
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, rita = TRUE)
   # Fit back-calculation model
@@ -493,6 +499,7 @@ test_that("plots work for rita model lists", {
 
 
 test_that("plots work for migration and rita model bias plots", {
+  skip_if_no_cmdstan()
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(
     nquar = 40,
@@ -528,6 +535,7 @@ test_that("plots work for migration and rita model bias plots", {
 })
 
 test_that("plots work for age-dependent model", {
+  skip_if_no_cmdstan()
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 40, sim_seed = 123, age = TRUE)
   # Fit back-calculation model
@@ -564,6 +572,7 @@ test_that("plots work for age-dependent model", {
 })
 
 test_that("plots work for age-dependent rita model", {
+  skip_if_no_cmdstan()
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(
     nquar = 40,
@@ -606,6 +615,7 @@ test_that("plots work for age-dependent rita model", {
 
 
 test_that("start_year and overlay of real values works", {
+  skip_if_no_cmdstan()
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(
     nquar = 40,

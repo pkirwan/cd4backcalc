@@ -1,6 +1,7 @@
 # for local testing use Sys.setenv(CD4BACKCALC_CMDSTAN_DIR = cmdstanr::cmdstan_default_install_path()) to avoid re-compiling the model each time
 
 test_that("cd4-only back-calculation produces a stanfit object", {
+  skip_if_no_cmdstan()
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(sim_seed = 123)
   # Test run_backcalc
@@ -24,6 +25,7 @@ test_that("cd4-only back-calculation produces a stanfit object", {
 })
 
 test_that("run_backcalc accepts user-supplied inits", {
+  skip_if_no_cmdstan()
   stan_data <- simulate_diagnoses(sim_seed = 123)
 
   suppressWarnings({
@@ -60,6 +62,7 @@ test_that("run_backcalc accepts user-supplied inits", {
 })
 
 test_that("back-calculation can cope with missing data", {
+  skip_if_no_cmdstan()
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(sim_seed = 123, cd4_completeness = 0.5)
   # Test run_backcalc
@@ -102,6 +105,7 @@ test_that("back-calculation can cope with missing data", {
 })
 
 test_that("migration back-calculation produces a stanfit object", {
+  skip_if_no_cmdstan()
   stan_data <- simulate_diagnoses(sim_seed = 123, migration = TRUE)
   # Test run_backcalc
   suppressWarnings({
@@ -135,6 +139,7 @@ test_that("migration trend prior scale must be positive", {
 })
 
 test_that("rita back-calculation produces a stanfit object", {
+  skip_if_no_cmdstan()
   stan_data <- simulate_diagnoses(sim_seed = 123, rita = TRUE)
   # Test run_backcalc
   suppressWarnings({
@@ -154,6 +159,7 @@ test_that("rita back-calculation produces a stanfit object", {
 })
 
 test_that("rita data with cd4-only back-calculation produces a stanfit object", {
+  skip_if_no_cmdstan()
   stan_data <- simulate_diagnoses(sim_seed = 123, rita = TRUE)
   stan_data <- sim_remodel(stan_data, rita = FALSE)
   # Test run_backcalc
@@ -176,6 +182,7 @@ test_that("rita data with cd4-only back-calculation produces a stanfit object", 
 
 
 test_that("age-specific back-calculation runs without error", {
+  skip_if_no_cmdstan()
   stan_data <- simulate_diagnoses(sim_seed = 123, nquar = 40, age = TRUE)
   # Test run_backcalc
   suppressWarnings({
@@ -195,6 +202,7 @@ test_that("age-specific back-calculation runs without error", {
 })
 
 test_that("age-specific rita back-calculation runs without error", {
+  skip_if_no_cmdstan()
   stan_data <- simulate_diagnoses(
     sim_seed = 123,
     nquar = 40,
@@ -219,6 +227,7 @@ test_that("age-specific rita back-calculation runs without error", {
 })
 
 test_that("age-specific migration back-calculation runs without error", {
+  skip_if_no_cmdstan()
   stan_data <- simulate_diagnoses(
     sim_seed = 123,
     nquar = 40,
@@ -247,6 +256,7 @@ test_that("age-specific migration back-calculation runs without error", {
 })
 
 test_that("age-specific migration and rita back-calculation runs without error", {
+  skip_if_no_cmdstan()
   stan_data <- simulate_diagnoses(
     sim_seed = 123,
     nquar = 40,

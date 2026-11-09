@@ -31,6 +31,10 @@ load_saved_models <- TRUE
 readme_out_dir <- file.path("man", "figures")
 dir.create(readme_out_dir, recursive = TRUE, showWarnings = FALSE)
 
+# PNG resolution. 160 dpi keeps figures sharp at article width while keeping
+# the vignette (which embeds these PNGs) within CRAN's 5 MB tarball limit.
+png_dpi <- 160
+
 iter_warmup <- as.integer(Sys.getenv("CD4BC_ITER_WARMUP", "1000"))
 iter_sampling <- as.integer(Sys.getenv("CD4BC_ITER_SAMPLING", "1000"))
 chains <- as.integer(Sys.getenv("CD4BC_CHAINS", "4"))
@@ -52,7 +56,7 @@ fit_args_age <- list(
   model_seed = 123
 )
 
-save_plot <- function(plot_obj, name, width = 8, height = 4.8, dpi = 320) {
+save_plot <- function(plot_obj, name, width = 8, height = 4.8, dpi = png_dpi) {
   png_path <- file.path(out_dir, paste0(name, ".png"))
   pdf_path <- file.path(out_dir, paste0(name, ".pdf"))
 
@@ -74,7 +78,7 @@ save_readme_plot <- function(
   name,
   width = 10,
   height = 6,
-  dpi = 320
+  dpi = png_dpi
 ) {
   png_path <- file.path(readme_out_dir, paste0(name, ".png"))
 

@@ -1,4 +1,5 @@
 test_that("cd4-only post-processing works", {
+  skip_if_no_cmdstan()
   # Simulate diagnoses
   sim_diags <- simulate_diagnoses(
     nquar = 60,
@@ -62,6 +63,7 @@ test_that("post-processing indexes active incidence draws", {
 })
 
 test_that("migration post-processing works", {
+  skip_if_no_cmdstan()
   # Simulate diagnoses
   sim_diags <- simulate_diagnoses(
     nquar = 60,
@@ -180,6 +182,7 @@ test_that("RITA forward calculation transitions initial prevalence at quarter 1"
 })
 
 test_that("rita post-processing works", {
+  skip_if_no_cmdstan()
   # Simulate diagnoses
   sim_diags <- simulate_diagnoses(
     nquar = 60,
@@ -212,6 +215,7 @@ test_that("rita post-processing works", {
 })
 
 test_that("migration and rita post-processing works", {
+  skip_if_no_cmdstan()
   # Simulate diagnoses
   sim_diags <- simulate_diagnoses(
     nquar = 60,
@@ -245,6 +249,7 @@ test_that("migration and rita post-processing works", {
 })
 
 test_that("age-specific post-processing works", {
+  skip_if_no_cmdstan()
   sim_diags <- simulate_diagnoses(
     sim_seed = 123,
     nquar = 40,
@@ -280,6 +285,7 @@ test_that("age-specific post-processing works", {
 })
 
 test_that("age-specific rita post-processing works", {
+  skip_if_no_cmdstan()
   sim_diags <- simulate_diagnoses(
     sim_seed = 123,
     nquar = 40,
@@ -313,6 +319,7 @@ test_that("age-specific rita post-processing works", {
 })
 
 test_that("age-specific migration model fit works", {
+  skip_if_no_cmdstan()
   sim_diags <- simulate_diagnoses(
     sim_seed = 123,
     nquar = 40,
@@ -348,6 +355,7 @@ test_that("age-specific migration model fit works", {
 })
 
 test_that("age-specific rita migration model fit works", {
+  skip_if_no_cmdstan()
   sim_diags <- simulate_diagnoses(
     sim_seed = 123,
     nquar = 40,

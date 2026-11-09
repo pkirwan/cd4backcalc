@@ -1,4 +1,5 @@
 test_that("save_checkpoint / load_checkpoint round-trips correctly", {
+  skip_if_no_cmdstan()
   sim_diags <- simulate_diagnoses(sim_seed = 42)
   stan_data <- model_type_prep(sim_diags, model_seed = 42)
   checkpoint_dir <- file.path(tempdir(), "cp_roundtrip")
@@ -45,6 +46,7 @@ test_that("load_checkpoint returns NULL when no checkpoint exists", {
 # ---- create_stan_inits ----
 
 test_that("create_stan_inits returns one init list per chain", {
+  skip_if_no_cmdstan()
   sim_diags <- simulate_diagnoses(sim_seed = 42)
   stan_data <- model_type_prep(sim_diags, model_seed = 42)
   suppressWarnings({
@@ -71,6 +73,7 @@ test_that("create_stan_inits returns one init list per chain", {
 # ---- fit_stan_model with checkpointing ----
 
 test_that("fit_stan_model with checkpoint_dir produces valid fit", {
+  skip_if_no_cmdstan()
   sim_diags <- simulate_diagnoses(sim_seed = 42)
   stan_data <- model_type_prep(sim_diags, model_seed = 42)
   checkpoint_dir <- file.path(tempdir(), "cp_fit_test")
@@ -108,6 +111,7 @@ test_that("fit_stan_model with checkpoint_dir produces valid fit", {
 })
 
 test_that("checkpointed fit works with postproc", {
+  skip_if_no_cmdstan()
   sim_diags <- simulate_diagnoses(sim_seed = 42)
   stan_data <- model_type_prep(sim_diags, model_seed = 42)
   checkpoint_dir <- file.path(tempdir(), "cp_postproc_test")
@@ -133,6 +137,7 @@ test_that("checkpointed fit works with postproc", {
 # ---- Resumption ----
 
 test_that("fit_stan_model resumes from a checkpoint", {
+  skip_if_no_cmdstan()
   sim_diags <- simulate_diagnoses(sim_seed = 42)
   stan_data <- model_type_prep(sim_diags, model_seed = 42)
   checkpoint_dir <- file.path(tempdir(), "cp_resume_test")
@@ -181,6 +186,7 @@ test_that("fit_stan_model resumes from a checkpoint", {
 # ---- run_backcalc with checkpointing (end-to-end) ----
 
 test_that("run_backcalc with checkpointing produces full results", {
+  skip_if_no_cmdstan()
   sim_diags <- simulate_diagnoses(sim_seed = 42)
   stan_data <- model_type_prep(sim_diags, model_seed = 42)
   checkpoint_dir <- file.path(tempdir(), "cp_e2e_test")
@@ -211,6 +217,7 @@ test_that("run_backcalc with checkpointing produces full results", {
 # ---- Single chunk returns CmdStanMCMC directly ----
 
 test_that("checkpoint with single chunk returns CmdStanMCMC", {
+  skip_if_no_cmdstan()
   sim_diags <- simulate_diagnoses(sim_seed = 42)
   stan_data <- model_type_prep(sim_diags, model_seed = 42)
   checkpoint_dir <- file.path(tempdir(), "cp_single_chunk")

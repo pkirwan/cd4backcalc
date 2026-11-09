@@ -10,7 +10,8 @@
 #' @param chain_results Logical indicating whether to return results by chain.
 #' @return List of posterior predictive quantities.
 #' @examples
-#' \donttest{
+#' \dontrun{
+#' # Requires the cmdstanr package and a CmdStan installation
 #' sim_diags <- simulate_diagnoses(sim_seed = 123)
 #' stan_data <- cd4backcalc:::model_type_prep(sim_diags, model_seed = 123)
 #' fit <- cd4backcalc:::fit_stan_model(

@@ -1,4 +1,5 @@
 test_that("mse_list and plots are generated correctly", {
+  skip_if_no_cmdstan()
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 60, sim_seed = 123)
   # Fit back-calculation model
@@ -83,6 +84,7 @@ test_that("make_mse_list uses posterior means and fit-specific truths", {
 })
 
 test_that("mse_list and plots are generated correctly for dual fits", {
+  skip_if_no_cmdstan()
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 60, sim_seed = 123)
   # Fit back-calculation model
@@ -120,6 +122,7 @@ test_that("mse_list and plots are generated correctly for dual fits", {
 })
 
 test_that("mse_list and plots are generated correctly for migration model", {
+  skip_if_no_cmdstan()
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 60, sim_seed = 123, migration = TRUE)
   # Fit back-calculation model
@@ -143,6 +146,7 @@ test_that("mse_list and plots are generated correctly for migration model", {
 })
 
 test_that("mse_list and plots work for lists", {
+  skip_if_no_cmdstan()
   # Simulate diagnoses
   stan_data <- simulate_diagnoses(nquar = 60, sim_seed = 123, rita = TRUE)
   # Fit back-calculation model
