@@ -2,13 +2,12 @@
 
 Each pattern combines a time-varying transfer share with a time-constant
 conditional CD4 composition among undiagnosed arrivals, matching the
-Stan model parameterisation. With `dist = TRUE`, smooth temporal
-variation is added to the transfer share on the logit scale.
+Stan model parameterisation.
 
 ## Usage
 
 ``` r
-generate_mu(nquar, nlatst, pattern, dist = FALSE)
+generate_mu(nquar, nlatst, pattern)
 ```
 
 ## Arguments
@@ -24,10 +23,6 @@ generate_mu(nquar, nlatst, pattern, dist = FALSE)
 - pattern:
 
   Pattern type for mu ("constant", "differing", or "varying").
-
-- dist:
-
-  Logical indicating whether to add logit-scale temporal variation.
 
 ## Value
 

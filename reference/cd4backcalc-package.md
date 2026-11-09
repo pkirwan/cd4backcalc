@@ -1,4 +1,4 @@
-# cd4backcalc: CD4 Back-Calculation R Package
+# cd4backcalc: CD4 Back-Calculation of HIV Incidence
 
 Bayesian, discrete-time, multi-state model used to estimate Human
 Immunodeficiency Virus (HIV) incidence and undiagnosed prevalence from
@@ -15,12 +15,12 @@ Useful links:
 
 ## Author
 
-**Maintainer**: Peter Kirwan <pdk29@cam.ac.uk>
+**Maintainer**: Peter Kirwan <peter.kirwan@isglobal.org>
 ([ORCID](https://orcid.org/0000-0001-6904-0500)) \[copyright holder\]
 
 Authors:
 
-- Peter Kirwan <pdk29@cam.ac.uk>
+- Peter Kirwan <peter.kirwan@isglobal.org>
   ([ORCID](https://orcid.org/0000-0001-6904-0500)) \[copyright holder\]
 
 Other contributors:

@@ -88,14 +88,12 @@ A CmdStanFit object (without checkpointing) or a
 ## Examples
 
 ``` r
-# \donttest{
+if (FALSE) { # \dontrun{
+# Requires the cmdstanr package and a CmdStan installation
 sim_diags <- simulate_diagnoses(sim_seed = 123)
 stan_data <- cd4backcalc:::model_type_prep(sim_diags)
 fit <- cd4backcalc:::fit_stan_model(
  stan_data, iter_warmup = 10, iter_sampling = 10, chains = 1, refresh = 0, messages = FALSE
 )
-#> CmdStan model cache dir: /tmp/Rtmpo4yZY3/cd4backcalc-cmdstan
-#> R tempdir(): /tmp/Rtmpo4yZY3
-#> Error: CmdStan path has not been set yet. See ?set_cmdstan_path.
-# }
+} # }
 ```

@@ -1,5 +1,17 @@
 # Changelog
 
+## Changes in v0.2.4
+
+#### Improvements
+
+- Optimised Stan models by moving migration probability calculations
+  outside of loop.
+- Matched Stan models by removing AR(1) process from simulated migration
+  probabilities.
+- `cmdstanr` is now a suggested rather than required package, as it is
+  not on CRAN.
+- Package size reduced to under 5 MB and vignette figures regenerated.
+
 ## Changes in v0.2.3
 
 #### Improvements

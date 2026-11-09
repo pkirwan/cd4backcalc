@@ -129,11 +129,11 @@ object.
 ## Examples
 
 ``` r
+if (FALSE) { # \dontrun{
+# Requires the cmdstanr package and a CmdStan installation
 sim_diags <- simulate_diagnoses(sim_seed = 123)
 hiv_list <- run_backcalc(
  sim_diags, iter_warmup = 10, iter_sampling = 10, chains = 1, messages = FALSE, nworkers = 1
 )
-#> CmdStan model cache dir: /tmp/Rtmpo4yZY3/cd4backcalc-cmdstan
-#> R tempdir(): /tmp/Rtmpo4yZY3
-#> Error: CmdStan path has not been set yet. See ?set_cmdstan_path.
+} # }
 ```

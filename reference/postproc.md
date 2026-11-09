@@ -38,7 +38,8 @@ List of posterior predictive quantities.
 ## Examples
 
 ``` r
-# \donttest{
+if (FALSE) { # \dontrun{
+# Requires the cmdstanr package and a CmdStan installation
 sim_diags <- simulate_diagnoses(sim_seed = 123)
 stan_data <- cd4backcalc:::model_type_prep(sim_diags, model_seed = 123)
 fit <- cd4backcalc:::fit_stan_model(
@@ -49,10 +50,6 @@ fit <- cd4backcalc:::fit_stan_model(
    refresh = 0,
    messages = FALSE
 )
-#> CmdStan model cache dir: /tmp/Rtmpo4yZY3/cd4backcalc-cmdstan
-#> R tempdir(): /tmp/Rtmpo4yZY3
-#> Error: CmdStan path has not been set yet. See ?set_cmdstan_path.
 hiv_list <- cd4backcalc:::postproc(fit, stan_data, start_yr = 0, nworkers = 1)
-#> Error: object 'fit' not found
-# }
+} # }
 ```
