@@ -263,6 +263,38 @@ test_that("age-specific migration simulation with gamma produces expected extern
   )
 })
 
+test_that("undiag_age_disc shifts the undiagnosed arrival age composition only", {
+  base <- simulate_diagnoses(
+    sim_seed = 123,
+    dist = FALSE,
+    age = TRUE,
+    migration = TRUE,
+    sim_type = "combo_3"
+  )
+  disc <- simulate_diagnoses(
+    sim_seed = 123,
+    dist = FALSE,
+    age = TRUE,
+    migration = TRUE,
+    sim_type = "combo_3",
+    undiag_age_disc = c(-0.5, -0.5, 0.5, 0.5)
+  )
+  expect_equal(disc$sim_data$omega, base$sim_data$omega)
+  expect_equal(
+    rowSums(disc$sim_data$omega_age),
+    rowSums(base$sim_data$omega_age)
+  )
+  expect_equal(disc$stan_data$ABROAD_group, base$stan_data$ABROAD_group)
+  expect_false(isTRUE(all.equal(
+    disc$sim_data$omega_age,
+    base$sim_data$omega_age
+  )))
+  expect_error(
+    simulate_diagnoses(age = TRUE, migration = TRUE, undiag_age_disc = 0.5),
+    "length 4"
+  )
+})
+
 test_that("gamma_obs_grouped vector controls grouped external migration by quarter", {
   gamma_grouped_schedule <- c(rep(FALSE, 20), rep(TRUE, 20), rep(FALSE, 20))
   sim_diags <- simulate_diagnoses(

@@ -535,10 +535,10 @@ confirm_stan_data <- function(stan_data) {
     )
     if (isTRUE(stan_data$model_config$migration)) {
       stopifnot(
-        "abroad_group_weight must be a single non-negative number" =
-          length(stan_data$abroad_group_weight) == 1L &&
-          is.finite(stan_data$abroad_group_weight) &&
-          stan_data$abroad_group_weight >= 0
+        "abroad_age_disc_scale must be a single non-negative number" =
+          length(stan_data$abroad_age_disc_scale) == 1L &&
+          is.finite(stan_data$abroad_age_disc_scale) &&
+          stan_data$abroad_age_disc_scale >= 0
       )
     }
   } else if (stan_data$model_config$age) {
@@ -1014,16 +1014,11 @@ model_type_prep <- function(
         matrix(0L, nrow = stan_data$nyear, ncol = 4L)
       }
     }
-    # All age-dependent migration models use ABROAD_group to inform the same
-    # age-composition parameter as the diagnosis likelihood.
+    # ABROAD_group informs the composition of previously diagnosed arrivals;
+    # undiagnosed arrivals differ from it by a discrepancy with this prior SD.
     if (isTRUE(age)) {
-      # Puts ABROAD_group's direct age signal on comparable footing with the
-      # much larger migrant HIV_age/CD4_age likelihood sharing the same
-      # age-composition parameter, rather than requiring a manually-chosen
-      # weight.
-      if (is.null(stan_data$abroad_group_weight)) {
-        stan_data$abroad_group_weight <-
-          sum(stan_data$HIV_age[, , 2]) / sum(stan_data$ABROAD_group)
+      if (is.null(stan_data$abroad_age_disc_scale)) {
+        stan_data$abroad_age_disc_scale <- 0.3
       }
     }
   }

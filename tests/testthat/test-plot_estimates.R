@@ -646,12 +646,14 @@ test_that("start_year and overlay of real values works", {
   p4 <- plot_estimates(hiv_list, "transfers_detected", start_year = 2000)
   p5 <- plot_estimates(hiv_list, "migrant_hiv_prevalence", start_year = 2000)
   p6 <- plot_estimates(hiv_list, "alpha_diag_mig", start_year = 2000)
+  p7 <- plot_estimates(hiv_list, "abroad_age_disc", start_year = 2000)
   expect_s3_class(p1, "ggplot")
   expect_s3_class(p2, "ggplot")
   expect_s3_class(p3, "ggplot")
   expect_s3_class(p4, "ggplot")
   expect_s3_class(p5, "ggplot")
   expect_s3_class(p6, "ggplot")
+  expect_s3_class(p7, "ggplot")
 })
 
 test_that("observed values align with calendar-year estimates", {

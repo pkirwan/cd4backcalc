@@ -64,6 +64,10 @@
 #'   multiplicatively with \code{cd4_completeness} (a recorded CD4 value is
 #'   also required) to give the overall completeness of the recent-arrival
 #'   CD4 auxiliary data. Set to 0 to disable.
+#' @param undiag_age_disc Numeric vector of length 4: log-ratio shift in the
+#'   age-group shares of arrivals with undiagnosed HIV relative to arrivals
+#'   previously diagnosed abroad (only differences between groups matter);
+#'   \code{rep(0, 4)} = same age composition.
 #' @return Configuration list.
 #' @keywords internal
 define_sim_config <- function(
@@ -101,7 +105,8 @@ define_sim_config <- function(
   detect_step_size = 0, # logit-scale size of that step
   gamma_obs_scale_trend = 0, # log-scale drift in gamma_obs_scale
   gamma_obs_drift_sd = 0.02, # quarterly log-scale random-walk innovation sd
-  recent_arrival_completeness = 0
+  recent_arrival_completeness = 0,
+  undiag_age_disc = rep(0, 4) # log-ratio age-composition shift of undiagnosed arrivals
 ) {
   if (rita) {
     nlatst <- 7
@@ -175,6 +180,9 @@ define_sim_config <- function(
   ) {
     stop("recent_arrival_completeness must be a number between 0 and 1.")
   }
+  if (length(undiag_age_disc) != 4L || any(!is.finite(undiag_age_disc))) {
+    stop("undiag_age_disc must be a finite numeric vector of length 4.")
+  }
   if (
     length(gamma_obs_drift_sd) != 1L ||
       !is.finite(gamma_obs_drift_sd) ||
@@ -233,7 +241,8 @@ define_sim_config <- function(
     detect_step_size = detect_step_size,
     gamma_obs_scale_trend = gamma_obs_scale_trend,
     gamma_obs_drift_sd = gamma_obs_drift_sd,
-    recent_arrival_completeness = recent_arrival_completeness
+    recent_arrival_completeness = recent_arrival_completeness,
+    undiag_age_disc = as.numeric(undiag_age_disc)
   )
 
   if (!is.null(sim_type)) {
@@ -630,6 +639,10 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #'   multiplicatively with \code{cd4_completeness} (a recorded CD4 value is
 #'   also required) to give the overall completeness of the recent-arrival
 #'   CD4 auxiliary data. Set to 0 to disable.
+#' @param undiag_age_disc Numeric vector of length 4: log-ratio shift in the
+#'   age-group shares of arrivals with undiagnosed HIV relative to arrivals
+#'   previously diagnosed abroad (only differences between groups matter);
+#'   \code{rep(0, 4)} = same age composition.
 #' @return List containing simulated epidemic data.
 #' @examples
 #' simulate_diagnoses()
@@ -671,7 +684,8 @@ simulate_diagnoses <- function(
   detect_step_size = 0, # logit-scale size of that step
   gamma_obs_scale_trend = 0, # log-scale drift in gamma_obs_scale
   gamma_obs_drift_sd = 0.02, # quarterly log-scale random-walk innovation sd
-  recent_arrival_completeness = 0
+  recent_arrival_completeness = 0,
+  undiag_age_disc = rep(0, 4) # log-ratio age-composition shift of undiagnosed arrivals
 ) {
   sim_config <- define_sim_config(
     h_pattern,
@@ -708,7 +722,8 @@ simulate_diagnoses <- function(
     detect_step_size,
     gamma_obs_scale_trend,
     gamma_obs_drift_sd,
-    recent_arrival_completeness
+    recent_arrival_completeness,
+    undiag_age_disc
   )
   set.seed(sim_config$sim_seed)
 
@@ -945,20 +960,35 @@ simulate_diagnoses <- function(
     agedist_abroad <- agedist_abroad * exp(group_trend[, age_group_lookup_r])
     agedist_abroad <- agedist_abroad / rowSums(agedist_abroad)
   }
+  # Undiagnosed arrivals differ from previously diagnosed arrivals by a
+  # log-ratio shift per age group
+  agedist_abroad_undiag <- sweep(
+    agedist_abroad,
+    2,
+    exp(sim_config$undiag_age_disc[age_group_lookup_r]),
+    "*"
+  )
+  agedist_abroad_undiag <- agedist_abroad_undiag /
+    rowSums(agedist_abroad_undiag)
   m_age <- array(
     0,
     dim = c(sim_config$nage, sim_config$nquar, (sim_config$nlatst + 1))
   )
   for (i in 1:(sim_config$nlatst + 1)) {
-    m_age[,, i] <- t(m[, i] * agedist_abroad)
+    m_age[,, i] <- t(
+      m[, i] *
+        (if (i <= sim_config$nlatst) agedist_abroad_undiag else agedist_abroad)
+    )
   }
   lat_init_abroad_age <- round_preserve(outer(
-    agedist_abroad[1, ],
+    agedist_abroad_undiag[1, ],
     lat_init_abroad
   ))
 
   # Useful to store omega by age for diagnostics
-  omega_age <- omega * agedist_abroad
+  omega_age <- omega * agedist_abroad +
+    rowSums(m[, seq_len(sim_config$nlatst), drop = FALSE]) *
+      (agedist_abroad_undiag - agedist_abroad)
 
   # Split compartment 5 (total diagnosed migrants) into detected (ABROAD) and
   # misclassified, matching the Stan model's misclassification decomposition:
@@ -1300,7 +1330,17 @@ simulate_diagnoses <- function(
     )
 
     if (any(sim_config$gamma_obs_grouped)) {
-      omega_age_trend <- sweep(agedist_abroad, 1, omega_trend, "*")
+      omega_age_total <- rowSums(omega_age)
+      omega_age_trend <- sweep(
+        if (all(omega_age_total > 0)) {
+          omega_age / omega_age_total
+        } else {
+          agedist_abroad
+        },
+        1,
+        omega_trend,
+        "*"
+      )
       omega_group_trend <- matrix(0, nrow = sim_config$nquar, ncol = 4L)
       for (ag in 1:4) {
         idx <- which(age_group_lookup_r == ag)

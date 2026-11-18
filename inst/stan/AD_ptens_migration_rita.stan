@@ -17,11 +17,10 @@ data {
   array[nquar] int<lower=0> ABROAD;           // quarterly total detected abroad diagnoses
   array[nquar, 4] int<lower=0> ABROAD_group;  // grouped by diagnosis age group
 
-  // Replication weight on ABROAD_group's multinomial likelihood, offsetting its
-  // otherwise small influence vs. the much larger migrant HIV_age/CD4_age
-  // likelihood on the same age-composition parameter. Default (set in
-  // model_type_prep()): sum(HIV_age[,,2]) / sum(ABROAD_group). 1 = no reweighting.
-  real<lower=0> abroad_group_weight;
+  // Prior SD of the log-ratio discrepancy between the age composition of
+  // undiagnosed arrivals and of arrivals previously diagnosed abroad.
+  // Small values approach a single shared composition.
+  real<lower=0> abroad_age_disc_scale;
 
   // Annual numerator and auxiliary-observed non-recent risk set by age/state
   int<lower=1> nyear;
@@ -150,8 +149,12 @@ parameters {
 
   // Age composition of the born-abroad inflow on the 4 diagnosis age groups,
   // as a softmax with a linear time trend (reference group = 45+).
+  // Composition of arrivals previously diagnosed abroad, informed by ABROAD_group.
   vector[3] alpha_abroad_age;
   vector[3] beta_abroad_age;
+  // Time-constant log-ratio discrepancy of undiagnosed arrivals from it
+  // (sums to zero so no age group is privileged)
+  sum_to_zero_vector[4] abroad_age_disc_raw;
   // Diagnosis probability parameters (AR(1)): 1 recent + 4 non-recent CD4 states
   vector[nquar] delta_raw_1;
   vector[nquar] delta_raw_2;
@@ -248,10 +251,15 @@ transformed parameters {
     }
   }
   
-  // Age distribution for allocating born-abroad flows by age; group-level
+  // Age distributions for allocating born-abroad flows by age; group-level
   // composition is expanded uniformly within each decade band (divide by
-  // age_group_size) so per-age values sum to 1.
+  // age_group_size) so per-age values sum to 1. _diag: previously diagnosed
+  // abroad; _undiag / abroad_age_prop: undiagnosed arrivals, which differ by
+  // the discrepancy (abroad_age_prop is the name read by post-processing).
+  vector[4] abroad_age_disc = abroad_age_disc_scale * abroad_age_disc_raw;
   matrix<lower=0, upper=1>[nquar, 4] abroad_age_group_prop;
+  matrix<lower=0, upper=1>[nquar, 4] abroad_age_group_prop_undiag;
+  matrix<lower=0, upper=1>[nquar, nage] abroad_age_prop_diag;
   matrix<lower=0, upper=1>[nquar, nage] abroad_age_prop;
   matrix[nquar, 4] gamma_agg_group;
   for (t in 1 : nquar) {
@@ -259,19 +267,29 @@ transformed parameters {
     logits_age[1 : 3] = alpha_abroad_age + beta_abroad_age * t_std[t];
     logits_age[4] = 0; // reference category
     abroad_age_group_prop[t,  : ] = softmax(logits_age)';
+    logits_age += abroad_age_disc;
+    abroad_age_group_prop_undiag[t,  : ] = softmax(logits_age)';
   }
   for (t in 1 : nquar) {
     for (a in 1 : nage) {
-      abroad_age_prop[t, a] = abroad_age_group_prop[t, age_group_lookup[a]]
-                              / age_group_size[age_group_lookup[a]];
+      abroad_age_prop_diag[t, a]
+        = abroad_age_group_prop[t, age_group_lookup[a]]
+          / age_group_size[age_group_lookup[a]];
+      abroad_age_prop[t, a]
+        = abroad_age_group_prop_undiag[t, age_group_lookup[a]]
+          / age_group_size[age_group_lookup[a]];
     }
   }
+  // External index covers all arrivals: mixture of the two compositions
   for (ag in 1 : 4) {
     for (t in 1 : nquar) {
       real group_total = 0;
       for (lag in 0 : 3) {
         int quarter = max(1, t - lag);
-        group_total += omega[quarter] * abroad_age_group_prop[quarter, ag];
+        group_total += transfers[quarter]
+                       * abroad_age_group_prop[quarter, ag]
+                       + undiag_migration[quarter]
+                         * abroad_age_group_prop_undiag[quarter, ag];
       }
       gamma_agg_group[t, ag] = log(group_total);
     }
@@ -381,7 +399,7 @@ transformed parameters {
     detect_prob[t] = inv_logit(detect_logit[t]);
     exp_ABROAD_dx[t] = transfers[t] * detect_prob[t];
     misclassified_dx[t,  : ] = transfers[t] * (1 - detect_prob[t])
-                               * abroad_age_prop[t,  : ];
+                               * abroad_age_prop_diag[t,  : ];
   }
   
   // Expected diagnoses by (t, a, y) and diagnosed state: 1 recent HIV,
@@ -672,13 +690,13 @@ model {
   beta_share_raw ~ std_normal();
   log_sigma_share ~ normal(-1, 0.5);
 
-  // Age composition of previous diagnoses abroad, with a linear time trend
+  // Age composition of previous diagnoses abroad, with a linear time trend;
+  // the discrepancy scale is specified, not estimated
   alpha_abroad_age ~ normal(0, 1.5);
   beta_abroad_age ~ std_normal();
+  abroad_age_disc_raw ~ std_normal();
   for (t in 1 : nquar) {
-    target += abroad_group_weight
-              * multinomial_lpmf(ABROAD_group[t]
-                                 | to_vector(abroad_age_group_prop[t,  : ]));
+    ABROAD_group[t] ~ multinomial(to_vector(abroad_age_group_prop[t,  : ]));
   }
   
   // Diagnosis priors centred on empirical range midpoints:
@@ -823,10 +841,9 @@ generated quantities {
   
   for (t in 1 : nquar) {
     log_lik_abroad[t] = poisson_lpmf(ABROAD[t] | exp_ABROAD_dx[t])
-                        + abroad_group_weight
-                          * multinomial_lpmf(ABROAD_group[t]
-                                             | to_vector(
-                                                abroad_age_group_prop[t,  : ]));
+                        + multinomial_lpmf(ABROAD_group[t]
+                                           | to_vector(
+                                              abroad_age_group_prop[t,  : ]));
     
     for (y in 1 : 2) {
       // a == 1 is omitted from the sampling likelihood, so its log-lik

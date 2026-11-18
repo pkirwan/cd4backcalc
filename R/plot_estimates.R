@@ -150,8 +150,9 @@ plot_simulations <- function(
 #'   "incidence", "incidence_cob", "undiag_prev", "undiag_migration",
 #'   "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers",
 #'   "transfers_detected", "ratio_abroad_uk", "detect_prob",
-#'   "migrant_hiv_prevalence", and "alpha_diag_mig" (the scalar born-abroad
-#'   diagnosis offset).
+#'   "migrant_hiv_prevalence", "alpha_diag_mig" (the scalar born-abroad
+#'   diagnosis offset), and "abroad_age_disc" (the age-composition discrepancy
+#'   of undiagnosed arrivals, with any simulated truth).
 #' @param start_year An integer offset added to the stored estimate years for
 #'   the x-axis (default is 0). Leave this at 0 when estimates already contain
 #'   calendar years.
@@ -259,6 +260,40 @@ plot_estimates <- function(
       plot_title,
       start_year,
       credible_intervals,
+      if (sim_comparison == "sampled") {
+        "Sampled values"
+      } else {
+        "Generative values"
+      }
+    ))
+  }
+
+  if (quantity == "abroad_age_disc") {
+    simulated <- if ("sim_data" %in% names(hiv_list[[1]])) {
+      disc <- hiv_list[[1]]$stan_data$sim_config$undiag_age_disc
+      if (is.null(disc)) {
+        disc <- rep(0, 4)
+      }
+      # Softmax shifts are identified up to a constant: compare centred values
+      tibble::tibble(
+        age_band = c("15-24", "25-34", "35-44", "45+"),
+        value = disc - mean(disc)
+      )
+    }
+    model_groups <- unique(quantiles$group)
+    return(plot_abroad_age_disc_estimates(
+      quantiles,
+      simulated,
+      plot_title,
+      credible_intervals,
+      make_model_colors(
+        model_groups,
+        chain_results = chain_results,
+        has_second_model = !is.null(hiv_list_2),
+        model_1_name = model_1_name,
+        model_2_name = model_2_name,
+        colours = colours
+      ),
       if (sim_comparison == "sampled") {
         "Sampled values"
       } else {
@@ -683,6 +718,85 @@ plot_incidence_cob_estimates <- function(
     )
 }
 
+plot_abroad_age_disc_estimates <- function(
+  estimates,
+  simulated,
+  plot_title,
+  credible_intervals,
+  model_colors,
+  simulated_label
+) {
+  dodge <- ggplot2::position_dodge(width = 0.5)
+  age_bands <- c("15-24", "25-34", "35-44", "45+")
+  estimates <- estimates |>
+    dplyr::mutate(age_band = factor(.data$age_band, levels = age_bands))
+
+  p <- ggplot2::ggplot(
+    estimates,
+    ggplot2::aes(
+      x = .data$age_band,
+      y = .data$`50%`,
+      color = .data$group,
+      group = interaction(.data$group, .data$iteration)
+    )
+  ) +
+    ggplot2::geom_hline(
+      yintercept = 0,
+      linetype = "dotted",
+      color = "grey50"
+    )
+
+  if (credible_intervals) {
+    p <- p +
+      ggplot2::geom_pointrange(
+        ggplot2::aes(ymin = .data$`2.5%`, ymax = .data$`97.5%`),
+        position = dodge
+      )
+  } else {
+    p <- p + ggplot2::geom_point(size = 2.5, position = dodge)
+  }
+
+  linetypes <- character()
+  if (!is.null(simulated)) {
+    simulated <- simulated |>
+      dplyr::mutate(
+        age_band = factor(.data$age_band, levels = age_bands),
+        label = simulated_label
+      )
+    p <- p +
+      ggplot2::geom_segment(
+        data = simulated,
+        ggplot2::aes(
+          x = as.numeric(.data$age_band) - 0.3,
+          xend = as.numeric(.data$age_band) + 0.3,
+          y = .data$value,
+          yend = .data$value,
+          linetype = .data$label
+        ),
+        inherit.aes = FALSE,
+        color = "gray30"
+      )
+    linetypes <- stats::setNames("dashed", simulated_label)
+  }
+
+  p <- p +
+    ggplot2::scale_color_manual(values = model_colors, name = "") +
+    ggplot2::labs(
+      title = plot_title,
+      x = "Age group",
+      y = "Log-ratio vs previously diagnosed arrivals"
+    ) +
+    ggplot2::theme_classic() +
+    ggplot2::theme(
+      legend.position = "bottom",
+      panel.grid.major.y = ggplot2::element_line(color = "grey80")
+    )
+  if (length(linetypes) > 0) {
+    p <- p + ggplot2::scale_linetype_manual(values = linetypes, name = "")
+  }
+  p
+}
+
 plot_alpha_diag_mig_estimates <- function(
   estimates,
   simulated,
@@ -918,6 +1032,8 @@ get_plot_title <- function(quantity) {
     "HIV diagnosis probabilities (born abroad), by CD4 strata and age group"
   } else if (quantity == "alpha_diag_mig") {
     "born-abroad diagnosis offset (shared across CD4 strata, age and time)"
+  } else if (quantity == "abroad_age_disc") {
+    "age-composition discrepancy of undiagnosed arrivals"
   } else if (quantity == "incidence_trend") {
     "HIV incidence trend by age group"
   } else if (quantity == "peak_incidence") {

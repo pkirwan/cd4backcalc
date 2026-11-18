@@ -1,5 +1,10 @@
 # Changelog
 
+# Changes in v0.2.5
+
+- Age-specific migration models now allow arrivals with undiagnosed HIV to differ in age composition from arrivals previously diagnosed abroad, via a sum-to-zero log-ratio discrepancy with prior SD `stan_data$abroad_age_disc_scale` (default 0.3).
+- New `plot_estimates(quantity = "abroad_age_disc")` summarises the posterior discrepancy by age group.
+
 # Changes in v0.2.4
 
 ### Improvements

@@ -244,7 +244,8 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
       detect_step_size = sim_config$detect_step_size,
       gamma_obs_scale_trend = sim_config$gamma_obs_scale_trend,
       gamma_obs_drift_sd = sim_config$gamma_obs_drift_sd,
-      recent_arrival_completeness = sim_config$recent_arrival_completeness
+      recent_arrival_completeness = sim_config$recent_arrival_completeness,
+      undiag_age_disc = sim_config$undiag_age_disc
     )
   }
   stan_data <- sim_diags$stan_data

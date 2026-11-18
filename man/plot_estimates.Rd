@@ -25,8 +25,9 @@ estimates, or a named list of model results. Names are used as plot labels.}
 "incidence", "incidence_cob", "undiag_prev", "undiag_migration",
 "all_migration", "diag_prob", "diagnoses", "migration_prob", "transfers",
 "transfers_detected", "ratio_abroad_uk", "detect_prob",
-"migrant_hiv_prevalence", and "alpha_diag_mig" (the scalar born-abroad
-diagnosis offset).}
+"migrant_hiv_prevalence", "alpha_diag_mig" (the scalar born-abroad
+diagnosis offset), and "abroad_age_disc" (the age-composition discrepancy
+of undiagnosed arrivals, with any simulated truth).}
 
 \item{start_year}{An integer offset added to the stored estimate years for
 the x-axis (default is 0). Leave this at 0 when estimates already contain

@@ -414,6 +414,7 @@ postproc_ad <- function(
       )
 
     out$alpha_diag_mig <- alpha_diag_mig.df(fit_mat)
+    out$abroad_age_disc <- abroad_age_disc.df(fit_mat)
   }
 
   # Delta parameters (age progression rates)

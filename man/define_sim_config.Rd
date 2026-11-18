@@ -39,7 +39,8 @@ define_sim_config(
   detect_step_size = 0,
   gamma_obs_scale_trend = 0,
   gamma_obs_drift_sd = 0.02,
-  recent_arrival_completeness = 0
+  recent_arrival_completeness = 0,
+  undiag_age_disc = rep(0, 4)
 )
 }
 \arguments{
@@ -136,6 +137,11 @@ avidity testing done and a recorded year of arrival. Combined
 multiplicatively with \code{cd4_completeness} (a recorded CD4 value is
 also required) to give the overall completeness of the recent-arrival
 CD4 auxiliary data. Set to 0 to disable.}
+
+\item{undiag_age_disc}{Numeric vector of length 4: log-ratio shift in the
+age-group shares of arrivals with undiagnosed HIV relative to arrivals
+previously diagnosed abroad (only differences between groups matter);
+\code{rep(0, 4)} = same age composition.}
 }
 \value{
 Configuration list.

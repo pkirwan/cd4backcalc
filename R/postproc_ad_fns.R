@@ -38,6 +38,25 @@ alpha_diag_mig.df <- function(fit_mat) {
     )
 }
 
+# Posterior summary of abroad_age_disc: log-ratio (vs geometric mean over the
+# four age groups) by which undiagnosed arrivals' age composition differs from
+# that of arrivals previously diagnosed abroad. Returns NULL when the fit has
+# no abroad_age_disc.
+abroad_age_disc.df <- function(fit_mat) {
+  idx <- grep("^abroad_age_disc\\[", colnames(fit_mat))
+  if (length(idx) != 4L) {
+    return(NULL)
+  }
+  age_bands <- c("15-24", "25-34", "35-44", "45+")
+  q <- apply(fit_mat[, idx, drop = FALSE], 2, get_quantiles)
+
+  tibble::as_tibble(t(q)) |>
+    dplyr::mutate(
+      age_band = factor(age_bands, levels = age_bands),
+      .before = 1
+    )
+}
+
 .posterior_predictive_poisson <- function(x) {
   array(
     stats::rpois(length(x), lambda = as.numeric(x)),
