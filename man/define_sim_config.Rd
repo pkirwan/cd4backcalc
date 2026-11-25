@@ -106,9 +106,9 @@ equal the number of diagnosis states (4 for non-RITA, 5 for RITA). \code{NULL}
 \item{detect_obs_times}{Integer vector of quarter indices (1-based) at which external detection-probability observations are generated.}
 
 \item{gamma_obs_grouped}{Logical scalar or logical vector of length
-\code{nquar} controlling which quarters receive age-stratified external
-migration observations on the same 4 age groups as \code{ABROAD_group}.
-The scalar \code{gamma_obs} series is always simulated; quarters where
+\code{nquar / 4} controlling which calendar years receive age-stratified
+external migration counts on the same 4 age groups as \code{ABROAD_group}.
+The scalar annual \code{gamma_obs} series is always simulated; years where
 \code{gamma_obs_grouped} is \code{FALSE} have \code{-1} rows in
 \code{gamma_obs_group}.}
 

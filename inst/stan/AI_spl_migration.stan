@@ -74,8 +74,9 @@ data {
   int<lower=0> n_detect_steps;
   array[n_detect_steps] int<lower=2, upper=nquar> detect_step_quarter;
 
-  // Independent rolling-annual migration index; sd=0 disables the likelihood
-  vector[nquar] gamma_obs;
+  // Independent external log migration counts per calendar year (-1 = missing
+  // year); sd=0 disables the likelihood
+  vector[nyear] gamma_obs;
   real<lower=0> gamma_obs_sd;
   real<lower=0> gamma_obs_drift_sd;
   real<lower=0> gamma_obs_slope_sd;
@@ -170,15 +171,15 @@ transformed parameters {
   vector<lower=0>[nquar] transfers = omega .* transfer_share;
   vector<lower=0>[nquar] undiag_migration = omega .* (1 - transfer_share);
   vector[nquar] gamma = log(omega);
-  // Rolling 4-quarter aggregation of omega (log scale); the three quarters
-  // preceding the surveillance window are set equal to omega[1].
-  vector[nquar] gamma_agg;
-  for (t in 1 : nquar) {
-    real window_total = 0;
-    for (lag in 0 : 3) {
-      window_total += omega[max(1, t - lag)];
+  // Calendar-year totals of omega (log scale), matching the annual external
+  // migration counts
+  vector[nyear] gamma_agg;
+  {
+    vector[nyear] year_total = rep_vector(0, nyear);
+    for (t in 1 : nquar) {
+      year_total[year_index[t] + 1] += omega[t];
     }
-    gamma_agg[t] = log(window_total);
+    gamma_agg = log(year_total);
   }
 
   vector[nquar] gamma_obs_offset_t;
@@ -191,6 +192,11 @@ transformed parameters {
       gamma_obs_offset_t[t] = gamma_obs_offset + gamma_obs_slope * t_std[t]
                               + drift;
     }
+  }
+  // Annual offset: mean of the quarterly offsets within each calendar year
+  vector[nyear] gamma_obs_offset_y = rep_vector(0, nyear);
+  for (t in 1 : nquar) {
+    gamma_obs_offset_y[year_index[t] + 1] += 0.25 * gamma_obs_offset_t[t];
   }
   
   // Step variances on natural scale (non-centred)
@@ -414,7 +420,12 @@ model {
   gamma_obs_drift_raw ~ std_normal();
 
   if (gamma_obs_sd > 0) {
-    gamma_obs ~ normal(gamma_agg + gamma_obs_offset_t, gamma_obs_sd);
+    for (y in 1 : nyear) {
+      if (gamma_obs[y] >= 0) {
+        gamma_obs[y] ~ normal(gamma_agg[y] + gamma_obs_offset_y[y],
+                              gamma_obs_sd);
+      }
+    }
   }
 
   // Priors centred on empirical range midpoints:

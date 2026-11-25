@@ -39,9 +39,9 @@
 #' @param frr False recency rate for RITA misclassification.
 #' @param detect_obs_times Integer vector of quarter indices (1-based) at which external detection-probability observations are generated.
 #' @param gamma_obs_grouped Logical scalar or logical vector of length
-#'   \code{nquar} controlling which quarters receive age-stratified external
-#'   migration observations on the same 4 age groups as \code{ABROAD_group}.
-#'   The scalar \code{gamma_obs} series is always simulated; quarters where
+#'   \code{nquar / 4} controlling which calendar years receive age-stratified
+#'   external migration counts on the same 4 age groups as \code{ABROAD_group}.
+#'   The scalar annual \code{gamma_obs} series is always simulated; years where
 #'   \code{gamma_obs_grouped} is \code{FALSE} have \code{-1} rows in
 #'   \code{gamma_obs_group}.
 #' @param abroad_age_trend Total logit-scale change (start to end) in the
@@ -153,10 +153,10 @@ define_sim_config <- function(
   if (
     !is.logical(gamma_obs_grouped) ||
       anyNA(gamma_obs_grouped) ||
-      !(length(gamma_obs_grouped) %in% c(1L, nquar))
+      !(length(gamma_obs_grouped) %in% c(1L, nquar %/% 4L))
   ) {
     stop(
-      "gamma_obs_grouped must be a logical scalar or a logical vector of length nquar."
+      "gamma_obs_grouped must be a logical scalar or a logical vector of length nquar / 4 (one per year)."
     )
   }
 
@@ -226,7 +226,7 @@ define_sim_config <- function(
       as.integer(detect_obs_times)
     },
     gamma_obs_grouped = if (length(gamma_obs_grouped) == 1L) {
-      rep(gamma_obs_grouped, nquar)
+      rep(gamma_obs_grouped, nquar %/% 4L)
     } else {
       as.logical(gamma_obs_grouped)
     },
@@ -608,13 +608,13 @@ epi_mat <- function(Q_l, D_l, h, lat_init, config) {
 #'   every 20 quarters (approx. every 5 years). Supply a custom vector, e.g. \code{c(4, 10, 30)},
 #'   to place observations at specific quarters.
 #' @param gamma_obs_grouped Logical scalar or logical vector of length
-#'   \code{nquar} controlling which quarters receive age-stratified external
-#'   migration observations on the same 4 age groups as \code{ABROAD_group}.
-#'   The scalar \code{gamma_obs} series is always simulated; quarters where
+#'   \code{nquar / 4} controlling which calendar years receive age-stratified
+#'   external migration counts on the same 4 age groups as \code{ABROAD_group}.
+#'   The scalar annual \code{gamma_obs} series is always simulated; years where
 #'   \code{gamma_obs_grouped} is \code{FALSE} have \code{-1} rows in
 #'   \code{gamma_obs_group}.
-#' @param gamma_obs_sd Standard deviation, on the log scale, of an independent
-#'   rolling-annual migration index used by migration models.
+#' @param gamma_obs_sd Standard deviation, on the log scale, of independent
+#'   annual (calendar-year) external migration counts used by migration models.
 #'   This evidence informs temporal trend, not absolute migration level. Set
 #'   to 0 to disable this auxiliary likelihood.
 #' @param gamma_obs_scale Ratio of total external migration to HIV-positive
@@ -1295,11 +1295,13 @@ simulate_diagnoses <- function(
   )
   sim_data$migrant_hiv_prevalence <- 1 / gamma_obs_scale_t
 
-  # External migration-index auxiliary data (e.g. ONS total immigration trend)
-  # by the same 4 age groups used by ABROAD_group. gamma_obs_sd = 0 disables the
-  # auxiliary likelihood in Stan
-  gamma_obs <- rep(0, sim_config$nquar)
-  gamma_obs_group <- matrix(-1, nrow = sim_config$nquar, ncol = 4L)
+  # External migration auxiliary data (e.g. ONS immigration): one log count per
+  # calendar year, optionally by the same 4 age groups used by ABROAD_group.
+  # gamma_obs_sd = 0 disables the auxiliary likelihood in Stan
+  nyear_obs <- sim_config$nquar %/% 4L
+  year_of_quarter <- (seq_len(4L * nyear_obs) - 1L) %/% 4L + 1L
+  gamma_obs <- rep(-1, nyear_obs)
+  gamma_obs_group <- matrix(-1, nrow = nyear_obs, ncol = 4L)
   if (gamma_obs_sd > 0) {
     omega_trend <- generate_omega(
       sim_config$nquar,
@@ -1307,25 +1309,12 @@ simulate_diagnoses <- function(
       sim_config$target_mig,
       dist = FALSE
     )
-    omega_start_slope <- if (length(omega_trend) > 1L) {
-      omega_trend[2L] - omega_trend[1L]
-    } else {
-      0
-    }
-    omega_pre <- pmax(
-      .Machine$double.eps,
-      omega_trend[1L] - 3:1 * omega_start_slope
-    )
-    omega_ext <- c(omega_pre, omega_trend)
-    rolling_vol <- vapply(
-      seq_len(sim_config$nquar),
-      function(t) sum(omega_ext[t:(t + 3L)]),
-      numeric(1)
-    )
+    ext_q <- (gamma_obs_scale_t * omega_trend)[seq_along(year_of_quarter)]
+    annual_vol <- as.vector(rowsum(ext_q, year_of_quarter))
 
     gamma_obs <- stats::rnorm(
-      seq_len(sim_config$nquar),
-      log(pmax(1, round(gamma_obs_scale_t * rolling_vol, -3))),
+      nyear_obs,
+      log(pmax(1, round(annual_vol, -3))),
       gamma_obs_sd
     )
 
@@ -1338,45 +1327,25 @@ simulate_diagnoses <- function(
           agedist_abroad
         },
         1,
-        omega_trend,
+        gamma_obs_scale_t * omega_trend,
         "*"
       )
-      omega_group_trend <- matrix(0, nrow = sim_config$nquar, ncol = 4L)
+      ext_group_q <- matrix(0, nrow = sim_config$nquar, ncol = 4L)
       for (ag in 1:4) {
         idx <- which(age_group_lookup_r == ag)
-        omega_group_trend[, ag] <- rowSums(omega_age_trend[, idx, drop = FALSE])
+        ext_group_q[, ag] <- rowSums(omega_age_trend[, idx, drop = FALSE])
       }
-      omega_group_start_slope <- if (sim_config$nquar > 1L) {
-        omega_group_trend[2L, ] - omega_group_trend[1L, ]
-      } else {
-        rep(0, 4L)
-      }
-      omega_group_pre <- matrix(0, nrow = 3L, ncol = 4L)
-      for (ag in 1:4) {
-        omega_group_pre[, ag] <- pmax(
-          .Machine$double.eps,
-          omega_group_trend[1L, ag] - 3:1 * omega_group_start_slope[ag]
-        )
-      }
-      omega_group_ext <- rbind(omega_group_pre, omega_group_trend)
-      rolling_vol_group <- matrix(0, nrow = sim_config$nquar, ncol = 4L)
-      for (ag in 1:4) {
-        rolling_vol_group[, ag] <- vapply(
-          seq_len(sim_config$nquar),
-          function(t) sum(omega_group_ext[t:(t + 3L), ag]),
-          numeric(1)
-        )
-      }
+      annual_vol_group <- rowsum(
+        ext_group_q[seq_along(year_of_quarter), , drop = FALSE],
+        year_of_quarter
+      )
       gamma_obs_group_full <- matrix(
         stats::rnorm(
-          sim_config$nquar * 4L,
-          as.vector(log(pmax(
-            1,
-            round(gamma_obs_scale_t * rolling_vol_group, -3)
-          ))),
+          nyear_obs * 4L,
+          as.vector(log(pmax(1, round(annual_vol_group, -3)))),
           gamma_obs_sd
         ),
-        nrow = sim_config$nquar,
+        nrow = nyear_obs,
         ncol = 4L
       )
       gamma_obs_group[sim_config$gamma_obs_grouped, ] <-

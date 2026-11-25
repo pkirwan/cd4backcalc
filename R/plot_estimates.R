@@ -1019,9 +1019,9 @@ get_plot_title <- function(quantity) {
   } else if (quantity == "transfers_detected_age") {
     "detected transfers of care by age group"
   } else if (quantity == "gamma_obs") {
-    "external migration index"
+    "external annual migration counts"
   } else if (quantity == "gamma_obs_group") {
-    "external migration index by age group"
+    "external annual migration counts by age group"
   } else if (quantity == "recent_arrival_cd4") {
     "recent-arrival CD4 diagnoses, by CD4 strata and age group"
   } else if (quantity == "diag_prob_age") {

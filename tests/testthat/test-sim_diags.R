@@ -242,7 +242,7 @@ test_that("age-specific migration simulation with gamma produces expected extern
   )
   expect_equal(
     length(sim_diags$stan_data$gamma_obs),
-    sim_diags$stan_data$nquar
+    sim_diags$stan_data$nyear
   )
   expect_equal(sim_diags$stan_data$gamma_obs_drift_sd, 0.05)
   expect_gt(
@@ -295,8 +295,23 @@ test_that("undiag_age_disc shifts the undiagnosed arrival age composition only",
   )
 })
 
-test_that("gamma_obs_grouped vector controls grouped external migration by quarter", {
-  gamma_grouped_schedule <- c(rep(FALSE, 20), rep(TRUE, 20), rep(FALSE, 20))
+test_that("gamma_obs is the log calendar-year total of external migration", {
+  sim_diags <- simulate_diagnoses(
+    sim_seed = 123,
+    dist = FALSE,
+    age = TRUE,
+    migration = TRUE,
+    sim_type = "combo_3",
+    gamma_obs_sd = 1e-10
+  )
+  sim_data <- sim_diags$sim_data
+  year <- (seq_len(sim_diags$stan_data$nquar) - 1L) %/% 4L
+  annual <- as.vector(rowsum(sim_data$omega / sim_data$migrant_hiv_prevalence, year))
+  expect_equal(sim_diags$stan_data$gamma_obs, log(round(annual, -3)), tolerance = 1e-8)
+})
+
+test_that("gamma_obs_grouped vector controls grouped external migration by year", {
+  gamma_grouped_schedule <- c(rep(FALSE, 5), rep(TRUE, 5), rep(FALSE, 5))
   sim_diags <- simulate_diagnoses(
     sim_seed = 123,
     age = TRUE,
@@ -307,10 +322,10 @@ test_that("gamma_obs_grouped vector controls grouped external migration by quart
     gamma_obs_sd = 0.1
   )
 
-  expect_equal(length(sim_diags$stan_data$gamma_obs), sim_diags$stan_data$nquar)
+  expect_equal(length(sim_diags$stan_data$gamma_obs), sim_diags$stan_data$nyear)
   expect_equal(
     dim(sim_diags$stan_data$gamma_obs_group),
-    c(sim_diags$stan_data$nquar, 4L)
+    c(sim_diags$stan_data$nyear, 4L)
   )
   expect_false("gamma_obs_grouped" %in% names(sim_diags$stan_data))
 

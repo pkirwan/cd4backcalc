@@ -110,13 +110,13 @@ get_estimates <- function(hiv_list, quantity) {
   return(estimates)
 }
 
-make_grouped_age_data <- function(values, group = "Generative values") {
+make_grouped_age_data <- function(values, group = "Generative values", by = 0.25) {
   age_group_labels <- c("15-24", "25-34", "35-44", "45+")
   nquar <- nrow(values)
 
   tibble::tibble(
     value = as.vector(values),
-    year = rep(seq(0, nquar / 4 - 0.25, by = 0.25), 4),
+    year = rep(seq(0, by = by, length.out = nquar), 4),
     age_band = factor(
       rep(age_group_labels, each = nquar),
       levels = age_group_labels
@@ -567,13 +567,14 @@ extract_simulated_quantity <- function(sim_diags, quantity, deterministic = FALS
   } else if (quantity == "gamma_obs") {
     out <- tibble::tibble(
       value = exp(stan_data$gamma_obs),
-      year = seq(0, plot_years, by = 0.25),
+      year = seq_along(stan_data$gamma_obs) - 1,
       group = "Generative values"
-    )
+    ) |>
+      dplyr::filter(stan_data$gamma_obs >= 0)
   } else if (quantity == "gamma_obs_group") {
     gamma_obs_group <- stan_data$gamma_obs_group
     gamma_obs_group[gamma_obs_group >= 0] <- exp(gamma_obs_group[gamma_obs_group >= 0])
-    out <- make_grouped_age_data(gamma_obs_group) |>
+    out <- make_grouped_age_data(gamma_obs_group, by = 1) |>
       dplyr::filter(.data$value >= 0)
   } else if (quantity == "cd4_diagnoses_age") {
     out <- make_cd4_age_data(
@@ -754,9 +755,10 @@ extract_real_data <- function(hiv_list, quantity) {
     }
     out <- tibble::tibble(
       value = exp(stan_data$gamma_obs),
-      year = seq(0, plot_years, by = 0.25),
+      year = seq_along(stan_data$gamma_obs) - 1,
       group = "Observed values"
-    )
+    ) |>
+      dplyr::filter(stan_data$gamma_obs >= 0)
   } else if (quantity == "gamma_obs_group") {
     if (!migration || is.null(stan_data$gamma_obs_group)) {
       return(NULL)
@@ -766,7 +768,8 @@ extract_real_data <- function(hiv_list, quantity) {
       exp(gamma_obs_group[gamma_obs_group >= 0])
     out <- make_grouped_age_data(
       gamma_obs_group,
-      group = "Observed values"
+      group = "Observed values",
+      by = 1
     ) |>
       dplyr::filter(.data$value >= 0)
   } else if (quantity == "cd4_diagnoses") {

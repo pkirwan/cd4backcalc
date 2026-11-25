@@ -61,10 +61,11 @@ data {
   int<lower=0> n_detect_steps;
   array[n_detect_steps] int<lower=2, upper=nquar> detect_step_quarter;
   
-  // Independent rolling-annual migration index (log scale). Complete
-  // gamma_obs_group rows use grouped data, else gamma_obs; sd=0 disables this likelihood
-  vector[nquar] gamma_obs;
-  matrix[nquar, 4] gamma_obs_group;
+  // Independent external log migration counts per calendar year (-1 = missing
+  // year). Complete gamma_obs_group rows use grouped data, else gamma_obs;
+  // sd=0 disables this likelihood
+  vector[nyear] gamma_obs;
+  matrix[nyear, 4] gamma_obs_group;
   real<lower=0> gamma_obs_sd;
   // Quarter-to-quarter drift allowed in log(HIV-positive migration)
   real<lower=0> gamma_obs_drift_sd;
@@ -225,16 +226,15 @@ transformed parameters {
   vector<lower=0>[nquar] undiag_migration = omega .* (1 - transfer_share);
   vector[nquar] gamma = log(omega);
   
-  // Rolling 4-quarter aggregation of omega (log scale), matching the quarterly
-  // rolling-annual external migration index. For t=1:3, the window is completed
-  // with omega[1] (the three quarters preceding the surveillance window).
-  vector[nquar] gamma_agg;
-  for (t in 1 : nquar) {
-    real window_total = 0;
-    for (lag in 0 : 3) {
-      window_total += omega[max(1, t - lag)];
+  // Calendar-year totals of omega (log scale), matching the annual external
+  // migration counts
+  vector[nyear] gamma_agg;
+  {
+    vector[nyear] year_total = rep_vector(0, nyear);
+    for (t in 1 : nquar) {
+      year_total[year_index[t] + 1] += omega[t];
     }
-    gamma_agg[t] = log(window_total);
+    gamma_agg = log(year_total);
   }
   
   // Offset between the external all-cause migration index and log(omega), i.e.
@@ -250,6 +250,11 @@ transformed parameters {
                               + drift;
     }
   }
+  // Annual offset: mean of the quarterly offsets within each calendar year
+  vector[nyear] gamma_obs_offset_y = rep_vector(0, nyear);
+  for (t in 1 : nquar) {
+    gamma_obs_offset_y[year_index[t] + 1] += 0.25 * gamma_obs_offset_t[t];
+  }
   
   // Age distributions for allocating born-abroad flows by age; group-level
   // composition is expanded uniformly within each decade band (divide by
@@ -261,7 +266,7 @@ transformed parameters {
   matrix<lower=0, upper=1>[nquar, 4] abroad_age_group_prop_undiag;
   matrix<lower=0, upper=1>[nquar, nage] abroad_age_prop_diag;
   matrix<lower=0, upper=1>[nquar, nage] abroad_age_prop;
-  matrix[nquar, 4] gamma_agg_group;
+  matrix[nyear, 4] gamma_agg_group;
   for (t in 1 : nquar) {
     vector[4] logits_age;
     logits_age[1 : 3] = alpha_abroad_age + beta_abroad_age * t_std[t];
@@ -280,19 +285,16 @@ transformed parameters {
           / age_group_size[age_group_lookup[a]];
     }
   }
-  // External index covers all arrivals: mixture of the two compositions
-  for (ag in 1 : 4) {
+  // External counts cover all arrivals: mixture of the two compositions,
+  // summed over each calendar year
+  {
+    matrix[nyear, 4] group_total = rep_matrix(0, nyear, 4);
     for (t in 1 : nquar) {
-      real group_total = 0;
-      for (lag in 0 : 3) {
-        int quarter = max(1, t - lag);
-        group_total += transfers[quarter]
-                       * abroad_age_group_prop[quarter, ag]
-                       + undiag_migration[quarter]
-                         * abroad_age_group_prop_undiag[quarter, ag];
-      }
-      gamma_agg_group[t, ag] = log(group_total);
+      group_total[year_index[t] + 1,  : ]
+        += transfers[t] * abroad_age_group_prop[t,  : ]
+           + undiag_migration[t] * abroad_age_group_prop_undiag[t,  : ];
     }
+    gamma_agg_group = log(group_total);
   }
   
   // Step variances on natural scale (non-centred)
@@ -772,20 +774,13 @@ model {
   gamma_obs_slope ~ normal(0, gamma_obs_slope_sd);
   gamma_obs_drift_raw ~ std_normal();
   if (gamma_obs_sd > 0) {
-    for (t in 1 : nquar) {
-      int has_group = 1;
-      for (ag in 1 : 4) {
-        if (gamma_obs_group[t, ag] < 0) {
-          has_group = 0;
-        }
-      }
-      if (has_group == 1) {
-        gamma_obs_group[t, ]
-          ~ normal(gamma_agg_group[t, ]
-                   + rep_row_vector(gamma_obs_offset_t[t], 4),
+    for (y in 1 : nyear) {
+      if (min(gamma_obs_group[y,  : ]) >= 0) {
+        gamma_obs_group[y,  : ]
+          ~ normal(gamma_agg_group[y,  : ] + gamma_obs_offset_y[y],
                    gamma_obs_sd);
-      } else {
-        gamma_obs[t] ~ normal(gamma_agg[t] + gamma_obs_offset_t[t],
+      } else if (gamma_obs[y] >= 0) {
+        gamma_obs[y] ~ normal(gamma_agg[y] + gamma_obs_offset_y[y],
                               gamma_obs_sd);
       }
     }

@@ -122,14 +122,14 @@ every 20 quarters (approx. every 5 years). Supply a custom vector, e.g. \code{c(
 to place observations at specific quarters.}
 
 \item{gamma_obs_grouped}{Logical scalar or logical vector of length
-\code{nquar} controlling which quarters receive age-stratified external
-migration observations on the same 4 age groups as \code{ABROAD_group}.
-The scalar \code{gamma_obs} series is always simulated; quarters where
+\code{nquar / 4} controlling which calendar years receive age-stratified
+external migration counts on the same 4 age groups as \code{ABROAD_group}.
+The scalar annual \code{gamma_obs} series is always simulated; years where
 \code{gamma_obs_grouped} is \code{FALSE} have \code{-1} rows in
 \code{gamma_obs_group}.}
 
-\item{gamma_obs_sd}{Standard deviation, on the log scale, of an independent
-rolling-annual migration index used by migration models.
+\item{gamma_obs_sd}{Standard deviation, on the log scale, of independent
+annual (calendar-year) external migration counts used by migration models.
 This evidence informs temporal trend, not absolute migration level. Set
 to 0 to disable this auxiliary likelihood.}
 

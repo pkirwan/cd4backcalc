@@ -437,8 +437,8 @@ stan_model_config <- function(
 confirm_stan_data <- function(stan_data) {
   if (stan_data$model_config$migration) {
     stopifnot(
-      "Incorrect length in stan_data, gamma_obs should be (nquar)" =
-        length(stan_data$gamma_obs) == stan_data$nquar,
+      "Incorrect length in stan_data, gamma_obs should be (nyear)" =
+        length(stan_data$gamma_obs) == stan_data$nyear,
       "gamma_obs_drift_sd must be a single non-negative number" =
         length(stan_data$gamma_obs_drift_sd) == 1L &&
           is.finite(stan_data$gamma_obs_drift_sd) &&
@@ -517,8 +517,8 @@ confirm_stan_data <- function(stan_data) {
       )
     )
     stopifnot(
-      "Incorrect dimensions in stan_data, gamma_obs_group should be (nquar, 4)" = all(
-        dim(stan_data$gamma_obs_group) == c(stan_data$nquar, 4L)
+      "Incorrect dimensions in stan_data, gamma_obs_group should be (nyear, 4)" = all(
+        dim(stan_data$gamma_obs_group) == c(stan_data$nyear, 4L)
       )
     )
     gamma_group_available <- rowSums(stan_data$gamma_obs_group >= 0)
@@ -870,15 +870,22 @@ model_type_prep <- function(
       }
     }
 
-    # gamma_obs: EXTERNAL auxiliary observations for log migration volume.
-    # Support a dense scalar rolling-annual log series (gamma_obs) plus an
-    # optional dense (nquar x 4) grouped matrix (gamma_obs_group) on the same
-    # age groups as ABROAD_group. If gamma_obs_grouped is supplied, it is used
-    # only to convert inactive grouped quarters into -1 sentinel rows.
+    # gamma_obs: EXTERNAL auxiliary log migration counts, one per calendar year
+    # (nyear), plus an optional (nyear x 4) grouped matrix (gamma_obs_group) on
+    # the same age groups as ABROAD_group; -1 marks a missing year or row.
+    # Only non-overlapping annual totals are accepted: overlapping rolling
+    # windows are not independent observations. If gamma_obs_grouped is
+    # supplied, it is used only to convert inactive grouped years into -1 rows.
     # Use only with evidence independent of the HIV/AIDS/CD4/ABROAD counts
     # (e.g. ONS migration flows). Do NOT pass the posterior of another model fit
     # to these same counts: that double-uses the data and yields an overconfident
     # posterior.
+    if (stan_data$nquar %% 4L != 0L) {
+      stop("nquar must be divisible by 4 for migration models.")
+    }
+    if (is.null(stan_data$nyear)) {
+      stan_data$nyear <- stan_data$nquar %/% 4L
+    }
     if (is.null(stan_data$gamma_obs_sd)) {
       stan_data$gamma_obs_sd <- 0
     }
@@ -888,35 +895,31 @@ model_type_prep <- function(
     if (is.null(stan_data$gamma_obs_group) && !is.null(stan_data$gamma_obs_mean_group)) {
       stan_data$gamma_obs_group <- stan_data$gamma_obs_mean_group
     }
-    if (is.null(stan_data$gamma_obs)) {
-      stan_data$gamma_obs <- rep(0, stan_data$nquar)
+    if (is.null(stan_data$gamma_obs) ||
+          (length(stan_data$gamma_obs) == 0 && stan_data$gamma_obs_sd == 0)) {
+      stan_data$gamma_obs <- rep(-1, stan_data$nyear)
     }
-    if (length(stan_data$gamma_obs) == 0 && stan_data$gamma_obs_sd == 0) {
-      stan_data$gamma_obs <- rep(0, stan_data$nquar)
+    if (length(stan_data$gamma_obs) != stan_data$nyear) {
+      stop("gamma_obs must have length nyear (one log calendar-year count per year).")
     }
-    if (length(stan_data$gamma_obs) != stan_data$nquar) {
-      stop("gamma_obs must have length nquar.")
-    }
-    if (is.null(stan_data$gamma_obs_group)) {
-      stan_data$gamma_obs_group <- matrix(-1, nrow = stan_data$nquar, ncol = 4L)
-    }
-    if (length(stan_data$gamma_obs_group) == 0 && stan_data$gamma_obs_sd == 0) {
-      stan_data$gamma_obs_group <- matrix(-1, nrow = stan_data$nquar, ncol = 4L)
+    if (is.null(stan_data$gamma_obs_group) ||
+          (length(stan_data$gamma_obs_group) == 0 && stan_data$gamma_obs_sd == 0)) {
+      stan_data$gamma_obs_group <- matrix(-1, nrow = stan_data$nyear, ncol = 4L)
     }
     stan_data$gamma_obs_group <- as.matrix(stan_data$gamma_obs_group)
-    if (!all(dim(stan_data$gamma_obs_group) == c(stan_data$nquar, 4L))) {
-      stop("gamma_obs_group must have dimensions (nquar, 4).")
+    if (!all(dim(stan_data$gamma_obs_group) == c(stan_data$nyear, 4L))) {
+      stop("gamma_obs_group must have dimensions (nyear, 4).")
     }
     if (!is.null(stan_data$gamma_obs_grouped)) {
       if (is.logical(stan_data$gamma_obs_grouped)) {
         if (length(stan_data$gamma_obs_grouped) == 1L) {
-          stan_data$gamma_obs_grouped <- rep(as.integer(stan_data$gamma_obs_grouped), stan_data$nquar)
+          stan_data$gamma_obs_grouped <- rep(as.integer(stan_data$gamma_obs_grouped), stan_data$nyear)
         } else {
           stan_data$gamma_obs_grouped <- as.integer(stan_data$gamma_obs_grouped)
         }
       }
-      if (length(stan_data$gamma_obs_grouped) != stan_data$nquar) {
-        stop("gamma_obs_grouped must have length nquar.")
+      if (length(stan_data$gamma_obs_grouped) != stan_data$nyear) {
+        stop("gamma_obs_grouped must have length nyear.")
       }
       if (!all(stan_data$gamma_obs_grouped %in% c(0L, 1L))) {
         stop("gamma_obs_grouped must contain only 0/1 values.")
@@ -933,14 +936,14 @@ model_type_prep <- function(
     if (!all(gamma_group_available %in% c(0L, 4L))) {
       stop("Each row of gamma_obs_group must be either all -1 or have all 4 age-group values.")
     }
-    if (stan_data$gamma_obs_sd > 0 && any(stan_data$gamma_obs < 0)) {
-      stop("gamma_obs must be provided for every quarter when gamma_obs_sd > 0.")
+    if (stan_data$gamma_obs_sd > 0 &&
+          !any(stan_data$gamma_obs >= 0 | gamma_group_available == 4L)) {
+      stop("gamma_obs_sd > 0 but no gamma_obs years are supplied.")
     }
     stan_data$gamma_obs_grouped <- NULL
 
     # Per-quarter random-walk sd on the log ratio of HIV-positive migration to
-    # the external all-cause index. Set comparable to gamma_obs_sd so the index
-    # still constrains short-run shape; the long-run change in that ratio is
+    # the external all-cause counts. The long-run change in that ratio is
     # carried by the model's own gamma_obs_slope.
     if (is.null(stan_data$gamma_obs_drift_sd)) {
       stan_data$gamma_obs_drift_sd <- 0.02
@@ -969,12 +972,6 @@ model_type_prep <- function(
       stop("gamma_obs_slope_sd must be a single positive number.")
     }
 
-    if (stan_data$nquar %% 4L != 0L) {
-      stop("nquar must be divisible by 4 for recent-arrival CD4 data.")
-    }
-    if (is.null(stan_data$nyear)) {
-      stan_data$nyear <- stan_data$nquar %/% 4L
-    }
     if (!isTRUE(age) && length(dim(stan_data$recent_arrival_cd4)) == 3L) {
       stan_data$recent_arrival_cd4 <- apply(
         stan_data$recent_arrival_cd4,

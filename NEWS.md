@@ -4,6 +4,7 @@
 
 - Age-specific migration models now allow arrivals with undiagnosed HIV to differ in age composition from arrivals previously diagnosed abroad, via a sum-to-zero log-ratio discrepancy with prior SD `stan_data$abroad_age_disc_scale` (default 0.3).
 - New `plot_estimates(quantity = "abroad_age_disc")` summarises the posterior discrepancy by age group.
+- External migration data (`gamma_obs`, `gamma_obs_group`) are now annual calendar-year counts (length `nyear`, `-1` for a missing year) rather than a quarterly rolling-annual series, whose overlapping windows over-weighted this evidence. `simulate_diagnoses()` generates annual counts and `gamma_obs_grouped` now has one value per year.
 
 # Changes in v0.2.4
 
